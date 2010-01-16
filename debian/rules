@@ -79,7 +79,7 @@ binary-arch: build install
 	dh_installinit
 #	dh_installcron
 #	dh_installinfo
-	dh_installman debian/pimd.1
+	dh_installman pimd.1
 	dh_link
 	dh_strip
 	dh_compress

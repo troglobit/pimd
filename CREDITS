@@ -1,0 +1,89 @@
+Credits
+=======
+Apologies if your names is not included, please contact us to be included.
+
+ * The pimd maintainer until January 14, 2005, when the project was officially
+   retired: Pavlin Ivanov Radoslavov <pavlin@catarina.usc.edu>
+
+ * The PIM kernel modifications and pimd itself were originally
+   written by Ahmed Helmy (ahelmy@catarina.usc.edu) as a summer intern in SGI.
+
+ * The PIM-SM implementation for gated, George Edmond "Rusty" Eddy <eddy@isi.edu>
+
+ * The "up to the March '97 I-D spec" + RSVP support pimd version was done
+   by Pavlin Radoslavov during his summer'97 intern in Sun Microsystems
+   under Michael Speer's supervision.
+
+ * BSDI 3.0/3.1 support + various improvements and bug reports
+   by Hitoshi Asaeda (asaeda@yamato.ibm.co.jp).
+
+ * Bug reports and SGI tests by Nidhi Bhaskar (nidhi@cho-oyu.engr.sgi.com).
+
+ * Bug reports and SunOS tests by Isabelle Girard (girardi@rc.bel.alcatel.be)
+   and Dirk Ooms (oomsd@rc.bel.alcatel.be)
+
+ * NetBSD-1.3 compilation support (both for pimd and the kernel mods) and
+   bug reports by Heiko W.Rupp <hwr@pilhuhn.de>
+
+ * Bug reports by Chirayu Shah (shahzad@torrentnet.com)
+
+ * A number of changes copied back from pimdd (PIM-DM) stand-alone
+   implementation by Kurt Windisch (kurtw@antc.uoregon.edu)
+
+ * Linux patches by "Jonathan Day" <jd9812@my-dejanews.com> and
+   Fred Griffoul <griffoul@ccrle.nec.de>
+
+ * Bug reports and Linux tests by Kaifu Wu <kaifu@3com.com>
+
+ * Linux kernel internals help by Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+
+ * Bug reports by Fred Griffoul <griffoul@ccrle.nec.de>
+
+ * Bug reports and fixes for Linux by
+   "Venning, Roger" <Roger.Venning@corpmail.telstra.com.au>
+
+ * Various patches and bug fixes by 
+   JINMEI Tatuya <jinmei@isl.rdc.toshiba.co.jp>
+
+ * Solaris 8 fixes by "Eric S. Johnson" <esj@cs.fiu.edu>
+
+ * Bug reports by Azzurra Pantella <s198804@studenti.ing.unipi.it> and
+   Nicola Dicosmo from University of Pisa.
+
+ * Bug reports and fixes by Sri V <vallepal@yahoo.com>
+
+ * Bug reports, fixes and new features (ALTNET, SCOPED traffic)
+   by Marian Stagarescu <marian@bile.cidera.com>
+   and Ashok Rao <rao@cidera.com> 
+
+ * Bug reports by Philip Ho <cbho@ie.cuhk.edu.hk>
+
+ * Bug reports by <mistkhan@indiatimes.com>
+
+ * GRE configuration examples, bug fixes, 
+   and code contribution by Hiroyuki Komatsu <komatsu@taiyaki.org>
+
+ * Bug report and fix by Xiaofeng Liu <liu_xiao_feng@yahoo.com>
+
+ * Bug reports and fixes by SAKAI Hiroaki <sakai.hiroaki@finet.fujitsu.com>
+
+ * Bug reports and fixes by "Jiahao Wang" <jiahaow@yahoo.com.cn> and
+   "Bo Cheng" <bobobocheng@hotmail.com>)
+
+ * Bug report by Andrea Gambirasio <andrea.gambirasio@softsolutions.it>
+ 
+ * Bug reports by "J.W. (Bill) Atwood" <bill@cs.concordia.ca>
+
+ * Bug report by "Eva Pless" <eva.pless@imk.fraunhofer.de>
+
+ * Bug reports and fixes by SUZUKI Shinsuke <suz@crl.hitachi.co.jp>
+
+ * Bug report by Serdar Uezuemcue <serdar@eikon.tum.de>
+
+ * All alpha testers who were brave enough to try it and then sent me
+   feedbacks (apology for not keeping the list).
+
+ * Thanks to the FreeBSD team and particularly to the
+   freebsd-hackers mailing list participants for the help
+   with the real-time debugging of the FreeBSD kernel.
+

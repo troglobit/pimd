@@ -1,3 +1,0 @@
-#!/bin/sh
-cvs rdiff -kk -u -r pimd_2_1_0_alpha$1 -r pimd_2_1_0_alpha$2 pimd
-

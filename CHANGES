@@ -1,5 +1,12 @@
   $Id: CHANGES,v 1.110 2003/03/21 01:54:32 pavlin Exp $
 
+ * Version 2.1.0, Sat Jan 16, 15:08:44 CET 2010
+ CHANGES:
+  - Integrated the latest Debian patches from pimd_2.1.0-alpha29.17-9.diff.gz
+  - Fixed the new file include/linux/netinet/in-my.h (Debian) so that the
+    #else fallback uses the system netinet/in.h, which seems to work now.
+  - Bumped version number, this code has been available for a while now.
+
  * Version 2.1.0-alpha29.17, Thu Mar 20 17:50:01 PST 2003
  CHANGES:
   - The mrouted license (LICENSE.mrouted) updated with BSD-like
