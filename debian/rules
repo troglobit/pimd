@@ -43,9 +43,6 @@ clean:
 	# Add here commands to clean up after the build process.
 	[ ! -f Makefile ] || $(MAKE) clean
 
-	rm -f include/linux/netinet/in.h
-	rm -f include/linux/netinet/in-slackware.h
-
 	dh_clean
 
 install: build
