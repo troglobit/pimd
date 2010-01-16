@@ -2,7 +2,8 @@
 #define __LINUX_MROUTE_H
 
 #include <linux/sockios.h>
-#include <netinet/in.h>
+#include <netinet/in-my.h>
+
 
 /*
  *	Based on the MROUTING 3.5 defines primarily to keep

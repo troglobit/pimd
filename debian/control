@@ -1,0 +1,17 @@
+Source: pimd
+Section: net
+Priority: optional
+Maintainer: Antonin Kral <A.Kral@sh.cvut.cz>
+Build-Depends: debhelper
+Standards-Version: 3.8.0
+
+Package: pimd
+Architecture: any
+Depends: ${shlibs:Depends}
+Conflicts: mrouted
+Description: multicast routing daemon (PIMv2)
+ pimd is implementation of Protocol Independent Multicast routing daemon.
+ It supports PIMv2-SM on FreeBSD, NetBSD, OpenBSD, Linux. Enabled PIM support
+ in kernel is needed.
+ .
+ As of January 14, 2005, pimd is officially RETIRED (by mainstream).

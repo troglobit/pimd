@@ -271,7 +271,7 @@ extern int		rsrr_socket;
 
 extern u_long		virtual_time;
 extern char		configfilename[];
-extern int		pid;
+/* extern int		pid; Removed due problems with ia64, Debian Bug #287915*/
 
 extern struct cand_rp_adv_message_ {
     u_int8    *buffer;
@@ -694,3 +694,9 @@ extern vifi_t	find_vif_direct		__P((u_int32 src));
 extern vifi_t	find_vif_direct_local	__P((u_int32 src));
 extern u_int32	max_local_address	__P((void));
 
+struct rp_hold {
+	struct rp_hold *next;
+	u_int32	address;
+	u_int32	group;
+	u_int32	mask;
+};

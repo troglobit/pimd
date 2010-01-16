@@ -43,6 +43,8 @@
 
 #include "defs.h"
 
+struct rp_hold *g_rp_hold=NULL;
+
 
 #ifdef SNMP
 #include "snmp.h"
@@ -195,6 +197,7 @@ main(argc, argv)
     struct debugname *d;
     char c;
     int tmpd;
+	time_t boottime;
 
     
     setlinebuf(stderr);
@@ -334,6 +337,8 @@ main(argc, argv)
 #else
     srandom(gethostid());
 #endif
+
+    time(&boottime);
     
     /* Start up the log rate-limiter */
     resetlogging(NULL);
@@ -443,6 +448,23 @@ main(argc, argv)
 	    timeout->tv_sec = secs;
 	   timeout->tv_usec = 0;
         }
+
+    if (boottime) {
+         time_t n;
+         time(&n);
+         if (n > boottime + 15) {
+           struct rp_hold *rph=g_rp_hold;
+           while(rph) {
+              add_rp_grp_entry(&cand_rp_list, &grp_mask_list,
+                rph->address, 1, 0xffffff, rph->group, rph->mask,
+                curr_bsr_hash_mask, curr_bsr_fragment_tag);
+              rph=rph->next;
+           }
+           boottime=0;
+         }
+    }
+
+
 	
 	if (sighandled) {
 	    if (sighandled & GOT_SIGINT) {

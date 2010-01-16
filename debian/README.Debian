@@ -1,0 +1,38 @@
+pimd for Debian
+---------------
+
+You need to enable multicast and multicast-routing in your kernel:
+ 
+CONFIG_IP_MULTICAST=y
+CONFIG_IP_MROUTE=y
+
+you have also enable support for PIM-SM v2 in kernel:
+
+CONFIG_IP_PIMSM_V2=y
+ 
+If you want to build a multicast tunnel via an unicast connection, you
+have to enable ip-tunneling to:
+ 
+CONFIG_NET_IPIP=m (or =y)
+ 
+The default configuration of pimd is to route between two and more interfaces,
+and start AutoRP. For more details see the manpage and program documentation.
+
+Support for staticRP is available since pimd_2.1.0-alpha29.17-4. Patch provided
+by Peter Mann <Peter.Mann@tuke.sk>. There is new configuratation parameter:
+
+rp_address
+
+The future of pimd
+------------------
+
+As of January 14, 2005, pimd is officially RETIRED.
+
+It hasn't been updated properly for years (only bug fixes reported by users),
+and has been superseded by newer and better open-source implementations.  See
+http://netweb.usc.edu/pim/ for a list of such implementations.
+
+Possible solution is to use http://www.xorp.org/
+ 
+ -- Antonin Kral <A.Kral@sh.cvut.cz>, Thu, 27 Mar 2003 10:12:47 +0100
+ -- Antonin Kral <A.Kral@sh.cvut.cz>, Tue, 10 Aug 2004 10:51:12 +0100

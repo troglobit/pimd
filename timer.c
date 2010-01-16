@@ -995,11 +995,13 @@ age_misc()
 	     rp_grp_entry_ptr != (rp_grp_entry_t *)NULL;
 	     rp_grp_entry_ptr = rp_grp_entry_next) {
 	    rp_grp_entry_next = rp_grp_entry_ptr->grp_rp_next;
+				if (rp_grp_entry_ptr->holdtime < 60000) {
 	    IF_TIMEOUT(rp_grp_entry_ptr->holdtime)
 		delete_rp_grp_entry(&cand_rp_list, &grp_mask_list,
 				    rp_grp_entry_ptr);
 	}
     }
+	}
 
     /* Cand-RP-Adv timer */
     if (cand_rp_flag == TRUE) {

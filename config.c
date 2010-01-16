@@ -52,6 +52,8 @@ static char	*next_word	__P((char **));
 static int	parse_phyint	__P((char *s));
 static u_int32	ifname2addr	__P((char *s));
 
+extern struct rp_hold *g_rp_hold;
+
 
 /*
  * Query the kernel to find network interfaces that are multicast-capable
@@ -304,6 +306,7 @@ config_vifs_from_kernel()
 #define EMPTY				1
 #define PHYINT				2
 #define CANDIDATE_RP			3
+#define RP_ADDRESS			64
 #define GROUP_PREFIX			4
 #define BOOTSTRAP_RP			5
 #define REG_THRESHOLD			6
@@ -332,6 +335,8 @@ wordToOption(word)
 	return PHYINT;
     if (EQUAL(word, "cand_rp"))
 	return CANDIDATE_RP;
+	if (EQUAL(word, "rp_address"))
+		return RP_ADDRESS;
     if (EQUAL(word, "group_prefix"))
 	return GROUP_PREFIX;
     if (EQUAL(word, "cand_bootstrap_router"))
@@ -782,6 +787,38 @@ parseBSR(s)
     return(TRUE);
 }
 
+/* This is my hack to put a statically assignable RP address in */
+
+int
+parse_rp_address(s)
+	char *s;
+{
+	char *w;
+	u_int32 local	= 0xffffff;
+	struct rp_hold * rph;
+
+	while (!EQUAL((w = next_word(&s)), "")) {
+		/* BSR address */
+		local = inet_parse(w, 4);
+	}				/* while not empty */
+
+	if (local == 0xffffff) {
+		log(LOG_WARNING, 0, "Invalid RP address provided '%s' in %s. Ignoring.",
+			w, configfilename);
+		return(TRUE);
+	}
+
+	rph=malloc(sizeof(*rph));
+	rph->address=local;
+	rph->group=htonl(224 << 24);
+	rph->mask=htonl(240 << 24);
+	rph->next=g_rp_hold;
+	g_rp_hold=rph;
+
+	log(LOG_INFO, 0, "Assigned RP address %s", inet_fmt(local, s1));
+	return(TRUE);
+}
+
 
 /*
  * function name: parse_reg_threshold
@@ -1086,6 +1123,9 @@ config_vifs_from_file()
 	case CANDIDATE_RP:
 	    parse_candidateRP(s);
 	    break;
+		case RP_ADDRESS:
+			parse_rp_address(s);
+			break;
 	case GROUP_PREFIX:
 	    parse_group_prefix(s);
 	    break;

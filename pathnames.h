@@ -48,6 +48,11 @@
 #define _PATH_PIMD_GENID	"/var/run/pimd.genid"
 #define _PATH_PIMD_DUMP		"/var/tmp/pimd.dump"
 #define _PATH_PIMD_CACHE	"/var/tmp/pimd.cache"
+#elif defined(Linux)
+#define _PATH_PIMD_PID		"/var/run/pimd.pid"
+#define _PATH_PIMD_GENID	"/var/run/pimd.genid"
+#define _PATH_PIMD_DUMP		"/var/tmp/pimd.dump"
+#define _PATH_PIMD_CACHE	"/var/tmp/pimd.cache"
 #else
 #define _PATH_PIMD_PID		"/etc/pimd.pid"
 #define _PATH_PIMD_GENID	"/etc/pimd.genid"

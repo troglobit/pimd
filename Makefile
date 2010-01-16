@@ -10,6 +10,9 @@
 #
 # XXX: SEARCH FOR "CONFIGCONFIGCONFIG" (without the quotas) for the lines
 # that might need configuration
+#
+# Modified for Debian by Antonin Kral <A.Kral@sh.cvut.cz>
+# 27.03.2003
 
 PROG_NAME=pimd
 
@@ -89,7 +92,7 @@ COMMON_CFLAGS= ${MCAST_INCLUDE} ${SNMPDEF} ${RSRRDEF} ${MISCDEFS} -DPIM
 
 ## FreeBSD	-D__FreeBSD__ is defined by the OS
 ## FreeBSD-3.x, FreeBSD-4.x
-CFLAGS= -Wall	-g	-Iinclude/freebsd ${COMMON_CFLAGS}
+#CFLAGS= -Wall	-g	-Iinclude/freebsd ${COMMON_CFLAGS}
 ## FreeBSD-2.x
 #CFLAGS= -Wall	-g	-Iinclude/freebsd2 ${COMMON_CFLAGS}
 
@@ -131,7 +134,7 @@ LINUX_DEFS	=	-D__BSD_SOURCE \
 #CFLAGS= -Wall -g -Dold_Linux ${LINUX_INCLUDE} ${LINUX_DEFS} ${COMMON_CFLAGS}
 
 ## Newer Linux (linux-2.1.127 for example)
-#CFLAGS= -Wall -g ${LINUX_INCLUDE} ${LINUX_DEFS} ${COMMON_CFLAGS}
+CFLAGS= -Wall -g ${LINUX_INCLUDE} ${LINUX_DEFS} ${COMMON_CFLAGS}
 
 
 LIBS=		${SNMPLIBDIR} ${SNMPLIBS} ${LIB2}
@@ -214,11 +217,15 @@ curr-diff:
 	cvs rdiff -kk -u -r ${PROG_CVS_LAST_VERSION} ${PROG_NAME} > ${PROG_NAME}-current.diff
 
 install:	${PROG_NAME}
-	install -d /usr/local/bin
-	install -m 0755 -f /usr/local/bin ${PROG_NAME}
-	- mv /etc/pimd.conf /etc/pimd.conf.old
-	cp pimd.conf /etc
-	echo "Don't forget to check/edit /etc/pimd.conf!!!"
+	# Modified in Debianization
+	install -d ${DESTDIR}/usr/sbin
+	install -d ${DESTDIR}/etc
+	# install -m 0755 -f /usr/local/bin ${PROG_NAME}
+	install -m 0755 ${PROG_NAME} ${DESTDIR}/usr/sbin/${PROG_NAME}
+	#- mv /etc/pimd.conf /etc/pimd.conf.old
+	#cp pimd.conf /etc
+	install -m 0644 ${PROG_NAME}.conf ${DESTDIR}/etc/${PROG_NAME}.conf
+	#echo "Don't forget to check/edit /etc/pimd.conf!!!"
 
 clean:	FRC ${SNMPCLEAN}
 	rm -f ${OBJS} core ${PROG_NAME} tags TAGS *.o
