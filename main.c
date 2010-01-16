@@ -85,7 +85,7 @@ static int nhandlers = 0;
 static struct debugname {
     char *name;
     int	 level;
-    int	 nchars;
+    u_int nchars;
 } debugnames[] = {
     {   "dvmrp_detail",	    DEBUG_DVMRP_DETAIL,   5	    },
     {   "dvmrp_prunes",	    DEBUG_DVMRP_PRUNE,    8	    },
@@ -197,9 +197,8 @@ main(argc, argv)
     struct debugname *d;
     char c;
     int tmpd;
-	time_t boottime;
+    time_t boottime;
 
-    
     setlinebuf(stderr);
 
     progname = strrchr(argv[0], '/');
@@ -220,7 +219,7 @@ main(argc, argv)
 	if (strcmp(*argv, "-d") == 0) {
 	    if (argc > 1 && *(argv + 1)[0] != '-') { 
 		char *p,*q;
-		int i, len;
+		u_int i, len;
 		struct debugname *d;
 		
 		argv++;
@@ -327,7 +326,7 @@ main(argc, argv)
 #endif /* LOG_DAEMON */
     sprintf(versionstring, "pimd version %s", todaysversion);
     
-    log(LOG_DEBUG, 0, "%s starting", versionstring);
+    pimd_log(LOG_DEBUG, 0, "%s starting", versionstring);
     
 /* TODO: XXX: use a combination of time and hostid to initialize the random
  * generator.
@@ -394,10 +393,6 @@ main(argc, argv)
     
     if (debug == 0) {
 	/* Detach from the terminal */
-#ifdef TIOCNOTTY
-      int t;
-#endif /* TIOCNOTTY */
-      
 	haveterminal = 0;
 	if (fork())
 	    exit(0);
@@ -407,14 +402,14 @@ main(argc, argv)
 	(void)open("/", 0);
 	(void)dup2(0, 1);
 	(void)dup2(0, 2);
-#if defined(SYSV) || defined(linux)
+#if defined(SYSV) || defined(__USE_SVID)
 	(void)setpgrp();
 #else 
 #ifdef TIOCNOTTY
-	t = open("/dev/tty", 2);
-	if (t >= 0) {
-	    (void)ioctl(t, TIOCNOTTY, (char *)0);
-	    (void)close(t);
+	n = open("/dev/tty", 2);
+	if (n >= 0) {
+	    (void)ioctl(n, TIOCNOTTY, (char *)0);
+	    (void)close(n);
 	}
 #else
 	if (setsid() < 0)
@@ -456,11 +451,11 @@ main(argc, argv)
            struct rp_hold *rph=g_rp_hold;
            while(rph) {
               add_rp_grp_entry(&cand_rp_list, &grp_mask_list,
-                rph->address, 1, 0xffffff, rph->group, rph->mask,
-                curr_bsr_hash_mask, curr_bsr_fragment_tag);
-              rph=rph->next;
+                               rph->address, 1, (u_int16)0xffffff, rph->group, rph->mask,
+                               curr_bsr_hash_mask, curr_bsr_fragment_tag);
+              rph = rph->next;
            }
-           boottime=0;
+           boottime = 0;
          }
     }
 
@@ -501,7 +496,7 @@ main(argc, argv)
 	}
 	if ((n = select(nfds, &rfds, NULL, NULL, timeout)) < 0) {
 	    if (errno != EINTR) /* SIGALRM is expected */
-		log(LOG_WARNING, errno, "select failed");
+		pimd_log(LOG_WARNING, errno, "select failed");
 	    continue;
 	}
 	if (n > 0) {
@@ -555,7 +550,7 @@ main(argc, argv)
 	} while (difftime.tv_sec > 0);
     } /* Main loop */
 
-    log(LOG_NOTICE, 0, "%s exiting", versionstring);
+    pimd_log(LOG_NOTICE, 0, "%s exiting", versionstring);
     cleanup();
     exit(0);
 }
@@ -586,7 +581,7 @@ u_long virtual_time = 0;
  */
 static void 
 timer(i)
-    void *i;
+    void *i __attribute__((unused));
 {
     age_vifs();	        /* Timeout neighbors and groups         */
     age_routes();  	/* Timeout routing entries              */
@@ -663,13 +658,13 @@ handler(sig)
  */
 static void
 restart(i)
-    int i;
+    int i __attribute__((unused));
 {
 #ifdef SNMP
     int s;
 #endif /* SNMP */
     
-    log(LOG_NOTICE, 0, "%s % restart", versionstring);
+    pimd_log(LOG_NOTICE, 0, "%s % restart", versionstring);
     
     /*
      * reset all the entries

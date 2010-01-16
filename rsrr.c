@@ -77,7 +77,7 @@ rsrr_init()
     rsrr_send_buf = malloc(RSRR_MAX_LEN);
 
     if ((rsrr_socket = socket(AF_UNIX, SOCK_DGRAM, 0)) < 0)
-	log(LOG_ERR, errno, "Can't create RSRR socket");
+	pimd_log(LOG_ERR, errno, "Can't create RSRR socket");
 
     unlink(RSRR_SERV_PATH);
     bzero((char *) &serv_addr, sizeof(serv_addr));
@@ -92,10 +92,10 @@ rsrr_init()
 #endif
  
     if (bind(rsrr_socket, (struct sockaddr *) &serv_addr, servlen) < 0)
-	log(LOG_ERR, errno, "Can't bind RSRR socket");
+	pimd_log(LOG_ERR, errno, "Can't bind RSRR socket");
 
     if (register_input_handler(rsrr_socket, rsrr_read) < 0)
-	log(LOG_ERR, 0, "Couldn't register RSRR as an input handler");
+	pimd_log(LOG_ERR, 0, "Couldn't register RSRR as an input handler");
 }
 
 /* Read a message from the RSRR socket */
@@ -112,7 +112,7 @@ rsrr_read(f, rfd)
 			    &client_length);
     if (rsrr_recvlen < 0) {	
 	if (errno != EINTR)
-	    log(LOG_ERR, errno, "RSRR recvfrom");
+	    pimd_log(LOG_ERR, errno, "RSRR recvfrom");
 	return;
     }
     rsrr_accept(rsrr_recvlen);
@@ -130,7 +130,7 @@ rsrr_accept(recvlen)
     struct rsrr_rq *route_query;
     
     if (recvlen < RSRR_HEADER_LEN) {
-	log(LOG_WARNING, 0,
+	pimd_log(LOG_WARNING, 0,
 	    "Received RSRR packet of %d bytes, which is less than min size",
 	    recvlen);
 	return;
@@ -139,7 +139,7 @@ rsrr_accept(recvlen)
     rsrr = (struct rsrr_header *) rsrr_recv_buf;
     
     if (rsrr->version > RSRR_MAX_VERSION) {
-	log(LOG_WARNING, 0,
+	pimd_log(LOG_WARNING, 0,
 	    "Received RSRR packet version %d, which I don't understand",
 	    rsrr->version);
 	return;
@@ -151,13 +151,13 @@ rsrr_accept(recvlen)
 	  case RSRR_INITIAL_QUERY:
 	    /* Send Initial Reply to client */
 	    IF_DEBUG(DEBUG_RSRR)
-		log(LOG_DEBUG, 0, "Received Initial Query\n");
+		pimd_log(LOG_DEBUG, 0, "Received Initial Query\n");
 	    rsrr_accept_iq();
 	    break;
 	  case RSRR_ROUTE_QUERY:
 	    /* Check size */
 	    if (recvlen < RSRR_RQ_LEN) {
-		log(LOG_WARNING, 0,
+		pimd_log(LOG_WARNING, 0,
 		    "Received Route Query of %d bytes, which is too small",
 		    recvlen);
 		break;
@@ -166,7 +166,7 @@ rsrr_accept(recvlen)
 	    route_query =
 		(struct rsrr_rq *) (rsrr_recv_buf + RSRR_HEADER_LEN);
 	    IF_DEBUG(DEBUG_RSRR)
-		log(LOG_DEBUG, 0,
+		pimd_log(LOG_DEBUG, 0,
 		    "Received Route Query for src %s grp %s notification %d",
 		    inet_fmt(route_query->source_addr, s1),
 		    inet_fmt(route_query->dest_addr, s2),
@@ -175,7 +175,7 @@ rsrr_accept(recvlen)
 	    rsrr_accept_rq(route_query, rsrr->flags, (struct gtable *)NULL);
 	    break;
 	  default:
-	    log(LOG_WARNING, 0,
+	    pimd_log(LOG_WARNING, 0,
 		"Received RSRR packet type %d, which I don't handle",
 		rsrr->type);
 	    break;
@@ -183,7 +183,7 @@ rsrr_accept(recvlen)
 	break;
 	
       default:
-	log(LOG_WARNING, 0,
+	pimd_log(LOG_WARNING, 0,
 	    "Received RSRR packet version %d, which I don't understand",
 	    rsrr->version);
 	break;
@@ -211,7 +211,7 @@ rsrr_accept_iq()
      * but we should check anyway.
      */
     if (numvifs > RSRR_MAX_VIFS) {
-	log(LOG_WARNING, 0,
+	pimd_log(LOG_WARNING, 0,
 	    "Can't send RSRR Route Reply because %d is too many vifs %d",
 	    numvifs);
 	return;
@@ -241,7 +241,7 @@ rsrr_accept_iq()
     
     /* Send it. */
     IF_DEBUG(DEBUG_RSRR)
-	log(LOG_DEBUG, 0, "Send RSRR Initial Reply");
+	pimd_log(LOG_DEBUG, 0, "Send RSRR Initial Reply");
     rsrr_send(sendlen);
 }
 
@@ -438,7 +438,7 @@ rsrr_accept_rq(route_query, flags, gt_notify)
 #endif /* pimd - mrouted specific code */
     
     IF_DEBUG(DEBUG_RSRR)
-	log(LOG_DEBUG, 0, "%sSend RSRR Route Reply for src %s dst %s in vif %d out vifs 0x%x\n",
+	pimd_log(LOG_DEBUG, 0, "%sSend RSRR Route Reply for src %s dst %s in vif %d out vifs 0x%x\n",
 	    gt_notify ? "Route Change: " : "",
 	    inet_fmt(route_reply->source_addr,s1),
 	    inet_fmt(route_reply->dest_addr,s2),
@@ -461,9 +461,9 @@ rsrr_send(sendlen)
     
     /* Check for errors. */
     if (error < 0) {
-	log(LOG_WARNING, errno, "Failed send on RSRR socket");
+	pimd_log(LOG_WARNING, errno, "Failed send on RSRR socket");
     } else if (error != sendlen) {
-	log(LOG_WARNING, 0,
+	pimd_log(LOG_WARNING, 0,
 	    "Sent only %d out of %d bytes on RSRR socket\n", error, sendlen);
     }
     return error;
@@ -506,7 +506,7 @@ rsrr_cache(gt, route_query)
 		/* TODO: XXX: No need to update iif, oifs, flags */
 		rc->route_query.query_id = route_query->query_id;
 		IF_DEBUG(DEBUG_RSRR)
-		    log(LOG_DEBUG, 0,
+		    pimd_log(LOG_DEBUG, 0,
 			"Update cached query id %ld from client %s\n",
 			rc->route_query.query_id, rc->client_addr.sun_path);
 	    }
@@ -520,7 +520,7 @@ rsrr_cache(gt, route_query)
      */
     rc = (struct rsrr_cache *) malloc(sizeof(struct rsrr_cache));
     if (rc == NULL)
-	log(LOG_ERR, 0, "ran out of memory");
+	pimd_log(LOG_ERR, 0, "ran out of memory");
     rc->route_query.source_addr = route_query->source_addr;
     rc->route_query.dest_addr = route_query->dest_addr;
     rc->route_query.query_id = route_query->query_id;
@@ -534,7 +534,7 @@ rsrr_cache(gt, route_query)
     gt->gt_rsrr_cache = rc;
 #endif /* PIM */
     IF_DEBUG(DEBUG_RSRR)
-	log(LOG_DEBUG, 0, "Cached query id %ld from client %s\n",
+	pimd_log(LOG_DEBUG, 0, "Cached query id %ld from client %s\n",
 	    rc->route_query.query_id, rc->client_addr.sun_path);
 }
 
@@ -562,7 +562,7 @@ rsrr_cache_send(gt, notify)
     while ((rc = *rcnp) != NULL) {
 	if (rsrr_accept_rq(&rc->route_query, flags, gt) < 0) {
 	    IF_DEBUG(DEBUG_RSRR)
-		log(LOG_DEBUG, 0,
+		pimd_log(LOG_DEBUG, 0,
 		    "Deleting cached query id %ld from client %s\n",
 		    rc->route_query.query_id, rc->client_addr.sun_path);
 	    /* Delete cache entry. */
@@ -631,7 +631,7 @@ rsrr_cache_bring_up(gt)
 		    *rcnp = rc->next;
 		    if (rsrr_accept_rq(&rc->route_query, flags, gt) < 0) {
 			IF_DEBUG(DEBUG_RSRR)
-			    log(LOG_DEBUG, 0,
+			    pimd_log(LOG_DEBUG, 0,
 				"Deleting cached query id %ld from client %s\n",
 				rc->route_query.query_id,
 				rc->client_addr.sun_path);
@@ -679,7 +679,7 @@ rsrr_cache_bring_up(gt)
 		     */
 		    if (rsrr_accept_rq(&rc->route_query, flags, gt) < 0) {
 			IF_DEBUG(DEBUG_RSRR)
-			    log(LOG_DEBUG, 0,
+			    pimd_log(LOG_DEBUG, 0,
 				"Deleting cached query id %ld from client %s\n",
 				rc->route_query.query_id,
 				rc->client_addr.sun_path);
@@ -719,14 +719,14 @@ rsrr_cache_clean(gt)
 
     IF_DEBUG(DEBUG_RSRR) {
 	if (gt->flags & MRTF_SG)
-	    log(LOG_DEBUG, 0, "cleaning cache for source %s and group %s",
+	    pimd_log(LOG_DEBUG, 0, "cleaning cache for source %s and group %s",
 		inet_fmt(gt->source->address, s1),
 		inet_fmt(gt->group->group, s2));
 	else if (gt->flags & MRTF_WC)
-	    log(LOG_DEBUG, 0, "cleaning cache for group %s and ANY sources",
+	    pimd_log(LOG_DEBUG, 0, "cleaning cache for group %s and ANY sources",
 		 inet_fmt(gt->group->group, s1));
 	else if (gt->flags & MRTF_PMBR)
-	    log(LOG_DEBUG, 0,
+	    pimd_log(LOG_DEBUG, 0,
 		"cleaning cache for ALL groups matching to RP %s",
 		inet_fmt(gt->source->address, s1));
     }
@@ -776,7 +776,7 @@ rsrr_cache_clean(gt)
  	while ((rc = *rcnp) != NULL) {
 	    if (rsrr_accept_rq(&rc->route_query, flags, gt_wide) < 0) {
 		IF_DEBUG(DEBUG_RSRR)
-		    log(LOG_DEBUG, 0,
+		    pimd_log(LOG_DEBUG, 0,
 			"Deleting cached query id %ld from client %s\n",
 			rc->route_query.query_id, rc->client_addr.sun_path);
 		/* Delete cache entry. */
@@ -791,7 +791,7 @@ rsrr_cache_clean(gt)
     
 #else
     IF_DEBUG(DEBUG_RSRR) {
-	log(LOG_DEBUG, 0, "cleaning cache for group %s\n",
+	pimd_log(LOG_DEBUG, 0, "cleaning cache for group %s\n",
 	    inet_fmt(gt->gt_mcastgrp, s1));
     rc = gt->gt_rsrr_cache;
     while (rc) {

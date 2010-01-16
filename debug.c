@@ -49,6 +49,7 @@
 #else
 #include <varargs.h>
 #endif
+#include <stdio.h>
 
 extern int haveterminal;
 extern char *progname;
@@ -271,7 +272,7 @@ dump(int i)
  */
 void 
 fdump(i)
-    int i;
+    int i __attribute__((unused));
 {
     FILE *fp;
     fp = fopen(dumpfilename, "w");
@@ -288,7 +289,7 @@ fdump(i)
  */
 void
 cdump(i)
-    int i;
+    int i __attribute__((unused));
 {
     FILE *fp;
     
@@ -368,7 +369,7 @@ dump_vifs(fp)
  */
 #ifdef __STDC__
 void
-log(int severity, int syserr, char *format, ...)
+pimd_log(int severity, int syserr, const char *format, ...)
 {
     va_list ap;
     static char fmt[211] = "warning - ";
@@ -380,9 +381,9 @@ log(int severity, int syserr, char *format, ...)
 #else
 /*VARARGS3*/
 void
-log(severity, syserr, format, va_alist)
+pimd_log(severity, syserr, format, va_alist)
     int severity, syserr;
-    char *format;
+    const char *format;
     va_dcl
 {
     va_list ap;
@@ -411,10 +412,8 @@ log(severity, syserr, format, va_alist)
 		thyme->tm_min, thyme->tm_sec, now.tv_usec / 1000, msg);
 	if (syserr == 0)
 	    fprintf(stderr, "\n");
-	else if (syserr < sys_nerr)
-	    fprintf(stderr, ": %s\n", sys_errlist[syserr]);
-	else
-	    fprintf(stderr, ": errno %d\n", syserr);
+
+        fprintf(stderr, ":(error %d): %s\n", syserr, strerror(syserr));
     }
     
     /*

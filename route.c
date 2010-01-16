@@ -65,7 +65,8 @@ u_int32		default_source_metric     = UCAST_DEFAULT_SOURCE_METRIC;
 u_int32		default_source_preference = UCAST_DEFAULT_SOURCE_PREFERENCE;
 
 
-/* from mrouted */
+#ifdef SCOPED_ACL
+/* from mrouted. Contributed by Marian Stagarescu <marian@bile.cidera.com>*/
 static int
 scoped_addr(vifi, addr)
     vifi_t vifi;       
@@ -81,16 +82,17 @@ scoped_addr(vifi, addr)
     return 0;
 }
 
-/* marian:
+/* Contributed by Marian Stagarescu <marian@bile.cidera.com>
  * adapted from mrouted: check for scoped multicast addresses
- *  install null oif if matched
+ * install null oif if matched
  */
-#define APPLY_SCOPE(g,mp) { \
-        register vifi_t _i; \
-            for (_i = 0; _i < numvifs; _i++) \
-                if (scoped_addr(_i, g)) \
-                    (mp)->oifs = NULL; \
-        } 
+#define APPLY_SCOPE(g,mp) {                  \
+      register vifi_t i;                     \
+      for (i = 0; i < numvifs; i++)          \
+         if (scoped_addr(i, g))              \
+            (mp)->oifs = NULL;               \
+   } 
+#endif  /* SCOPED_ACL */
 
 /* Return the iif for given address */
 vifi_t
@@ -195,7 +197,7 @@ set_incoming(srcentry_ptr, srctype)
 	    rpfc.rpfneighbor.s_addr == INADDR_ANY_N) {
 	    /* couldn't find a route */
 	    IF_DEBUG(DEBUG_PIM_MRT | DEBUG_RPF)
-		log(LOG_DEBUG, 0, "NO ROUTE found for %s",
+		pimd_log(LOG_DEBUG, 0, "NO ROUTE found for %s",
 		    inet_fmt(source, s1));
 	    return(FALSE);
 	}
@@ -222,7 +224,7 @@ set_incoming(srcentry_ptr, srctype)
 	     */
 	    srcentry_ptr->upstream = n;
 	    IF_DEBUG(DEBUG_RPF)
-		log(LOG_DEBUG, 0,
+		pimd_log(LOG_DEBUG, 0,
 		    "For src %s, iif is %d, next hop router is %s",
 		    inet_fmt(source, s1), srcentry_ptr->incoming,
 		    inet_fmt(neighbor_addr, s2));
@@ -232,7 +234,7 @@ set_incoming(srcentry_ptr, srctype)
     }
     
     /* TODO: control the number of messages! */
-    log(LOG_INFO, 0,
+    pimd_log(LOG_INFO, 0,
 	"For src %s, iif is %d, next hop router is %s: NOT A PIM ROUTER",
 	inet_fmt(source, s1), srcentry_ptr->incoming,
 	inet_fmt(neighbor_addr, s2));
@@ -249,7 +251,7 @@ set_incoming(srcentry_ptr, srctype)
 void
 add_leaf(vifi, source, group)
     vifi_t vifi;
-    u_int32 source;
+    u_int32 source __attribute__((unused));
     u_int32 group;
 {
     mrtentry_t *mrtentry_ptr;
@@ -287,7 +289,7 @@ add_leaf(vifi, source, group)
 	return;
     
     IF_DEBUG(DEBUG_MRT)
-	log(LOG_DEBUG, 0, "Adding vif %d for group %s", vifi,
+	pimd_log(LOG_DEBUG, 0, "Adding vif %d for group %s", vifi,
 	    inet_fmt(group, s1));
     
     if (VIFM_ISSET(vifi, mrtentry_ptr->leaves))
@@ -347,7 +349,7 @@ add_leaf(vifi, source, group)
 void
 delete_leaf(vifi, source, group)
     vifi_t vifi;
-    u_int32 source;
+    u_int32 source __attribute__((unused));
     u_int32 group;
 {
     mrtentry_t *mrtentry_ptr;
@@ -792,7 +794,7 @@ change_interfaces(mrtentry_ptr, new_iif, new_joined_oifs_, new_pruned_oifs,
  */
 int
 delete_vif_from_mrt(vifi)
-vifi_t vifi;
+vifi_t vifi __attribute__((unused));
 {
     return TRUE;
 }
@@ -816,7 +818,7 @@ void process_kernel_call()
 	break;
     default:
 	IF_DEBUG(DEBUG_KERN)
-	    log(LOG_DEBUG, 0, "Unknown kernel_call code");
+	    pimd_log(LOG_DEBUG, 0, "Unknown kernel_call code");
 	break;
     }
 }
@@ -847,7 +849,7 @@ process_cache_miss(igmpctl)
     iif    = igmpctl->im_vif;
     
     IF_DEBUG(DEBUG_MFC)
-	log(LOG_DEBUG, 0, "Cache miss, src %s, dst %s, iif %d",
+	pimd_log(LOG_DEBUG, 0, "Cache miss, src %s, dst %s, iif %d",
 	   inet_fmt(source, s1), inet_fmt(group, s2), iif); 
     
     /* TODO: XXX: check whether the kernel generates cache miss for the
@@ -924,7 +926,6 @@ process_cache_miss(igmpctl)
 #endif /* KERNEL_MFC_WC_G */
 	    add_kernel_cache(mrtentry_ptr, mfc_source, group, MFC_MOVE_FORCE);
 #ifdef SCOPED_ACL
-
 	    APPLY_SCOPE(group,mrtentry_ptr);
 #endif
 	    k_chg_mfc(igmp_socket, mfc_source, group, iif, mrtentry_ptr->oifs,

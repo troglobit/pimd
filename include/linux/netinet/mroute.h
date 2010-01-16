@@ -114,7 +114,7 @@ struct sioc_vif_req
  
 struct igmpmsg
 {
-	__u32 unused1,unused2;
+	uint32_t unused1,unused2;
 	unsigned char im_msgtype;		/* What is this */
 	unsigned char im_mbz;			/* Must be zero */
 	unsigned char im_vif;			/* Interface (this ought to be a vifi_t!) */

@@ -495,8 +495,8 @@ age_routes()
 	    /* TODO: can we have Register-Suppression timer for (*,*,RP)?
 	     * Currently no...
 	     */
-	    IF_TIMEOUT(mrtentry_rp->rs_timer)
-		;
+	    IF_TIMEOUT(mrtentry_rp->rs_timer) {}
+
 	    /* routing entry */
 	    if ((TIMEOUT(mrtentry_rp->timer))
 		&& (VIFM_ISEMPTY(mrtentry_rp->leaves))) {
@@ -526,9 +526,9 @@ age_routes()
 		    for (vifi = 0; vifi < numvifs; vifi++) {
 			if (VIFM_ISSET(vifi, mrtentry_grp->joined_oifs))
 			    IF_TIMEOUT(mrtentry_grp->vif_timers[vifi]) {
-			    VIFM_CLR(vifi, mrtentry_grp->joined_oifs);
-			    change_flag = TRUE;
-			}
+                               VIFM_CLR(vifi, mrtentry_grp->joined_oifs);
+                               change_flag = TRUE;
+                            }
 		    }
 		    
 		    if ((change_flag == TRUE) || (update_rp_iif == TRUE)) {
@@ -651,8 +651,7 @@ age_routes()
 		    /* TODO: currently cannot have Register-Suppression
 		     * timer for (*,G) entry, but keep this around.
 		     */
-		    IF_TIMEOUT(mrtentry_grp->rs_timer)
-			;
+		    IF_TIMEOUT(mrtentry_grp->rs_timer) {}
 
 		    /* routing entry */
 		    if ((TIMEOUT(mrtentry_grp->timer))

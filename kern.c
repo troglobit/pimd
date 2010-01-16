@@ -67,10 +67,10 @@ k_init_pim(socket)
     int v = 1;
     
     if (setsockopt(socket, IPPROTO_IP, MRT_INIT, (char *)&v, sizeof(int)) < 0)
-	log(LOG_ERR, errno, "cannot enable multicast routing in kernel");
+	pimd_log(LOG_ERR, errno, "cannot enable multicast routing in kernel");
     
     if (setsockopt(socket, IPPROTO_IP, MRT_PIM, (char *)&v, sizeof(int)) < 0)
-	log(LOG_ERR, errno, "cannot set PIM flag in kernel");
+	pimd_log(LOG_ERR, errno, "cannot set PIM flag in kernel");
 }
 
 
@@ -85,10 +85,10 @@ k_stop_pim(socket)
     int v = 0;
 
     if (setsockopt(socket, IPPROTO_IP, MRT_PIM, (char *)&v, sizeof(int)) < 0)
-	log(LOG_ERR, errno, "cannot reset PIM flag in kernel");
+	pimd_log(LOG_ERR, errno, "cannot reset PIM flag in kernel");
     
     if (setsockopt(socket, IPPROTO_IP, MRT_DONE, (char *)NULL, 0) < 0)
-	log(LOG_ERR, errno, "cannot disable multicast routing in kernel");
+	pimd_log(LOG_ERR, errno, "cannot disable multicast routing in kernel");
 }
 
 
@@ -128,13 +128,13 @@ void k_set_sndbuf(socket, bufsize, minsize)
 	    }
 	}
 	if (bufsize < minsize) {
-	    log(LOG_ERR, 0, "OS-allowed send buffer size %u < app min %u",
+	    pimd_log(LOG_ERR, 0, "OS-allowed send buffer size %u < app min %u",
 		bufsize, minsize);
 	    /*NOTREACHED*/
 	}
     }
     IF_DEBUG(DEBUG_KERN)
-	log(LOG_DEBUG, 0, "Got %d byte send buffer size in %d iterations",
+	pimd_log(LOG_DEBUG, 0, "Got %d byte send buffer size in %d iterations",
 	    bufsize, iter);
 }
 
@@ -175,13 +175,13 @@ void k_set_rcvbuf(socket, bufsize, minsize)
 	    }
 	}
 	if (bufsize < minsize) {
-	    log(LOG_ERR, 0, "OS-allowed recv buffer size %u < app min %u",
+	    pimd_log(LOG_ERR, 0, "OS-allowed recv buffer size %u < app min %u",
 		bufsize, minsize);
 	    /*NOTREACHED*/
 	}
     }
     IF_DEBUG(DEBUG_KERN)
-	log(LOG_DEBUG, 0, "Got %d byte recv buffer size in %d iterations",
+	pimd_log(LOG_DEBUG, 0, "Got %d byte recv buffer size in %d iterations",
 	    bufsize, iter);
 }
 
@@ -201,7 +201,7 @@ void k_hdr_include(socket, bool)
 #ifdef IP_HDRINCL
     if (setsockopt(socket, IPPROTO_IP, IP_HDRINCL,
 		   (char *)&bool, sizeof(bool)) < 0)
-	log(LOG_ERR, errno, "setsockopt IP_HDRINCL %u", bool);
+	pimd_log(LOG_ERR, errno, "setsockopt IP_HDRINCL %u", bool);
 #endif
 }
 
@@ -212,7 +212,7 @@ void k_hdr_include(socket, bool)
  * TODO: Does it affect the unicast packets?
  */
 void k_set_ttl(socket, t)
-    int socket;
+    int socket __attribute__((unused));
     int t;
 {
 #ifdef RAW_OUTPUT_IS_RAW
@@ -223,7 +223,7 @@ void k_set_ttl(socket, t)
     ttl = t;
     if (setsockopt(socket, IPPROTO_IP, IP_MULTICAST_TTL,
 		   (char *)&ttl, sizeof(ttl)) < 0)
-	log(LOG_ERR, errno, "setsockopt IP_MULTICAST_TTL %u", ttl);
+	pimd_log(LOG_ERR, errno, "setsockopt IP_MULTICAST_TTL %u", ttl);
 #endif
 }
 
@@ -240,7 +240,7 @@ void k_set_loop(socket, flag)
     loop = flag;
     if (setsockopt(socket, IPPROTO_IP, IP_MULTICAST_LOOP,
 		   (char *)&loop, sizeof(loop)) < 0)
-	log(LOG_ERR, errno, "setsockopt IP_MULTICAST_LOOP %u", loop);
+	pimd_log(LOG_ERR, errno, "setsockopt IP_MULTICAST_LOOP %u", loop);
 }
 
 
@@ -256,7 +256,7 @@ void k_set_if(socket, ifa)
     adr.s_addr = ifa;
     if (setsockopt(socket, IPPROTO_IP, IP_MULTICAST_IF,
 		   (char *)&adr, sizeof(adr)) < 0)
-	log(LOG_ERR, errno, "setsockopt IP_MULTICAST_IF %s",
+	pimd_log(LOG_ERR, errno, "setsockopt IP_MULTICAST_IF %s",
 	    inet_fmt(ifa, s1));
 }
 
@@ -286,11 +286,11 @@ void k_join(socket, grp, v)
     if (setsockopt(socket, IPPROTO_IP, IP_ADD_MEMBERSHIP,
 		   (char *)&mreq, sizeof(mreq)) < 0) {
 #ifdef Linux
-	log(LOG_WARNING, errno,
+	pimd_log(LOG_WARNING, errno,
 	    "cannot join group %s on interface %s (ifindex %d)",
 	    inet_fmt(grp, s1), inet_fmt(v->uv_lcl_addr, s2), v->uv_ifindex);
 #else
-	log(LOG_WARNING, errno,
+	pimd_log(LOG_WARNING, errno,
 	    "cannot join group %s on interface %s",
 	    inet_fmt(grp, s1), inet_fmt(v->uv_lcl_addr, s2));
 #endif /* Linux */
@@ -323,11 +323,11 @@ void k_leave(socket, grp, v)
     if (setsockopt(socket, IPPROTO_IP, IP_DROP_MEMBERSHIP,
 		   (char *)&mreq, sizeof(mreq)) < 0) {
 #ifdef Linux
-	log(LOG_WARNING, errno,
+	pimd_log(LOG_WARNING, errno,
 	    "cannot leave group %s on interface %s (ifindex %d)",
 	    inet_fmt(grp, s1), inet_fmt(v->uv_lcl_addr, s2), v->uv_ifindex);
 #else
-	log(LOG_WARNING, errno,
+	pimd_log(LOG_WARNING, errno,
 	    "cannot leave group %s on interface %s",
 	    inet_fmt(grp, s1), inet_fmt(v->uv_lcl_addr, s2));
 #endif /* Linux */    
@@ -357,7 +357,7 @@ void k_add_vif(socket, vifi, v)
     
     if (setsockopt(socket, IPPROTO_IP, MRT_ADD_VIF,
 		   (char *)&vc, sizeof(vc)) < 0)
-	log(LOG_ERR, errno, "setsockopt MRT_ADD_VIF on vif %d", vifi);
+	pimd_log(LOG_ERR, errno, "setsockopt MRT_ADD_VIF on vif %d", vifi);
 }
 
 
@@ -370,7 +370,7 @@ void k_del_vif(socket, vifi)
 {
     if (setsockopt(socket, IPPROTO_IP, MRT_DEL_VIF,
 		   (char *)&vifi, sizeof(vifi)) < 0)
-	log(LOG_ERR, errno, "setsockopt MRT_DEL_VIF on vif %d", vifi);
+	pimd_log(LOG_ERR, errno, "setsockopt MRT_DEL_VIF on vif %d", vifi);
 }
 
 
@@ -390,12 +390,12 @@ k_del_mfc(socket, source, group)
 	
     if (setsockopt(socket, IPPROTO_IP, MRT_DEL_MFC, (char *)&mc,
 		   sizeof(mc)) < 0) {
-	log(LOG_WARNING, errno, "setsockopt k_del_mfc");
+	pimd_log(LOG_WARNING, errno, "setsockopt k_del_mfc");
 	return FALSE;
     }
 	
     IF_DEBUG(DEBUG_MFC)
-	log(LOG_DEBUG, 0, "Deleted MFC entry: src %s, grp %s",
+	pimd_log(LOG_DEBUG, 0, "Deleted MFC entry: src %s, grp %s",
 	    inet_fmt(mc.mfcc_origin.s_addr, s1),
 	    inet_fmt(mc.mfcc_mcastgrp.s_addr, s2));
 
@@ -413,7 +413,7 @@ k_chg_mfc(socket, source, group, iif, oifs, rp_addr)
     u_int32 group;
     vifi_t iif;
     vifbitmap_t oifs;
-    u_int32 rp_addr;
+    u_int32 rp_addr __attribute__((unused));
 {
     struct mfcctl mc;
     vifi_t vifi;
@@ -443,7 +443,7 @@ k_chg_mfc(socket, source, group, iif, oifs, rp_addr)
 #endif
     if (setsockopt(socket, IPPROTO_IP, MRT_ADD_MFC, (char *)&mc,
                    sizeof(mc)) < 0) {
-        log(LOG_WARNING, errno,
+        pimd_log(LOG_WARNING, errno,
 	    "setsockopt MRT_ADD_MFC for source %s and group %s",
 	    inet_fmt(source, s1), inet_fmt(group, s2));
         return(FALSE);
@@ -466,7 +466,7 @@ int k_get_vif_count(vifi, retval)
     
     vreq.vifi = vifi;
     if (ioctl(udp_socket, SIOCGETVIFCNT, (char *)&vreq) < 0) {
-	log(LOG_WARNING, errno, "SIOCGETVIFCNT on vif %d", vifi);
+	pimd_log(LOG_WARNING, errno, "SIOCGETVIFCNT on vif %d", vifi);
 	retval->icount = retval->ocount = retval->ibytes =
 	    retval->obytes = 0xffffffff;
 	return (1);
@@ -500,7 +500,7 @@ k_get_sg_cnt(socket, source, group, retval)
 	 * the return code is always 0, so this is why we need to check
 	 * the wrong_if value.
 	 */
-	log(LOG_WARNING, errno, "SIOCGETSGCNT on (%s %s)",
+	pimd_log(LOG_WARNING, errno, "SIOCGETSGCNT on (%s %s)",
 	    inet_fmt(source, s1), inet_fmt(group, s2));
 	retval->pktcnt = retval->bytecnt = retval->wrong_if = ~0;
 	return(1);

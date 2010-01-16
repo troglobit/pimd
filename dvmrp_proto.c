@@ -41,11 +41,11 @@
  */
 void
 dvmrp_accept_probe(src, dst, p, datalen, level)
-    u_int32 src;
-    u_int32 dst;
-    u_char *p;
-    int datalen;
-    u_int32 level;
+    u_int32 src __attribute__((unused));
+    u_int32 dst __attribute__((unused));
+    u_char *p __attribute__((unused));
+    int datalen __attribute__((unused));
+    u_int32 level __attribute__((unused));
 {
     return;
 }
@@ -57,11 +57,11 @@ dvmrp_accept_probe(src, dst, p, datalen, level)
  */
 void
 dvmrp_accept_report(src, dst, p, datalen, level)
-    u_int32 src;
-    u_int32 dst; 
-    u_char *p;
-    int datalen;
-    u_int32 level;
+    u_int32 src __attribute__((unused));
+    u_int32 dst __attribute__((unused));
+    u_char *p __attribute__((unused));
+    int datalen __attribute__((unused));
+    u_int32 level __attribute__((unused));
 {
     return;
 }
@@ -70,10 +70,10 @@ dvmrp_accept_report(src, dst, p, datalen, level)
 /* TODO */
 void
 dvmrp_accept_info_request(src, dst, p, datalen)
-    u_int32 src;
-    u_int32 dst;
-    u_char *p;
-    int datalen;
+    u_int32 src __attribute__((unused));
+    u_int32 dst __attribute__((unused));
+    u_char *p __attribute__((unused));
+    int datalen __attribute__((unused));
 {
     return;
 }
@@ -86,11 +86,11 @@ void
 dvmrp_accept_info_reply(src, dst, p, datalen)
     u_int32 src;
     u_int32 dst;
-    u_char *p;
-    int datalen;
+    u_char *p __attribute__((unused));
+    int datalen __attribute__((unused));
 {
     IF_DEBUG(DEBUG_PKT)
-	log(LOG_DEBUG, 0, "ignoring spurious DVMRP info reply from %s to %s",
+	pimd_log(LOG_DEBUG, 0, "ignoring spurious DVMRP info reply from %s to %s",
 	    inet_fmt(src, s1), inet_fmt(dst, s2));
 }
 
@@ -102,11 +102,11 @@ void
 dvmrp_accept_neighbors(src, dst, p, datalen, level)
     u_int32 src;
     u_int32 dst;
-    u_char *p;
-    int datalen;
-    u_int32 level;
+    u_char *p __attribute__((unused));
+    int datalen __attribute__((unused));
+    u_int32 level __attribute__((unused));
 {
-    log(LOG_INFO, 0, "ignoring spurious DVMRP neighbor list from %s to %s",
+    pimd_log(LOG_INFO, 0, "ignoring spurious DVMRP neighbor list from %s to %s",
         inet_fmt(src, s1), inet_fmt(dst, s2));
 }
 
@@ -118,12 +118,12 @@ void
 dvmrp_accept_neighbors2(src, dst, p, datalen, level)
     u_int32 src;
     u_int32 dst;
-    u_char *p;
-    int datalen;
-    u_int32 level;
+    u_char *p __attribute__((unused));
+    int datalen __attribute__((unused));
+    u_int32 level __attribute__((unused));
 {
     IF_DEBUG(DEBUG_PKT)
-	log(LOG_DEBUG, 0,
+	pimd_log(LOG_DEBUG, 0,
 	    "ignoring spurious DVMRP neighbor list2 from %s to %s",
 	    inet_fmt(src, s1), inet_fmt(dst, s2));
 }
@@ -142,10 +142,10 @@ dvmrp_accept_neighbors2(src, dst, p, datalen, level)
  */
 void
 dvmrp_accept_prune(src, dst, p, datalen)
-    u_int32 src;
-    u_int32 dst;
-    u_char *p;
-    int datalen;
+    u_int32 src __attribute__((unused));
+    u_int32 dst __attribute__((unused));
+    u_char *p __attribute__((unused));
+    int datalen __attribute__((unused));
 {
     return;
 }
@@ -166,10 +166,10 @@ dvmrp_accept_prune(src, dst, p, datalen)
  */
 void
 dvmrp_accept_graft(src, dst, p, datalen)
-    u_int32     src;
-    u_int32     dst;
-    u_char        *p;
-    int         datalen;
+    u_int32     src __attribute__((unused));
+    u_int32     dst __attribute__((unused));
+    u_char     *p __attribute__((unused));
+    int         datalen __attribute__((unused));
 {
     return;
 }
@@ -186,10 +186,10 @@ dvmrp_accept_graft(src, dst, p, datalen)
  */
 void
 dvmrp_accept_g_ack(src, dst, p, datalen)
-    u_int32     src;
-    u_int32     dst;
-    u_char        *p;
-    int         datalen;
+    u_int32     src __attribute__((unused));
+    u_int32     dst __attribute__((unused));
+    u_char     *p __attribute__((unused));
+    int         datalen __attribute__((unused));
 {
     return;
 }

@@ -429,7 +429,7 @@ extern char	*packet_kind		__P((u_int proto, u_int type,
 					     u_int code));
 extern int	debug_kind		__P((u_int proto, u_int type,
 					     u_int code));
-extern void	log			__P((int, int, char *, ...));
+extern void	pimd_log			__P((int, int, const char *, ...));
 extern int	log_level		__P((u_int proto, u_int type,
 					     u_int code));
 extern void	dump			__P((int i));
@@ -549,16 +549,16 @@ extern void	send_pim_unicast	__P((char *buf, u_int32 src,
 
 /* pim_proto.c */
 extern int	receive_pim_hello	__P((u_int32 src, u_int32 dst,
-					     char *pim_message, int datalen));
+					     char *pim_message, size_t datalen));
 extern int	send_pim_hello		__P((struct uvif *v,
 					     u_int16 holdtime));
 extern void	delete_pim_nbr		__P((pim_nbr_entry_t *nbr_delete));
 extern int	receive_pim_register	__P((u_int32 src, u_int32 dst,
-					     char *pim_message, int datalen));
+					     char *pim_message, size_t datalen));
 extern int	send_pim_null_register	__P((mrtentry_t *r));
 extern int	receive_pim_register_stop __P((u_int32 src, u_int32 dst,
 					       char *pim_message,
-					       int datalen));
+					       size_t datalen));
 extern int	send_pim_register	__P((char *pkt));
 extern int	receive_pim_join_prune	__P((u_int32 src, u_int32 dst,
 					     char *pim_message, int datalen));

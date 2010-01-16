@@ -65,7 +65,7 @@ accept_mtrace(src, dst, group, data, no, datalen)
     struct tr_resp  *resp;
     int vifi;
     char *p;
-    int rcount;
+    u_int rcount;
     int errcode = TR_NO_ERR;
     int resptype;
     struct timeval tp;
@@ -88,22 +88,22 @@ accept_mtrace(src, dst, group, data, no, datalen)
     if (datalen == QLEN) {
 	type = QUERY;
 	IF_DEBUG(DEBUG_TRACE)
-	    log(LOG_DEBUG, 0, "Initial traceroute query rcvd from %s to %s",
+	    pimd_log(LOG_DEBUG, 0, "Initial traceroute query rcvd from %s to %s",
 		inet_fmt(src, s1), inet_fmt(dst, s2));
     }
     else if ((datalen - QLEN) % RLEN == 0) {
 	type = RESP;
 	IF_DEBUG(DEBUG_TRACE)
-	    log(LOG_DEBUG, 0, "In-transit traceroute query rcvd from %s to %s",
+	    pimd_log(LOG_DEBUG, 0, "In-transit traceroute query rcvd from %s to %s",
 		inet_fmt(src, s1), inet_fmt(dst, s2));
 	if (IN_MULTICAST(ntohl(dst))) {
 	    IF_DEBUG(DEBUG_TRACE)
-		log(LOG_DEBUG, 0, "Dropping multicast response");
+		pimd_log(LOG_DEBUG, 0, "Dropping multicast response");
 	    return;
 	}
     }
     else {
-	log(LOG_WARNING, 0, "%s from %s to %s",
+	pimd_log(LOG_WARNING, 0, "%s from %s to %s",
 	    "Non decipherable traceroute request recieved",
 	    inet_fmt(src, s1), inet_fmt(dst, s2));
 	return;
@@ -116,16 +116,16 @@ accept_mtrace(src, dst, group, data, no, datalen)
      */
     if ((rcount = (datalen - QLEN)/RLEN) == no) {
 	IF_DEBUG(DEBUG_TRACE)
-	    log(LOG_DEBUG, 0, "packet with all reports filled in");
+	    pimd_log(LOG_DEBUG, 0, "packet with all reports filled in");
 	return;
     }
 
     IF_DEBUG(DEBUG_TRACE) {
-	log(LOG_DEBUG, 0, "s: %s g: %s d: %s ", inet_fmt(qry->tr_src, s1),
+	pimd_log(LOG_DEBUG, 0, "s: %s g: %s d: %s ", inet_fmt(qry->tr_src, s1),
 	    inet_fmt(group, s2), inet_fmt(qry->tr_dst, s3));
-	log(LOG_DEBUG, 0, "rttl: %d rd: %s", qry->tr_rttl,
+	pimd_log(LOG_DEBUG, 0, "rttl: %d rd: %s", qry->tr_rttl,
 	    inet_fmt(qry->tr_raddr, s1));
-	log(LOG_DEBUG, 0, "rcount:%d, qid:%06x", rcount, qry->tr_qid);
+	pimd_log(LOG_DEBUG, 0, "rcount:%d, qid:%06x", rcount, qry->tr_qid);
     }
 
     /* determine the routing table entry for this traceroute */
@@ -137,14 +137,14 @@ accept_mtrace(src, dst, group, data, no, datalen)
 		parent_address = mrt->upstream->address;
 	    else
 		parent_address = INADDR_ANY;
-	    log(LOG_DEBUG, 0, "mrt parent vif: %d rtr: %s metric: %d",
+	    pimd_log(LOG_DEBUG, 0, "mrt parent vif: %d rtr: %s metric: %d",
 		mrt->incoming, inet_fmt(parent_address, s1), mrt->metric);
 /* TODO
-   log(LOG_DEBUG, 0, "mrt origin %s",
+   pimd_log(LOG_DEBUG, 0, "mrt origin %s",
    RT_FMT(rt, s1));
    */
 	} else {
-	    log(LOG_DEBUG, 0, "...no route");
+	    pimd_log(LOG_DEBUG, 0, "...no route");
 	}
     }
     
@@ -166,13 +166,13 @@ accept_mtrace(src, dst, group, data, no, datalen)
 	     * it is not fatal.
 	     */
 	    IF_DEBUG(DEBUG_TRACE)
-		log(LOG_DEBUG, 0, "ignoring duplicate traceroute packet");
+		pimd_log(LOG_DEBUG, 0, "ignoring duplicate traceroute packet");
 	    return;
 	}
 
 	if (mrt == (mrtentry_t *)NULL) {
 	    IF_DEBUG(DEBUG_TRACE)
-		log(LOG_DEBUG, 0, "Mcast traceroute: no route entry %s",
+		pimd_log(LOG_DEBUG, 0, "Mcast traceroute: no route entry %s",
 		    inet_fmt(qry->tr_src, s1));
 	    if (IN_MULTICAST(ntohl(dst)))
 		return;
@@ -182,14 +182,14 @@ accept_mtrace(src, dst, group, data, no, datalen)
 	if (vifi == NO_VIF) {
 	    /* The traceroute destination is not on one of my subnet vifs. */
 	    IF_DEBUG(DEBUG_TRACE)
-		log(LOG_DEBUG, 0, "Destination %s not an interface",
+		pimd_log(LOG_DEBUG, 0, "Destination %s not an interface",
 		    inet_fmt(qry->tr_dst, s1));
 	    if (IN_MULTICAST(ntohl(dst)))
 		return;
 	    errcode = TR_WRONG_IF;
 	} else if (mrt != (mrtentry_t *)NULL && !VIFM_ISSET(vifi, mrt->oifs)) {
 	    IF_DEBUG(DEBUG_TRACE)
-		log(LOG_DEBUG, 0,
+		pimd_log(LOG_DEBUG, 0,
 		    "Destination %s not on forwarding tree for src %s",
 		    inet_fmt(qry->tr_dst, s1), inet_fmt(qry->tr_src, s2));
 	    if (IN_MULTICAST(ntohl(dst)))
@@ -205,7 +205,7 @@ accept_mtrace(src, dst, group, data, no, datalen)
 	 */
 	if ((vifi = find_vif_direct(src)) == NO_VIF) {
 	    IF_DEBUG(DEBUG_TRACE)
-		log(LOG_DEBUG, 0, "Wrong interface for packet");
+		pimd_log(LOG_DEBUG, 0, "Wrong interface for packet");
 	    errcode = TR_WRONG_IF;
 	}
     }   
@@ -214,7 +214,7 @@ accept_mtrace(src, dst, group, data, no, datalen)
     oqid = qry->tr_qid;
 
     IF_DEBUG(DEBUG_TRACE)
-	log(LOG_DEBUG, 0, "Sending traceroute response");
+	pimd_log(LOG_DEBUG, 0, "Sending traceroute response");
     
     /* copy the packet to the sending buffer */
     p = igmp_send_buf + MIN_IP_HEADER_LEN + IGMP_MINLEN;
@@ -333,7 +333,7 @@ accept_mtrace(src, dst, group, data, no, datalen)
 	resp->tr_rmtaddr = parent_address;
 	if (!VIFM_ISSET(vifi, mrt->oifs)) {
 	    IF_DEBUG(DEBUG_TRACE)
-		log(LOG_DEBUG, 0, "Destination %s not on forwarding tree for src %s",
+		pimd_log(LOG_DEBUG, 0, "Destination %s not on forwarding tree for src %s",
 		    inet_fmt(qry->tr_dst, s1), inet_fmt(qry->tr_src, s2));
 	    resp->tr_rflags = TR_WRONG_IF;
 	}
@@ -353,7 +353,7 @@ sendit:
      * mtrace, set an error code and send to requestor anyway.
      */
     IF_DEBUG(DEBUG_TRACE)
-	log(LOG_DEBUG, 0, "rcount:%d, no:%d", rcount, no);
+	pimd_log(LOG_DEBUG, 0, "rcount:%d, no:%d", rcount, no);
 
     if ((rcount + 1 == no) || (mrt == NULL) || (mrt->metric == 1)) {
 	resptype = IGMP_MTRACE_RESP;
@@ -383,7 +383,7 @@ sendit:
 	 */
 	if (phys_vif != -1) {
 	    IF_DEBUG(DEBUG_TRACE)
-		log(LOG_DEBUG, 0, "Sending reply to %s from %s",
+		pimd_log(LOG_DEBUG, 0, "Sending reply to %s from %s",
 		    inet_fmt(dst, s1),
 		    inet_fmt(uvifs[phys_vif].uv_lcl_addr, s2));
 	    k_set_ttl(igmp_socket, qry->tr_rttl);
@@ -391,11 +391,11 @@ sendit:
 		      resptype, no, group, datalen);
 	    k_set_ttl(igmp_socket, 1);
 	} else
-	    log(LOG_INFO, 0, "No enabled phyints -- %s",
+	    pimd_log(LOG_INFO, 0, "No enabled phyints -- %s",
 		"dropping traceroute reply");
     } else {
 	IF_DEBUG(DEBUG_TRACE)
-	    log(LOG_DEBUG, 0, "Sending %s to %s from %s",
+	    pimd_log(LOG_DEBUG, 0, "Sending %s to %s from %s",
 		resptype == IGMP_MTRACE_RESP ?  "reply" : "request on",
 		inet_fmt(dst, s1), inet_fmt(src, s2));
 	
@@ -412,7 +412,7 @@ sendit:
 void
 accept_neighbor_request(src, dst)
     u_int32 src;
-    u_int32 dst;
+    u_int32 dst __attribute__((unused));
 {
     vifi_t vifi;
     struct uvif *v;
@@ -480,7 +480,7 @@ accept_neighbor_request(src, dst)
 void
 accept_neighbor_request2(src, dst)
     u_int32 src;
-    u_int32 dst;
+    u_int32 dst __attribute__((unused));
 {
     vifi_t vifi;
     struct uvif *v;
