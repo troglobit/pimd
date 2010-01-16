@@ -16,16 +16,16 @@
 #include <features.h>
 
 #if (defined(__GLIBC__) && (defined(__GLIBC_MINOR__)))
-#if (__GLIBC__ == 2) && (__GLIBC_MINOR__ == 0)
-#include "in-glibc-2.0.h"
-#elif (__GLIBC__ == 2) && (__GLIBC_MINOR__ == 1)
-#include "in-glibc-2.1.h"
+# if (__GLIBC__ == 2) && (__GLIBC_MINOR__ == 0)
+#  include "in-glibc-2.0.h"
+# elif (__GLIBC__ == 2) && (__GLIBC_MINOR__ == 1)
+#  include "in-glibc-2.1.h"
+# else
+#  include <stdint.h>
+#  include <netinet/in.h>
+# endif /* __GLIBC__ */
 #else
-#include <linux/types.h>
-#include <arpa/inet.h>
-#endif /* __GLIBC__ */
-#else
-#include <linux/types.h>
-#include <arpa/inet.h>
+# include <linux/types.h>
+# include <arpa/inet.h>
 #endif
 
