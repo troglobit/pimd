@@ -1,0 +1,47 @@
+  $Id: README.debug,v 1.4 2002/11/17 20:01:31 pavlin Exp $
+
+This is README.debug for pimd, the PIM multicast daemon.
+PIM-SM version: 2
+Check http://netweb.usc.edu/pim/pimd/ for lastest pimd version.
+
+This file contains some hints how to debug your multicast routing.
+XXX: currently, it is very incomplete. If something is missing and/or
+     is unclear, send email to the current maintainer of pimd
+     (see file README for email address).
+
+
+1. Linux
+
+1.1 Before you start the multicast routing daemon
+ - Check the list of multicast capable interfaces:
+	cat /proc/net/dev_mcast
+
+Start the multicast routing daemon in debug mode (e.g., pimd -d all)
+
+1.2 After you start the multicast routing daemon
+ - Are the multicast vifs correctly installed in the kernel:
+	cat /proc/net/ip_mr_vif
+
+ - Is multicast forwarding enabled on those vifs:
+	cat /proc/sys/net/ipv4/conf/eth0/mc_forwarding
+
+    for each of the enabled interfaces. If it returns zero, the multicast
+    forwarding on that interface is not working.
+
+ - Is the PIM multicast routing daemon exchanging PIM_HELLO
+   messages with its neighbors?
+   (Look into the debug messages output; if necessary, use tcpdump as well).
+
+ - Are the Bootpstrap messages received by all PIM-SM daemons?
+
+ - If a Bootstrap message is received, is it accepted, or is it
+   rejected because of a wrong iif?
+ - After a while, does the Cand-RP set contain the set of RPs?
+
+ - After the first multicast packets are received, is there CACHE_MISS
+   signal from the kernel to the user-level daemon?
+
+ - After the CACHE_MISS signal, are the MFC (Multicast Forwarding Cache)
+   entries installed in the kernel?
+	cat /proc/net/ip_mr_cache
+

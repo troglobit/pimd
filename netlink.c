@@ -1,0 +1,219 @@
+/*
+ * Fred Griffoul <griffoul@ccrle.nec.de> sent me this file to use
+ * it when compiling pimd under Linux.
+ * There was no copyright message or author name, so I assume he was the
+ * author, and deserves the copyright/credit for it: 
+ *
+ * COPYRIGHT/AUTHORSHIP by Fred Griffoul <griffoul@ccrle.nec.de>
+ * (until proven otherwise).
+ */
+/*
+ * $Id: netlink.c,v 1.8 2003/02/18 18:46:54 pavlin Exp $
+ */
+
+#ifdef Linux
+
+#include <sys/param.h>
+#include <sys/file.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <stdlib.h>
+#include <strings.h>
+#include <paths.h>
+#include "defs.h"
+
+#include <linux/rtnetlink.h>
+
+int routing_socket = -1;
+static pid_t pid;
+static __u32 seq;
+
+static int getmsg(struct rtmsg *rtm, int msglen, struct rpfctl *rpf);
+
+
+static int
+addattr32(struct nlmsghdr *n, int maxlen, int type, __u32 data)
+{
+    int len = RTA_LENGTH(4);
+    struct rtattr *rta;
+    if (NLMSG_ALIGN(n->nlmsg_len) + len > maxlen)
+	return -1;
+    rta = (struct rtattr *) (((char *) n) + NLMSG_ALIGN(n->nlmsg_len));
+    rta->rta_type = type;
+    rta->rta_len = len;
+    memcpy(RTA_DATA(rta), &data, 4);
+    n->nlmsg_len = NLMSG_ALIGN(n->nlmsg_len) + len;
+    return 0;
+}
+
+static int
+parse_rtattr(struct rtattr *tb[], int max, struct rtattr *rta, int len)
+{
+    while (RTA_OK(rta, len)) {
+	if (rta->rta_type <= max)
+	    tb[rta->rta_type] = rta;
+	rta = RTA_NEXT(rta, len);
+    }
+    if (len)
+	log(LOG_WARNING, 0, "NETLINK: Deficit in rtattr %d\n", len);
+    return 0;
+}
+
+/* open and initialize the routing socket */
+int
+init_routesock(void)
+{
+    int addr_len;
+    struct sockaddr_nl local;
+
+    routing_socket = socket(PF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
+    if (routing_socket < 0) {
+	log(LOG_ERR, errno, "netlink socket");
+	return -1;
+    }
+    memset(&local, 0, sizeof(local));
+    local.nl_family = AF_NETLINK;
+    local.nl_groups = 0;
+    
+    if (bind(routing_socket, (struct sockaddr *) &local, sizeof(local)) < 0) {
+	log(LOG_ERR, errno, "netlink bind");
+	return -1;
+    }
+    addr_len = sizeof(local);
+    if (getsockname(routing_socket, (struct sockaddr *) &local, &addr_len) < 0) {
+	log(LOG_ERR, errno, "netlink getsockname");
+	return -1;
+    }
+    if (addr_len != sizeof(local)) {
+	log(LOG_ERR, 0, "netlink wrong addr len");
+	return -1;
+    }
+    if (local.nl_family != AF_NETLINK) {
+	log(LOG_ERR, 0, "netlink wrong addr family");
+	return -1;
+    }
+    pid = local.nl_pid;
+    seq = time(NULL);
+    return 0;
+}
+
+/* get the rpf neighbor info */
+int
+k_req_incoming(u_int32 source, struct rpfctl *rpf)
+{
+    int rlen;
+    register int l;
+    char buf[512];
+    struct nlmsghdr *n = (struct nlmsghdr *) buf;
+    struct rtmsg *r = NLMSG_DATA(n);
+    struct sockaddr_nl addr;
+    
+    rpf->source.s_addr = source;
+    rpf->iif = ALL_VIFS;
+    rpf->rpfneighbor.s_addr = 0;
+    
+    n->nlmsg_type = RTM_GETROUTE;
+    n->nlmsg_flags = NLM_F_REQUEST;
+    n->nlmsg_len = NLMSG_LENGTH(sizeof(*r));
+    n->nlmsg_pid = pid;
+    n->nlmsg_seq = ++seq;
+    
+    memset(r, 0, sizeof(*r));
+    r->rtm_family = AF_INET;
+    r->rtm_dst_len = 32;
+    addattr32(n, sizeof(buf), RTA_DST, rpf->source.s_addr);
+#ifdef CONFIG_RTNL_OLD_IFINFO
+    r->rtm_optlen = n->nlmsg_len - NLMSG_LENGTH(sizeof(*r));
+#endif
+    addr.nl_family = AF_NETLINK;
+    addr.nl_groups = 0;
+    addr.nl_pid = 0;
+    
+    /* tracef(TRF_NETLINK, "NETLINK: ask path to %s", inet_fmt(rpf->source.s_addr, s1)); */
+    log(LOG_DEBUG, 0, "NETLINK: ask path to %s",
+	inet_fmt(rpf->source.s_addr, s1));
+    
+    if ((rlen = sendto(routing_socket, buf, n->nlmsg_len, 0, (struct sockaddr *) &addr, sizeof(addr))) < 0) {
+	log(LOG_WARNING, errno, "Error writing to routing socket");
+	return FALSE;
+    }
+    do {
+	int alen = sizeof(addr);
+	l = recvfrom(routing_socket, buf, sizeof(buf), 0, (struct sockaddr *) &addr, &alen);
+	if (l < 0) {
+	    if (errno == EINTR)
+		continue;
+	    log(LOG_WARNING, errno, "Error writing to routing socket");
+	    return FALSE;
+	}
+    } while (n->nlmsg_seq != seq || n->nlmsg_pid != pid);
+    
+    if (n->nlmsg_type != RTM_NEWROUTE) {
+	if (n->nlmsg_type != NLMSG_ERROR) {
+	    log(LOG_WARNING, 0, "netlink: wrong answer type %d",
+		n->nlmsg_type);
+	} else {
+	    log(LOG_WARNING, -(*(int*)NLMSG_DATA(n)), "netlink get_route");
+	}
+	return FALSE;
+    }
+    return getmsg(NLMSG_DATA(n), l - sizeof(*n), rpf);
+}
+
+static int
+getmsg(struct rtmsg *rtm, int msglen, struct rpfctl *rpf)
+{
+    vifi_t vifi;
+    struct uvif *v;
+    struct rtattr *rta[RTA_MAX + 1];
+    
+    if (rtm->rtm_type == RTN_LOCAL) {
+	/* tracef(TRF_NETLINK, "NETLINK: local address"); */
+	log(LOG_DEBUG, 0, "NETLINK: local address");
+	if ((rpf->iif = local_address(rpf->source.s_addr)) != MAXVIFS) {
+	    rpf->rpfneighbor.s_addr = rpf->source.s_addr;
+	    return TRUE;
+	}
+	return FALSE;
+    }
+    
+    rpf->rpfneighbor.s_addr = 0;
+    if (rtm->rtm_type != RTN_UNICAST) {
+	/* tracef(TRF_NETLINK, "NETLINK: route type is %d", rtm->rtm_type); */
+	log(LOG_DEBUG, 0, "NETLINK: route type is %d", rtm->rtm_type);
+	return FALSE;
+    }
+    
+    memset(rta, 0, sizeof(rta));
+    
+    parse_rtattr(rta, RTA_MAX, RTM_RTA(rtm), msglen - sizeof(*rtm));
+    
+    if (rta[RTA_OIF]) {
+	int ifindex = *(int *) RTA_DATA(rta[RTA_OIF]);
+	
+	for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
+	    if (v->uv_ifindex == ifindex)
+		break;
+	}
+	if (vifi >= numvifs) {
+	    log(LOG_WARNING, 0, "NETLINK: ifindex=%d, but no vif", ifindex);
+	    return FALSE;
+	}
+	/* tracef(TRF_NETLINK, "NETLINK: vif %d, ifindex=%d", vifi, ifindex);*/
+	log(LOG_DEBUG, 0, "NETLINK: vif %d, ifindex=%d", vifi, ifindex);
+    } else {
+	log(LOG_WARNING, 0, "NETLINK: no interface");
+	return FALSE;
+    }
+    if (rta[RTA_GATEWAY]) {
+	__u32 gw = *(__u32 *) RTA_DATA(rta[RTA_GATEWAY]);
+	/* tracef(TRF_NETLINK, "NETLINK: gateway is %s", inet_fmt(gw, s1)); */
+	log(LOG_DEBUG, 0, "NETLINK: gateway is %s", inet_fmt(gw, s1));
+	rpf->rpfneighbor.s_addr = gw;
+    } else
+	rpf->rpfneighbor.s_addr = rpf->source.s_addr;
+    rpf->iif = vifi;
+    return TRUE;
+}
+
+#endif /* Linux */

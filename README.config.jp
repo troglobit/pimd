@@ -1,0 +1,132 @@
+===============================================================
+  $Id: README.config.jp,v 1.3 2002/06/13 17:39:19 pavlin Exp $
+
+この文書は pimd の README.config.jp です. pimd は PIM-SM バージョン 2 の
+マルチチャストデーモンです. 最新版は http://netweb.usc.edu/pim/pimd/ で
+確認してください.
+
+このファイルは pimd の設定について記述しています.
+英語版は README.config になります.
+
+XXX: 現状では, このファイルはまだ不完全です. もしなにかしら抜けているところや
+     よく分からないところがありましたら, 作者にメールをください.
+     (メールアドレスは README ファイルを参照してください).
+
+1. マルチキャストルーティングを行うための GRE トンネルの設定
+(小松弘幸さん <komatsu@taiyaki.org> の情報を元にしています).
+
+Linux (Debian) の場合, 以下のように試してみてください:
+(初めて GRE インタフェースを設定する場合, "ip link set gre1 down" と
+ "ip tunnel del gre1" の後にエラーが出ますが, 無視して下さい).
+
+1.1 二つのマシン間での GRE トンネル (ホストは 11.11.11.11 と 33.33.33.33)
+
+実際のインタフェース:   [11.11.11.11]         [33.33.33.33]
+GRE トンネル:            22.22.22.11<--------->22.22.22.33
+
+==== ホスト 11.11.11.11 (GRE インタフェース 22.22.22.11)
+echo 1 > /proc/sys/net/ipv4/ip_forward
+echo 0 > /proc/sys/net/ipv4/conf/all/rp_filter
+ip link set gre1 down
+ip tunnel del gre1
+ip tunnel add gre1 mode gre remote 33.33.33.33 local 11.11.11.11 ttl 127
+ip addr add 22.22.22.11/24 peer 22.22.22.33/24 dev gre1
+ip link set gre1 up multicast on
+
+
+==== ホスト 33.33.33.33 (GRE インタフェース 22.22.22.33)
+echo 1 > /proc/sys/net/ipv4/ip_forward
+echo 0 > /proc/sys/net/ipv4/conf/all/rp_filter
+ip link set gre1 down
+ip tunnel del gre1
+ip tunnel add gre1 mode gre remote 11.11.11.11 local 33.33.33.33 ttl 127
+ip addr add 22.22.22.33/24 peer 22.22.22.11/24 dev gre1
+ip link set gre1 up multicast on
+
+
+
+1.2 三つのマシン間での GRE トンネル
+
+= 重要 ===============================================================
+二つ以上の GRE トンネルを数珠繋ぎにしようすると, 非常にユニキャスト
+ルーティングのループを発生させてしまいやすくなります. これはマルチキャスト
+ルーティングのループもまた引き起こしてしまいます. マルチキャストルーティングの
+ループはネットワーク全体をダウンさせてしまう可能性があるほどの障害です.
+以下の設定を試してみる前に, 「自分が何をしているのか」および「その結果
+何が起こるのか」をよく理解してください.
+この文書を読んでいるということは, まだ完全には理解されていないという
+ことかもしれません. もう一度振り返って考えてみてください.
+======================================================================
+
+STOP!!!STOP!!!STOP!!!STOP!!!STOP!!!STOP!!!STOP!!!STOP!!!STOP!!!STOP!!!
+IF YOU ADD MORE THAN TWO GRE TUNNELS IN A CHAIN, IT IS VERY EASY TO CREATE
+UNICAST ROUTING LOOPS, AND THIS MAY LEAD TO MULTICAST ROUTING LOOPS.
+MULTICAST ROUTING LOOP IS A DISASTER THAT MAY BRING YOUR WHOLE NETWORK DOWN.
+BEFORE ATTEMPTING THIS CONFIGURATION, MAKE SURE YOU UNDERSTAND VERY WELL
+WHAT YOU ARE DOING, AND WHAT MAY HAPPEN.
+IF YOU ARE READING THIS, THE CHANCES ARE THAT YOU DON'T KNOW, SO THINK AGAIN!!
+
+THINK!!!THINK!!!THINK!!!THINK!!!THINK!!!THINK!!!THINK!!!THINK!!!THINK!!!
+
+
+実際のインタフェース: [11.11.11.11]    [33.33.33.33]    [55.55.55.55]
+GRE トンネル:          22.22.22.11 <--> 22.22.22.33
+                                        44.44.44.33 <--> 44.44.44.55
+
+==== ホスト 33.33.33.33 (GRE インタフェース 22.22.22.33 and 44.44.44.33)
+echo 1 > /proc/sys/net/ipv4/ip_forward
+echo 0 > /proc/sys/net/ipv4/conf/all/rp_filter
+ip tunnel add gre1 mode gre remote 11.11.11.11 local 33.33.33.33 ttl 127
+ip addr add 22.22.22.33/24 peer 22.22.22.11/24 dev gre1
+ip link set gre1 up multicast on
+ip tunnel add gre2 mode gre remote 55.55.55.55 local 33.33.33.33 ttl 127
+ip addr add 44.44.44.33/24 peer 44.44.44.55/24 dev gre2
+ip link set gre2 up multicast on
+
+==== ホスト 55.55.55.55 (GRE インタフェース 44.44.44.55)
+echo 1 > /proc/sys/net/ipv4/ip_forward
+echo 0 > /proc/sys/net/ipv4/conf/all/rp_filter
+ip tunnel add gre1 mode gre remote 33.33.33.33 local 55.55.55.55 ttl 127
+ip addr add 44.44.44.55/24 peer 44.44.44.33/24 dev gre1
+ip link set gre1 up multicast on
+route add -net 22.22.22.0 netmask 255.255.255.0 gw 44.44.44.33 gre1
+
+==== ホスト 11.11.11.11 (GRE インタフェース 22.22.22.11)
+echo 1 > /proc/sys/net/ipv4/ip_forward
+echo 0 > /proc/sys/net/ipv4/conf/all/rp_filter
+ip tunnel add gre1 mode gre remote 33.33.33.33 local 11.11.11.11 ttl 127
+ip addr add 22.22.22.11/24 peer 22.22.22.33/24 dev gre1
+ip link set gre1 up multicast on
+route add -net 44.44.44.0 netmask 255.255.255.0 gw 22.22.22.33 gre1
+
+
+2. pimd の設定
+
+使用可能なすべてのオプションの一覧は pimd.conf を参照してください.
+
+2.1. pimd が Cand-RP にならないようにするには?
+
+     "cand_rp" と "group_prefix" の行をコメントアウトしてください.
+
+2.2. pimd が Cand-BSR にならないようにするには?
+
+     "cand_bootstrap_router" の行をコメントアウトしてください.
+
+2.3. 自分のマルチキャストルータを経由するマルチキャストアドレスの
+     あるプリフィックスを遮るには?
+
+     例えば, プリフィックス 238.0.0.0/8 と 239.0.0.0/8 をスコープしたいなら,
+     pimd.conf に以下の行を追加してください:
+
+	phyint eth1 scoped 238.0.0.0 masklen 8
+	phyint eth1 scoped 239.0.0.0 masklen 8
+
+2.4. スコープ範囲を作成して, 自分のネットワーク境界を越えて伝播される
+     マルチキャストプリフィックスのパケットを止めるには?
+
+     スコープしたい個々のプリフィックスに対する自分の境界ルータに
+     スコーピングフィルタを加えてください. 例えば:
+
+	phyint eth1 scoped 239.0.0.0 masklen 8
+
+

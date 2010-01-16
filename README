@@ -1,0 +1,283 @@
+  $Id: README,v 1.40 2003/03/05 19:55:36 pavlin Exp $
+
+WARNING! WARNING! WARNING!
+THIS RELEASE IS VERY ALPHA, SO PLEASE DO NOT REDISTRIBUTE AND
+DO NOT TRY IT OUTSIDE OF YOUR TESTBED.
+
+This is README for pimd, the PIM multicast daemon.
+PIM-SM version: 2
+Check http://netweb.usc.edu/pim/pimd/ for lastest pimd version.
+
+NOTE:
+If you have any questions, suggestions, bug reports, etc.,
+do NOT send them to the PIM IETF Working Group mailing list!
+Instead, send them to the current maintainer:
+
+Pavlin Ivanov Radoslavov
+pavlin@catarina.usc.edu
+
+
+SUPPORTED PLATFORMS: FreeBSD, NetBSD, OpenBSD, Linux
+
+(Note that I have only FreeBSD on my testbed, and I relay
+exclusively on users feedbacks to make it working on other platforms).
+
+AVAILABLE PIM KERNEL PATCHES: FreeBSD, NetBSD, OpenBSD
+Check http://netweb.usc.edu/pim/pimd/pimkern-current/
+or http://netweb.usc.edu/pim/pimd/pimkern-tmp/
+for available kernel patches
+
+WARNING WARNING WARNING:
+XXX: this pimd release is unofficial, and by default will not work with the
+*BSD patches in the pimkern-current directory; use the pimkern-tmp
+patches instead or recompile pimd with PIM_OLD_KERNEL defined
+(see the beginning of Makefile).
+
+Linux users: linux-2.1.103 and later has PIM-SMv2 kernel support, but if
+your kernel is older than version 2.2.11 and 2.3.6, you need a kernel
+patch-fix. Check the following file for details:
+http//netweb.usc.edu/pim/pimd/pimkern-current/README.checksum 
+
+
+Existing old PIM kernel patches:
+	SunOS-4.1.3, SGI, BSDI-3.0, BSDI-3.1
+
+
+PLATFORMS NOT SUPPORTED ANYMORE:
+  - SGI: pimd may still be OK, but the available PIM-kernel patches
+         may be obsolete
+  - SunOS-4.1.3: pimd may still be OK, but the available PIM-kernel patches
+         may be obsolete
+  - Solaris-2.5.1 and 2.6: most of the pimd code was developed on
+    Solaris-2.5.1, but the used kernel patches were Sun internal property,
+    and were never released to the public.
+  - BSDI: pimd may still be OK, but the available PIM-kernel patches
+          may be obsolete
+
+Mini-FAQ:
+  - Q: My RP is a Cisco router, but it doesn't work with pimd
+    A1: If your Cisco is running PIM-SMv1, it won't work with pimd
+	which implements only PIM-SMv2. You need to upgrade/configure
+	your Cisco to run PIM-SMv2
+    A2: If your Cisco is indeed running PIM-SMv2, and it is the RP,
+	you need to recompile pimd with BROKEN_CISCO_CHECKSUM defined
+	(see the beginning of Makefile). Note that then the PIM Register
+	messages may not be accepted by some other vendors (pimd-to-pimd
+	should still be OK).
+
+  - Q: I have added in the past PIM patches to my *BSD kernel, but
+	recent pimd versions (pimd-2.1.0-alpha29 and later) do not work
+	with that kernel.
+    A: Around the time pimd-2.1.0-alpha29 was created, the kernel PIM API
+	was changed. Unfortunately, the result was non-compatibility.
+	Either update your kernel to use the most recent API, or recompile
+	pimd with PIM_OLD_KERNEL defined (see the beginning of Makefile)
+
+  - Q: I have Solaris 8, but my kernel crashes when I start pimd
+    A: There is a bug in the Solaris 8 kernel. I guess there is a patch
+	that fixes it, but I don't know its location.
+
+  - Q: Do I need to re-configure my Linux kernel to run pimd?
+  - A: Very likely, yes, because some of the options below are not
+	enabled by default. Make sure that you have:
+	* enable CONFIG_IP_MULTICAST
+	* enable CONFIG_IP_PIMSM_V2
+	* enable CONFIG_IP_MROUTE
+	* You _may_ enable CONFIG_IP_PIMSM_V1 as well, but I don't think it is
+	  required if you are running only PIM-SMv2
+	* enable the NETLINK-related options
+        * Make sure that those options are set to "y" to include the relevant
+          code in the kernel; if you enable them as modules, then you may
+          have to load that module after you boot with the new kernel.
+          One way to find-out if multicast routing is not working, is
+          to use command `cat /proc/sys/net/ipv4/conf/eth0/mc_forwarding'
+          after you have started pimd (you may use other interface name
+          instead of eth0). If it returns zero, the multicast forwarding
+          on that interface is not working.
+  - Q: I tried to run pimd on Linux, but I get the following error message:
+	"netlink socket: Address family not supported by protocol"
+  - A: You need to enable the NETLINK-related stuff in the kernel
+	and recompile it.
+
+  - Q: pimd compiled and is running on a single machines, but when I
+	run it on 2+ machines, the multicast packets do not reach the
+	receivers.
+  - A: Without detailed debug information I cannot answer this question.
+	Please send to the pimd maintainer a scheme of your network,
+        and the debug output from each router (pimd -d all)
+
+   - Q: How do I debug my multicast routing?
+   - A: Check README.debug for some hints.
+
+   - Q: How do I use pimd with GRE tunnels?
+   - A: See file README.config
+
+   - Q: How do I run pimd but without configuring it as a Cand-RP and/or
+        a Cand-BSR?
+   - A: See file README.config
+
+   - Q: How do I configure pimd to do FOO?
+   - A: See file README.config. If the answer is not there, send
+        email to the current pimd maintainer.
+
+
+FAST START (read "fast explanation" :))
+
+1. Apply the PIM kernel patches, recompile, reboot
+
+2. Copy pimd.conf to /etc and edit as appropriate. Disable the interfaces
+you don't need. Note that you need at least 2 physical interfaces enabled.
+
+3. Edit Makefile by uncommenting the line(s) corresponding to your platform.
+
+4. Recompile pimd
+
+5. Run pimd as a root. It is highly recommended to run it in debug mode.
+Because there are many debug messages, you can specify only a subset of
+the messages to be printed out:
+
+usage: pimd [-c configfile] [-d [debug_level][,debug_level]]
+
+Valid debug levels: dvmrp_prunes,dvmrp_mrt,dvmrp_neighbors,dvmrp_timers,igmp_proto,igmp_timers,igmp_members,trace,timeout,pkt,interfaces,kernel,cache,rsrr,pim_hello,pim_register,pim_join_prune,pim_bootstrap,pim_asserts,pim_cand_rp,pim_routes,pim_timers,pim_rpf
+
+If you want to see all messages, use "pimd -d all" only.
+
+6. Note that it takes of the order of 30 seconds to 1 minute until the
+Bootstrap router is elected and the RP-set distributed to the PIM routers,
+and without the RP-set in the routers the multicast packets cannot be
+forwarded.
+
+7. There are plenty of bugs, some of them known (check BUGS.TODO),
+some of them unknown, so your bug reports are more than welcome.
+
+
+ACKNOWLEDGEMENTS (apology if I have missed your name):
+
+ * The PIM kernel modifications and pimd itself were originally
+   written by Ahmed Helmy (ahelmy@catarina.usc.edu) as a summer intern in SGI.
+
+ * The "up to the March '97 I-D spec" + RSVP support pimd version was done
+   by Pavlin Radoslavov during his summer'97 intern in Sun Microsystems
+   under Michael Speer's supervision.
+
+ * BSDI 3.0/3.1 support + various improvements and bug reports
+   by Hitoshi Asaeda (asaeda@yamato.ibm.co.jp).
+
+ * Bug reports and SGI tests by Nidhi Bhaskar (nidhi@cho-oyu.engr.sgi.com).
+
+ * Bug reports and SunOS tests by Isabelle Girard (girardi@rc.bel.alcatel.be)
+   and Dirk Ooms (oomsd@rc.bel.alcatel.be)
+
+ * NetBSD-1.3 compilation support (both for pimd and the kernel mods) and
+   bug reports by Heiko W.Rupp <hwr@pilhuhn.de>
+
+ * Bug reports by Chirayu Shah (shahzad@torrentnet.com)
+
+ * A number of changes copied back from pimdd (PIM-DM) stand-alone
+   implementation by Kurt Windisch (kurtw@antc.uoregon.edu)
+
+ * Linux patches by "Jonathan Day" <jd9812@my-dejanews.com> and
+   Fred Griffoul <griffoul@ccrle.nec.de>
+
+ * Bug reports and Linux tests by Kaifu Wu <kaifu@3com.com>
+
+ * Linux kernel internals help by Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+
+ * Bug reports by Fred Griffoul <griffoul@ccrle.nec.de>
+
+ * Bug reports and fixes for Linux by
+   "Venning, Roger" <Roger.Venning@corpmail.telstra.com.au>
+
+ * Various patches and bug fixes by 
+   JINMEI Tatuya <jinmei@isl.rdc.toshiba.co.jp>
+
+ * Solaris 8 fixes by "Eric S. Johnson" <esj@cs.fiu.edu>
+
+ * Bug reports by Azzurra Pantella <s198804@studenti.ing.unipi.it> and
+   Nicola Dicosmo from University of Pisa.
+
+ * Bug reports and fixes by Sri V <vallepal@yahoo.com>
+
+ * Bug reports, fixes and new features (ALTNET, SCOPED traffic)
+   by Marian Stagarescu <marian@bile.cidera.com>
+   and Ashok Rao <rao@cidera.com> 
+
+ * Bug reports by Philip Ho <cbho@ie.cuhk.edu.hk>
+
+ * Bug reports by <mistkhan@indiatimes.com>
+
+ * GRE configuration examples, bug fixes, 
+   and code contribution by Hiroyuki Komatsu <komatsu@taiyaki.org>
+
+ * Bug report and fix by Xiaofeng Liu <liu_xiao_feng@yahoo.com>
+
+ * Bug reports and fixes by SAKAI Hiroaki <sakai.hiroaki@finet.fujitsu.com>
+
+ * Bug reports and fixes by "Jiahao Wang" <jiahaow@yahoo.com.cn> and
+   "Bo Cheng" <bobobocheng@hotmail.com>)
+
+ * Bug report by Andrea Gambirasio <andrea.gambirasio@softsolutions.it>
+ 
+ * Bug reports by "J.W. (Bill) Atwood" <bill@cs.concordia.ca>
+
+ * Bug report by "Eva Pless" <eva.pless@imk.fraunhofer.de>
+
+ * Bug reports and fixes by SUZUKI Shinsuke <suz@crl.hitachi.co.jp>
+
+ * Bug report by Serdar Uezuemcue <serdar@eikon.tum.de>
+
+ * All alpha testers who were brave enough to try it and then sent me
+   feedbacks (apology for not keeping the list).
+
+ * Thanks to the FreeBSD team and particularly to the
+   freebsd-hackers mailing list participants for the help
+   with the real-time debugging of the FreeBSD kernel.
+
+
+========================================
+MISC NOTES:
+
+IMPLEMENTATION NOTE FOR "SCOPED traffic"
+(from Marian Stagarescu <marian@bile.cidera.com>):
+
+   In order to minimize the search for the matching groups
+   the implementation is limited to (and requires adequate testing):
+
+
+   packets are stopped from being forwarded by installing a NULL outgoing
+   interface: the user space (pimd) is not up-call-ed any more for 
+   these packets which are dropped by kernel (nil oif) except for
+   when we de-install the route are re-create it (timer 3 minute).
+  
+   this translates into adding :
+   
+   pim/route.c
+
+   process_cache_miss():
+
+   add_kernel_cache(mrtentry_ptr, mfc_source, group, MFC_MOVE_FORCE);
+  
+#ifdef SCOPED_ACL
+   
+        APPLY_SCOPE(group,mrtentry_ptr);
+#endif
+    k_chg_mfc(igmp_socket, mfc_source, group, iif, mrtentry_ptr->oifs,rp_addr);
+
+   where:
+
+   #define APPLY_SCOPE(g,mp) { \
+        register vifi_t _i; \
+            for (_i = 0; _i < numvifs; _i++) \
+                if (scoped_addr(_i, g)) \
+                    (mp)->oifs = NULL; \
+        }
+
+   with scoped_addr (as in mrouted) uses the VIF acl that was installed
+   via config scoped statements.
+   file changed: config.c 
+                 route.c 
+
+   NOTE: not sure if the above filter needs to be installed 
+         when we have the case of "the iif doesn't match"
+
+========================================
