@@ -15,11 +15,12 @@
 #             * Original Makefile
 #
 
+VERSION       ?= 2.1.0   # $(shell git tag -l | tail -1)
+EXEC           = pimd
+PKG            = $(EXEC)-$(VERSION)
+
 ROOTDIR        = `pwd`
 CC             = $(CROSS)gcc
-EXEC           = pimd
-VERSION       ?= 1.1.0   # $(shell git tag -l | tail -1)
-
 IGMP_OBJS      = igmp.o igmp_proto.o trace.o
 ROUTER_OBJS    = inet.o kern.o main.o config.o debug.o netlink.o routesock.o \
 		 vers.o callout.o
@@ -129,7 +130,10 @@ install: $(EXEC)
 	#echo "Don't forget to check/edit /etc/pimd.conf!!!"
 
 clean: $(SNMPCLEAN)
-	-@rm -f $(OBJS) core $(EXEC) tags TAGS *.o *.map .*.d
+	-$(Q)$(RM) $(OBJS) $(EXEC)
+
+distclean:
+	-$(Q)$(RM) $(OBJS) core $(EXEC) vers.c tags TAGS *.o *.map .*.d
 
 lint:
 	@lint $(LINTFLAGS) $(SRCS)
@@ -162,6 +166,11 @@ snmpclean:
 	@for dir in snmpd snmplib; do \
 		make -C $$dir clean;  \
 	done
+
+dist:
+	@echo "Building bzip2 tarball of $(PKG) in parent dir..."
+	@git archive --format=tar --prefix=$(PKG)/ $(VERSION) | bzip2 >../$(PKG).tar.bz2
+	@(cd ..; md5sum $(PKG).tar.bz2)
 
 ifneq ($(MAKECMDGOALS),clean)
 -include $(DEPS)
