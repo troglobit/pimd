@@ -15,10 +15,11 @@
 #             * Original Makefile
 #
 
-VERSION       ?= 2.1.0   # $(shell git tag -l | tail -1)
+# $(shell git tag -l | tail -1)
+VERSION       ?= 2.1.0
 EXEC           = pimd
 PKG            = $(EXEC)-$(VERSION)
-
+ARCHIVE        = $(PKG).tar.bz2
 ROOTDIR        = `pwd`
 CC             = $(CROSS)gcc
 IGMP_OBJS      = igmp.o igmp_proto.o trace.o
@@ -169,8 +170,8 @@ snmpclean:
 
 dist:
 	@echo "Building bzip2 tarball of $(PKG) in parent dir..."
-	@git archive --format=tar --prefix=$(PKG)/ $(VERSION) | bzip2 >../$(PKG).tar.bz2
-	@(cd ..; md5sum $(PKG).tar.bz2)
+	git archive --format=tar --prefix=$(PKG)/ $(VERSION) | bzip2 >../$(ARCHIVE)
+	@(cd ..; md5sum $(ARCHIVE))
 
 ifneq ($(MAKECMDGOALS),clean)
 -include $(DEPS)
