@@ -335,8 +335,8 @@ wordToOption(word)
 	return PHYINT;
     if (EQUAL(word, "cand_rp"))
 	return CANDIDATE_RP;
-	if (EQUAL(word, "rp_address"))
-		return RP_ADDRESS;
+    if (EQUAL(word, "rp_address"))
+       return RP_ADDRESS;
     if (EQUAL(word, "group_prefix"))
 	return GROUP_PREFIX;
     if (EQUAL(word, "cand_bootstrap_router"))
@@ -355,6 +355,7 @@ wordToOption(word)
 	return MASKLEN;
     if  (EQUAL(word, "scoped"))
 	return SCOPED;
+
     return UNKNOWN;
 }
 
@@ -821,6 +822,7 @@ parse_rp_address(s)
 	g_rp_hold=rph;
 
 	pimd_log(LOG_INFO, 0, "Assigned RP address %s", inet_fmt(local, s1));
+
 	return(TRUE);
 }
 
@@ -1128,9 +1130,9 @@ config_vifs_from_file()
 	case CANDIDATE_RP:
 	    parse_candidateRP(s);
 	    break;
-		case RP_ADDRESS:
-			parse_rp_address(s);
-			break;
+        case RP_ADDRESS:
+            parse_rp_address(s);
+            break;
 	case GROUP_PREFIX:
 	    parse_group_prefix(s);
 	    break;
@@ -1151,7 +1153,7 @@ config_vifs_from_file()
 	    break;
 	default:
 	    pimd_log(LOG_WARNING, 0, "unknown command '%s' in %s:%d",
-		w, configfilename, line_num);
+                     w, configfilename, line_num);
 	    error_flag = TRUE;
 	}
     }
