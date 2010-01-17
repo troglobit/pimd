@@ -68,7 +68,7 @@ config_vifs_from_kernel()
     int n;
     u_int32 addr, mask, subnet;
     short flags;
-    int num_ifreq = 32;
+    int num_ifreq = 64;
     struct ifconf ifc;
     char *newbuf;
 
@@ -793,8 +793,22 @@ parseBSR(s)
     return(TRUE);
 }
 
-/* This is my hack to put a statically assignable RP address in
- * Modified by pjf@asn.pl to allow specifying multicast groups */
+/**
+ * parse_rp_address - Parse rp_address config option.
+ * @s: String token.
+ *
+ * This is an extension to the original pimd to add pimd.conf support for static
+ * Rendez-Vous Point addresses.
+ *
+ * The function has been extended by pjf@asn.pl, of Lintrack, to allow specifying
+ * multicast group addresses as well.
+ *
+ * Format:
+ * rp_address <rp-address>
+ *
+ * Returns:
+ * When parsing @s is successful this function returns %TRUE, otherwise %FALSE.
+ */
 int parse_rp_address(char *s)
 {
     char *w;
@@ -854,7 +868,7 @@ int parse_rp_address(char *s)
 
     pimd_log(LOG_INFO, 0, "Added static RP: %s, group %s/%d", inet_fmt(local, s1), inet_fmt(group_addr, s2), masklen);
 
-    return(TRUE);
+    return TRUE;
 }
 
 

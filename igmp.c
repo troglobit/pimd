@@ -345,7 +345,7 @@ send_igmp(buf, src, dst, type, code, group, datalen)
     sdst.sin_addr.s_addr = dst;
     if (sendto(igmp_socket, igmp_send_buf, sendlen, 0,
 	       (struct sockaddr *)&sdst, sizeof(sdst)) < 0) {
-	if (errno == ENETDOWN)
+	if (errno == ENETDOWN || errno == ENODEV)
 	    check_vif_state();
 	else
 	    pimd_log(log_level(IPPROTO_IGMP, type, code), errno,

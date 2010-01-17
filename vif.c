@@ -505,9 +505,19 @@ check_vif_state()
 	
 	strncpy(ifr.ifr_name, v->uv_name, IFNAMSIZ);
 	/* get the interface flags */
-	if (ioctl(udp_socket, SIOCGIFFLAGS, (char *)&ifr) < 0)
-	    pimd_log(LOG_ERR, errno,
-		"check_vif_state: ioctl SIOCGIFFLAGS for %s", ifr.ifr_name);
+	if (ioctl(udp_socket, SIOCGIFFLAGS, (char *)&ifr) < 0) {
+           if (errno == ENODEV) {
+              pimd_log(LOG_NOTICE, 0, "%s has gone; vif #%u taken out of service",
+                       v->uv_name, vifi);
+              stop_vif(vifi);
+              vifs_down = TRUE;
+              continue;
+           }
+           else {
+              pimd_log(LOG_ERR, errno,
+                       "check_vif_state: ioctl SIOCGIFFLAGS for %s", ifr.ifr_name);
+           }
+	}
 
 	if (v->uv_flags & VIFF_DOWN) {
 	    if (ifr.ifr_flags & IFF_UP) {

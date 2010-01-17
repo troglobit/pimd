@@ -255,9 +255,12 @@ void k_set_if(socket, ifa)
 
     adr.s_addr = ifa;
     if (setsockopt(socket, IPPROTO_IP, IP_MULTICAST_IF,
-		   (char *)&adr, sizeof(adr)) < 0)
-	pimd_log(LOG_ERR, errno, "setsockopt IP_MULTICAST_IF %s",
-	    inet_fmt(ifa, s1));
+		   (char *)&adr, sizeof(adr)) < 0) {
+       if (errno == EADDRNOTAVAIL || errno == EINVAL)
+	    return;
+       pimd_log(LOG_ERR, errno, "setsockopt IP_MULTICAST_IF %s",
+		inet_fmt(ifa, s1));
+    }
 }
 
 
@@ -369,8 +372,11 @@ void k_del_vif(socket, vifi)
     vifi_t vifi;
 {
     if (setsockopt(socket, IPPROTO_IP, MRT_DEL_VIF,
-		   (char *)&vifi, sizeof(vifi)) < 0)
+		   (char *)&vifi, sizeof(vifi)) < 0) {
+	if (errno == EADDRNOTAVAIL || errno == EINVAL)
+	    return;
 	pimd_log(LOG_ERR, errno, "setsockopt MRT_DEL_VIF on vif %d", vifi);
+    }
 }
 
 
