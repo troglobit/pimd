@@ -12,12 +12,12 @@ ifndef KBUILD_VERBOSE
 endif
 ifeq ($(KBUILD_VERBOSE),1)
 Q            =
-MXFLAGS      =
+MFLAGS       =
 LIBTOOLFLAGS = 
 REDIRECT     =
 else
 Q            = @
-MXFLAGS      = --no-print-directory
+MFLAGS       = --no-print-directory
 LIBTOOLFLAGS = --silent
 REDIRECT     = >/dev/null
 endif
@@ -41,35 +41,21 @@ export Q MXFLAGS REDIRECT
 
 ##
 # Override default implicit rules
-%.tex: %.c
-ifdef Q
-	@printf "  GDOC    $(subst $(ROOTDIR)/,,$(shell pwd))/$@\n"
-endif
-	$(Q)doc2 -latex $< > $@
-
-%.o: %.y
-ifdef Q
-	@printf "  YACC    $(subst $(ROOTDIR)/,,$(shell pwd))/$@\n"
-endif
-	$(Q)$(YACC) $(YFLAGS) $< 
-	$(Q)$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ y.tab.c
-	$(Q)$(RM) y.tab.c
-
 %.o: %.c
 ifdef Q
-	@printf "  CC      $(subst $(ROOTDIR)/,,$(shell pwd))/$@\n"
+	@printf "  CC      $(subst $(ROOTDIR),,$(shell pwd))/$@\n"
 endif
 	$(Q)$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
 
 %: %.o
 ifdef Q
-	@printf "  LINK    $(subst $(ROOTDIR)/,,$(shell pwd))/$@\n"
+	@printf "  LINK    $(subst $(ROOTDIR),,$(shell pwd))/$@\n"
 endif
 	$(Q)$(CC) $(CFLAGS) $(LDFLAGS) -Wl,-Map,$@.map -o $@ $^ $(LDLIBS$(LDLIBS-$(@)))
 
 (%.o): %.c
 ifdef Q
-	@printf "  AR      $(subst $(ROOTDIR)/,,$(shell pwd))/$(notdir $@)($%)\n"
+	@printf "  AR      $(subst $(ROOTDIR),,$(shell pwd))/$(notdir $@)($%)\n"
 endif
 	$(Q)$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $*.o
 	$(Q)$(AR) $(ARFLAGS) $@ $*.o

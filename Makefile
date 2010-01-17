@@ -20,7 +20,7 @@ VERSION       ?= 2.1.0
 EXEC           = pimd
 PKG            = $(EXEC)-$(VERSION)
 ARCHIVE        = $(PKG).tar.bz2
-ROOTDIR        = `pwd`
+ROOTDIR       ?= $(dir $(shell pwd))
 CC             = $(CROSS)gcc
 IGMP_OBJS      = igmp.o igmp_proto.o trace.o
 ROUTER_OBJS    = inet.o kern.o main.o config.o debug.o netlink.o routesock.o \
@@ -36,8 +36,8 @@ OBJS           = $(IGMP_OBJS) $(ROUTER_OBJS) $(PIM_OBJS) $(DVMRP_OBJS) \
 SRCS           = $(OBJS:.o=.c)
 DEPS           = $(addprefix .,$(SRCS:.c=.d))
 DISTFILES      = README README.config README.config.jp README.debug \
-		 CHANGES $(SRCS) $(HDRS) LICENSE LICENSE.mrouted \
-		 Makefile pimd.conf BUGS.TODO include
+		 CHANGES INSTALL $(SRCS) $(HDRS) LICENSE LICENSE.mrouted \
+		 Makefile pimd.conf TODO CREDITS FAQ AUTHORS include
 
 include rules.mk
 include Makefile.inc
@@ -109,7 +109,7 @@ all: $(EXEC)
 
 $(EXEC): $(OBJS) $(CMULIBS)
 ifdef Q
-	@printf "  LINK    $(subst $(ROOTDIR)/,,$(shell pwd))/$@\n"
+	@printf "  LINK    $(subst $(ROOTDIR),,$(shell pwd))/$@\n"
 endif
 	$(Q)$(CC) $(CFLAGS) $(LDFLAGS) -Wl,-Map,$@.map -o $@ $^ $(LDLIBS$(LDLIBS-$(@)))
 
