@@ -1,11 +1,22 @@
   $Id: CHANGES,v 1.110 2003/03/21 01:54:32 pavlin Exp $
 
- * Version 2.1.0, Sat Jan 16, 15:08:44 CET 2010
- CHANGES:
-  - Integrated the latest Debian patches from pimd_2.1.0-alpha29.17-9.diff.gz
-  - Fixed the new file include/linux/netinet/in-my.h (Debian) so that the
-    #else fallback uses the system netinet/in.h, which seems to work now.
-  - Bumped version number, this code has been available for a while now.
+ * Version 2.1.1, Sun Jan 17 15:14:17 CET 2010
+  - Merged all patches from Lintrack.org:
+    o 001-debian-6.diff
+      Already merged, no-op - only documenting in case anyone wonders about it.
+    o 002-better-rp_address.diff
+      Support multicast group address in static Rendez-Vous Point .conf option.
+    o 003-ltfixes.diff
+      Various bug fixes and error handling improvements.
+    o 004-disableall.diff
+      Add -N option to pimd.
+    o 005-vifenable.diff
+      Add enable keyword to phyint .conf option.
+    o 006-dot19.diff
+      The lost alpha29.18 and alpha29.19 fixes by Pavlin.
+
+  - Bumping version again to celebrate the changes and make it easier for
+    distributions to handle the upgrade.
 
  * Version 2.1.0-alpha29.19, Fri Jan 14 17:24:28 PST 2005
  CHANGES:
@@ -25,6 +36,13 @@
   - Define BYTE_ORDER (if missing).
   - Update include/netinet/pim.h file with its lastest version
   - Update the copyright message of include/netinet/pim_var.h
+
+ * Version 2.1.0, Sat Jan 16, 15:08:44 CET 2010
+ CHANGES:
+  - Integrated the latest Debian patches from pimd_2.1.0-alpha29.17-9.diff.gz
+  - Fixed the new file include/linux/netinet/in-my.h (Debian) so that the
+    #else fallback uses the system netinet/in.h, which seems to work now.
+  - Bumped version number, this code has been available for a while now.
 
  * Version 2.1.0-alpha29.17, Thu Mar 20 17:50:01 PST 2003
  CHANGES:
