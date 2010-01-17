@@ -28,7 +28,7 @@
  * SUCH DAMAGE.
  */
 /*
- *  $Id: pim_proto.c,v 1.46 2002/07/08 17:24:06 pavlin Exp $
+ *  $Id: pim_proto.c,v 1.47 2003/05/28 22:57:16 pavlin Exp $
  */
 
 
@@ -512,7 +512,7 @@ receive_pim_register(reg_src, reg_dst, pim_message, datalen)
     ip = (struct ip *)(register_p + 1);
     
     /* check the IP version (especially for the NULL register...see above) */
-    if (ip->ip_v != IPVERSION) {
+    if (ip->ip_v != IPVERSION && (! nullRegisterBit)) {
 	IF_DEBUG(DEBUG_PIM_REGISTER)
 	    pimd_log(LOG_INFO, 0,
 		"PIM register: incorrect IP version (%d) of the inner"

@@ -7,6 +7,25 @@
     #else fallback uses the system netinet/in.h, which seems to work now.
   - Bumped version number, this code has been available for a while now.
 
+ * Version 2.1.0-alpha29.19, Fri Jan 14 17:24:28 PST 2005
+ CHANGES:
+  - pimd is officially RETIRED!
+    Add a note to README, and add a new file PIMD_IS_RETIRED.
+
+ BUG FIX:
+  - Don't ignore PIM Null Register messages if the IP version of the
+    inner header is not valid.
+  - Add a missing bracket inside rsrr.c (a bug report and a fix
+    by <seyon@oullim.co.kr>)
+
+ * Version 2.1.0-alpha29.18, Wed May 21 03:25:36 PDT 2003
+ CHANGES:
+  - Compilation fix for Solaris 8 (though, no guarantee pimd still works
+    on that platform).
+  - Define BYTE_ORDER (if missing).
+  - Update include/netinet/pim.h file with its lastest version
+  - Update the copyright message of include/netinet/pim_var.h
+
  * Version 2.1.0-alpha29.17, Thu Mar 20 17:50:01 PST 2003
  CHANGES:
   - The mrouted license (LICENSE.mrouted) updated with BSD-like

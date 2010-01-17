@@ -6,9 +6,15 @@ XXX: currently, it is very incomplete. If something is missing and/or
      is unclear, send email to the current maintainer of pimd.
      (see file AUTHORS for email address).
 
-1. Linux
+1. All systems
+ - Make sure that the TTL of the sender is large enough to reach the
+   receiver. E.g., if the sender and the receiver are separated by a
+   two routers in the middle, the TTL of the data packets transmitted
+   by the sender must be at least 3.
 
-1.1 Before you start the multicast routing daemon
+2. Linux
+
+2.1 Before you start the multicast routing daemon
  - Check the kernel config, the following settings should be activated:
     * CONFIG_IP_MROUTE=y
     * CONFIG_IP_PIMSM_V1=y
@@ -17,9 +23,9 @@ XXX: currently, it is very incomplete. If something is missing and/or
  - Check the list of multicast capable interfaces:
 	cat /proc/net/dev_mcast
 
-Start the multicast routing daemon in debug mode (e.g., pimd -d all)
+ - Start the multicast routing daemon in debug mode (e.g., pimd -d all)
 
-1.2 After you start the multicast routing daemon
+2.2 After you start the multicast routing daemon
  - Are the multicast vifs correctly installed in the kernel:
 	cat /proc/net/ip_mr_vif
 

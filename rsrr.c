@@ -791,8 +791,9 @@ rsrr_cache_clean(gt)
     
 #else
     IF_DEBUG(DEBUG_RSRR) {
-	pimd_log(LOG_DEBUG, 0, "cleaning cache for group %s\n",
-	    inet_fmt(gt->gt_mcastgrp, s1));
+        pimd_log(LOG_DEBUG, 0, "cleaning cache for group %s\n",
+                 inet_fmt(gt->gt_mcastgrp, s1));
+    }
     rc = gt->gt_rsrr_cache;
     while (rc) {
 	rc_next = rc->next;

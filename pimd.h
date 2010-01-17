@@ -28,10 +28,11 @@
  * SUCH DAMAGE.
  */
 /*
- *  $Id: pimd.h,v 1.25 2001/09/10 21:31:22 pavlin Exp $
+ *  $Id: pimd.h,v 1.27 2003/05/21 10:40:28 pavlin Exp $
  */
 
 
+#include <netdb.h>
 #include <netinet/pim.h>
 
 #define PIM_PROTOCOL_VERSION	2
