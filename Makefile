@@ -103,7 +103,9 @@ COMMON_CFLAGS  = $(MCAST_INCLUDE) $(SNMPDEF) $(RSRRDEF) $(MISCDEFS) -DPIM
 CFLAGS         = $(INCLUDES) $(DEFS) $(COMMON_CFLAGS) $(USERCOMPILE)
 
 LDLIBS         = $(SNMPLIBDIR) $(SNMPLIBS) $(LIB2)
-LINTFLAGS      = $(MCAST_INCLUDE) $(CFLAGS)
+
+LINT           = splint
+LINTFLAGS      = $(MCAST_INCLUDE) $(filter-out -W -Wall -g, $(CFLAGS)) -posix-lib -weak -skipposixheaders
 
 all: $(EXEC)
 
@@ -134,10 +136,10 @@ clean: $(SNMPCLEAN)
 	-$(Q)$(RM) $(OBJS) $(EXEC)
 
 distclean:
-	-$(Q)$(RM) $(OBJS) core $(EXEC) vers.c tags TAGS *.o *.map .*.d
+	-$(Q)$(RM) $(OBJS) core $(EXEC) vers.c tags TAGS *.o *.map .*.d *.out
 
 lint:
-	@lint $(LINTFLAGS) $(SRCS)
+	@$(LINT) $(LINTFLAGS) $(SRCS)
 
 tags: $(SRCS)
 	@ctags $(SRCS)

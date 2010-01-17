@@ -36,15 +36,16 @@
 
 
 /* Marian Stagarescu : 07/31/01:
- * administrative scoped multicast filtering im PIMD.
- * this allows an interface to be configured
- * as an administrative boundary for the specified scoped address.
- * Packets belonging to the scoped address will not be forwarded
+ *
+ * Administrative scoped multicast filtering im PIMD.  This allows an
+ * interface to be configured as an administrative boundary for the
+ * specified scoped address.  Packets belonging to the scoped address will
+ * not be forwarded.
  *
  * Please note the in order to minimize the search for the matching groups
  * the implementation is limited to: 
  *  
- * packets are stoped from being forwarded by installing a NULL outgoing
+ * Packets are stopped from being forwarded by installing a NULL outgoing
  * interface; the user space (pimd) is not up-call-ed any more for
  * these packets which are dropped by kernel (nil oif) except for
  * when we de-install the route are re-create it (timer 3 minute).
@@ -63,7 +64,6 @@ static void   process_whole_pkt   __P((char *buf));
 
 u_int32		default_source_metric     = UCAST_DEFAULT_SOURCE_METRIC;
 u_int32		default_source_preference = UCAST_DEFAULT_SOURCE_PREFERENCE;
-
 
 #ifdef SCOPED_ACL
 /* from mrouted. Contributed by Marian Stagarescu <marian@bile.cidera.com>*/
