@@ -793,37 +793,68 @@ parseBSR(s)
     return(TRUE);
 }
 
-/* This is my hack to put a statically assignable RP address in */
-
-int
-parse_rp_address(s)
-	char *s;
+/* This is my hack to put a statically assignable RP address in
+ * Modified by pjf@asn.pl to allow specifying multicast groups */
+int parse_rp_address(char *s)
 {
-	char *w;
-	u_int32 local	= 0xffffff;
-	struct rp_hold * rph;
+    char *w;
+    u_int32 local = 0xffffff;
+    u_int32 group_addr;
+    u_int32 masklen;
+    struct rp_hold * rph;
 
-	while (!EQUAL((w = next_word(&s)), "")) {
-		/* BSR address */
-		local = inet_parse(w, 4);
-	}				/* while not empty */
+    w = next_word(&s);
+    if (EQUAL(w, "")) {
+        pimd_log(LOG_WARNING, 0, "'rp_address' in %s: no <rp-addr> - ignoring", configfilename);
+        return FALSE;
+    }
 
-	if (local == 0xffffff) {
-		pimd_log(LOG_WARNING, 0, "Invalid RP address provided '%s' in %s. Ignoring.",
-			w, configfilename);
-		return(TRUE);
-	}
+    local = inet_parse(w, 4);
+    if (local == 0xffffff) {
+        pimd_log(LOG_WARNING, 0, "'rp_address' in %s: invalid <rp-addr> provided: '%s'", configfilename, w);
+        return FALSE;
+    }
 
-	rph=malloc(sizeof(*rph));
-	rph->address=local;
-	rph->group=htonl(224 << 24);
-	rph->mask=htonl(240 << 24);
-	rph->next=g_rp_hold;
-	g_rp_hold=rph;
+    w = next_word(&s);
+    if (!EQUAL(w, "")) {
+        group_addr = inet_parse(w, 4);
+        if (!IN_MULTICAST(ntohl(group_addr))) {
+            pimd_log(LOG_WARNING, 0, "'rp_address' in %s: %s is not a multicast addr", configfilename, inet_fmt(group_addr, s1));
+            return FALSE;
+        }
 
-	pimd_log(LOG_INFO, 0, "Assigned RP address %s", inet_fmt(local, s1));
+        if (EQUAL((w = next_word(&s)), "masklen")) {
+            w = next_word(&s);
+            if (sscanf(w, "%u", &masklen) == 1) {
+                if (masklen > (sizeof(group_addr) * 8))
+                    masklen = (sizeof(group_addr) * 8);
+                else if (masklen < 4)
+                    masklen = 4;
+            }
+            else
+                masklen = PIM_GROUP_PREFIX_DEFAULT_MASKLEN;
+        }
+        else
+            masklen = PIM_GROUP_PREFIX_DEFAULT_MASKLEN;
+    }
+    else {
+        group_addr = htonl(224 << 24);
+        masklen = 4;
+    }
 
-	return(TRUE);
+    /* save */
+    rph = malloc(sizeof(*rph));
+    rph->address = local;
+    rph->group = group_addr;
+    VAL_TO_MASK(rph->mask, masklen);
+
+    /* attach at the beginning */
+    rph->next = g_rp_hold;
+    g_rp_hold = rph;
+
+    pimd_log(LOG_INFO, 0, "Added static RP: %s, group %s/%d", inet_fmt(local, s1), inet_fmt(group_addr, s2), masklen);
+
+    return(TRUE);
 }
 
 
