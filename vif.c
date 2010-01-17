@@ -105,6 +105,11 @@ init_vifs()
 
     pimd_log(LOG_INFO, 0, "Getting vifs from kernel");
     config_vifs_from_kernel();
+    if (disable_all_by_default) {
+       pimd_log(LOG_INFO, 0, "Disabling all vifs from kernel");
+       for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v)
+          v->uv_flags |= VIFF_DISABLED;
+    }
     pimd_log(LOG_INFO, 0, "Getting vifs from %s", configfilename);
     config_vifs_from_file();
 

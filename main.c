@@ -53,6 +53,7 @@ struct rp_hold *g_rp_hold=NULL;
 char configfilename[256] = _PATH_PIMD_CONF;
 char versionstring[100];
 int pid = 0;
+int disable_all_by_default = 0;
 
 static char pidfilename[]  = _PATH_PIMD_PID;
 /* TODO: not used
@@ -279,6 +280,9 @@ main(argc, argv)
 		dest_port = DEFAULT_PORT;
 #endif
 	}
+	else if (strcmp(*argv, "-N") == 0) {
+		disable_all_by_default = 1;
+	}
 	else
 	    goto usage;
 	argv++; argc--;
@@ -287,7 +291,7 @@ main(argc, argv)
     if (argc > 0) {
     usage:
 	tmpd = 0xffffffff;
-	fprintf(stderr, "usage: pimd [-c configfile] [-d [debug_level][,debug_level]]\n");
+	fprintf(stderr, "usage: pimd [-c configfile] [-N] [-d [debug_level][,debug_level]]\n");
 	
 	fprintf(stderr, "debug levels: ");
     c = '(';
@@ -300,6 +304,7 @@ main(argc, argv)
 	}
     }
     fprintf(stderr, ")\n");
+    fprintf(stderr, "-N: causes all interfaces found in kernel to be disabled by default\n");
     exit(1);
     }	
     

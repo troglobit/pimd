@@ -280,6 +280,7 @@ extern struct cand_rp_adv_message_ {
     u_int16   message_size;
 } cand_rp_adv_message;
 
+extern int disable_all_by_default;
 
 /*
  * Used to contol the switching to the shortest path:
