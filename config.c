@@ -359,17 +359,17 @@ wordToOption(word)
     return UNKNOWN;
 }
 
-/*
- * function name: parse_phyint
- * input: char *s, pointing to the parsing point of the file
- * output: int (TRUE if the parsing was successful, o.w. FALSE)
- * operation: parses the physical interface file configurations, if any.
- * The general form is:
- *     phyint <local-addr | ifname> [disable]  [threshold <t>] [preference <p>] [metric <m>] [altnet <net-addr> masklen <masklen>] [scoped <net-addr> masklen <masklen>]
+/** 
+ * parse_phyint - parses the physical interface file configurations, if any.
+ * @s: pointing to the parsing point of the file
+ *
+ * Syntax:
+ * phyint <local-addr | ifname> [disable|enable] [threshold <t>] [preference <p>] [metric <m>] [altnet <net-addr> masklen <masklen>] [scoped <net-addr> masklen <masklen>]
+ *
+ * Returns:
+ * %TRUE if the parsing was successful, o.w. %FALSE
  */
-static int
-parse_phyint(s)
-    char *s;
+static int parse_phyint(char *s)
 {
     char *w, c;
     u_int32 local, altnet_addr, scoped_addr;
@@ -408,7 +408,12 @@ parse_phyint(s)
 		v->uv_flags |= VIFF_DISABLED;
 		continue;
 	    }
-	    
+
+	    if (EQUAL(w, "enable")) {
+		v->uv_flags &= ~VIFF_DISABLED;
+		continue;
+	    }
+
 	    if (EQUAL(w, "altnet")) {
 	        if (EQUAL((w = next_word(&s)), "")) {
 	           pimd_log(LOG_WARNING, 0, "Missing ALTNET for phyint %s in %s",
