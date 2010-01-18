@@ -129,6 +129,9 @@ snmpclean:
 		make -C $$dir clean;  \
 	done
 
+build-deb:
+	git-buildpackage --git-ignore-new --git-upstream-branch=master
+
 ifneq ($(MAKECMDGOALS),clean)
 -include $(DEPS)
 endif
