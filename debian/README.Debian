@@ -26,13 +26,17 @@ rp_address
 The future of pimd
 ------------------
 
-As of January 14, 2005, pimd is officially RETIRED.
+pimd was abandoned since 2005 but resurrected by Joachim Nilsson at the
+beginning of the 2010. Sources are now hosted at
 
-It hasn't been updated properly for years (only bug fixes reported by users),
-and has been superseded by newer and better open-source implementations.  See
-http://netweb.usc.edu/pim/ for a list of such implementations.
+            http://github.com/troglobit/pimd
 
-Possible solution is to use http://www.xorp.org/
+Other implementations of PIM
+----------------------------
+
+  http://netweb.usc.edu/pim/ has a list. And http://www.xorp.org/ looks
+promising.
  
  -- Antonin Kral <A.Kral@sh.cvut.cz>, Thu, 27 Mar 2003 10:12:47 +0100
  -- Antonin Kral <A.Kral@sh.cvut.cz>, Tue, 10 Aug 2004 10:51:12 +0100
+ -- Antonin Kral <A.Kral@sh.cvut.cz>, Mon, 18 Jan 2010 22:28:01 +0100

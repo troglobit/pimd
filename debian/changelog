@@ -1,3 +1,11 @@
+pimd (2.1.1-1) unstable; urgency=low
+
+  * New upstream maintainer - Joachim Nilsson
+  * Package built to follow upstream, Closes: #565716
+  * updated to the latest Debian policies
+
+ -- Antonin Kral <A.Kral@sh.cvut.cz>  Mon, 18 Jan 2010 18:38:39 +0100
+
 pimd (2.1.0-alpha29.17-9) unstable; urgency=low
 
   * fixed rp_address handling on big endian machines, many thanks to Alexander
