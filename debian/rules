@@ -42,17 +42,19 @@ clean:
 
 	# Add here commands to clean up after the build process.
 	[ ! -f Makefile ] || $(MAKE) clean
+	[ ! -f Makefile ] || $(MAKE) distclean
 
 	dh_clean
 
 install: build
 	dh_testdir
 	dh_testroot
-	dh_clean -k
+	dh_prep
 	dh_installdirs
 
 	# Add here commands to install the package into debian/pimd.
-	$(MAKE) install DESTDIR=$(CURDIR)/debian/pimd
+	$(MAKE) install DESTDIR=$(CURDIR)/debian/pimd/ prefix=/usr
+	rm -f $(CURDIR)/debian/pimd/usr/share/doc/pimd/INSTALL
 
 
 # Build architecture-independent files here.
