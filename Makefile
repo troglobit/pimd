@@ -24,6 +24,7 @@ CC             = $(CROSS)gcc
 prefix        ?= /usr/local
 sysconfdir    ?= /etc
 datadir        = $(prefix)/share/doc/pimd
+mandir         = $(prefix)/share/man/man1
 
 IGMP_OBJS      = igmp.o igmp_proto.o trace.o
 ROUTER_OBJS    = inet.o kern.o main.o config.o debug.o netlink.o routesock.o \
@@ -75,22 +76,25 @@ install: $(EXEC)
 	$(Q)install -d $(DESTDIR)$(prefix)/sbin
 	$(Q)install -d $(DESTDIR)$(sysconfdir)
 	$(Q)install -d $(DESTDIR)$(datadir)
+	$(Q)install -d $(DESTDIR)$(mandir)
 	$(Q)install -m 0755 $(EXEC) $(DESTDIR)$(prefix)/sbin/$(EXEC)
 	$(Q)install --backup=existing -m 0644 $(EXEC).conf $(DESTDIR)$(sysconfdir)/$(EXEC).conf
 	$(Q)for file in $(DISTFILES); do \
 		install -m 0644 $$file $(DESTDIR)$(datadir)/$$file; \
 	done
+	$(Q)install -m 0644 $(EXEC).1 $(DESTDIR)$(mandir)/$(EXEC).1
 
 uninstall:
 	-$(Q)$(RM) $(DESTDIR)$(prefix)/sbin/$(EXEC)
 	-$(Q)$(RM) $(DESTDIR)$(sysconfdir)/$(EXEC).conf
 	-$(Q)$(RM) -r $(DESTDIR)$(datadir)
+	-$(Q)$(RM) $(DESTDIR)$(mandir)/$(EXEC).1
 
 clean: $(SNMPCLEAN)
 	-$(Q)$(RM) $(OBJS) $(EXEC)
 
 distclean:
-	-$(Q)$(RM) $(OBJS) core $(EXEC) vers.c tags TAGS *.o *.map .*.d *.out
+	-$(Q)$(RM) $(OBJS) core $(EXEC) vers.c tags TAGS *.o *.map .*.d *.out tags TAGS
 
 dist:
 	@echo "Building bzip2 tarball of $(PKG) in parent dir..."
