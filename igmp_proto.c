@@ -107,7 +107,7 @@ accept_membership_query(src, dst, group, tmo)
     /* TODO: modify for DVMRP?? */
     if ((vifi = find_vif_direct(src)) == NO_VIF) {
 	IF_DEBUG(DEBUG_IGMP)
-	    pimd_log(LOG_INFO, 0,
+	    logit(LOG_INFO, 0,
 		"ignoring group membership query from non-adjacent host %s",
 		inet_fmt(src, s1));
 	return;
@@ -126,7 +126,7 @@ accept_membership_query(src, dst, group, tmo)
         while (i && !(i & 1))
             i >>= 1;
         if (i == 1)
-            pimd_log(LOG_WARNING, 0, "%s %s on vif %d, %s",
+            logit(LOG_WARNING, 0, "%s %s on vif %d, %s",
                 tmo == 0 ? "Received IGMPv1 report from"
                          : "Received IGMPv2 report from",
                 inet_fmt(src, s1),
@@ -147,7 +147,7 @@ accept_membership_query(src, dst, group, tmo)
         if (ntohl(src) < (v->uv_querier ? ntohl(v->uv_querier->al_addr)
                                    : ntohl(v->uv_lcl_addr))) {
             IF_DEBUG(DEBUG_IGMP)
-		pimd_log(LOG_DEBUG, 0, "new querier %s (was %s) on vif %d",
+		logit(LOG_DEBUG, 0, "new querier %s (was %s) on vif %d",
 		    inet_fmt(src, s1),
 		    v->uv_querier ?
 		    inet_fmt(v->uv_querier->al_addr, s2) :
@@ -190,7 +190,7 @@ accept_membership_query(src, dst, group, tmo)
         register struct listaddr *g;
 	
         IF_DEBUG(DEBUG_IGMP)
-	    pimd_log(LOG_DEBUG, 0,
+	    logit(LOG_DEBUG, 0,
 		"%s for %s from %s on vif %d, timer %d",
 		"Group-specific membership query",
 		inet_fmt(group, s2), inet_fmt(src, s1), vifi, tmo);
@@ -206,7 +206,7 @@ accept_membership_query(src, dst, group, tmo)
                 g->al_query = -1;
                 g->al_timerid = SetTimer(vifi, g);
                 IF_DEBUG(DEBUG_IGMP)
-		    pimd_log(LOG_DEBUG, 0,
+		    logit(LOG_DEBUG, 0,
 			"timer for grp %s on vif %d set to %ld",
 			inet_fmt(group, s2), vifi, g->al_timer);
                 break;
@@ -230,7 +230,7 @@ accept_group_report(src, dst, group, igmp_report_type)
 
     if ((vifi = find_vif_direct_local(src)) == NO_VIF) {
 	IF_DEBUG(DEBUG_IGMP)
-	    pimd_log(LOG_INFO, 0,
+	    logit(LOG_INFO, 0,
 		"ignoring group membership report from non-adjacent host %s",
 		inet_fmt(src, s1));
 	return;
@@ -268,7 +268,7 @@ accept_group_report(src, dst, group, igmp_report_type)
     if (g == NULL) {
 	g = (struct listaddr *)malloc(sizeof(struct listaddr));
         if (g == NULL)
-            pimd_log(LOG_ERR, 0, "ran out of memory");    /* fatal */
+            logit(LOG_ERR, 0, "ran out of memory");    /* fatal */
 	
         g->al_addr   = group;
         if (igmp_report_type == IGMP_V1_MEMBERSHIP_REPORT)
@@ -304,7 +304,7 @@ accept_leave_message(src, dst, group)
     /* TODO: modify for DVMRP ??? */    
     if ((vifi = find_vif_direct_local(src)) == NO_VIF) {
 	IF_DEBUG(DEBUG_IGMP)
-            pimd_log(LOG_INFO, 0,
+            logit(LOG_INFO, 0,
                 "ignoring group leave report from non-adjacent host %s",
                 inet_fmt(src, s1));
         return;
@@ -328,7 +328,7 @@ accept_leave_message(src, dst, group)
     for (g = v->uv_groups; g != NULL; g = g->al_next) {
         if (group == g->al_addr) {
             IF_DEBUG(DEBUG_IGMP)
-		pimd_log(LOG_DEBUG, 0,
+		logit(LOG_DEBUG, 0,
 		    "[vif.c, _accept_leave_message] %d %d \n",
 		    g->al_old, g->al_query);
 	    

@@ -197,7 +197,7 @@ set_incoming(srcentry_ptr, srctype)
 	    rpfc.rpfneighbor.s_addr == INADDR_ANY_N) {
 	    /* couldn't find a route */
 	    IF_DEBUG(DEBUG_PIM_MRT | DEBUG_RPF)
-		pimd_log(LOG_DEBUG, 0, "NO ROUTE found for %s",
+		logit(LOG_DEBUG, 0, "NO ROUTE found for %s",
 		    inet_fmt(source, s1));
 	    return(FALSE);
 	}
@@ -224,7 +224,7 @@ set_incoming(srcentry_ptr, srctype)
 	     */
 	    srcentry_ptr->upstream = n;
 	    IF_DEBUG(DEBUG_RPF)
-		pimd_log(LOG_DEBUG, 0,
+		logit(LOG_DEBUG, 0,
 		    "For src %s, iif is %d, next hop router is %s",
 		    inet_fmt(source, s1), srcentry_ptr->incoming,
 		    inet_fmt(neighbor_addr, s2));
@@ -234,7 +234,7 @@ set_incoming(srcentry_ptr, srctype)
     }
     
     /* TODO: control the number of messages! */
-    pimd_log(LOG_INFO, 0,
+    logit(LOG_INFO, 0,
 	"For src %s, iif is %d, next hop router is %s: NOT A PIM ROUTER",
 	inet_fmt(source, s1), srcentry_ptr->incoming,
 	inet_fmt(neighbor_addr, s2));
@@ -289,7 +289,7 @@ add_leaf(vifi, source, group)
 	return;
     
     IF_DEBUG(DEBUG_MRT)
-	pimd_log(LOG_DEBUG, 0, "Adding vif %d for group %s", vifi,
+	logit(LOG_DEBUG, 0, "Adding vif %d for group %s", vifi,
 	    inet_fmt(group, s1));
     
     if (VIFM_ISSET(vifi, mrtentry_ptr->leaves))
@@ -818,7 +818,7 @@ void process_kernel_call()
 	break;
     default:
 	IF_DEBUG(DEBUG_KERN)
-	    pimd_log(LOG_DEBUG, 0, "Unknown kernel_call code");
+	    logit(LOG_DEBUG, 0, "Unknown kernel_call code");
 	break;
     }
 }
@@ -849,7 +849,7 @@ process_cache_miss(igmpctl)
     iif    = igmpctl->im_vif;
     
     IF_DEBUG(DEBUG_MFC)
-	pimd_log(LOG_DEBUG, 0, "Cache miss, src %s, dst %s, iif %d",
+	logit(LOG_DEBUG, 0, "Cache miss, src %s, dst %s, iif %d",
 	   inet_fmt(source, s1), inet_fmt(group, s2), iif); 
     
     /* TODO: XXX: check whether the kernel generates cache miss for the

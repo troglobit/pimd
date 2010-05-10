@@ -362,7 +362,7 @@ dump_vifs(fp)
  * For errors of severity LOG_ERR or worse, terminate the program.
  */
 void
-pimd_log(int severity, int syserr, const char *format, ...)
+logit(int severity, int syserr, const char *format, ...)
 {
     va_list ap;
     static char fmt[211] = "warning - ";

@@ -553,7 +553,7 @@ static srcentry_t *create_srcentry(u_int32 source)
     
     srcentry_ptr = (srcentry_t *)malloc(sizeof(srcentry_t));
     if (srcentry_ptr == (srcentry_t *)NULL) {
-	pimd_log(LOG_WARNING, 0, "Memory allocation error for srcentry %s",
+	logit(LOG_WARNING, 0, "Memory allocation error for srcentry %s",
 	    inet_fmt(source, s1));
 	return (srcentry_t *)NULL;
     }
@@ -577,7 +577,7 @@ static srcentry_t *create_srcentry(u_int32 source)
 	srcentry_ptr->next->prev = srcentry_ptr;
     
     IF_DEBUG(DEBUG_MFC)
-	pimd_log(LOG_DEBUG, 0, "create source entry, source %s",
+	logit(LOG_DEBUG, 0, "create source entry, source %s",
 	    inet_fmt(source, s1));
     return (srcentry_ptr);
 }
@@ -593,7 +593,7 @@ static grpentry_t *create_grpentry(u_int32 group)
     
     grpentry_ptr = (grpentry_t *)malloc(sizeof(grpentry_t));
     if (grpentry_ptr == (grpentry_t *)NULL) {
-	pimd_log(LOG_WARNING, 0, "Memory allocation error for grpentry %s",
+	logit(LOG_WARNING, 0, "Memory allocation error for grpentry %s",
 	    inet_fmt(group, s1));
 	return (grpentry_t *)NULL;
     }
@@ -620,7 +620,7 @@ static grpentry_t *create_grpentry(u_int32 group)
 	grpentry_ptr->next->prev = grpentry_ptr;
     
     IF_DEBUG(DEBUG_MFC)
-	pimd_log(LOG_DEBUG, 0, "create group entry, group %s", inet_fmt(group, s1));
+	logit(LOG_DEBUG, 0, "create group entry, group %s", inet_fmt(group, s1));
     return(grpentry_ptr);
 }
 
@@ -731,7 +731,7 @@ static mrtentry_t *alloc_mrtentry(srcentry_t *srcentry_ptr, grpentry_t *grpentry
     
     mrtentry_ptr = (mrtentry_t *)malloc(sizeof(mrtentry_t));
     if (mrtentry_ptr == (mrtentry_t *)NULL) {
-	pimd_log(LOG_WARNING, 0, "alloc_mrtentry(): out of memory");
+	logit(LOG_WARNING, 0, "alloc_mrtentry(): out of memory");
 	return (mrtentry_t *)NULL;
     }
     
@@ -776,7 +776,7 @@ static mrtentry_t *alloc_mrtentry(srcentry_t *srcentry_ptr, grpentry_t *grpentry
 #endif /* SAVE_MEMORY */
     if ((mrtentry_ptr->vif_timers == (u_int16 *)NULL) ||
 	(mrtentry_ptr->vif_deletion_delay == (u_int16 *)NULL)) {
-	pimd_log(LOG_WARNING, 0, "alloc_mrtentry(): out of memory");
+	logit(LOG_WARNING, 0, "alloc_mrtentry(): out of memory");
 	FREE_MRTENTRY(mrtentry_ptr);
 	return (mrtentry_t *)NULL;
     }
@@ -821,7 +821,7 @@ static mrtentry_t *create_mrtentry(srcentry_t *srcentry_ptr, grpentry_t *grpentr
 	     * Hmmm, search_grpmrtlink() didn't find the entry, but
 	     * search_srcmrtlink() did find it! Shoudn't happen. Panic!
 	     */
-	    pimd_log(LOG_ERR, 0, "MRT inconsistency for src %s and grp %s\n",
+	    logit(LOG_ERR, 0, "MRT inconsistency for src %s and grp %s\n",
 		inet_fmt(source, s1), inet_fmt(group, s2));
 	    /* not reached but to make lint happy */
 	    return (mrtentry_t *)NULL;
@@ -911,7 +911,7 @@ void delete_single_kernel_cache(mrtentry_t *mrtentry_ptr, kernel_cache_t *kernel
     if (kernel_cache_ptr->next != (kernel_cache_t *)NULL)
 	kernel_cache_ptr->next->prev = kernel_cache_ptr->prev;
     IF_DEBUG(DEBUG_MFC)
-	pimd_log(LOG_DEBUG, 0, "Deleting MFC entry for source %s and group %s",
+	logit(LOG_DEBUG, 0, "Deleting MFC entry for source %s and group %s",
 	    inet_fmt(kernel_cache_ptr->source, s1),
 	    inet_fmt(kernel_cache_ptr->group, s2));
     k_del_mfc(igmp_socket, kernel_cache_ptr->source,
@@ -962,7 +962,7 @@ void delete_single_kernel_cache_addr(mrtentry_t *mrtentry_ptr, u_int32 source, u
     if (kernel_cache_ptr->next != (kernel_cache_t *)NULL)
 	kernel_cache_ptr->next->prev = kernel_cache_ptr->prev;
     IF_DEBUG(DEBUG_MFC)
-	pimd_log(LOG_DEBUG, 0, "Deleting MFC entry for source %s and group %s",
+	logit(LOG_DEBUG, 0, "Deleting MFC entry for source %s and group %s",
 	    inet_fmt(kernel_cache_ptr->source, s1),
 	    inet_fmt(kernel_cache_ptr->group, s2));
     k_del_mfc(igmp_socket, kernel_cache_ptr->source,

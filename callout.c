@@ -65,7 +65,7 @@ age_callout_queue(elapsed_time)
     
 #ifdef CALLOUT_DEBUG
     IF_DEBUG(DEBUG_TIMEOUT)
-	pimd_log(LOG_DEBUG, 0, "aging queue (elapsed time %d):", elapsed_time);
+	logit(LOG_DEBUG, 0, "aging queue (elapsed time %d):", elapsed_time);
     print_Q();
 #endif
     
@@ -106,7 +106,7 @@ timer_nextTimer()
 {
     if (Q) {
 	if (Q->time < 0) {
-	    pimd_log(LOG_WARNING, 0, "timer_nextTimer top of queue says %d", 
+	    logit(LOG_WARNING, 0, "timer_nextTimer top of queue says %d", 
 		Q->time);
 	    return 0;
 	}
@@ -128,14 +128,14 @@ timer_setTimer(delay, action, data)
     
 #ifdef CALLOUT_DEBUG
     IF_DEBUG(DEBUG_TIMEOUT)
-	pimd_log(LOG_DEBUG, 0, "setting timer:");
+	logit(LOG_DEBUG, 0, "setting timer:");
     print_Q();
 #endif
     
     /* create a node */	
     node = (struct timeout_q *)malloc(sizeof(struct timeout_q));
     if (node == 0) {
-	pimd_log(LOG_WARNING, 0, "Malloc Failed in timer_settimer\n");
+	logit(LOG_WARNING, 0, "Malloc Failed in timer_settimer\n");
 	return -1;
     }
     node->func = action; 
@@ -254,6 +254,6 @@ print_Q()
     
     IF_DEBUG(DEBUG_TIMEOUT)
 	for (ptr = Q; ptr; ptr = ptr->next)
-	    pimd_log(LOG_DEBUG, 0, "(%d,%d) ", ptr->id, ptr->time);
+	    logit(LOG_DEBUG, 0, "(%d,%d) ", ptr->id, ptr->time);
 }
 #endif /* CALLOUT_DEBUG2 */

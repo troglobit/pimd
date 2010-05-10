@@ -100,11 +100,11 @@ init_routesock()
     pid = getpid();
     routing_socket = socket(PF_ROUTE, SOCK_RAW, 0);
     if (routing_socket < 0) {
-	pimd_log(LOG_ERR, 0, "\nRouting socket error");
+	logit(LOG_ERR, 0, "\nRouting socket error");
 	return -1;
     }
     if (fcntl(routing_socket, F_SETFL, O_NONBLOCK) == -1){
-	pimd_log(LOG_ERR, 0, "\n Routing socket error");
+	logit(LOG_ERR, 0, "\n Routing socket error");
 	return -1;
     }
 #if 0
@@ -112,7 +112,7 @@ init_routesock()
     if (setsockopt(routing_socket, SOL_SOCKET,
 		   SO_USELOOPBACK, (char *)&on,
 		   sizeof(on)) < 0){
-	pimd_log(LOG_ERR, 0 , "\n setsockopt(SO_USELOOPBACK, 0)");
+	logit(LOG_ERR, 0 , "\n setsockopt(SO_USELOOPBACK, 0)");
 	return -1;
     }
 #endif /* 0 */	
@@ -177,7 +177,7 @@ k_req_incoming(source, rpfp)
     su->sin.sin_addr.s_addr = source;
     if (inet_lnaof(su->sin.sin_addr) == INADDR_ANY) {
 	IF_DEBUG(DEBUG_RPF)
-	    pimd_log(LOG_DEBUG, 0, "k_req_incoming: Invalid source %s",
+	    logit(LOG_DEBUG, 0, "k_req_incoming: Invalid source %s",
 		inet_fmt(source,s1));
 	return(FALSE); 
     }
@@ -207,10 +207,10 @@ k_req_incoming(source, rpfp)
     if ((rlen = write(routing_socket, (char *)&m_rtmsg, l)) < 0) {
 	IF_DEBUG(DEBUG_RPF | DEBUG_KERN) {
 	    if (errno == ESRCH)
-		pimd_log(LOG_DEBUG, 0,
+		logit(LOG_DEBUG, 0,
 		    "Writing to routing socket: no such route\n");
 	    else
-		pimd_log(LOG_DEBUG, 0, "Error writing to routing socket");
+		logit(LOG_DEBUG, 0, "Error writing to routing socket");
 	}
 	return(FALSE); 
     }
@@ -221,7 +221,7 @@ k_req_incoming(source, rpfp)
     
     if (l < 0) {
 	IF_DEBUG(DEBUG_RPF | DEBUG_KERN)
-	    pimd_log(LOG_DEBUG, errno, "Read from routing socket failed");
+	    logit(LOG_DEBUG, errno, "Read from routing socket failed");
 	return(FALSE);
     }
     
@@ -257,7 +257,7 @@ getmsg(rtm, msglen, rpfinfop)
     
     in = ((struct sockaddr_in *)&so_dst)->sin_addr;
     IF_DEBUG(DEBUG_RPF)
-	pimd_log(LOG_DEBUG, 0, "route to: %s", inet_fmt(in.s_addr, s1));
+	logit(LOG_DEBUG, 0, "route to: %s", inet_fmt(in.s_addr, s1));
     cp = ((char *)(rtm + 1));
     if (rtm->rtm_addrs)
 	for (i = 1; i; i <<= 1)
@@ -284,7 +284,7 @@ getmsg(rtm, msglen, rpfinfop)
     
     if (!ifp){ 	/* No incoming interface */
 	IF_DEBUG(DEBUG_RPF)
-	    pimd_log(LOG_DEBUG, 0,
+	    logit(LOG_DEBUG, 0,
 		"No incoming interface for destination %s",
 		inet_fmt(in.s_addr, s1));
 	return(FALSE);
@@ -294,13 +294,13 @@ getmsg(rtm, msglen, rpfinfop)
     if (dst) {
 	in = ((struct sockaddr_in *)dst)->sin_addr;
 	IF_DEBUG(DEBUG_RPF)
-	    pimd_log(LOG_DEBUG, 0, " destination is: %s",
+	    logit(LOG_DEBUG, 0, " destination is: %s",
 		inet_fmt(in.s_addr, s1));
     }
     if (gate && rtm->rtm_flags & RTF_GATEWAY) {
 	in = ((struct sockaddr_in *)gate)->sin_addr;
 	IF_DEBUG(DEBUG_RPF)
-	    pimd_log(LOG_DEBUG, 0, " gateway is: %s",
+	    logit(LOG_DEBUG, 0, " gateway is: %s",
 		inet_fmt(in.s_addr, s1));
 	rpfinfop->rpfneighbor = in;
     }
@@ -312,13 +312,13 @@ getmsg(rtm, msglen, rpfinfop)
 	    break;
     
     IF_DEBUG(DEBUG_RPF)
-	pimd_log(LOG_DEBUG, 0, " iif is %d", vifi);
+	logit(LOG_DEBUG, 0, " iif is %d", vifi);
     
     rpfinfop->iif = vifi;
     
     if (vifi >= numvifs){
 	IF_DEBUG(DEBUG_RPF)
-	    pimd_log(LOG_DEBUG, 0, "Invalid incoming interface for destination %s, because of invalid virtual interface", inet_fmt(in.s_addr, s1));
+	    logit(LOG_DEBUG, 0, "Invalid incoming interface for destination %s, because of invalid virtual interface", inet_fmt(in.s_addr, s1));
 	return(FALSE);/* invalid iif */
     }
     
@@ -345,7 +345,7 @@ k_req_incoming(source, rpfcinfo)
     rpfcinfo->rpfneighbor.s_addr = INADDR_ANY;   /* initialized */
     
     if (ioctl(udp_socket, SIOCGETRPF, (char *) rpfcinfo) < 0){
-	pimd_log(LOG_ERR, errno, "ioctl SIOCGETRPF k_req_incoming");
+	logit(LOG_ERR, errno, "ioctl SIOCGETRPF k_req_incoming");
 	return(FALSE);
     }
     return (TRUE);

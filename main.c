@@ -321,7 +321,7 @@ int main(int argc, char *argv[])
 #endif /* LOG_DAEMON */
     sprintf(versionstring, "pimd version %s", todaysversion);
     
-    pimd_log(LOG_DEBUG, 0, "%s starting", versionstring);
+    logit(LOG_DEBUG, 0, "%s starting", versionstring);
     
 /* TODO: XXX: use a combination of time and hostid to initialize the random
  * generator.
@@ -491,7 +491,7 @@ int main(int argc, char *argv[])
 	}
 	if ((n = select(nfds, &rfds, NULL, NULL, timeout)) < 0) {
 	    if (errno != EINTR) /* SIGALRM is expected */
-		pimd_log(LOG_WARNING, errno, "select failed");
+		logit(LOG_WARNING, errno, "select failed");
 	    continue;
 	}
 	if (n > 0) {
@@ -545,7 +545,7 @@ int main(int argc, char *argv[])
 	} while (difftime.tv_sec > 0);
     } /* Main loop */
 
-    pimd_log(LOG_NOTICE, 0, "%s exiting", versionstring);
+    logit(LOG_NOTICE, 0, "%s exiting", versionstring);
     cleanup();
     exit(0);
 }
@@ -652,7 +652,7 @@ static void restart(int i __attribute__((unused)))
     int s;
 #endif /* SNMP */
     
-    pimd_log(LOG_NOTICE, 0, "%s % restart", versionstring);
+    logit(LOG_NOTICE, 0, "%s % restart", versionstring);
     
     /*
      * reset all the entries

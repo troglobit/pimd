@@ -73,7 +73,7 @@ init_igmp()
     igmp_send_buf = malloc(SEND_BUF_SIZE);
 
     if ((igmp_socket = socket(AF_INET, SOCK_RAW, IPPROTO_IGMP)) < 0) 
-	pimd_log(LOG_ERR, errno, "IGMP socket");
+	logit(LOG_ERR, errno, "IGMP socket");
     
     k_hdr_include(igmp_socket, TRUE);	/* include IP header when sending */
     k_set_sndbuf(igmp_socket, SO_SEND_BUF_SIZE_MAX,
@@ -103,7 +103,7 @@ init_igmp()
     allrouters_group = htonl(INADDR_ALLRTRS_GROUP);
     
     if (register_input_handler(igmp_socket, igmp_read) < 0)
-	pimd_log(LOG_ERR, 0, "Couldn't register igmp_read as an input handler");
+	logit(LOG_ERR, 0, "Couldn't register igmp_read as an input handler");
 }
 
 
@@ -121,7 +121,7 @@ igmp_read(i, rfd)
     
     if (igmp_recvlen < 0) {
 	if (errno != EINTR)
-	    pimd_log(LOG_ERR, errno, "IGMP recvfrom");
+	    logit(LOG_ERR, errno, "IGMP recvfrom");
 	return;
     }
     
@@ -144,7 +144,7 @@ accept_igmp(recvlen)
     int ipdatalen, iphdrlen, igmpdatalen;
     
     if (recvlen < (ssize_t)sizeof(struct ip)) {
-	pimd_log(LOG_WARNING, 0,
+	logit(LOG_WARNING, 0,
 	    "received packet too short (%u bytes) for IP header", recvlen);
 	return;
     }
@@ -157,7 +157,7 @@ accept_igmp(recvlen)
     if (ip->ip_p == 0) {
 #if 0				/* XXX */
 	if (src == 0 || dst == 0)
-	    pimd_log(LOG_WARNING, 0, "kernel request not accurate, src %s dst %s",
+	    logit(LOG_WARNING, 0, "kernel request not accurate, src %s dst %s",
 		inet_fmt(src, s1), inet_fmt(dst, s2));
 	else
 #endif
@@ -172,7 +172,7 @@ accept_igmp(recvlen)
     ipdatalen = ip->ip_len;
 #endif
     if (iphdrlen + ipdatalen != recvlen) {
-	pimd_log(LOG_WARNING, 0,
+	logit(LOG_WARNING, 0,
 	    "received packet from %s shorter (%u bytes) than hdr+data length (%u+%u)",
 	    inet_fmt(src, s1), recvlen, iphdrlen, ipdatalen);
 	return;
@@ -182,7 +182,7 @@ accept_igmp(recvlen)
     group       = igmp->igmp_group.s_addr;
     igmpdatalen = ipdatalen - IGMP_MINLEN;
     if (igmpdatalen < 0) {
-	pimd_log(LOG_WARNING, 0,
+	logit(LOG_WARNING, 0,
 	    "received IP data field too short (%u bytes) for IGMP, from %s",
 	    ipdatalen, inet_fmt(src, s1));
 	return;
@@ -192,7 +192,7 @@ accept_igmp(recvlen)
 #if 0
     IF_DEBUG(DEBUG_PKT | debug_kind(IPPROTO_IGMP, igmp->igmp_type,
 				    igmp->igmp_code))
-	pimd_log(LOG_DEBUG, 0, "RECV %s from %-15s to %s",
+	logit(LOG_DEBUG, 0, "RECV %s from %-15s to %s",
 	    packet_kind(IPPROTO_IGMP, igmp->igmp_type, igmp->igmp_code),
 	    inet_fmt(src, s1), inet_fmt(dst, s2));
 #endif /* 0 */
@@ -264,7 +264,7 @@ accept_igmp(recvlen)
 	    return;
 	    
 	default:
-	    pimd_log(LOG_INFO, 0,
+	    logit(LOG_INFO, 0,
 		"ignoring unknown DVMRP message code %u from %s to %s",
 		igmp->igmp_code, inet_fmt(src, s1), inet_fmt(dst, s2));
 	    return;
@@ -282,7 +282,7 @@ accept_igmp(recvlen)
 	return;
 	
     default:
-	pimd_log(LOG_INFO, 0,
+	logit(LOG_INFO, 0,
 	    "ignoring unknown IGMP message type %x from %s to %s",
 	    igmp->igmp_type, inet_fmt(src, s1), inet_fmt(dst, s2));
 	return;
@@ -348,7 +348,7 @@ send_igmp(buf, src, dst, type, code, group, datalen)
 	if (errno == ENETDOWN || errno == ENODEV)
 	    check_vif_state();
 	else
-	    pimd_log(log_level(IPPROTO_IGMP, type, code), errno,
+	    logit(log_level(IPPROTO_IGMP, type, code), errno,
 		"sendto to %s on %s", inet_fmt(dst, s1), inet_fmt(src, s2));
 	if (setloop)
 	    k_set_loop(igmp_socket, FALSE);
@@ -359,7 +359,7 @@ send_igmp(buf, src, dst, type, code, group, datalen)
 	k_set_loop(igmp_socket, FALSE);
     
     IF_DEBUG(DEBUG_PKT|debug_kind(IPPROTO_IGMP, type, code))
-	pimd_log(LOG_DEBUG, 0, "SENT %s from %-15s to %s",
+	logit(LOG_DEBUG, 0, "SENT %s from %-15s to %s",
 	    packet_kind(IPPROTO_IGMP, type, code),
 	    src == INADDR_ANY_N ? "INADDR_ANY" :
 	    inet_fmt(src, s1), inet_fmt(dst, s2));

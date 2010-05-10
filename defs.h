@@ -444,7 +444,7 @@ extern void	config_vifs_from_file	();
 /* debug.c */
 extern char	*packet_kind		(u_int proto, u_int type, u_int code);
 extern int	debug_kind		(u_int proto, u_int type, u_int code);
-extern void	pimd_log		(int, int, const char *, ...);
+extern void	logit			(int, int, const char *, ...);
 extern int	log_level		(u_int proto, u_int type, u_int code);
 extern void	dump			(int i);
 extern void	fdump			(int i);
