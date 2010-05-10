@@ -40,15 +40,9 @@
  *
  */
 
-
 #include "defs.h"
 
-
-#ifdef __STDC__
 #include <stdarg.h>
-#else
-#include <varargs.h>
-#endif
 #include <stdio.h>
 
 extern int haveterminal;
@@ -367,7 +361,6 @@ dump_vifs(fp)
  * according to the severity of the message and the current debug level.
  * For errors of severity LOG_ERR or worse, terminate the program.
  */
-#ifdef __STDC__
 void
 pimd_log(int severity, int syserr, const char *format, ...)
 {
@@ -378,23 +371,6 @@ pimd_log(int severity, int syserr, const char *format, ...)
     struct tm *thyme;
     
     va_start(ap, format);
-#else
-/*VARARGS3*/
-void
-pimd_log(severity, syserr, format, va_alist)
-    int severity, syserr;
-    const char *format;
-    va_dcl
-{
-    va_list ap;
-    static char fmt[311] = "warning - ";
-    char *msg;
-    char tbuf[20];
-    struct timeval now;
-    struct tm *thyme;
-    
-    va_start(ap);
-#endif
     vsprintf(&fmt[10], format, ap);
     va_end(ap);
     msg = (severity == LOG_WARNING) ? fmt : &fmt[10];

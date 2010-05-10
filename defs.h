@@ -135,11 +135,7 @@ typedef u_char  u_int8;
 #endif /* BYTE_ORDER */
 
 #ifndef __P
-#ifdef __STDC__
 #define __P(x)  x
-#else
-#define __P(x)  ()
-#endif
 #endif
 
 typedef void (*cfunc_t) __P((void *));
@@ -196,14 +192,7 @@ typedef void (*ihfunc_t) __P((int, fd_set *));
 
 #define EQUAL(s1, s2)		(strcmp((s1), (s2)) == 0)
 
-/* obnoxious gcc gives an extraneous warning about this constant... */
-#if defined(__STDC__) || defined(__GNUC__)
-#define JAN_1970        2208988800UL    /* 1970 - 1900 in seconds */
-#else
-#define JAN_1970        2208988800L     /* 1970 - 1900 in seconds */
-#define const           /**/
-#endif
-
+#define JAN_1970                2208988800UL    /* 1970 - 1900 in seconds */
 
 #define MINTTL			1  /* min TTL in the packets send locally */
 
