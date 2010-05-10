@@ -65,11 +65,11 @@ int             total_interfaces; /* Number of all interfaces: including the
 /*
  * Forward declarations.
  */
-static void start_vif      __P((vifi_t vifi));
-static void stop_vif       __P((vifi_t vifi));
-static void start_all_vifs __P(());
-static int init_reg_vif    __P(());
-static int update_reg_vif  __P((vifi_t register_vifi));
+static void start_vif      (vifi_t vifi);
+static void stop_vif       (vifi_t vifi);
+static void start_all_vifs (void);
+static int init_reg_vif    (void);
+static int update_reg_vif  (vifi_t register_vifi);
 
 
 void
@@ -196,8 +196,7 @@ zero_vif(v, t)
 /*
  * Add a (the) register vif to the vif table.
  */
-static int
-init_reg_vif()
+static int init_reg_vif(void)
 {
     struct uvif *v;
     vifi_t i;
@@ -247,8 +246,7 @@ init_reg_vif()
 }
 
 
-static void
-start_all_vifs()
+static void start_all_vifs(void)
 {
     vifi_t vifi;
     struct uvif *v;

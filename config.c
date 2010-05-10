@@ -48,9 +48,9 @@
 /*
  * Forward declarations.
  */
-static char	*next_word	__P((char **));
-static int	parse_phyint	__P((char *s));
-static u_int32	ifname2addr	__P((char *s));
+static char	*next_word	(char **);
+static int	parse_phyint	(char *s);
+static u_int32	ifname2addr	(char *s);
 
 extern struct rp_hold *g_rp_hold;
 

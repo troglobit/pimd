@@ -159,20 +159,13 @@ static struct debugname {
 /*
  * Forward declarations.
  */
-static void handler __P((int));
-static void timer __P((void *));
-static void cleanup __P((void));
-static void restart __P((int));
-static void resetlogging __P((void *));
+static void handler     (int);
+static void timer        (void *);
+static void cleanup      (void);
+static void restart      (int);
+static void resetlogging (void *);
 
-
-/* To shut up gcc -Wstrict-prototypes */
-int main __P((int argc, char **argv));
-
-int
-register_input_handler(fd, func)
-    int fd;
-ihfunc_t func;
+int register_input_handler(int fd, ihfunc_t func)
 {
     if (nhandlers >= NHANDLERS)
 	return -1;
@@ -183,10 +176,7 @@ ihfunc_t func;
     return 0;
 }
 
-int
-main(argc, argv)
-    int argc;
-    char *argv[];
+int main(int argc, char *argv[])
 {	
     int dummy, dummysigalrm;
     FILE *fp;
@@ -584,9 +574,7 @@ u_long virtual_time = 0;
  * aging interfaces, quering neighbors and members, etc... The granularity
  * is equal to TIMER_INTERVAL.
  */
-static void 
-timer(i)
-    void *i __attribute__((unused));
+static void timer(void *i __attribute__((unused)))
 {
     age_vifs();	        /* Timeout neighbors and groups         */
     age_routes();  	/* Timeout routing entries              */
@@ -600,8 +588,7 @@ timer(i)
  * Performs all necessary functions to quit gracefully
  */
 /* TODO: implement all necessary stuff */
-static void
-cleanup()
+static void cleanup(void)
 {
     vifi_t vifi;
     struct uvif *v;
@@ -630,9 +617,7 @@ cleanup()
  * Signal handler.  Take note of the fact that the signal arrived
  * so that the main loop can take care of it.
  */
-static void
-handler(sig)
-    int sig;
+static void handler(int sig)
 {
     switch (sig) {
     case SIGALRM:
@@ -661,9 +646,7 @@ handler(sig)
 /*
  * Restart the daemon
  */
-static void
-restart(i)
-    int i __attribute__((unused));
+static void restart(int i __attribute__((unused)))
 {
 #ifdef SNMP
     int s;
@@ -719,9 +702,7 @@ restart(i)
 }
 
 
-static void
-resetlogging(arg)
-    void *arg;
+static void resetlogging(void *arg)
 {
     int nxttime = 60;
     void *narg = NULL;

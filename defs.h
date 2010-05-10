@@ -134,12 +134,8 @@ typedef u_char  u_int8;
 #endif /* BSD */
 #endif /* BYTE_ORDER */
 
-#ifndef __P
-#define __P(x)  x
-#endif
-
-typedef void (*cfunc_t) __P((void *));
-typedef void (*ihfunc_t) __P((int, fd_set *));
+typedef void (*cfunc_t) (void *);
+typedef void (*ihfunc_t) (int, fd_set *);
 
 #include "dvmrp.h"     /* Added for further compatibility and convenience */
 #include "pimd.h"
@@ -433,246 +429,167 @@ extern char *		sys_errlist[];
  */
 
 /* callout.c */
-extern void	callout_init		__P((void));
-extern void	free_all_callouts	__P((void));
-extern void	age_callout_queue	__P((int));
-extern int	timer_nextTimer		__P((void));
-extern int	timer_setTimer		__P((int, cfunc_t, void *));
-extern void	timer_clearTimer	__P((int));
-extern int	timer_leftTimer		__P((int));
+extern void	callout_init		(void);
+extern void	free_all_callouts	(void);
+extern void	age_callout_queue	(int);
+extern int	timer_nextTimer		(void);
+extern int	timer_setTimer		(int, cfunc_t, void *);
+extern void	timer_clearTimer	(int);
+extern int	timer_leftTimer		(int);
 
 /* config.c */
-extern void	config_vifs_from_kernel	__P(());
-extern void	config_vifs_from_file	__P(());
+extern void	config_vifs_from_kernel	();
+extern void	config_vifs_from_file	();
 
 /* debug.c */
-extern char	*packet_kind		__P((u_int proto, u_int type,
-					     u_int code));
-extern int	debug_kind		__P((u_int proto, u_int type,
-					     u_int code));
-extern void	pimd_log			__P((int, int, const char *, ...));
-extern int	log_level		__P((u_int proto, u_int type,
-					     u_int code));
-extern void	dump			__P((int i));
-extern void	fdump			__P((int i));
-extern void	cdump			__P((int i));
-extern void	dump_vifs		__P((FILE *fp));
-extern void	dump_pim_mrt		__P((FILE *fp));
-extern int	dump_rp_set		__P((FILE *fp));
+extern char	*packet_kind		(u_int proto, u_int type, u_int code);
+extern int	debug_kind		(u_int proto, u_int type, u_int code);
+extern void	pimd_log		(int, int, const char *, ...);
+extern int	log_level		(u_int proto, u_int type, u_int code);
+extern void	dump			(int i);
+extern void	fdump			(int i);
+extern void	cdump			(int i);
+extern void	dump_vifs		(FILE *fp);
+extern void	dump_pim_mrt		(FILE *fp);
+extern int	dump_rp_set		(FILE *fp);
 
 /* dvmrp_proto.c */
-extern void	dvmrp_accept_probe	__P((u_int32 src, u_int32 dst,
-					     u_char *p, int datalen,
-					     u_int32 level));
-extern void	dvmrp_accept_report	__P((u_int32 src, u_int32 dst,
-					     u_char *p, int datalen,
-					     u_int32 level));
-extern void	dvmrp_accept_info_request __P((u_int32 src, u_int32 dst,
-					       u_char *p, int datalen));
-extern void	dvmrp_accept_info_reply	__P((u_int32 src, u_int32 dst,
-					     u_char *p, int datalen));
-extern void	dvmrp_accept_neighbors	__P((u_int32 src, u_int32 dst,
-					     u_char *p, int datalen,
-					     u_int32 level));
-extern void	dvmrp_accept_neighbors2	__P((u_int32 src, u_int32 dst,
-					     u_char *p, int datalen,
-					     u_int32 level));
-extern void	dvmrp_accept_prune	__P((u_int32 src, u_int32 dst,
-					     u_char *p, int datalen));
-extern void	dvmrp_accept_graft	__P((u_int32 src, u_int32 dst,
-					     u_char *p, int datalen));
-extern void	dvmrp_accept_g_ack	__P((u_int32 src, u_int32 dst,
-					     u_char *p, int datalen));
+extern void	dvmrp_accept_probe	(u_int32 src, u_int32 dst, u_char *p, int datalen, u_int32 level);
+extern void	dvmrp_accept_report	(u_int32 src, u_int32 dst, u_char *p, int datalen, u_int32 level);
+extern void	dvmrp_accept_info_request (u_int32 src, u_int32 dst, u_char *p, int datalen);
+extern void	dvmrp_accept_info_reply	(u_int32 src, u_int32 dst, u_char *p, int datalen);
+extern void	dvmrp_accept_neighbors	(u_int32 src, u_int32 dst, u_char *p, int datalen, u_int32 level);
+extern void	dvmrp_accept_neighbors2	(u_int32 src, u_int32 dst, u_char *p, int datalen, u_int32 level);
+extern void	dvmrp_accept_prune	(u_int32 src, u_int32 dst, u_char *p, int datalen);
+extern void	dvmrp_accept_graft	(u_int32 src, u_int32 dst, u_char *p, int datalen);
+extern void	dvmrp_accept_g_ack	(u_int32 src, u_int32 dst, u_char *p, int datalen);
 
 /* igmp.c */
-extern void	init_igmp		__P(());
-extern void	send_igmp		__P((char *buf, u_int32 src,
-					     u_int32 dst, int type, int code,
-					     u_int32 group, int datalen));
+extern void	init_igmp		();
+extern void	send_igmp		(char *buf, u_int32 src, u_int32 dst, int type, int code, u_int32 group, int datalen);
 
 /* igmp_proto.c */
-extern void	query_groups		__P((struct uvif *v));
-extern void	accept_membership_query	__P((u_int32 src, u_int32 dst,
-					     u_int32 group, int tmo));
-extern void	accept_group_report	__P((u_int32 src, u_int32 dst,
-					     u_int32 group, int r_type));
-extern void	accept_leave_message	__P((u_int32 src, u_int32 dst,
-					     u_int32 group));
+extern void	query_groups		(struct uvif *v);
+extern void	accept_membership_query	(u_int32 src, u_int32 dst, u_int32 group, int tmo);
+extern void	accept_group_report	(u_int32 src, u_int32 dst, u_int32 group, int r_type);
+extern void	accept_leave_message	(u_int32 src, u_int32 dst, u_int32 group);
 
 /* inet.c */
-extern int	inet_cksum		__P((u_int16 *addr, u_int len));
-extern int	inet_valid_host		__P((u_int32 naddr));
-extern int	inet_valid_mask		__P((u_int32 mask));
-extern int	inet_valid_subnet	__P((u_int32 nsubnet, u_int32 nmask));
-extern char	*inet_fmt		__P((u_int32, char *s));
-extern char	*netname		__P((u_int32 addr, u_int32 mask));
-extern u_int32	inet_parse		__P((char *s, int n));
+extern int	inet_cksum		(u_int16 *addr, u_int len);
+extern int	inet_valid_host		(u_int32 naddr);
+extern int	inet_valid_mask		(u_int32 mask);
+extern int	inet_valid_subnet	(u_int32 nsubnet, u_int32 nmask);
+extern char	*inet_fmt		(u_int32, char *s);
+extern char	*netname		(u_int32 addr, u_int32 mask);
+extern u_int32	inet_parse		(char *s, int n);
 
 /* kern.c */
-extern void	k_set_sndbuf		__P((int socket, int bufsize,
-					     int minsize));
-extern void	k_set_rcvbuf		__P((int socket, int bufsize,
-					     int minsize));
-extern void	k_hdr_include		__P((int socket, int bool));
-extern void	k_set_ttl		__P((int socket, int t));
-extern void	k_set_loop		__P((int socket, int l));
-extern void	k_set_if		__P((int socket, u_int32 ifa));
-extern void	k_join			__P((int socket, u_int32 grp,
-					     struct uvif *v));
-extern void	k_leave			__P((int socket, u_int32 grp,
-					     struct uvif *v));
-extern void	k_init_pim		__P(());
-extern void	k_stop_pim		__P(());
-extern int	k_del_mfc		__P((int socket, u_int32 source,
-					     u_int32 group));
-extern int	k_chg_mfc		__P((int socket, u_int32 source,
-					     u_int32 group, vifi_t iif,
-					     vifbitmap_t oifs,
-					     u_int32 rp_addr));
-extern void	k_add_vif		__P((int socket, vifi_t vifi,
-					     struct uvif *v));
-extern void	k_del_vif		__P((int socket, vifi_t vifi));
-extern int	k_get_vif_count		__P((vifi_t vifi,
-					     struct vif_count *retval));
-extern int	k_get_sg_cnt		__P((int socket, u_int32 source,
-					     u_int32 group,
-					     struct sg_count *retval));
+extern void	k_set_sndbuf		(int socket, int bufsize, int minsize);
+extern void	k_set_rcvbuf		(int socket, int bufsize, int minsize);
+extern void	k_hdr_include		(int socket, int bool);
+extern void	k_set_ttl		(int socket, int t);
+extern void	k_set_loop		(int socket, int l);
+extern void	k_set_if		(int socket, u_int32 ifa);
+extern void	k_join			(int socket, u_int32 grp, struct uvif *v);
+extern void	k_leave			(int socket, u_int32 grp, struct uvif *v);
+extern void	k_init_pim		();
+extern void	k_stop_pim		();
+extern int	k_del_mfc		(int socket, u_int32 source, u_int32 group);
+extern int	k_chg_mfc		(int socket, u_int32 source, u_int32 group, vifi_t iif, vifbitmap_t oifs,
+                                         u_int32 rp_addr);
+extern void	k_add_vif		(int socket, vifi_t vifi, struct uvif *v);
+extern void	k_del_vif		(int socket, vifi_t vifi);
+extern int	k_get_vif_count		(vifi_t vifi, struct vif_count *retval);
+extern int	k_get_sg_cnt		(int socket, u_int32 source, u_int32 group, struct sg_count *retval);
 
 /* main.c */
-extern int	register_input_handler	__P((int fd, ihfunc_t func));
+extern int	register_input_handler	(int fd, ihfunc_t func);
 
 /* mrt.c */
-extern void	init_pim_mrt		__P(());
-extern mrtentry_t *find_route		__P((u_int32 source, u_int32 group,
-					     u_int16 flags, char create));
-extern grpentry_t *find_group		__P((u_int32 group));
-extern srcentry_t *find_source		__P((u_int32 source));
-extern void	delete_mrtentry		__P((mrtentry_t *mrtentry_ptr));
-extern void	delete_srcentry		__P((srcentry_t *srcentry_ptr));
-extern void	delete_grpentry		__P((grpentry_t *grpentry_ptr));
-extern void	delete_mrtentry_all_kernel_cache __P((mrtentry_t *mrtentry_ptr));
-extern void	delete_single_kernel_cache __P((mrtentry_t *mrtentry_ptr,
-						kernel_cache_t *kernel_cache_ptr));
-extern void	delete_single_kernel_cache_addr __P((mrtentry_t *mrtentry_ptr,
-						     u_int32 source,
-						     u_int32 group));
-extern void	add_kernel_cache	__P((mrtentry_t *mrtentry_ptr,
-					     u_int32 source, u_int32 group,
-					     u_int16 flags));
+extern void	init_pim_mrt		();
+extern mrtentry_t *find_route		(u_int32 source, u_int32 group, u_int16 flags, char create);
+extern grpentry_t *find_group		(u_int32 group);
+extern srcentry_t *find_source		(u_int32 source);
+extern void	delete_mrtentry		(mrtentry_t *mrtentry_ptr);
+extern void	delete_srcentry		(srcentry_t *srcentry_ptr);
+extern void	delete_grpentry		(grpentry_t *grpentry_ptr);
+extern void	delete_mrtentry_all_kernel_cache (mrtentry_t *mrtentry_ptr);
+extern void	delete_single_kernel_cache (mrtentry_t *mrtentry_ptr, kernel_cache_t *kernel_cache_ptr);
+extern void	delete_single_kernel_cache_addr (mrtentry_t *mrtentry_ptr, u_int32 source, u_int32 group);
+extern void	add_kernel_cache	(mrtentry_t *mrtentry_ptr, u_int32 source, u_int32 group, u_int16 flags);
 /* pim.c */
-extern void	init_pim		__P(());
-extern void	send_pim		__P((char *buf, u_int32 src,
-					     u_int32 dst, int type,
-					     int datalen));
-extern void	send_pim_unicast	__P((char *buf, u_int32 src,
-					     u_int32 dst, int type,
-					     int datalen));
+extern void	init_pim		();
+extern void	send_pim		(char *buf, u_int32 src, u_int32 dst, int type, int datalen);
+extern void	send_pim_unicast	(char *buf, u_int32 src, u_int32 dst, int type, int datalen);
 
 /* pim_proto.c */
-extern int	receive_pim_hello	__P((u_int32 src, u_int32 dst,
-					     char *pim_message, size_t datalen));
-extern int	send_pim_hello		__P((struct uvif *v,
-					     u_int16 holdtime));
-extern void	delete_pim_nbr		__P((pim_nbr_entry_t *nbr_delete));
-extern int	receive_pim_register	__P((u_int32 src, u_int32 dst,
-					     char *pim_message, size_t datalen));
-extern int	send_pim_null_register	__P((mrtentry_t *r));
-extern int	receive_pim_register_stop __P((u_int32 src, u_int32 dst,
-					       char *pim_message,
-					       size_t datalen));
-extern int	send_pim_register	__P((char *pkt));
-extern int	receive_pim_join_prune	__P((u_int32 src, u_int32 dst,
-					     char *pim_message, int datalen));
-extern int	join_or_prune		__P((mrtentry_t *mrtentry_ptr,
-					     pim_nbr_entry_t *upstream_router));
-extern int	receive_pim_assert	__P((u_int32 src, u_int32 dst,
-					     char *pim_message, int datalen));
-extern int	send_pim_assert		__P((u_int32 source, u_int32 group,
-					     vifi_t vifi,
-					     mrtentry_t *mrtentry_ptr));
-extern int	send_periodic_pim_join_prune __P((vifi_t vifi,
-						  pim_nbr_entry_t *pim_nbr,
-						  u_int16 holdtime));
-extern int	add_jp_entry		__P((pim_nbr_entry_t *pim_nbr,
-					     u_int16 holdtime, u_int32 group,
-					     u_int8 grp_msklen, u_int32 source,
-					     u_int8 src_msklen,
-					     u_int16 addr_flags,
-					     u_int8 join_prune));
-extern void	pack_and_send_jp_message __P((pim_nbr_entry_t *pim_nbr));
-extern int	receive_pim_cand_rp_adv	__P((u_int32 src, u_int32 dst,
-					     char *pim_message, int datalen));
-extern int	receive_pim_bootstrap	__P((u_int32 src, u_int32 dst,
-					     char *pim_message, int datalen));
-extern int	send_pim_cand_rp_adv	__P(());
-extern void	send_pim_bootstrap	__P(());
+extern int	receive_pim_hello	(u_int32 src, u_int32 dst, char *pim_message, size_t datalen);
+extern int	send_pim_hello		(struct uvif *v, u_int16 holdtime);
+extern void	delete_pim_nbr		(pim_nbr_entry_t *nbr_delete);
+extern int	receive_pim_register	(u_int32 src, u_int32 dst, char *pim_message, size_t datalen);
+extern int	send_pim_null_register	(mrtentry_t *r);
+extern int	receive_pim_register_stop (u_int32 src, u_int32 dst, char *pim_message, size_t datalen);
+extern int	send_pim_register	(char *pkt);
+extern int	receive_pim_join_prune	(u_int32 src, u_int32 dst, char *pim_message, int datalen);
+extern int	join_or_prune		(mrtentry_t *mrtentry_ptr, pim_nbr_entry_t *upstream_router);
+extern int	receive_pim_assert	(u_int32 src, u_int32 dst, char *pim_message, int datalen);
+extern int	send_pim_assert		(u_int32 source, u_int32 group, vifi_t vifi, mrtentry_t *mrtentry_ptr);
+extern int	send_periodic_pim_join_prune (vifi_t vifi, pim_nbr_entry_t *pim_nbr, u_int16 holdtime);
+extern int	add_jp_entry		(pim_nbr_entry_t *pim_nbr, u_int16 holdtime, u_int32 group, u_int8 grp_msklen,
+                                         u_int32 source, u_int8 src_msklen,  u_int16 addr_flags, u_int8 join_prune);
+extern void	pack_and_send_jp_message (pim_nbr_entry_t *pim_nbr);
+extern int	receive_pim_cand_rp_adv	(u_int32 src, u_int32 dst, char *pim_message, int datalen);
+extern int	receive_pim_bootstrap	(u_int32 src, u_int32 dst, char *pim_message, int datalen);
+extern int	send_pim_cand_rp_adv	();
+extern void	send_pim_bootstrap	();
 
 /* route.c */
-extern int	set_incoming		__P((srcentry_t *srcentry_ptr,
-					     int srctype));
-extern vifi_t	get_iif			__P((u_int32 source));
-extern pim_nbr_entry_t *find_pim_nbr	__P((u_int32 source));
-extern int	add_sg_oif		__P((mrtentry_t *mrtentry_ptr,
-					     vifi_t vifi,
-					     u_int16 holdtime,
-					     int update_holdtime));
-extern void	add_leaf		__P((vifi_t vifi, u_int32 source,
-					     u_int32 group));
-extern void	delete_leaf		__P((vifi_t vifi, u_int32 source,
-					     u_int32 group));
-extern int	change_interfaces	__P((mrtentry_t *mrtentry_ptr,
-					     vifi_t new_iif,
-					     vifbitmap_t new_joined_oifs_,
-					     vifbitmap_t new_pruned_oifs,
-					     vifbitmap_t new_leaves_,
-					     vifbitmap_t new_asserted_oifs,
-					     u_int16 flags));
-extern void	calc_oifs		__P((mrtentry_t *mrtentry_ptr,
-					     vifbitmap_t *oifs_ptr));
-extern void	process_kernel_call	__P(());
-extern int	delete_vif_from_mrt	__P((vifi_t vifi));
-extern mrtentry_t *switch_shortest_path	__P((u_int32 source, u_int32 group));
-
+extern int	set_incoming		(srcentry_t *srcentry_ptr, int srctype);
+extern vifi_t	get_iif			(u_int32 source);
+extern pim_nbr_entry_t *find_pim_nbr	(u_int32 source);
+extern int	add_sg_oif		(mrtentry_t *mrtentry_ptr, vifi_t vifi, u_int16 holdtime, int update_holdtime);
+extern void	add_leaf		(vifi_t vifi, u_int32 source, u_int32 group);
+extern void	delete_leaf		(vifi_t vifi, u_int32 source, u_int32 group);
+extern int	change_interfaces	(mrtentry_t *mrtentry_ptr,  vifi_t new_iif,
+                                         vifbitmap_t new_joined_oifs_, vifbitmap_t new_pruned_oifs,
+                                         vifbitmap_t new_leaves_, vifbitmap_t new_asserted_oifs, u_int16 flags);
+extern void	calc_oifs		(mrtentry_t *mrtentry_ptr, vifbitmap_t *oifs_ptr);
+extern void	process_kernel_call	();
+extern int	delete_vif_from_mrt	(vifi_t vifi);
+extern mrtentry_t *switch_shortest_path	(u_int32 source, u_int32 group);
 
 /* routesock.c */
-extern int	k_req_incoming		__P((u_int32 source,
-					     struct rpfctl *rpfp));
+extern int	k_req_incoming		(u_int32 source, struct rpfctl *rpfp);
 #ifdef HAVE_ROUTING_SOCKETS
-extern int	init_routesock		__P(());
+extern int	init_routesock		();
 extern int	routing_socket;
 #endif /* HAVE_ROUTING_SOCKETS */
 
 /* rp.c */
-extern void	init_rp_and_bsr		__P(());
-extern u_int16	bootstrap_initial_delay __P(());
-extern rp_grp_entry_t *add_rp_grp_entry __P((cand_rp_t  **used_cand_rp_list,
-					     grp_mask_t **used_grp_mask_list,
-					     u_int32 rp_addr,
-					     u_int8  rp_priority,
-					     u_int16 rp_holdtime,
-					     u_int32 group_addr,
-					     u_int32 group_mask,
-					     u_int32 bsr_hash_mask,
-					     u_int16 fragment_tag));
-extern void	delete_rp_grp_entry	__P((cand_rp_t  **used_cand_rp_list,
-					     grp_mask_t **used_grp_mask_list,
-					     rp_grp_entry_t *rp_grp_entry_delete));
-extern void	delete_grp_mask		__P((cand_rp_t  **used_cand_rp_list,
-					     grp_mask_t **used_grp_mask_list,
-					     u_int32 group_addr,
-					     u_int32 group_mask));
-extern void	delete_rp		__P((cand_rp_t  **used_cand_rp_list,
-					     grp_mask_t **used_grp_mask_list,
-					     u_int32 rp_addr));
-extern void	delete_rp_list		__P((cand_rp_t  **used_cand_rp_list,
-					     grp_mask_t **used_grp_mask_list));
-extern rpentry_t *rp_match		__P((u_int32 group));
-extern rp_grp_entry_t *rp_grp_match	__P((u_int32 group));
-extern rpentry_t *rp_find		__P((u_int32 rp_address));
-extern int	remap_grpentry		__P((grpentry_t *grpentry_ptr));
-extern int	create_pim_bootstrap_message __P((char *send_buff));
-extern int	check_mrtentry_rp	__P((mrtentry_t *mrtentry_ptr,
-					     u_int32 rp_addr));
+extern void	init_rp_and_bsr		();
+extern u_int16	bootstrap_initial_delay ();
+extern rp_grp_entry_t *add_rp_grp_entry (cand_rp_t  **used_cand_rp_list,
+                                         grp_mask_t **used_grp_mask_list,
+                                         u_int32 rp_addr,
+                                         u_int8  rp_priority,
+                                         u_int16 rp_holdtime,
+                                         u_int32 group_addr,
+                                         u_int32 group_mask,
+                                         u_int32 bsr_hash_mask,
+                                         u_int16 fragment_tag);
+extern void	delete_rp_grp_entry	(cand_rp_t  **used_cand_rp_list, grp_mask_t **used_grp_mask_list,
+                                         rp_grp_entry_t *rp_grp_entry_delete);
+extern void	delete_grp_mask		(cand_rp_t  **used_cand_rp_list, grp_mask_t **used_grp_mask_list,
+                                         u_int32 group_addr, u_int32 group_mask);
+extern void	delete_rp		(cand_rp_t  **used_cand_rp_list, grp_mask_t **used_grp_mask_list,
+                                         u_int32 rp_addr);
+extern void	delete_rp_list		(cand_rp_t  **used_cand_rp_list, grp_mask_t **used_grp_mask_list);
+extern rpentry_t *rp_match		(u_int32 group);
+extern rp_grp_entry_t *rp_grp_match	(u_int32 group);
+extern rpentry_t *rp_find		(u_int32 rp_address);
+extern int	remap_grpentry		(grpentry_t *grpentry_ptr);
+extern int	create_pim_bootstrap_message (char *send_buff);
+extern int	check_mrtentry_rp	(mrtentry_t *mrtentry_ptr, u_int32 rp_addr);
 
 #ifdef RSRR
 #ifdef PIM
@@ -682,38 +599,36 @@ extern int	check_mrtentry_rp	__P((mrtentry_t *mrtentry_ptr,
 #define RSRR_NOTIFICATION_FALSE		FALSE
 
 /* rsrr.c */
-extern void	rsrr_init		__P((void));
-extern void	rsrr_clean		__P((void));
-extern void	rsrr_cache_send		__P((struct gtable *, int));
-extern void	rsrr_cache_clean	__P((struct gtable *));
-extern void	rsrr_cache_bring_up	__P((struct gtable *));
+extern void	rsrr_init		(void);
+extern void	rsrr_clean		(void);
+extern void	rsrr_cache_send		(struct gtable *, int);
+extern void	rsrr_cache_clean	(struct gtable *);
+extern void	rsrr_cache_bring_up	(struct gtable *);
 #endif /* RSRR */
 
 /* timer.c */
-extern void	init_timers		__P(());
-extern void	age_vifs		__P(());
-extern void	age_routes		__P(());
-extern void	age_misc		__P(());
-extern int	unicast_routing_changes	__P((srcentry_t *src_ent));
-extern int	clean_srclist		__P(());
+extern void	init_timers		();
+extern void	age_vifs		();
+extern void	age_routes		();
+extern void	age_misc		();
+extern int	unicast_routing_changes	(srcentry_t *src_ent);
+extern int	clean_srclist		();
 
 /* trace.c */
 /* u_int is promoted u_char */
-extern void	accept_mtrace		__P((u_int32 src, u_int32 dst,
-					     u_int32 group, char *data,
-					     u_int no, int datalen));
-extern void	accept_neighbor_request	__P((u_int32 src, u_int32 dst));
-extern void	accept_neighbor_request2 __P((u_int32 src, u_int32 dst));
+extern void	accept_mtrace		(u_int32 src, u_int32 dst, u_int32 group, char *data, u_int no, int datalen);
+extern void	accept_neighbor_request	(u_int32 src, u_int32 dst);
+extern void	accept_neighbor_request2 (u_int32 src, u_int32 dst);
 
 /* vif.c */
-extern void	init_vifs		__P(());
-extern void	zero_vif		__P((struct uvif *, int));
-extern void	stop_all_vifs		__P(());
-extern void	check_vif_state		__P(());
-extern vifi_t	local_address		__P((u_int32 src));
-extern vifi_t	find_vif_direct		__P((u_int32 src));
-extern vifi_t	find_vif_direct_local	__P((u_int32 src));
-extern u_int32	max_local_address	__P((void));
+extern void	init_vifs		();
+extern void	zero_vif		(struct uvif *, int);
+extern void	stop_all_vifs		();
+extern void	check_vif_state		();
+extern vifi_t	local_address		(u_int32 src);
+extern vifi_t	find_vif_direct		(u_int32 src);
+extern vifi_t	find_vif_direct_local	(u_int32 src);
+extern u_int32	max_local_address	(void);
 
 struct rp_hold {
 	struct rp_hold *next;

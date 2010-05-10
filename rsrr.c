@@ -61,18 +61,15 @@ int client_length = sizeof(client_addr);
 /*
  * Local functions definition
  */
-static void	rsrr_accept    __P((int recvlen));
-static void	rsrr_accept_iq __P((void));
-static int	rsrr_accept_rq __P((struct rsrr_rq *route_query, u_int8 flags,
-				    struct gtable *gt_notify));
-static void	rsrr_read      __P((int, fd_set *));
-static int	rsrr_send      __P((int sendlen));
-static void	rsrr_cache     __P((struct gtable *gt,
-					struct rsrr_rq *route_query));
+static void	rsrr_accept    (int recvlen);
+static void	rsrr_accept_iq (void);
+static int	rsrr_accept_rq (struct rsrr_rq *route_query, u_int8 flags, struct gtable *gt_notify);
+static void	rsrr_read      (int, fd_set *);
+static int	rsrr_send      (int sendlen);
+static void	rsrr_cache     (struct gtable *gt, struct rsrr_rq *route_query);
 
 /* Initialize RSRR socket */
-void
-rsrr_init()
+void rsrr_init(void)
 {
     int servlen;
     struct sockaddr_un serv_addr;

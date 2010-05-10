@@ -73,22 +73,20 @@ u_int32                 rp_my_ipv4_hashmask;
 /*
  * Local functions definition.
  */
-static cand_rp_t  *add_cand_rp          __P((cand_rp_t **used_cand_rp_list,
-					     u_int32 address));
-static grp_mask_t *add_grp_mask         __P((grp_mask_t **used_grp_mask_list,
-					     u_int32 group_addr,
-					     u_int32 group_mask,
-					     u_int32 hash_mask));
-static void       delete_grp_mask_entry __P((cand_rp_t **used_cand_rp_list,
-					     grp_mask_t **used_grp_mask_list,
-					     grp_mask_t *grp_mask_delete));
-static void       delete_rp_entry       __P((cand_rp_t **used_cand_rp_list,
-					     grp_mask_t **used_grp_mask_list,
-					     cand_rp_t *cand_rp_ptr));
+static cand_rp_t  *add_cand_rp          (cand_rp_t **used_cand_rp_list, u_int32 address);
+static grp_mask_t *add_grp_mask         (grp_mask_t **used_grp_mask_list,
+                                         u_int32 group_addr,
+                                         u_int32 group_mask,
+                                         u_int32 hash_mask);
+static void       delete_grp_mask_entry (cand_rp_t **used_cand_rp_list,
+                                         grp_mask_t **used_grp_mask_list,
+                                         grp_mask_t *grp_mask_delete);
+static void       delete_rp_entry       (cand_rp_t **used_cand_rp_list,
+                                         grp_mask_t **used_grp_mask_list,
+                                         cand_rp_t *cand_rp_ptr);
 
 
-void
-init_rp_and_bsr()
+void init_rp_and_bsr(void)
 {
     /* TODO: if the grplist is not NULL, remap all groups ASAP! */
     delete_rp_list(&cand_rp_list, &grp_mask_list);
@@ -121,8 +119,7 @@ init_rp_and_bsr()
 }
 
 
-u_int16
-bootstrap_initial_delay()
+u_int16 bootstrap_initial_delay(void)
 {
     long AddrDelay;
     long Delay;

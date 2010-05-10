@@ -58,9 +58,9 @@
  * to use it edit pimd.conf and compile with -DSCOPED_ACL 
  */
 
-static void   process_cache_miss  __P((struct igmpmsg *igmpctl));
-static void   process_wrong_iif   __P((struct igmpmsg *igmpctl));
-static void   process_whole_pkt   __P((char *buf));
+static void   process_cache_miss  (struct igmpmsg *igmpctl);
+static void   process_wrong_iif   (struct igmpmsg *igmpctl);
+static void   process_whole_pkt   (char *buf);
 
 u_int32		default_source_metric     = UCAST_DEFAULT_SOURCE_METRIC;
 u_int32		default_source_preference = UCAST_DEFAULT_SOURCE_PREFERENCE;

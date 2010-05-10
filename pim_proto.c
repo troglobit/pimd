@@ -38,24 +38,24 @@
 /*
  * Local functions definitions.
  */
-static int parse_pim_hello         __P((char *pktPtr,
+static int parse_pim_hello         (char *pktPtr,
 					size_t datalen,
 					u_int32 src,
-					u_int16 *holdtime));
-static int send_pim_register_stop  __P((u_int32 reg_src,
+					u_int16 *holdtime);
+static int send_pim_register_stop  (u_int32 reg_src,
 					u_int32 reg_dst,
 					u_int32 inner_source,
-					u_int32 inner_grp));
-static build_jp_message_t *get_jp_working_buff __P(());
-static void return_jp_working_buff __P((pim_nbr_entry_t *pim_nbr));
-static void pack_jp_message        __P((pim_nbr_entry_t *pim_nbr));
-static void send_jp_message        __P((pim_nbr_entry_t *pim_nbr));
-static int compare_metrics         __P((u_int32 local_preference,
+					u_int32 inner_grp);
+static build_jp_message_t *get_jp_working_buff (void);
+static void return_jp_working_buff (pim_nbr_entry_t *pim_nbr);
+static void pack_jp_message        (pim_nbr_entry_t *pim_nbr);
+static void send_jp_message        (pim_nbr_entry_t *pim_nbr);
+static int compare_metrics         (u_int32 local_preference,
 					u_int32 local_metric,
 					u_int32 local_address,
 					u_int32 remote_preference,
 					u_int32 remote_metric,
-					u_int32 remote_address));
+					u_int32 remote_address);
 
 build_jp_message_t *build_jp_message_pool;
 int build_jp_message_pool_counter;

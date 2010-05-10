@@ -41,36 +41,20 @@ grpentry_t		*grplist;
 /*
  * Local functions definition
  */
-static srcentry_t *create_srcentry     __P((u_int32 source));
-static int        search_srclist       __P((u_int32 source,
-					    srcentry_t **sourceEntry));
-static int        search_srcmrtlink    __P((srcentry_t *srcentry_ptr,
-					    u_int32 group,
-					    mrtentry_t **mrtPtr));
-static void       insert_srcmrtlink    __P((mrtentry_t *elementPtr,
-					    mrtentry_t *insertPtr,
-					    srcentry_t *srcListPtr));
-static grpentry_t *create_grpentry     __P((u_int32 group));
-static int        search_grplist       __P((u_int32 group,
-					    grpentry_t **groupEntry));
-static int        search_grpmrtlink    __P((grpentry_t *grpentry_ptr,
-					    u_int32 source,
-					    mrtentry_t **mrtPtr));
-static void       insert_grpmrtlink    __P((mrtentry_t *elementPtr,
-					    mrtentry_t *insertPtr,
-					    grpentry_t *grpListPtr));
-static mrtentry_t *alloc_mrtentry      __P((srcentry_t *srcentry_ptr,
-					    grpentry_t *grpentry_ptr));
-static mrtentry_t *create_mrtentry     __P((srcentry_t *srcentry_ptr,
-					    grpentry_t *grpentry_ptr,
-					    u_int16 flags));
-static void       move_kernel_cache    __P((mrtentry_t *mrtentry_ptr,
-					    u_int16 flags));
+static srcentry_t *create_srcentry  (u_int32 source);
+static int        search_srclist    (u_int32 source, srcentry_t **sourceEntry);
+static int        search_srcmrtlink (srcentry_t *srcentry_ptr, u_int32 group, mrtentry_t **mrtPtr);
+static void       insert_srcmrtlink (mrtentry_t *elementPtr, mrtentry_t *insertPtr, srcentry_t *srcListPtr);
+static grpentry_t *create_grpentry  (u_int32 group);
+static int        search_grplist    (u_int32 group, grpentry_t **groupEntry);
+static int        search_grpmrtlink (grpentry_t *grpentry_ptr, u_int32 source, mrtentry_t **mrtPtr);
+static void       insert_grpmrtlink (mrtentry_t *elementPtr, mrtentry_t *insertPtr, grpentry_t *grpListPtr);
+static mrtentry_t *alloc_mrtentry   (srcentry_t *srcentry_ptr, grpentry_t *grpentry_ptr);
+static mrtentry_t *create_mrtentry  (srcentry_t *srcentry_ptr, grpentry_t *grpentry_ptr, u_int16 flags);
+static void       move_kernel_cache (mrtentry_t *mrtentry_ptr, u_int16 flags);
 
-void 
-init_pim_mrt()
+void init_pim_mrt(void)
 {
-
     /* TODO: delete any existing routing table */
 
     /* Initialize the source list */
@@ -104,9 +88,7 @@ init_pim_mrt()
 }
 
 
-grpentry_t*
-find_group(group)
-    u_int32 group;
+grpentry_t *find_group(u_int32 group)
 {
     grpentry_t *grpentry_ptr;
 
@@ -121,9 +103,7 @@ find_group(group)
 }
 
 
-srcentry_t *
-find_source(source)
-    u_int32 source;
+srcentry_t *find_source(u_int32 source)
 {
     srcentry_t *srcentry_ptr;
 
@@ -138,11 +118,7 @@ find_source(source)
 }
 
 
-mrtentry_t *
-find_route(source, group, flags, create)
-    u_int32 source, group;
-    u_int16 flags;
-    char create;
+mrtentry_t *find_route(u_int32 source, u_int32 group, u_int16 flags, char create)
 {
     srcentry_t *srcentry_ptr;
     grpentry_t *grpentry_ptr;
@@ -354,9 +330,7 @@ find_route(source, group, flags, create)
 }
 
 
-void
-delete_srcentry(srcentry_ptr)
-    srcentry_t *srcentry_ptr;
+void delete_srcentry(srcentry_t *srcentry_ptr)
 {
     mrtentry_t *mrtentry_ptr;
     mrtentry_t *mrtentry_next;
@@ -393,9 +367,7 @@ delete_srcentry(srcentry_ptr)
 }
 
 
-void
-delete_grpentry(grpentry_ptr)
-    grpentry_t *grpentry_ptr;
+void delete_grpentry(grpentry_t *grpentry_ptr)
 {
     mrtentry_t *mrtentry_ptr;
     mrtentry_t *mrtentry_next;
@@ -447,9 +419,7 @@ delete_grpentry(grpentry_ptr)
 }
 
 
-void
-delete_mrtentry(mrtentry_ptr)
-    mrtentry_t *mrtentry_ptr;
+void delete_mrtentry(mrtentry_t *mrtentry_ptr)
 {
     grpentry_t *grpentry_ptr;
     mrtentry_t *mrtentry_wc;
@@ -527,12 +497,9 @@ delete_mrtentry(mrtentry_ptr)
 }
 
 
-static int
-search_srclist(source, sourceEntry)
-    u_int32 source;
-    register srcentry_t **sourceEntry;
+static int search_srclist(u_int32 source, srcentry_t **sourceEntry)
 {
-    register srcentry_t *s_prev,*s;
+    srcentry_t *s_prev,*s;
     u_int32 source_h = ntohl(source);
     
     for (s_prev = srclist, s = s_prev->next; s != (srcentry_t *)NULL;
@@ -553,12 +520,9 @@ search_srclist(source, sourceEntry)
 }
 
 
-static int
-search_grplist(group, groupEntry)
-    u_int32 group;
-    register grpentry_t **groupEntry;
+static int search_grplist(u_int32 group, grpentry_t **groupEntry)
 {
-    register grpentry_t *g_prev, *g;
+    grpentry_t *g_prev, *g;
     u_int32 group_h = ntohl(group);
     
     for (g_prev = grplist, g = g_prev->next; g != (grpentry_t *)NULL;
@@ -579,11 +543,9 @@ search_grplist(group, groupEntry)
 }
 
 
-static srcentry_t *
-create_srcentry(source)
-    u_int32 source;
+static srcentry_t *create_srcentry(u_int32 source)
 {
-    register srcentry_t *srcentry_ptr;
+    srcentry_t *srcentry_ptr;
     srcentry_t *srcentry_prev;
 
     if (search_srclist(source, &srcentry_prev) == TRUE)
@@ -621,11 +583,9 @@ create_srcentry(source)
 }
 
 
-static grpentry_t *
-create_grpentry(group)
-    u_int32 group;
+static grpentry_t *create_grpentry(u_int32 group)
 {
-    register grpentry_t *grpentry_ptr;
+    grpentry_t *grpentry_ptr;
     grpentry_t *grpentry_prev;
 
     if (search_grplist(group, &grpentry_prev) == TRUE)
@@ -670,14 +630,10 @@ create_grpentry(group)
  * entry. Otherwise return FALSE and *mrtPtr points the previous entry
  * (or NULL if first in the chain.
  */
-static int
-search_srcmrtlink(srcentry_ptr, group, mrtPtr)
-    srcentry_t *srcentry_ptr;	
-    u_int32 group;
-    mrtentry_t **mrtPtr;
+static int search_srcmrtlink(srcentry_t *srcentry_ptr, u_int32 group, mrtentry_t **mrtPtr)
 {
-    register mrtentry_t *mrtentry_ptr;
-    register mrtentry_t *m_prev = (mrtentry_t *)NULL;
+    mrtentry_t *mrtentry_ptr;
+    mrtentry_t *m_prev = (mrtentry_t *)NULL;
     u_int32 group_h = ntohl(group);
     
     for(mrtentry_ptr = srcentry_ptr->mrtlink;
@@ -704,14 +660,10 @@ search_srcmrtlink(srcentry_ptr, group, mrtPtr)
  * entry. Otherwise return FALSE and *mrtPtr points the previous entry
  * (or NULL if first in the chain.
  */
-static int
-search_grpmrtlink(grpentry_ptr, source, mrtPtr)
-    grpentry_t *grpentry_ptr;
-    u_int32 source;
-    mrtentry_t **mrtPtr;
+static int search_grpmrtlink(grpentry_t *grpentry_ptr, u_int32 source, mrtentry_t **mrtPtr)
 {
-    register mrtentry_t *mrtentry_ptr;
-    register mrtentry_t *m_prev = (mrtentry_t *)NULL;
+    mrtentry_t *mrtentry_ptr;
+    mrtentry_t *m_prev = (mrtentry_t *)NULL;
     u_int32 source_h = ntohl(source);
     
     for (mrtentry_ptr = grpentry_ptr->mrtlink;
@@ -733,11 +685,7 @@ search_grpmrtlink(grpentry_ptr, source, mrtPtr)
 }
 
 
-static void
-insert_srcmrtlink(mrtentry_new, mrtentry_prev, srcentry_ptr)
-    mrtentry_t *mrtentry_new;
-    mrtentry_t *mrtentry_prev;
-    srcentry_t *srcentry_ptr;
+static void insert_srcmrtlink(mrtentry_t *mrtentry_new, mrtentry_t *mrtentry_prev, srcentry_t *srcentry_ptr)
 {
     if (mrtentry_prev == (mrtentry_t *)NULL) {
 	/* Has to be insert as the head entry for this source */
@@ -756,11 +704,7 @@ insert_srcmrtlink(mrtentry_new, mrtentry_prev, srcentry_ptr)
 }
 
 
-static void
-insert_grpmrtlink(mrtentry_new, mrtentry_prev, grpentry_ptr)
-    mrtentry_t *mrtentry_new;
-    mrtentry_t *mrtentry_prev;
-    grpentry_t *grpentry_ptr;
+static void insert_grpmrtlink(mrtentry_t *mrtentry_new, mrtentry_t *mrtentry_prev, grpentry_t *grpentry_ptr)
 {
     if (mrtentry_prev == (mrtentry_t *)NULL) {
 	/* Has to be insert as the head entry for this group */
@@ -779,12 +723,9 @@ insert_grpmrtlink(mrtentry_new, mrtentry_prev, grpentry_ptr)
 }
 
 
-static mrtentry_t *
-alloc_mrtentry(srcentry_ptr, grpentry_ptr)
-    srcentry_t *srcentry_ptr;
-    grpentry_t *grpentry_ptr;
+static mrtentry_t *alloc_mrtentry(srcentry_t *srcentry_ptr, grpentry_t *grpentry_ptr)
 {
-    register mrtentry_t *mrtentry_ptr;
+    mrtentry_t *mrtentry_ptr;
     u_int16 i, *i_ptr;
     u_int8  vif_numbers;
     
@@ -859,11 +800,7 @@ alloc_mrtentry(srcentry_ptr, grpentry_ptr)
 }
 
 
-static mrtentry_t *
-create_mrtentry(srcentry_ptr, grpentry_ptr, flags)
-    srcentry_t *srcentry_ptr;
-    grpentry_t *grpentry_ptr;
-    u_int16 flags;
+static mrtentry_t *create_mrtentry(srcentry_t *srcentry_ptr, grpentry_t *grpentry_ptr, u_int16 flags)
 {
     mrtentry_t *r_new;
     mrtentry_t *r_grp_insert, *r_src_insert; /* pointers to insert */
@@ -937,9 +874,7 @@ create_mrtentry(srcentry_ptr, grpentry_ptr, flags)
 /*
  * Delete all kernel cache for this mrtentry
  */
-void
-delete_mrtentry_all_kernel_cache(mrtentry_ptr)
-    mrtentry_t *mrtentry_ptr;
+void delete_mrtentry_all_kernel_cache(mrtentry_t *mrtentry_ptr)
 {
     kernel_cache_t *kernel_cache_prev;
     kernel_cache_t *kernel_cache_ptr;
@@ -964,10 +899,7 @@ delete_mrtentry_all_kernel_cache(mrtentry_ptr)
 }
 
 
-void
-delete_single_kernel_cache(mrtentry_ptr, kernel_cache_ptr)
-    mrtentry_t *mrtentry_ptr;
-    kernel_cache_t *kernel_cache_ptr;
+void delete_single_kernel_cache(mrtentry_t *mrtentry_ptr, kernel_cache_t *kernel_cache_ptr)
 {
     if (kernel_cache_ptr->prev == (kernel_cache_t *)NULL) {
 	mrtentry_ptr->kernel_cache = kernel_cache_ptr->next;
@@ -988,11 +920,7 @@ delete_single_kernel_cache(mrtentry_ptr, kernel_cache_ptr)
 }
 
 
-void
-delete_single_kernel_cache_addr(mrtentry_ptr, source, group)
-    mrtentry_t *mrtentry_ptr;
-    u_int32 source;
-    u_int32 group;
+void delete_single_kernel_cache_addr(mrtentry_t *mrtentry_ptr, u_int32 source, u_int32 group)
 {
     u_int32 source_h;
     u_int32 group_h;
@@ -1047,12 +975,7 @@ delete_single_kernel_cache_addr(mrtentry_ptr, source, group)
  * Installs kernel cache for (source, group). Assumes mrtentry_ptr
  * is the correct entry.
  */
-void
-add_kernel_cache(mrtentry_ptr, source, group, flags)
-    mrtentry_t *mrtentry_ptr;
-    u_int32 source;
-    u_int32 group;
-    u_int16 flags;
+void add_kernel_cache(mrtentry_t *mrtentry_ptr, u_int32 source, u_int32 group, u_int16 flags)
 {
     u_int32 source_h;
     u_int32 group_h;
@@ -1126,10 +1049,7 @@ add_kernel_cache(mrtentry_ptr, source, group, flags)
 /*
  * Bring the kernel cache "UP": from the (*,*,RP) to (*,G) or (S,G)
  */
-static void
-move_kernel_cache(mrtentry_ptr, flags)
-    mrtentry_t *mrtentry_ptr;
-    u_int16 flags;
+static void move_kernel_cache(mrtentry_t *mrtentry_ptr, u_int16 flags)
 {
     kernel_cache_t *kernel_cache_ptr;
     kernel_cache_t *insert_kernel_cache_ptr;

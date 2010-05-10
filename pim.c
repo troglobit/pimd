@@ -47,12 +47,11 @@ int	pim_socket;		/* socket for PIM control msgs */
 /*
  * Local function definitions.
  */
-static void pim_read   __P((int f, fd_set *rfd));
-static void accept_pim __P((ssize_t recvlen));
+static void pim_read   (int f, fd_set *rfd);
+static void accept_pim (ssize_t recvlen);
 
 
-void
-init_pim()
+void init_pim(void)
 {
     struct ip *ip;
 
@@ -97,17 +96,14 @@ init_pim()
 
 
 /* Read a PIM message */
-static void
-pim_read(f, rfd)
-    int f __attribute__((unused));
-    fd_set *rfd __attribute__((unused));
+static void pim_read(int f __attribute__((unused)), fd_set *rfd __attribute__((unused)))
 {
-    register ssize_t pim_recvlen;
+    ssize_t pim_recvlen;
     socklen_t dummy = 0;
 #if defined(SYSV) || defined(__USE_SVID)
     sigset_t block, oblock;
 #else
-    register int omask;
+    int omask;
 #endif
     
     pim_recvlen = recvfrom(pim_socket, pim_recv_buf, RECV_BUF_SIZE, 0, NULL, &dummy);
@@ -136,14 +132,11 @@ pim_read(f, rfd)
 #endif /* SYSV */
 }
 
-
-static void
-accept_pim(recvlen)
-    ssize_t recvlen;
+static void accept_pim(ssize_t recvlen)
 {
     u_int32 src, dst;
-    register struct ip *ip;
-    register pim_header_t *pim;
+    struct ip *ip;
+    pim_header_t *pim;
     int iphdrlen, pimlen;
     
     if (recvlen < (ssize_t)sizeof(struct ip)) {
@@ -176,7 +169,6 @@ accept_pim(recvlen)
 	}
     }
 #endif /* 0 */
-
 
     /* TODO: Check PIM version */
     /* TODO: check the dest. is ALL_PIM_ROUTERS (if multicast address) */
@@ -223,11 +215,7 @@ accept_pim(recvlen)
  * Send a multicast PIM packet from src to dst, PIM message type = "type"
  * and data length (after the PIM header) = "datalen"
  */
-void 
-send_pim(buf, src, dst, type, datalen)
-    char *buf;
-    u_int32 src, dst;
-    int type, datalen;
+void send_pim(char *buf, u_int32 src, u_int32 dst, int type, int datalen)
 {
     struct sockaddr_in sdst;
     struct ip *ip;
@@ -315,11 +303,7 @@ u_int pim_send_cnt = 0;
  * Send an unicast PIM packet from src to dst, PIM message type = "type"
  * and data length (after the PIM common header) = "datalen"
  */
-void 
-send_pim_unicast(buf, src, dst, type, datalen)
-    char *buf;
-    u_int32 src, dst;
-    int type, datalen;
+void send_pim_unicast(char *buf, u_int32 src, u_int32 dst, int type, int datalen)
 {
     struct sockaddr_in sdst;
     struct ip *ip;

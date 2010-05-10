@@ -54,12 +54,12 @@ typedef struct {
 /*
  * Forward declarations.
  */
-static void DelVif __P((void *arg));
-static int SetTimer __P((int vifi, struct listaddr *g));
-static int DeleteTimer __P((int id));
-static void SendQuery __P((void *arg));
-static int SetQueryTimer __P((struct listaddr *g, vifi_t vifi, int to_expire,
-			      int q_time));
+static void DelVif       (void *arg);
+static int SetTimer      (int vifi, struct listaddr *g);
+static int DeleteTimer   (int id);
+static void SendQuery    (void *arg);
+static int SetQueryTimer (struct listaddr *g, vifi_t vifi, int to_expire,
+                          int q_time);
 
 
 /*

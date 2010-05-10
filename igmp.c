@@ -56,8 +56,8 @@ u_int32 allrouters_group;	/* All-Routers addr in net order     */
 /*
  * Local functions definitions.
  */
-static void igmp_read        __P((int i, fd_set *rfd));
-static void accept_igmp      __P((ssize_t recvlen));
+static void igmp_read        (int i, fd_set *rfd);
+static void accept_igmp      (ssize_t recvlen);
 
 
 /*
