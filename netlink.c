@@ -30,9 +30,7 @@ static __u32 seq;
 
 static int getmsg(struct rtmsg *rtm, int msglen, struct rpfctl *rpf);
 
-
-static int
-addattr32(struct nlmsghdr *n, size_t maxlen, int type, __u32 data)
+static int addattr32(struct nlmsghdr *n, size_t maxlen, int type, __u32 data)
 {
     int len = RTA_LENGTH(4);
     struct rtattr *rta;
@@ -49,8 +47,7 @@ addattr32(struct nlmsghdr *n, size_t maxlen, int type, __u32 data)
     return 0;
 }
 
-static int
-parse_rtattr(struct rtattr *tb[], int max, struct rtattr *rta, int len)
+static int parse_rtattr(struct rtattr *tb[], int max, struct rtattr *rta, int len)
 {
     while (RTA_OK(rta, len)) {
 	if (rta->rta_type <= max)
@@ -63,8 +60,7 @@ parse_rtattr(struct rtattr *tb[], int max, struct rtattr *rta, int len)
 }
 
 /* open and initialize the routing socket */
-int
-init_routesock(void)
+int init_routesock(void)
 {
     socklen_t addr_len;
     struct sockaddr_nl local;
@@ -72,6 +68,7 @@ init_routesock(void)
     routing_socket = socket(PF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
     if (routing_socket < 0) {
 	logit(LOG_ERR, errno, "netlink socket");
+
 	return -1;
     }
     memset(&local, 0, sizeof(local));
@@ -80,6 +77,7 @@ init_routesock(void)
     
     if (bind(routing_socket, (struct sockaddr *) &local, sizeof(local)) < 0) {
 	logit(LOG_ERR, errno, "netlink bind");
+
 	return -1;
     }
     addr_len = sizeof(local);
@@ -89,20 +87,22 @@ init_routesock(void)
     }
     if (addr_len != sizeof(local)) {
 	logit(LOG_ERR, 0, "netlink wrong addr len");
+
 	return -1;
     }
     if (local.nl_family != AF_NETLINK) {
 	logit(LOG_ERR, 0, "netlink wrong addr family");
+
 	return -1;
     }
     pid = local.nl_pid;
     seq = time(NULL);
+
     return 0;
 }
 
 /* get the rpf neighbor info */
-int
-k_req_incoming(u_int32 source, struct rpfctl *rpf)
+int k_req_incoming(u_int32 source, struct rpfctl *rpf)
 {
     int rlen;
     register int l;
@@ -132,12 +132,13 @@ k_req_incoming(u_int32 source, struct rpfctl *rpf)
     addr.nl_groups = 0;
     addr.nl_pid = 0;
     
-    /* tracef(TRF_NETLINK, "NETLINK: ask path to %s", inet_fmt(rpf->source.s_addr, s1)); */
+    /* tracef(TRF_NETLINK, "NETLINK: ask path to %s", inet_fmt(rpf->source.s_addr, s1, sizeof(s1))); */
     logit(LOG_DEBUG, 0, "NETLINK: ask path to %s",
-	inet_fmt(rpf->source.s_addr, s1));
+	inet_fmt(rpf->source.s_addr, s1, sizeof(s1)));
     
     if ((rlen = sendto(routing_socket, buf, n->nlmsg_len, 0, (struct sockaddr *) &addr, sizeof(addr))) < 0) {
 	logit(LOG_WARNING, errno, "Error writing to routing socket");
+
 	return FALSE;
     }
     do {
@@ -147,24 +148,25 @@ k_req_incoming(u_int32 source, struct rpfctl *rpf)
 	    if (errno == EINTR)
 		continue;
 	    logit(LOG_WARNING, errno, "Error writing to routing socket");
+
 	    return FALSE;
 	}
     } while (n->nlmsg_seq != seq || n->nlmsg_pid != pid);
     
     if (n->nlmsg_type != RTM_NEWROUTE) {
 	if (n->nlmsg_type != NLMSG_ERROR) {
-	    logit(LOG_WARNING, 0, "netlink: wrong answer type %d",
-		n->nlmsg_type);
+	    logit(LOG_WARNING, 0, "netlink: wrong answer type %d", n->nlmsg_type);
 	} else {
 	    logit(LOG_WARNING, -(*(int*)NLMSG_DATA(n)), "netlink get_route");
 	}
+
 	return FALSE;
     }
+
     return getmsg(NLMSG_DATA(n), l - sizeof(*n), rpf);
 }
 
-static int
-getmsg(struct rtmsg *rtm, int msglen, struct rpfctl *rpf)
+static int getmsg(struct rtmsg *rtm, int msglen, struct rpfctl *rpf)
 {
     vifi_t vifi;
     struct uvif *v;
@@ -175,8 +177,10 @@ getmsg(struct rtmsg *rtm, int msglen, struct rpfctl *rpf)
 	logit(LOG_DEBUG, 0, "NETLINK: local address");
 	if ((rpf->iif = local_address(rpf->source.s_addr)) != MAXVIFS) {
 	    rpf->rpfneighbor.s_addr = rpf->source.s_addr;
+
 	    return TRUE;
 	}
+
 	return FALSE;
     }
     
@@ -184,6 +188,7 @@ getmsg(struct rtmsg *rtm, int msglen, struct rpfctl *rpf)
     if (rtm->rtm_type != RTN_UNICAST) {
 	/* tracef(TRF_NETLINK, "NETLINK: route type is %d", rtm->rtm_type); */
 	logit(LOG_DEBUG, 0, "NETLINK: route type is %d", rtm->rtm_type);
+
 	return FALSE;
     }
     
@@ -200,23 +205,35 @@ getmsg(struct rtmsg *rtm, int msglen, struct rpfctl *rpf)
 	}
 	if (vifi >= numvifs) {
 	    logit(LOG_WARNING, 0, "NETLINK: ifindex=%d, but no vif", ifindex);
+
 	    return FALSE;
 	}
 	/* tracef(TRF_NETLINK, "NETLINK: vif %d, ifindex=%d", vifi, ifindex);*/
 	logit(LOG_DEBUG, 0, "NETLINK: vif %d, ifindex=%d", vifi, ifindex);
     } else {
 	logit(LOG_WARNING, 0, "NETLINK: no interface");
+
 	return FALSE;
     }
     if (rta[RTA_GATEWAY]) {
 	__u32 gw = *(__u32 *) RTA_DATA(rta[RTA_GATEWAY]);
-	/* tracef(TRF_NETLINK, "NETLINK: gateway is %s", inet_fmt(gw, s1)); */
-	logit(LOG_DEBUG, 0, "NETLINK: gateway is %s", inet_fmt(gw, s1));
+	/* tracef(TRF_NETLINK, "NETLINK: gateway is %s", inet_fmt(gw, s1, sizeof(s1))); */
+	logit(LOG_DEBUG, 0, "NETLINK: gateway is %s", inet_fmt(gw, s1, sizeof(s1)));
 	rpf->rpfneighbor.s_addr = gw;
     } else
 	rpf->rpfneighbor.s_addr = rpf->source.s_addr;
     rpf->iif = vifi;
+
     return TRUE;
 }
 
 #endif /* Linux */
+
+/**
+ * Local Variables:
+ *  version-control: t
+ *  indent-tabs-mode: t
+ *  c-file-style: "ellemtel"
+ *  c-basic-offset: 4
+ * End:
+ */

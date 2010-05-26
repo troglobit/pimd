@@ -1,4 +1,11 @@
-  $Id: CHANGES,v 1.110 2003/03/21 01:54:32 pavlin Exp $
+ * Version 2.1.2, <ADD RELEASE DATE>
+  - Code cleanup, replace dangerous old string functions.
+  - Use getopt_long() for argument parsing.
+  - Improve --help output
+  - Add -f,--foreground option.
+  - Add -v,--version option.
+  - Make it possible to call pimd as a regular user, for --help and --version.
+  - Update manpage with new options.
 
  * Version 2.1.1, Sun Jan 17 15:14:17 CET 2010
   - Merged all patches from Lintrack.org:

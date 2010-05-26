@@ -42,26 +42,21 @@
 
 
 #include "defs.h"
-
-struct rp_hold *g_rp_hold=NULL;
-
-
+#include <err.h>
+#include <getopt.h>
 #ifdef SNMP
 #include "snmp.h"
 #endif
 
-char configfilename[256] = _PATH_PIMD_CONF;
 char versionstring[100];
-int pid = 0;
 int disable_all_by_default = 0;
-
-static char pidfilename[]  = _PATH_PIMD_PID;
-/* TODO: not used
-static char genidfilename[] = _PATH_PIMD_GENID;
-*/
-
 int haveterminal = 1;
-char *progname;
+struct rp_hold *g_rp_hold = NULL;
+
+char *configfilename = _PATH_PIMD_CONF;
+char *pidfilename    = _PATH_PIMD_PID;
+
+extern char todaysversion[];
 
 static int sighandled = 0;
 #define GOT_SIGINT      0x01
@@ -84,9 +79,9 @@ static struct ihandler {
 static int nhandlers = 0;
 
 static struct debugname {
-    char *name;
-    int	 level;
-    u_int nchars;
+    char	*name;
+    uint32_t	 level;
+    size_t	 nchars;
 } debugnames[] = {
     {   "dvmrp_detail",	    DEBUG_DVMRP_DETAIL,   5	    },
     {   "dvmrp_prunes",	    DEBUG_DVMRP_PRUNE,    8	    },
@@ -176,134 +171,151 @@ int register_input_handler(int fd, ihfunc_t func)
     return 0;
 }
 
+int usage(void)
+{
+    size_t i, j, k;
+    struct debugname *d;
+
+    fputs("Usage: pimd [-fhN] [-c FILE] [-d [LEVEL][,LEVEL...]]\n", stderr);
+    fputs("  -c, --config=FILE      Configuration file to use, default /etc/pimd.conf\n", stderr);
+    fputs("  -d, --debug[=LEVEL]    Debug level, see below for valid levels\n", stderr);
+    fputs("  -f, --foreground       Run in foreground, do not detach from calling terminal\n", stderr);
+    fputs("  -h, --help             Show this help text\n", stderr);
+    fputs("  -N, --disable-vifs     Disable all virtual interfaces (phyint) by default\n", stderr);
+    fputs("  -v, --version          Show pimd version\n", stderr);
+    fputs("\n", stderr);
+
+    j = 0xffffffff;
+    k = 0;
+    fputs("Valid debug levels:\n    ", stderr);
+    for (i = 0, d = debugnames; i < ARRAY_LEN(debugnames); i++, d++) {
+	if ((j & d->level) == d->level) {
+	    if (k++)
+		fputs(", ", stderr);
+	    if (!(k % 7))
+		fputs("\n    ", stderr);
+
+	    fputs(d->name, stderr);
+	    j &= ~d->level;
+	}
+    }
+    fputc('\n', stderr);
+
+    return 1;
+}
+
 int main(int argc, char *argv[])
 {	
-    int dummy, dummysigalrm;
+    int dummy, dummysigalrm, foreground = 0;
     FILE *fp;
     struct timeval tv, difftime, curtime, lasttime, *timeout;
     fd_set rfds, readers;
-    int nfds, n, i, secs;
-    extern char todaysversion[];
+    int nfds, n, i, secs, ch;
     struct sigaction sa;
-    struct debugname *d;
-    char c;
-    int tmpd;
     time_t boottime;
-
-    setlinebuf(stderr);
-
-    progname = strrchr(argv[0], '/');
-    if (progname)
-	progname++;
-    else
-	progname = argv[0];
-	
-    if (geteuid() != 0) {
-	fprintf(stderr, "%s: must be root\n", progname);
-	exit(1);
-    }
-    pid = getpid();
+    struct option long_options[] = {
+	{"config", 1, 0, 'c'},
+	{"debug", 2, 0, 'd'},
+	{"foreground", 0, 0, 'f'},
+	{"disable-vifs", 0, 0, 'N'},
+	{"help", 0, 0, 'h'},
+	{"version", 0, 0, 'v'},
+	{0, 0, 0, 0}
+    };
     
-    argv++;
-    argc--;
-    while (argc > 0 && *argv[0] == '-') {
-	if (strcmp(*argv, "-d") == 0) {
-	    if (argc > 1 && *(argv + 1)[0] != '-') { 
-		char *p,*q;
-		u_int i, len;
-		struct debugname *d;
-		
-		argv++;
-		argc--;
-		debug = 0;
-		p = *argv; q = NULL;
-		while (p) {
-		    q = strchr(p, ',');
-		    if (q)
-			*q++ = '\0';
-		    len = strlen(p);
-		    for (i = 0, d = debugnames;
-			 i < sizeof(debugnames) / sizeof(debugnames[0]);
-			 i++, d++)
-			if (len >= d->nchars && strncmp(d->name, p, len) == 0)
-			    break;
-		    if (i == sizeof(debugnames) / sizeof(debugnames[0])) {
-			int j = 0xffffffff;
-			int k = 0;
-			fprintf(stderr, "Valid debug levels: ");
-			for (i = 0, d = debugnames;
-			     i < sizeof(debugnames) / sizeof(debugnames[0]);
-			     i++, d++) {
-			    if ((j & d->level) == d->level) {
-				if (k++)
-				    putc(',', stderr);
-				fputs(d->name, stderr);
-				j &= ~d->level;
-			    }
-			}
-			putc('\n', stderr);
-			goto usage;
+    snprintf(versionstring, sizeof (versionstring), "pimd version %s", todaysversion);
+
+    while ((ch = getopt_long (argc, argv, "c:d::fhNP::v", long_options, NULL)) != EOF) {
+	switch (ch) {
+	    case 'c':
+		configfilename = optarg;
+		break;
+
+	    case 'd':
+		if (!optarg) {
+		    debug = DEBUG_DEFAULT;
+		} else {
+		    char *p,*q;
+		    size_t i, len;
+		    struct debugname *d;
+
+		    debug = 0;
+		    p = optarg; q = NULL;
+		    while (p) {
+			q = strchr(p, ',');
+			if (q)
+			    *q++ = '\0';
+			len = strlen(p);
+			for (i = 0, d = debugnames; i < ARRAY_LEN(debugnames); i++, d++)
+			    if (len >= d->nchars && strncmp(d->name, p, len) == 0)
+				break;
+
+			if (i == ARRAY_LEN(debugnames))
+			    return usage();
+
+			debug |= d->level;
+			p = q;
 		    }
-		    debug |= d->level;
-		    p = q;
 		}
-	    }
-	    else
-		debug = DEBUG_DEFAULT;
-	}
-	else if (strcmp(*argv, "-c") == 0) {
-	    if (argc > 1) {
-		argv++; argc--;
-		strcpy(configfilename, *argv);
-	    }
-	    else
-		goto usage;
-/* TODO: not implemented */
-#ifdef SNMP
-	}
-	else if (strcmp(*argv, "-P") == 0) {
-	    if (argc > 1 && isdigit(*(argv + 1)[0])) {
-		argv++, argc--;
-		dest_port = atoi(*argv);
-	    }
-	    else
-		dest_port = DEFAULT_PORT;
-#endif
-	}
-	else if (strcmp(*argv, "-N") == 0) {
+		break;
+
+	    case 'f':
+		foreground = 1;
+		break;
+
+	    case 'h':
+		return usage();
+
+	    case 'N':
 		disable_all_by_default = 1;
+		break;
+
+	    case 'P':
+#ifdef SNMP
+		if (!optarg)
+		    dest_port = DEFAULT_PORT;
+		else {
+		    dest_port = strtonum(optarg, 1, 65535, &errstr);
+		    if (errstr) {
+			warnx("destination port %s", errstr);
+			dest_port = DEFAULT_PORT;
+		    }
+		}
+#else
+		warnx("SNMP support missing, please feel free to submit a patch.");
+#endif
+		break;
+
+	    case 'v':
+		printf("%s\n", versionstring);
+		return 0;
+
+	    default:
+		return usage();
 	}
-	else
-	    goto usage;
-	argv++; argc--;
     }
+
+    argc -= optind;
+    argv += optind;
 
     if (argc > 0) {
-    usage:
-	tmpd = 0xffffffff;
-	fprintf(stderr, "usage: pimd [-c configfile] [-N] [-d [debug_level][,debug_level]]\n");
-	
-	fprintf(stderr, "debug levels: ");
-    c = '(';
-    for (d = debugnames; d < debugnames +
-	     sizeof(debugnames) / sizeof(debugnames[0]); d++) {
-	if ((tmpd & d->level) == d->level) {
-	    tmpd &= ~d->level;
-	    fprintf(stderr, "%c%s", c, d->name);
-	    c = ',';
-	}
+	return usage();
     }
-    fprintf(stderr, ")\n");
-    fprintf(stderr, "-N: causes all interfaces found in kernel to be disabled by default\n");
-    exit(1);
-    }	
-    
+
+    if (geteuid() != 0) {
+	fprintf(stderr, "%s: must be root\n", __progname);
+	exit(1);
+    }
+    setlinebuf(stderr);
+
     if (debug != 0) {
-	tmpd = debug;
+	struct debugname *d;
+	char c;
+	int tmpd = debug;
+
 	fprintf(stderr, "debug level 0x%lx ", debug);
 	c = '(';
-	for (d = debugnames; d < debugnames +
-		 sizeof(debugnames) / sizeof(debugnames[0]); d++) {
+	for (d = debugnames; d < debugnames + ARRAY_LEN(debugnames); d++) {
 	    if ((tmpd & d->level) == d->level) {
 		tmpd &= ~d->level;
 		fprintf(stderr, "%c%s", c, d->name);
@@ -319,8 +331,7 @@ int main(int argc, char *argv[])
 #else
     (void)openlog("pimd", LOG_PID);
 #endif /* LOG_DAEMON */
-    sprintf(versionstring, "pimd version %s", todaysversion);
-    
+
     logit(LOG_DEBUG, 0, "%s starting", versionstring);
     
 /* TODO: XXX: use a combination of time and hostid to initialize the random
@@ -386,7 +397,7 @@ int main(int argc, char *argv[])
     /* schedule first timer interrupt */
     timer_setTimer(TIMER_INTERVAL, timer, NULL);
     
-    if (debug == 0) {
+    if (!debug && !foreground) {
 	/* Detach from the terminal */
 	haveterminal = 0;
 	if (fork())
@@ -412,7 +423,6 @@ int main(int argc, char *argv[])
 #endif /* TIOCNOTTY */
 #endif /* SYSV */
     } /* End of child process code */
-    pid = getpid();	/* XXX: if a child fork, the pid may change */
     
     fp = fopen(pidfilename, "w");
     if (fp != NULL) {
@@ -428,7 +438,7 @@ int main(int argc, char *argv[])
     difftime.tv_usec = 0;
     gettimeofday(&curtime, NULL);
     lasttime = curtime;
-    for(;;) {
+    while (1) {
 	bcopy((char *)&readers, (char *)&rfds, sizeof(rfds));
 	secs = timer_nextTimer();
 	if (secs == -1)
@@ -718,3 +728,12 @@ static void resetlogging(void *arg)
     
     timer_setTimer(nxttime, resetlogging, narg);
 }
+
+/**
+ * Local Variables:
+ *  version-control: t
+ *  indent-tabs-mode: t
+ *  c-file-style: "ellemtel"
+ *  c-basic-offset: 4
+ * End:
+ */

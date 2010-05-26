@@ -72,8 +72,7 @@ static int init_reg_vif    (void);
 static int update_reg_vif  (vifi_t register_vifi);
 
 
-void
-init_vifs()
+void init_vifs(void)
 {
     vifi_t vifi;
     struct uvif *v;
@@ -170,7 +169,7 @@ zero_vif(v, t)
     v->uv_subnet	= INADDR_ANY_N;
     v->uv_subnetmask	= INADDR_ANY_N;
     v->uv_subnetbcast	= INADDR_ANY_N;
-    strncpy(v->uv_name, "", IFNAMSIZ);
+    strlcpy(v->uv_name, "", IFNAMSIZ);
     v->uv_groups	= (struct listaddr *)NULL;
     v->uv_dvmrp_neighbors = (struct listaddr *)NULL;
     NBRM_CLRALL(v->uv_nbrmap);
@@ -222,7 +221,7 @@ static int init_reg_vif(void)
 #ifdef PIM_EXPERIMENTAL
     v->uv_flags |= VIFF_REGISTER_KERNEL_ENCAP;
 #endif
-    strncpy(v->uv_name,"register_vif0", IFNAMSIZ);
+    strlcpy(v->uv_name,"register_vif0", IFNAMSIZ);
     
     /* Use the address of the first available physical interface to
      * create the register vif.
@@ -285,8 +284,7 @@ static void start_all_vifs(void)
 /*
  * stop all vifs
  */
-void
-stop_all_vifs()
+void stop_all_vifs(void)
 {
     vifi_t vifi;
 
@@ -301,9 +299,7 @@ stop_all_vifs()
  * physical, register or tunnel (tunnels will be used in the future
  * when this code becomes PIM multicast boarder router.
  */
-static void 
-start_vif(vifi)
-    vifi_t vifi;
+static void start_vif(vifi_t vifi)
 {
     struct uvif *v;
     u_int32    src;
@@ -357,8 +353,8 @@ start_vif(vifi)
 	struct ifreq ifr;
 	
 	memset(&ifr, 0, sizeof(struct ifreq));
-	/* strncpy(ifr.ifr_name,v->uv_name, IFNAMSIZ); */
-	strncpy(ifr.ifr_name, "pimreg", IFNAMSIZ);
+	/* strlcpy(ifr.ifr_name,v->uv_name, IFNAMSIZ); */
+	strlcpy(ifr.ifr_name, "pimreg", IFNAMSIZ);
 	if (ioctl(udp_socket, SIOGIFINDEX, (char *) &ifr) < 0) {
 	    logit(LOG_ERR, errno, "ioctl SIOGIFINDEX for %s", ifr.ifr_name);
 	    /* Not reached */
@@ -374,9 +370,7 @@ start_vif(vifi)
  * Stop a vif (either physical interface, tunnel or
  * register.) If we are running only PIM we don't have tunnels.
  */
-static void 
-stop_vif(vifi)
-    vifi_t vifi;
+static void stop_vif(vifi_t vifi)
 {
     struct uvif *v;
     struct listaddr *a;
@@ -447,9 +441,7 @@ stop_vif(vifi)
  * to be updated. As a result the Register vif has a new uv_lcl_addr and
  * is UP (virtually :))
  */
-static int
-update_reg_vif(register_vifi)
-vifi_t register_vifi;
+static int update_reg_vif(vifi_t register_vifi)
 {
     register struct uvif *v;
     register vifi_t vifi;
@@ -481,8 +473,7 @@ vifi_t register_vifi;
  * tunnel end-points.  Ignore interfaces that have been administratively
  * disabled.
  */
-void
-check_vif_state()
+void check_vif_state(void)
 {
     register vifi_t vifi;
     register struct uvif *v;
@@ -506,7 +497,7 @@ check_vif_state()
 	if (v->uv_flags & (VIFF_DISABLED | VIFF_REGISTER))
 	    continue;
 	
-	strncpy(ifr.ifr_name, v->uv_name, IFNAMSIZ);
+	strlcpy(ifr.ifr_name, v->uv_name, IFNAMSIZ);
 	/* get the interface flags */
 	if (ioctl(udp_socket, SIOCGIFFLAGS, (char *)&ifr) < 0) {
            if (errno == ENODEV) {
@@ -579,9 +570,7 @@ check_vif_state()
  * Local addresses are excluded.
  * Return the vif number or NO_VIF if not found.
  */
-vifi_t 
-find_vif_direct(src)
-    u_int32 src;
+vifi_t find_vif_direct(u_int32 src)
 {
     vifi_t vifi;
     register struct uvif *v;
@@ -618,9 +607,7 @@ find_vif_direct(src)
  * Checks if src is local address. If "yes" return the vif index,
  * otherwise return value is NO_VIF.
  */
-vifi_t
-local_address(src)
-    u_int32 src;
+vifi_t local_address(u_int32 src)
 {
     vifi_t vifi;
     register struct uvif *v;
@@ -645,9 +632,7 @@ local_address(src)
  * (Register and tunnels excluded).
  * Return the vif number or NO_VIF if not found.
  */
-vifi_t 
-find_vif_direct_local(src)
-    u_int32 src;
+vifi_t find_vif_direct_local(u_int32 src)
 {
     vifi_t vifi;
     register struct uvif *v;
@@ -684,8 +669,7 @@ find_vif_direct_local(src)
  * Returns the highest address of local vif that is UP and ENABLED.
  * The VIFF_REGISTER interface(s) is/are excluded.
  */
-u_int32
-max_local_address()
+u_int32 max_local_address(void)
 {
     vifi_t vifi;
     struct uvif *v;
@@ -701,3 +685,12 @@ max_local_address()
     }
     return(max_address);
 }
+
+/**
+ * Local Variables:
+ *  version-control: t
+ *  indent-tabs-mode: t
+ *  c-file-style: "ellemtel"
+ *  c-basic-offset: 4
+ * End:
+ */

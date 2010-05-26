@@ -51,6 +51,8 @@
  * Leland Stanford Junior University.
  *
  */
+#ifndef __PIMD_DEFS_H__
+#define __PIMD_DEFS_H__
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -187,6 +189,7 @@ typedef void (*ihfunc_t) (int, fd_set *);
 #define MFC_UPDATE_FORCE	0x2
 
 #define EQUAL(s1, s2)		(strcmp((s1), (s2)) == 0)
+#define ARRAY_LEN(a)            (sizeof((a)) / sizeof((a)[0]))
 
 #define JAN_1970                2208988800UL    /* 1970 - 1900 in seconds */
 
@@ -286,8 +289,9 @@ extern int		rsrr_socket;
 #endif /* RSRR */
 
 extern u_long		virtual_time;
-extern char		configfilename[];
-/* extern int		pid; Removed due problems with ia64, Debian Bug #287915*/
+extern char	       *configfilename;
+extern int              haveterminal;
+extern char            *__progname;
 
 extern struct cand_rp_adv_message_ {
     u_int8    *buffer;
@@ -348,10 +352,11 @@ extern int		udp_socket;
 
 extern int		vifs_down;
 
-extern char		s1[];
-extern char		s2[];
-extern char		s3[];
-extern char		s4[];
+#define MAX_INET_BUF_LEN 19
+extern char		s1[MAX_INET_BUF_LEN];
+extern char		s2[MAX_INET_BUF_LEN];
+extern char		s3[MAX_INET_BUF_LEN];
+extern char		s4[MAX_INET_BUF_LEN];
 
 #if !((defined(BSD) && (BSD >= 199103)) || (defined(Linux)))
 extern int		errno;
@@ -479,7 +484,7 @@ extern int	inet_cksum		(u_int16 *addr, u_int len);
 extern int	inet_valid_host		(u_int32 naddr);
 extern int	inet_valid_mask		(u_int32 mask);
 extern int	inet_valid_subnet	(u_int32 nsubnet, u_int32 nmask);
-extern char	*inet_fmt		(u_int32, char *s);
+extern char	*inet_fmt		(u_int32 addr, char *s, size_t len);
 extern char	*netname		(u_int32 addr, u_int32 mask);
 extern u_int32	inet_parse		(char *s, int n);
 
@@ -636,3 +641,9 @@ struct rp_hold {
 	u_int32	group;
 	u_int32	mask;
 };
+
+#ifndef HAVE_STRLCPY
+size_t strlcpy(char *dst, const char *src, size_t siz);
+#endif
+
+#endif /* __PIMD_DEFS_H__ */

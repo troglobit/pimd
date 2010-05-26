@@ -56,18 +56,18 @@ void init_pim(void)
     struct ip *ip;
 
     /* Setup the PIM raw socket */
-    if ((pim_socket = socket(AF_INET, SOCK_RAW, IPPROTO_PIM)) < 0) 
-	logit(LOG_ERR, errno, "PIM socket");
+    if ((pim_socket = socket(AF_INET, SOCK_RAW, IPPROTO_PIM)) < 0)
+        logit(LOG_ERR, errno, "PIM socket");
     k_hdr_include(pim_socket, TRUE);      /* include IP header when sending */
     k_set_sndbuf(pim_socket, SO_SEND_BUF_SIZE_MAX,
-		 SO_SEND_BUF_SIZE_MIN);   /* lots of output buffering        */
+                 SO_SEND_BUF_SIZE_MIN);   /* lots of output buffering        */
     k_set_rcvbuf(pim_socket, SO_RECV_BUF_SIZE_MAX,
-		 SO_RECV_BUF_SIZE_MIN);   /* lots of input buffering        */
-    k_set_ttl(pim_socket, MINTTL);	  /* restrict multicasts to one hop */
-    k_set_loop(pim_socket, FALSE);	  /* disable multicast loopback     */
+                 SO_RECV_BUF_SIZE_MIN);   /* lots of input buffering        */
+    k_set_ttl(pim_socket, MINTTL);        /* restrict multicasts to one hop */
+    k_set_loop(pim_socket, FALSE);        /* disable multicast loopback     */
 
     allpimrouters_group = htonl(INADDR_ALL_PIM_ROUTERS);
-    
+
     pim_recv_buf = malloc(RECV_BUF_SIZE);
     pim_send_buf = malloc(SEND_BUF_SIZE);
 
@@ -87,7 +87,7 @@ void init_pim(void)
 #endif /* old_Linux */
 
     if (register_input_handler(pim_socket, pim_read) < 0)
-	logit(LOG_ERR, 0,  "cannot register pim_read() as an input handler");
+        logit(LOG_ERR, 0,  "cannot register pim_read() as an input handler");
 
     /* Initialize the building Join/Prune messages working area */
     build_jp_message_pool = (build_jp_message_t *)NULL;
@@ -105,26 +105,26 @@ static void pim_read(int f __attribute__((unused)), fd_set *rfd __attribute__((u
 #else
     int omask;
 #endif
-    
+
     pim_recvlen = recvfrom(pim_socket, pim_recv_buf, RECV_BUF_SIZE, 0, NULL, &dummy);
     if (pim_recvlen < 0) {
-	if (errno != EINTR)
-	    logit(LOG_ERR, errno, "PIM recvfrom");
-	return;
+        if (errno != EINTR)
+            logit(LOG_ERR, errno, "PIM recvfrom");
+        return;
     }
 
 #if defined(SYSV) || defined(__USE_SVID)
     (void)sigemptyset(&block);
     (void)sigaddset(&block, SIGALRM);
     if (sigprocmask(SIG_BLOCK, &block, &oblock) < 0)
-	logit(LOG_ERR, errno, "sigprocmask");
+        logit(LOG_ERR, errno, "sigprocmask");
 #else
     /* Use of omask taken from main() */
     omask = sigblock(sigmask(SIGALRM));
 #endif /* SYSV */
-    
+
     accept_pim(pim_recvlen);
-    
+
 #if defined(SYSV) || defined(__USE_SVID)
     (void)sigprocmask(SIG_SETMASK, &oblock, (sigset_t *)NULL);
 #else
@@ -138,35 +138,35 @@ static void accept_pim(ssize_t recvlen)
     struct ip *ip;
     pim_header_t *pim;
     int iphdrlen, pimlen;
-    
+
     if (recvlen < (ssize_t)sizeof(struct ip)) {
-	logit(LOG_WARNING, 0, "packet too short (%u bytes) for IP header",
-	    recvlen);
-	return;
+        logit(LOG_WARNING, 0, "packet too short (%u bytes) for IP header",
+	      recvlen);
+        return;
     }
-    
-    ip	        = (struct ip *)pim_recv_buf;
-    src	        = ip->ip_src.s_addr;
-    dst	        = ip->ip_dst.s_addr;
+
+    ip          = (struct ip *)pim_recv_buf;
+    src         = ip->ip_src.s_addr;
+    dst         = ip->ip_dst.s_addr;
     iphdrlen    = ip->ip_hl << 2;
-    
+
     pim         = (pim_header_t *)(pim_recv_buf + iphdrlen);
     pimlen	= recvlen - iphdrlen;
     if (pimlen < (ssize_t)sizeof(*pim)) {
-	logit(LOG_WARNING, 0, 
-	    "IP data field too short (%u bytes) for PIM header, from %s to %s", 
-	    pimlen, inet_fmt(src, s1), inet_fmt(dst, s2));
-	return;
+        logit(LOG_WARNING, 0,
+	      "IP data field too short (%u bytes) for PIM header, from %s to %s",
+	      pimlen, inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
+        return;
     }
-    
+
 #if 0   /* TODO: delete. Too noisy */
     IF_DEBUG(DEBUG_PIM_DETAIL) {
-	IF_DEBUG(DEBUG_PIM) {
-	    logit(LOG_DEBUG, 0, "Receiving %s from %-15s to %s ",
-		packet_kind(IPPROTO_PIM, pim->pim_type, 0), 
-		inet_fmt(src, s1), inet_fmt(dst, s2));
-	    logit(LOG_DEBUG, 0, "PIM type is %u", pim->pim_type);
-	}
+        IF_DEBUG(DEBUG_PIM) {
+            logit(LOG_DEBUG, 0, "Receiving %s from %-15s to %s ",
+		  packet_kind(IPPROTO_PIM, pim->pim_type, 0),
+		  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
+            logit(LOG_DEBUG, 0, "PIM type is %u", pim->pim_type);
+        }
     }
 #endif /* 0 */
 
@@ -176,37 +176,37 @@ static void accept_pim(ssize_t recvlen)
      * No need for checksum, if already done in the kernel?
      */
     switch (pim->pim_type) {
-    case PIM_HELLO:      
-	receive_pim_hello(src, dst, (char *)(pim), pimlen); 
-	break;
-    case PIM_REGISTER:   
-	receive_pim_register(src, dst, (char *)(pim), pimlen);
-	break;
-    case PIM_REGISTER_STOP:   
-	receive_pim_register_stop(src, dst, (char *)(pim), pimlen);
-	break;
-    case PIM_JOIN_PRUNE: 
-	receive_pim_join_prune(src, dst, (char *)(pim), pimlen); 
-	break;
-    case PIM_BOOTSTRAP:
-	receive_pim_bootstrap(src, dst, (char *)(pim), pimlen);
-	break;
-    case PIM_ASSERT:     
-	receive_pim_assert(src, dst, (char *)(pim), pimlen); 
-	break;
-    case PIM_GRAFT:
-    case PIM_GRAFT_ACK:
-	logit(LOG_INFO, 0, "ignore %s from %s to %s",
-	    packet_kind(IPPROTO_PIM, pim->pim_type, 0), inet_fmt(src, s1),
-	    inet_fmt(dst, s2));
-    case PIM_CAND_RP_ADV:
-	receive_pim_cand_rp_adv(src, dst, (char *)(pim), pimlen);
-	break;
-    default:
-	logit(LOG_INFO, 0,
-	    "ignore unknown PIM message code %u from %s to %s",
-	    pim->pim_type, inet_fmt(src, s1), inet_fmt(dst, s2));
-	break;
+	case PIM_HELLO:
+	    receive_pim_hello(src, dst, (char *)(pim), pimlen);
+	    break;
+	case PIM_REGISTER:
+	    receive_pim_register(src, dst, (char *)(pim), pimlen);
+	    break;
+	case PIM_REGISTER_STOP:
+	    receive_pim_register_stop(src, dst, (char *)(pim), pimlen);
+	    break;
+	case PIM_JOIN_PRUNE:
+	    receive_pim_join_prune(src, dst, (char *)(pim), pimlen);
+	    break;
+	case PIM_BOOTSTRAP:
+	    receive_pim_bootstrap(src, dst, (char *)(pim), pimlen);
+	    break;
+	case PIM_ASSERT:
+	    receive_pim_assert(src, dst, (char *)(pim), pimlen);
+	    break;
+	case PIM_GRAFT:
+	case PIM_GRAFT_ACK:
+	    logit(LOG_INFO, 0, "ignore %s from %s to %s",
+		  packet_kind(IPPROTO_PIM, pim->pim_type, 0), inet_fmt(src, s1, sizeof(s1)),
+		  inet_fmt(dst, s2, sizeof(s2)));
+	case PIM_CAND_RP_ADV:
+	    receive_pim_cand_rp_adv(src, dst, (char *)(pim), pimlen);
+	    break;
+	default:
+	    logit(LOG_INFO, 0,
+		  "ignore unknown PIM message code %u from %s to %s",
+		  pim->pim_type, inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
+	    break;
     }
 }
 
@@ -228,7 +228,7 @@ void send_pim(char *buf, u_int32 src, u_int32 dst, int type, int datalen)
 
     /* Prepare the IP header */
     ip                 = (struct ip *)buf;
-    ip->ip_len	       = sizeof(struct ip) + sizeof(pim_header_t) + datalen;
+    ip->ip_len         = sizeof(struct ip) + sizeof(pim_header_t) + datalen;
     ip->ip_src.s_addr  = src;
     ip->ip_dst.s_addr  = dst;
     ip->ip_ttl         = MAXTTL;            /* applies to unicast only */
@@ -236,61 +236,61 @@ void send_pim(char *buf, u_int32 src, u_int32 dst, int type, int datalen)
 #if defined(RAW_OUTPUT_IS_RAW) || defined(OpenBSD)
     ip->ip_len         = htons(ip->ip_len);
 #endif /* RAW_OUTPUT_IS_RAW || OpenBSD */
-    
+
     /* Prepare the PIM packet */
-    pim		       = (pim_header_t *)(buf + sizeof(struct ip));
+    pim                = (pim_header_t *)(buf + sizeof(struct ip));
     pim->pim_type      = type;
     pim->pim_vers      = PIM_PROTOCOL_VERSION;
     pim->pim_reserved  = 0;
     pim->pim_cksum     = 0;
-   /* TODO: XXX: if start using this code for PIM_REGISTERS, exclude the
-    * encapsulated packet from the checsum.
-    */
+    /* TODO: XXX: if start using this code for PIM_REGISTERS, exclude the
+     * encapsulated packet from the checsum.
+     */
     pim->pim_cksum     = inet_cksum((u_int16 *)pim,
-				    sizeof(pim_header_t) + datalen);
-    
+                                    sizeof(pim_header_t) + datalen);
+
     if (IN_MULTICAST(ntohl(dst))) {
-	k_set_if(pim_socket, src);
-	if ((dst == allhosts_group) || (dst == allrouters_group) || 
-	    (dst == allpimrouters_group)) {
-	    setloop = 1;
-	    k_set_loop(pim_socket, TRUE);  
-	}
+        k_set_if(pim_socket, src);
+        if ((dst == allhosts_group) || (dst == allrouters_group) ||
+            (dst == allpimrouters_group)) {
+            setloop = 1;
+            k_set_loop(pim_socket, TRUE);
+        }
 #ifdef RAW_OUTPUT_IS_RAW
-	ip->ip_ttl = curttl;
+        ip->ip_ttl = curttl;
     } else {
-	ip->ip_ttl = MAXTTL;
+        ip->ip_ttl = MAXTTL;
 #endif /* RAW_OUTPUT_IS_RAW */
     }
-    
+
     bzero((void *)&sdst, sizeof(sdst));
     sdst.sin_family = AF_INET;
 #ifdef HAVE_SA_LEN
     sdst.sin_len = sizeof(sdst);
 #endif
     sdst.sin_addr.s_addr = dst;
-    if (sendto(pim_socket, buf, sendlen, 0, 
-	       (struct sockaddr *)&sdst, sizeof(sdst)) < 0) {
-	if (errno == ENETDOWN)
-	    check_vif_state();
-	else
-	    logit(LOG_WARNING, errno, "sendto from %s to %s",
-		inet_fmt(src, s1), inet_fmt(dst, s2));
-	if (setloop)
-	    k_set_loop(pim_socket, FALSE); 
-	return;
+    if (sendto(pim_socket, buf, sendlen, 0,
+               (struct sockaddr *)&sdst, sizeof(sdst)) < 0) {
+        if (errno == ENETDOWN)
+            check_vif_state();
+        else
+            logit(LOG_WARNING, errno, "sendto from %s to %s",
+		  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
+        if (setloop)
+            k_set_loop(pim_socket, FALSE);
+        return;
     }
-    
+
     if (setloop)
-	k_set_loop(pim_socket, FALSE); 
-    
+        k_set_loop(pim_socket, FALSE);
+
     IF_DEBUG(DEBUG_PIM_DETAIL) {
-	IF_DEBUG(DEBUG_PIM) {
-	    logit(LOG_DEBUG, 0, "SENT %s from %-15s to %s",
-		packet_kind(IPPROTO_PIM, type, 0),
-		src == INADDR_ANY_N ? "INADDR_ANY" :
-		inet_fmt(src, s1), inet_fmt(dst, s2));
-	}
+        IF_DEBUG(DEBUG_PIM) {
+            logit(LOG_DEBUG, 0, "SENT %s from %-15s to %s",
+		  packet_kind(IPPROTO_PIM, type, 0),
+		  src == INADDR_ANY_N ? "INADDR_ANY" :
+		  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
+        }
     }
 }
 
@@ -312,7 +312,7 @@ void send_pim_unicast(char *buf, u_int32 src, u_int32 dst, int type, int datalen
 #ifdef RAW_OUTPUT_IS_RAW
     extern int curttl;
 #endif /* RAW_OUTPUT_IS_RAW */
-    
+
     /* Prepare the IP header */
     ip                 = (struct ip *)buf;
     ip->ip_len         = sizeof(struct ip) + sizeof(pim_header_t) + datalen;
@@ -324,13 +324,13 @@ void send_pim_unicast(char *buf, u_int32 src, u_int32 dst, int type, int datalen
 #if defined(RAW_OUTPUT_IS_RAW) || defined(OpenBSD)
     ip->ip_len         = htons(ip->ip_len);
 #endif /* RAW_OUTPUT_IS_RAW || OpenBSD */
-    
+
     /* Prepare the PIM packet */
-    pim		           = (pim_header_t *)(buf + sizeof(struct ip));
+    pim                    = (pim_header_t *)(buf + sizeof(struct ip));
     pim->pim_vers          = PIM_PROTOCOL_VERSION;
     pim->pim_type          = type;
     pim->pim_reserved      = 0;
-    pim->pim_cksum	   = 0;
+    pim->pim_cksum         = 0;
 
     /* XXX: The PIM_REGISTERs don't include the encapsulated
      * inner packet in the checksum.
@@ -343,46 +343,54 @@ void send_pim_unicast(char *buf, u_int32 src, u_int32 dst, int type, int datalen
      */
 #ifdef BROKEN_CISCO_CHECKSUM
     pim->pim_cksum	= inet_cksum((u_int16 *)pim, sizeof(pim_header_t)
-				     + datalen);
+                                     + datalen);
 #else /* !BROKEN_CISCO_CHECKSUM */
     if (PIM_REGISTER == type) {
-	pim->pim_cksum	= inet_cksum((u_int16 *)pim, sizeof(pim_header_t)
-				     + sizeof(pim_register_t));
+        pim->pim_cksum	= inet_cksum((u_int16 *)pim, sizeof(pim_header_t)
+                                     + sizeof(pim_register_t));
     } else {
-	pim->pim_cksum	= inet_cksum((u_int16 *)pim, sizeof(pim_header_t)
-				     + datalen);
+        pim->pim_cksum	= inet_cksum((u_int16 *)pim, sizeof(pim_header_t)
+                                     + datalen);
     }
 #endif /* !BROKEN_CISCO_CHECKSUM */
-    
+
     bzero((void *)&sdst, sizeof(sdst));
     sdst.sin_family = AF_INET;
 #ifdef HAVE_SA_LEN
     sdst.sin_len = sizeof(sdst);
 #endif
     sdst.sin_addr.s_addr = dst;
-    if (sendto(pim_socket, buf, sendlen, 0, 
-	       (struct sockaddr *)&sdst, sizeof(sdst)) < 0) {
-	if (errno == ENETDOWN)
-	    check_vif_state();
-	else
-	    logit(LOG_WARNING, errno, "sendto from %s to %s",
-		inet_fmt(src, s1), inet_fmt(dst, s2));
+    if (sendto(pim_socket, buf, sendlen, 0,
+               (struct sockaddr *)&sdst, sizeof(sdst)) < 0) {
+        if (errno == ENETDOWN)
+            check_vif_state();
+        else
+            logit(LOG_WARNING, errno, "sendto from %s to %s",
+		  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
     }
-    
+
     IF_DEBUG(DEBUG_PIM_DETAIL) {
-	IF_DEBUG(DEBUG_PIM) {
+        IF_DEBUG(DEBUG_PIM) {
 /* TODO: use pim_send_cnt ?
-	if (++pim_send_cnt > SEND_DEBUG_NUMBER) {
-	    pim_send_cnt = 0;
-	    logit(LOG_DEBUG, 0, "sending %s from %-15s to %s",
-		packet_kind(IPPROTO_PIM, type, 0),
-		inet_fmt(src, s1), inet_fmt(dst, s2));
-	}
+   if (++pim_send_cnt > SEND_DEBUG_NUMBER) {
+   pim_send_cnt = 0;
+   logit(LOG_DEBUG, 0, "sending %s from %-15s to %s",
+   packet_kind(IPPROTO_PIM, type, 0),
+   inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
+   }
 */
-	    logit(LOG_DEBUG, 0, "sending %s from %-15s to %s",
-		packet_kind(IPPROTO_PIM, type, 0),
-		inet_fmt(src, s1), inet_fmt(dst, s2));
-	}
+            logit(LOG_DEBUG, 0, "sending %s from %-15s to %s",
+		  packet_kind(IPPROTO_PIM, type, 0),
+		  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
+        }
     }
 }
 
+/**
+ * Local Variables:
+ *  version-control: t
+ *  indent-tabs-mode: t
+ *  c-file-style: "ellemtel"
+ *  c-basic-offset: 4
+ * End:
+ */

@@ -257,3 +257,12 @@ print_Q()
 	    logit(LOG_DEBUG, 0, "(%d,%d) ", ptr->id, ptr->time);
 }
 #endif /* CALLOUT_DEBUG2 */
+
+/**
+ * Local Variables:
+ *  version-control: t
+ *  indent-tabs-mode: t
+ *  c-file-style: "ellemtel"
+ *  c-basic-offset: 4
+ * End:
+ */

@@ -13,7 +13,7 @@
 #
 
 # VERSION       ?= $(shell git tag -l | tail -1)
-VERSION       ?= 2.1.1
+VERSION       ?= 2.1.2
 EXEC           = pimd
 PKG            = $(EXEC)-$(VERSION)
 ARCHIVE        = $(PKG).tar.bz2
@@ -29,6 +29,9 @@ mandir         = $(prefix)/share/man/man1
 IGMP_OBJS      = igmp.o igmp_proto.o trace.o
 ROUTER_OBJS    = inet.o kern.o main.o config.o debug.o netlink.o routesock.o \
 		 vers.o callout.o
+ifndef HAVE_STRLCPY
+ROUTER_OBJS   += strlcpy.o
+endif
 PIM_OBJS       = route.o vif.o timer.o mrt.o pim.o pim_proto.o rp.o
 DVMRP_OBJS     = dvmrp_proto.o
 RSRR_OBJS      = rsrr.o

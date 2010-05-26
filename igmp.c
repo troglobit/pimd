@@ -158,7 +158,7 @@ accept_igmp(recvlen)
 #if 0				/* XXX */
 	if (src == 0 || dst == 0)
 	    logit(LOG_WARNING, 0, "kernel request not accurate, src %s dst %s",
-		inet_fmt(src, s1), inet_fmt(dst, s2));
+		inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
 	else
 #endif
 	    process_kernel_call();
@@ -174,7 +174,7 @@ accept_igmp(recvlen)
     if (iphdrlen + ipdatalen != recvlen) {
 	logit(LOG_WARNING, 0,
 	    "received packet from %s shorter (%u bytes) than hdr+data length (%u+%u)",
-	    inet_fmt(src, s1), recvlen, iphdrlen, ipdatalen);
+	    inet_fmt(src, s1, sizeof(s1)), recvlen, iphdrlen, ipdatalen);
 	return;
     }
     
@@ -184,7 +184,7 @@ accept_igmp(recvlen)
     if (igmpdatalen < 0) {
 	logit(LOG_WARNING, 0,
 	    "received IP data field too short (%u bytes) for IGMP, from %s",
-	    ipdatalen, inet_fmt(src, s1));
+	    ipdatalen, inet_fmt(src, s1, sizeof(s1)));
 	return;
     }
 
@@ -194,7 +194,7 @@ accept_igmp(recvlen)
 				    igmp->igmp_code))
 	logit(LOG_DEBUG, 0, "RECV %s from %-15s to %s",
 	    packet_kind(IPPROTO_IGMP, igmp->igmp_type, igmp->igmp_code),
-	    inet_fmt(src, s1), inet_fmt(dst, s2));
+	    inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
 #endif /* 0 */
     
     switch (igmp->igmp_type) {
@@ -266,7 +266,7 @@ accept_igmp(recvlen)
 	default:
 	    logit(LOG_INFO, 0,
 		"ignoring unknown DVMRP message code %u from %s to %s",
-		igmp->igmp_code, inet_fmt(src, s1), inet_fmt(dst, s2));
+		igmp->igmp_code, inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
 	    return;
 	}
 	
@@ -284,7 +284,7 @@ accept_igmp(recvlen)
     default:
 	logit(LOG_INFO, 0,
 	    "ignoring unknown IGMP message type %x from %s to %s",
-	    igmp->igmp_type, inet_fmt(src, s1), inet_fmt(dst, s2));
+	    igmp->igmp_type, inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
 	return;
     }
 }
@@ -349,7 +349,7 @@ send_igmp(buf, src, dst, type, code, group, datalen)
 	    check_vif_state();
 	else
 	    logit(log_level(IPPROTO_IGMP, type, code), errno,
-		"sendto to %s on %s", inet_fmt(dst, s1), inet_fmt(src, s2));
+		"sendto to %s on %s", inet_fmt(dst, s1, sizeof(s1)), inet_fmt(src, s2, sizeof(s2)));
 	if (setloop)
 	    k_set_loop(igmp_socket, FALSE);
 	return;
@@ -362,5 +362,14 @@ send_igmp(buf, src, dst, type, code, group, datalen)
 	logit(LOG_DEBUG, 0, "SENT %s from %-15s to %s",
 	    packet_kind(IPPROTO_IGMP, type, code),
 	    src == INADDR_ANY_N ? "INADDR_ANY" :
-	    inet_fmt(src, s1), inet_fmt(dst, s2));
+	    inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
 }
+
+/**
+ * Local Variables:
+ *  version-control: t
+ *  indent-tabs-mode: t
+ *  c-file-style: "ellemtel"
+ *  c-basic-offset: 4
+ * End:
+ */

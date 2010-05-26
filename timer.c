@@ -1050,3 +1050,12 @@ age_misc()
 	dump_rp_set(stderr);
     /* TODO: XXX: anything else to timeout */
 }
+
+/**
+ * Local Variables:
+ *  version-control: t
+ *  indent-tabs-mode: t
+ *  c-file-style: "ellemtel"
+ *  c-basic-offset: 4
+ * End:
+ */

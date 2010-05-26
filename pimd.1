@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH PIMD 1 "March 27, 2003"
+.TH PIMD 1 "May 26, 2010"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -51,14 +51,27 @@ options starting with two dashes (`-').
 A summary of options is included below.
 For more informations see project documentation.
 .TP
-.B \-h, \-\-help
-show brief information about usage
-.TP
 .B \-c FILE
 pimd will use FILE as configuration file instead of /etc/pimd.conf
 .TP
-.B \-d LEVEL[,LEVEL]
-add LEVEL to debugging. If you use -d \fBpimd\fP will not fork.
+.B \-d, \-\-debug[=LEVEL[,LEVEL]]
+add LEVEL to debugging.  Will make
+.B pimd
+run in foreground
+.TP
+.B \-f, \-\-foreground
+Run in foreground, do not detach from calling terminal
+.TP
+.B \-h, \-\-help
+show help text
+.TP
+.B \-N, \-\-disable-vifs
+Disable all virtual interfaces (phyint) by default
+.TP
+.B \-v, \-\-version
+Show
+.B pimd
+version
 .SH SEE ALSO
 .BR /usr/share/doc/pimd
 .br
@@ -70,5 +83,6 @@ Directory with further reading.
 .br
 Project web pages.
 .SH AUTHOR
-This manual page was written by Antonín Král <A.Kral@sh.cvut.cz>,
-for the Debian GNU/Linux system (but may be used by others).
+This manual page was initially written by Antonín Král <A.Kral@sh.cvut.cz> for the
+Debian GNU/Linux system, it was later updated by Joachim Nilsson for the pimd
+project.

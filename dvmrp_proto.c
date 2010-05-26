@@ -90,8 +90,8 @@ dvmrp_accept_info_reply(src, dst, p, datalen)
     int datalen __attribute__((unused));
 {
     IF_DEBUG(DEBUG_PKT)
-	logit(LOG_DEBUG, 0, "ignoring spurious DVMRP info reply from %s to %s",
-	    inet_fmt(src, s1), inet_fmt(dst, s2));
+        logit(LOG_DEBUG, 0, "ignoring spurious DVMRP info reply from %s to %s",
+              inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
 }
 
 
@@ -107,7 +107,7 @@ dvmrp_accept_neighbors(src, dst, p, datalen, level)
     u_int32 level __attribute__((unused));
 {
     logit(LOG_INFO, 0, "ignoring spurious DVMRP neighbor list from %s to %s",
-        inet_fmt(src, s1), inet_fmt(dst, s2));
+          inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
 }
 
 
@@ -123,9 +123,9 @@ dvmrp_accept_neighbors2(src, dst, p, datalen, level)
     u_int32 level __attribute__((unused));
 {
     IF_DEBUG(DEBUG_PKT)
-	logit(LOG_DEBUG, 0,
-	    "ignoring spurious DVMRP neighbor list2 from %s to %s",
-	    inet_fmt(src, s1), inet_fmt(dst, s2));
+        logit(LOG_DEBUG, 0,
+              "ignoring spurious DVMRP neighbor list2 from %s to %s",
+              inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
 }
 
 
@@ -153,12 +153,12 @@ dvmrp_accept_prune(src, dst, p, datalen)
 
 /* TODO */
 /* determine the multicast group and src
- * 
- * if it does, then determine if a prune was sent 
+ *
+ * if it does, then determine if a prune was sent
  * upstream.
  * if prune sent upstream, send graft upstream and send
  * ack downstream.
- * 
+ *
  * if no prune sent upstream, change the forwarding bit
  * for this interface and send ack downstream.
  *
@@ -177,11 +177,11 @@ dvmrp_accept_graft(src, dst, p, datalen)
 
 /* TODO */
 /*
- * find out which group is involved first of all 
+ * find out which group is involved first of all
  * then determine if a graft was sent.
  * if no graft sent, ignore the message
- * if graft was sent and the ack is from the right 
- * source, remove the graft timer so that we don't 
+ * if graft was sent and the ack is from the right
+ * source, remove the graft timer so that we don't
  * have send a graft again
  */
 void
@@ -193,3 +193,12 @@ dvmrp_accept_g_ack(src, dst, p, datalen)
 {
     return;
 }
+
+/**
+ * Local Variables:
+ *  version-control: t
+ *  indent-tabs-mode: t
+ *  c-file-style: "ellemtel"
+ *  c-basic-offset: 4
+ * End:
+ */
