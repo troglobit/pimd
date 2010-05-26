@@ -31,7 +31,7 @@ build-stamp: configure-stamp
 
 	# Add here commands to compile the package.
 	$(MAKE)
-	#/usr/bin/docbook-to-man debian/pimd.sgml > pimd.1
+	#/usr/bin/docbook-to-man debian/pimd.sgml > pimd.8
 
 	touch build-stamp
 
@@ -78,7 +78,7 @@ binary-arch: build install
 	dh_installinit
 #	dh_installcron
 #	dh_installinfo
-	dh_installman pimd.1
+	dh_installman pimd.8
 	dh_link
 	dh_strip
 	dh_compress
