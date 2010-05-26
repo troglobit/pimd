@@ -19,7 +19,7 @@
 is the original USC implementation of the PIM-SM dynamic multicast routing protocol.
 Protocol Independent Multicast - Sparse Mode,
 .Nm
-complies with version 2 of the protocol, which is in wide use today and is the
+, complies with version 2 of the protocol, which is in wide use today and is the
 multicast routing protocol used in many proprietary routers.
 .Pp
 The PIM-SM architecture:
@@ -41,12 +41,15 @@ dynamics.
 .Pp
 The robustness, flexibility, and scaling properties of this architecture make it well
 suited to large heterogeneous internetworks.
-
+.Pp
+.Nm
+does however only implement RFC 2362, which has been obsoleted by RFC 4601.  Please 
+see the TODO file for more information on this.
 .Sh OPTIONS
 This program follows the usual UNIX command line syntax, with long options starting
 with two dashes (`-').  The options are as follows:
 .Bl -tag -width Ds
-.It Fl h
+.It Fl h, -help
 Print a help message and exit.
 .It Fl c, -config=FILE
 Specify an alternative configuration file, instead of the default
@@ -95,6 +98,16 @@ Debug IGMP messages
 Debug ICMP messages
 .It rsrr
 Debug RSRR messages
+.It pim
+All PIM messages
+.It pim_routes
+PIM routing messages
+.It pim_bsr
+PIM bootstrap router messages
+.It pim_detail
+Detailed PIM debug
+.It pim_hello
+Debug hello messages to/from neighbors
 .El
 .It Fl f, -foreground
 Run in foreground, do not detach from calling terminal
@@ -105,7 +118,171 @@ Show
 .Nm
 version
 .El
-
+.Sh CONFIGURATION
+The configuration is kept in the file
+.Pa /etc/pimd.conf .
+The file format is free-form: whitespace (including newlines) is not
+significant.  There are eight different types of configuration commands:
+.Bl -item -offset indent
+.It
+.Cm default_source_preference
+.Ar <preference>
+.It
+.Cm default_source_metric
+.Ar <metric>
+.It
+.Cm phyint
+.Ar <local-addr Ns | Ns ifname>
+.Oo
+.Cm disable Ns | Ns Cm enable
+.Oc
+.br
+.Oo
+.Cm altnet
+.Ar <network> Cm masklen Ar <masklen>
+.Oc
+.br
+.Oo
+.Cm scoped
+.Ar <network> Cm masklen Ar <masklen>
+.Oc
+.br
+.Op Cm threshold Ar thr
+.Op Cm preference Ar pref
+.Op Cm metric Ar cost
+.It
+.Cm cand_rp
+.Op <local-addr>
+.Op Cm priority Ar <number>
+.Op Cm time Ar <number>
+.It
+.Cm cand_bootstrap_router
+.Op <local-addr>
+.Op Cm priority Ar <number>
+.It
+.Cm group_prefix
+.Ar <group-addr>
+.Op Cm masklen Ar <masklen>
+.It
+.Cm switch_data_threshold
+.Op Cm rate Ar <number> Cm interval Ar <number>
+.It
+.Cm switch_register_threshold
+.Op Cm rate Ar <number> Cm interval Ar <number>
+.El
+.Pp
+By default
+.Nm
+will be activated on all multicast enabled interfaces.  Use
+.Cm phyint
+to disable on interfaces where pimd should not be run.  See more on 
+.Cm phyint
+below.
+.Pp
+The
+.Cm default_source_preference
+option is used by assert elections to determine upstream routers.  Currently
+pimd cannot reliably obtain preferences and metrics from the unicast routing
+protocols, so a default preference may be configured.  In an assert election,
+the router advertising the lowest assert preference will be selected as the
+forwarder and upstream router for the LAN.  Setting 101 should be sufficiently
+high so that asserts from Cisco or GateD routers are prefered over poor-little
+pimd.
+.Pp
+It is reccommended that preferences be set such that metrics are never
+consulted.  However, default metrics may also be set using the
+.Cm default_source_metric
+option.  This item sets the cost for sending data through this router.  You
+want only PIM-SM data to go to this daemon; so once again, a high value is
+recommended to prevent accidental usage.  The preferred default value is 1024.
+.Pp
+The
+.Nm phyint
+option refers to a physical interface and must come after
+.Cm default_source_metric .
+Select the interface either by its IP address
+.Ar local-addr
+or interface name
+.Ar ifname
+(e.g. le0).  If you just want to activate this interface with default values,
+you don't need to put anything else on the line.  However, there are some 
+additional settings:
+.Bl -bullet -compact
+.It
+.Nm disable .
+Do not send PIM-SM traffic through this interface nor listen for PIM-SM traffic
+from this interface.  Default: enable.
+.It
+.Nm preference pref .
+This interface's value in an election. It will have the
+.Nm
+default_source_preference
+if not assigned.
+.It
+.Nm metric cost .
+The cost of sending data through this interface. It will have the
+.Nm default_source_metric
+if not assigned.
+.El
+.Pp
+Add one
+.Nm phyint
+line per interface on this router.  If you don't do this,
+.Nm pimd
+will simply assume that you want it to utilize all interfaces using default settings.
+.Pp
+The
+.Nm cand_rp
+setting refers to Candidate Rendez-vous Point (CRP).  It specifies which
+interface on this machine should be included in RP elections.
+.Bl -bullet -compact
+.It
+.Nm local-addr .
+The default is the highest active IP address.
+.It
+.Nm time number .
+The number of seconds to wait between advertising this CRP. The default value
+is 60 seconds.
+.It
+.Nm priority number .
+How important this CRP is compared to others. The lower the value here, the
+more important the CRP.
+.El
+.Pp
+The
+.Nm cand_bootstrap_router
+setting is similar to CRP.  Only difference is the lack of a 
+.Nm time
+option.
+.Pp
+The
+.Nm group_prefix
+statement outlines the set of multicast addresses that the CRP, if it wins an
+election, will advertise to other routers.
+.Bl -bullet -compact
+.It
+.Nm group-addr .
+A specific multicast group or network range this router will handle.
+.It
+.Nm masklen len .
+The number of IP address segments taken up by the netmask. Remember that a
+multicast address is a Class D and has a netmask of 240.0.0.0, which means its
+length is 4.
+.El
+.Pp
+Max
+.Nm group_prefix
+multicast addresses supported in pimd is 255.
+.Pp
+The 
+.Nm switch_data_threshold
+setting defines the threshold at which transmission rates trigger the
+changeover from the shared tree to the RP tree; starting the line with
+.Nm switch_register_threshold
+does the opposite in the same format.  Regardless of which of these you choose,
+the rate option is for transmission rate in bits per second, interval is the
+sample rate in seconds -- with a recommended minimum of five seconds.  It is
+recommended to have the same interval if both settings are used.
 .Sh SIGNALS
 .Nm
 responds to the following signals:
@@ -137,7 +314,6 @@ For convenience in sending signals,
 writes its process ID to
 .Pa /var/run/pimd.pid
 upon startup.
-
 .Sh FILES
 .Bl -tag -width /var/tmp/pimd.cache -compact
 .It Pa /etc/pimd.conf
@@ -145,7 +321,6 @@ upon startup.
 .It Pa /var/tmp/pimd.dump
 .It Pa /var/run/pimd.pid
 .El
-
 .Sh SEE ALSO
 .Xr mrouted 8 ,
 .Xr smcroute 8 ,
@@ -157,7 +332,6 @@ additions in RFC 5059 and RFC 5796.
 The pages at USC, http://netweb.usc.edu/pim/, are unfortunately no longer available.
 The wiki pages at http://github.com/troglobit/pimd/, the new GitHub project, are an
 attempt to gather as much info as possible.
-
 .Sh AUTHORS
 .Nm
 was written by Ahmed Helmy, George Edmond "Rusty" Eddy, and Pavlin Ivanov

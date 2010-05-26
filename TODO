@@ -3,6 +3,10 @@
 THIS LIST IS FAR AWAY FROM BEING COMPLETE, so these are the few things 
 that came up at the right moment to be written down.
 
+  * Start work on ironing out a TODO list for RFC 4601 compliancy.
+
+  * Look into updates RFC 5059 and RFC 5796
+
   * Install negative cache in kernel for non-frequently requested
     groups. 
 

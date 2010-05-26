@@ -13,7 +13,7 @@
 #
 
 # VERSION       ?= $(shell git tag -l | tail -1)
-VERSION       ?= 2.1.2
+VERSION       ?= 2.1.2-rc1
 EXEC           = pimd
 PKG            = $(EXEC)-$(VERSION)
 ARCHIVE        = $(PKG).tar.bz2

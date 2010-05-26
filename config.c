@@ -364,7 +364,10 @@ wordToOption(word)
  * @s: pointing to the parsing point of the file
  *
  * Syntax:
- * phyint <local-addr | ifname> [disable|enable] [threshold <t>] [preference <p>] [metric <m>] [altnet <net-addr> masklen <masklen>] [scoped <net-addr> masklen <masklen>]
+ * phyint <local-addr | ifname> [disable|enable]
+ *                              [threshold <t>] [preference <p>] [metric <m>]
+ *                              [altnet <net-addr> masklen <masklen>]
+ *                              [scoped <net-addr> masklen <masklen>]
  *
  * Returns:
  * %TRUE if the parsing was successful, o.w. %FALSE
