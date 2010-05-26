@@ -24,13 +24,16 @@ CC             = $(CROSS)gcc
 prefix        ?= /usr/local
 sysconfdir    ?= /etc
 datadir        = $(prefix)/share/doc/pimd
-mandir         = $(prefix)/share/man/man1
+mandir         = $(prefix)/share/man/man8
 
 IGMP_OBJS      = igmp.o igmp_proto.o trace.o
 ROUTER_OBJS    = inet.o kern.o main.o config.o debug.o netlink.o routesock.o \
 		 vers.o callout.o
 ifndef HAVE_STRLCPY
 ROUTER_OBJS   += strlcpy.o
+endif
+ifndef HAVE_PIDFILE
+ROUTER_OBJS  += pidfile.o
 endif
 PIM_OBJS       = route.o vif.o timer.o mrt.o pim.o pim_proto.o rp.o
 DVMRP_OBJS     = dvmrp_proto.o
@@ -52,7 +55,9 @@ include snmp.mk
 
 MCAST_INCLUDE  = -Iinclude
 PURIFY         = purify -cache-dir=/tmp -collector=/import/pkgs/gcc/lib/gcc-lib/sparc-sun-sunos4.1.3_U1/2.7.2.2/ld
-COMMON_CFLAGS  = $(MCAST_INCLUDE) $(SNMPDEF) $(RSRRDEF) $(MISCDEFS) -DPIM
+MISCDEFS       = -D__BSD_SOURCE -D_GNU_SOURCE -DPIM
+MISCDEFS      += -W -Wall -Werror -Wextra
+COMMON_CFLAGS  = $(MCAST_INCLUDE) $(SNMPDEF) $(RSRRDEF) $(MISCDEFS)
 CFLAGS         = $(INCLUDES) $(DEFS) $(COMMON_CFLAGS) $(USERCOMPILE)
 
 LDLIBS         = $(SNMPLIBDIR) $(SNMPLIBS) $(LIB2)
@@ -85,13 +90,13 @@ install: $(EXEC)
 	$(Q)for file in $(DISTFILES); do \
 		install -m 0644 $$file $(DESTDIR)$(datadir)/$$file; \
 	done
-	$(Q)install -m 0644 $(EXEC).1 $(DESTDIR)$(mandir)/$(EXEC).1
+	$(Q)install -m 0644 $(EXEC).8 $(DESTDIR)$(mandir)/$(EXEC).8
 
 uninstall:
 	-$(Q)$(RM) $(DESTDIR)$(prefix)/sbin/$(EXEC)
 	-$(Q)$(RM) $(DESTDIR)$(sysconfdir)/$(EXEC).conf
 	-$(Q)$(RM) -r $(DESTDIR)$(datadir)
-	-$(Q)$(RM) $(DESTDIR)$(mandir)/$(EXEC).1
+	-$(Q)$(RM) $(DESTDIR)$(mandir)/$(EXEC).8
 
 clean: $(SNMPCLEAN)
 	-$(Q)$(RM) $(OBJS) $(EXEC)

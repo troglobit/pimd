@@ -63,7 +63,7 @@ union sockunion {
 typedef union sockunion *sup;
 int routing_socket = -1;
 int rtm_addrs;
-/* int pid; */		/* XXX: pid is external */
+static pid_t pid;
 struct rt_metrics rt_metrics;
 u_long rtm_inits;
 

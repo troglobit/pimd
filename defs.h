@@ -645,5 +645,8 @@ struct rp_hold {
 #ifndef HAVE_STRLCPY
 size_t strlcpy(char *dst, const char *src, size_t siz);
 #endif
+#ifndef HAVE_PIDFILE
+int pidfile(const char *basename);
+#endif
 
 #endif /* __PIMD_DEFS_H__ */

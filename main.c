@@ -54,7 +54,6 @@ int haveterminal = 1;
 struct rp_hold *g_rp_hold = NULL;
 
 char *configfilename = _PATH_PIMD_CONF;
-char *pidfilename    = _PATH_PIMD_PID;
 
 extern char todaysversion[];
 
@@ -207,7 +206,6 @@ int usage(void)
 int main(int argc, char *argv[])
 {	
     int dummy, dummysigalrm, foreground = 0;
-    FILE *fp;
     struct timeval tv, difftime, curtime, lasttime, *timeout;
     fd_set rfds, readers;
     int nfds, n, i, secs, ch;
@@ -424,12 +422,10 @@ int main(int argc, char *argv[])
 #endif /* SYSV */
     } /* End of child process code */
     
-    fp = fopen(pidfilename, "w");
-    if (fp != NULL) {
-	fprintf(fp, "%d\n", (int)getpid());
-	(void) fclose(fp);
+    if (pidfile (NULL)) {
+	warn("Cannot create pidfile");
     }
-    
+
     /*
      * Main receive loop.
      */
