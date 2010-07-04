@@ -54,18 +54,16 @@ static u_int32	ifname2addr	(char *s);
 
 extern struct rp_hold *g_rp_hold;
 
-
 /*
  * Query the kernel to find network interfaces that are multicast-capable
  * and install them in the uvifs array.
  */
-void
-config_vifs_from_kernel()
+void config_vifs_from_kernel(void)
 {
     struct ifreq *ifrp, *ifend;
-    register struct uvif *v;
-    register vifi_t vifi;
-    int n;
+    struct uvif *v;
+    vifi_t vifi;
+    u_int32 n;
     u_int32 addr, mask, subnet;
     short flags;
     int num_ifreq = 64;
@@ -325,9 +323,7 @@ config_vifs_from_kernel()
  * operation: converts the result of the string comparisons into numerics.
  * comments: called by config_vifs_from_file()
  */
-int
-wordToOption(word)
-    char *word;
+static int wordToOption(char *word)
 {
     if (EQUAL(word, ""))
         return EMPTY;
@@ -574,7 +570,7 @@ static int parse_phyint(char *s)
         }		/* if not empty */
         break;
     }
-    return(TRUE);
+    return TRUE;
 }
 
 
@@ -586,9 +582,7 @@ static int parse_phyint(char *s)
  *	The general form is:
  *      'cand_rp <local-addr> [priority <number>] [time <number>]'.
  */
-int
-parse_candidateRP(s)
-    char *s;
+int parse_candidateRP(char *s)
 {
     u_int time = PIM_DEFAULT_CAND_RP_ADV_PERIOD;
     u_int priority = PIM_DEFAULT_CAND_RP_PRIORITY;
@@ -655,9 +649,10 @@ parse_candidateRP(s)
         }
     }           /* while not empty */
 
-    if (local == INADDR_ANY_N)
+    if (local == INADDR_ANY_N) {
         /* If address not provided, use the max. local */
         local = max_local_address();
+    }
 
     my_cand_rp_address = local;
     my_cand_rp_priority = priority;
@@ -667,7 +662,8 @@ parse_candidateRP(s)
     logit(LOG_INFO, 0, "Local Cand-RP address is %s", inet_fmt(local, s1, sizeof(s1)));
     logit(LOG_INFO, 0, "Local Cand-RP priority is %u", priority);
     logit(LOG_INFO, 0, "Local Cand-RP advertisement period is %u sec.", time);
-    return(TRUE);
+
+    return TRUE;
 }
 
 
@@ -678,9 +674,7 @@ parse_candidateRP(s)
  * operation: parse group_prefix configured information.
  *	General form: 'group_prefix <group-addr> [masklen <masklen>]'.
  */
-int
-parse_group_prefix(s)
-    char *s;
+int parse_group_prefix(char *s)
 {
     char *w;
     u_int32 group_addr;
@@ -690,13 +684,13 @@ parse_group_prefix(s)
     if (EQUAL(w, "")) {
         logit(LOG_WARNING, 0,
               "Configuration error for 'group_prefix' in %s: no group_addr. Ignoring...", configfilename);
-        return(FALSE);
+        return FALSE;
     }
     group_addr = inet_parse(w, 4);
     if (!IN_MULTICAST(ntohl(group_addr))) {
         logit(LOG_WARNING, 0,
               "Config error for 'group_prefix' in %s: %s is not a mcast addr. Ignoring...", configfilename, inet_fmt(group_addr, s1, sizeof(s1)));
-        return(FALSE);
+        return FALSE;
     }
 
     /* Was if (!(~(*cand_rp_adv_message.prefix_cnt_ptr))) which Arm GCC 4.4.2 dislikes:
@@ -707,7 +701,7 @@ parse_group_prefix(s)
     if (*cand_rp_adv_message.prefix_cnt_ptr == 255) {
         logit(LOG_WARNING, 0,
               "Too many group_prefix configured. Truncating...");
-        return(FALSE);
+        return FALSE;
     }
 
     if (EQUAL((w = next_word(&s)), "masklen")) {
@@ -730,7 +724,8 @@ parse_group_prefix(s)
     (*cand_rp_adv_message.prefix_cnt_ptr)++;
 
     logit(LOG_INFO, 0, "Adding prefix %s/%d", inet_fmt(group_addr, s1, sizeof(s1)), masklen);
-    return(TRUE);
+
+    return TRUE;
 }
 
 
@@ -742,9 +737,7 @@ parse_group_prefix(s)
  *	General form:
  *	'cand_bootstrap_router <local-addr> [priority <number>]'.
  */
-int
-parseBSR(s)
-    char *s;
+int parseBSR(char *s)
 {
     char *w;
     u_int32 local    = INADDR_ANY_N;
@@ -798,7 +791,8 @@ parseBSR(s)
     cand_bsr_flag   = TRUE;
     logit(LOG_INFO, 0, "Local Cand-BSR address is %s", inet_fmt(local, s1, sizeof(s1)));
     logit(LOG_INFO, 0, "Local Cand-BSR priority is %u", priority);
-    return(TRUE);
+
+    return TRUE;
 }
 
 /**
@@ -955,7 +949,7 @@ int parse_reg_threshold(char *s)
     pim_reg_rate_bytes = (rate * interval) / 10;
     pim_reg_rate_check_interval = interval;
 
-    return(TRUE);
+    return TRUE;
 }
 
 
@@ -1030,7 +1024,7 @@ int parse_data_threshold(char *s)
     pim_data_rate_bytes = (rate * interval) / 10;
     pim_data_rate_check_interval = interval;
 
-    return(TRUE);
+    return TRUE;
 }
 
 
@@ -1069,7 +1063,7 @@ int parse_default_source_metric(char *s)
     for (vifi = 0, v = uvifs; vifi < MAXVIFS; ++vifi, ++v)
         v->uv_local_metric = default_source_metric;
 
-    return(TRUE);
+    return TRUE;
 }
 
 
@@ -1107,7 +1101,7 @@ int parse_default_source_preference(char *s)
     for (vifi = 0, v = uvifs; vifi < MAXVIFS; ++vifi, ++v)
         v->uv_local_pref = default_source_preference;
 
-    return(TRUE);
+    return TRUE;
 }
 
 
@@ -1220,18 +1214,20 @@ void config_vifs_from_file(void)
         PUT_HOSTSHORT(my_cand_rp_holdtime, data_ptr);
         PUT_EUADDR(my_cand_rp_address, data_ptr);
     }
+
     fclose(f);
 }
 
 
 static u_int32 ifname2addr(char *s)
 {
-    register vifi_t vifi;
-    register struct uvif *v;
+    vifi_t vifi;
+    struct uvif *v;
 
-    for (vifi = 0, v = uvifs; vifi < numvifs; vifi++, v++)
+    for (vifi = 0, v = uvifs; vifi < numvifs; vifi++, v++) {
         if (!strcmp(v->uv_name, s))
             return v->uv_lcl_addr;
+    }
 
     return 0;
 }
