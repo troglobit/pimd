@@ -56,7 +56,7 @@ include snmp.mk
 MCAST_INCLUDE  = -Iinclude
 PURIFY         = purify -cache-dir=/tmp -collector=/import/pkgs/gcc/lib/gcc-lib/sparc-sun-sunos4.1.3_U1/2.7.2.2/ld
 MISCDEFS       = -D__BSD_SOURCE -D_GNU_SOURCE -DPIM
-MISCDEFS      += -W -Wall -Werror -Wextra
+MISCDEFS      += -W -Wall -Werror
 COMMON_CFLAGS  = $(MCAST_INCLUDE) $(SNMPDEF) $(RSRRDEF) $(MISCDEFS)
 CFLAGS         = $(INCLUDES) $(DEFS) $(COMMON_CFLAGS) $(USERCOMPILE)
 
