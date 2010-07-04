@@ -275,7 +275,7 @@ age_routes()
     vifi_t  vifi;
     pim_nbr_entry_t *pim_nbr_ptr;
     int change_flag;
-    int rp_action, grp_action, src_action, src_action_rp;
+    int rp_action, grp_action, src_action = PIM_ACTION_NOTHING, src_action_rp = PIM_ACTION_NOTHING;
     int dont_calc_action;
     int did_switch_flag;
     rp_grp_entry_t *rp_grp_entry_ptr;
@@ -838,11 +838,9 @@ age_routes()
 			
 		    /* Join/Prune timer */
 		    IF_TIMEOUT(mrtentry_srcs->jp_timer) {
-			if ((dont_calc_action != TRUE)
-			    || (rpentry_ptr->upstream
-				!= mrtentry_srcs->upstream))
-			    src_action = join_or_prune(mrtentry_srcs,
-						       mrtentry_srcs->upstream);
+			if ((dont_calc_action != TRUE) || (rpentry_ptr->upstream != mrtentry_srcs->upstream))
+			    src_action = join_or_prune(mrtentry_srcs, mrtentry_srcs->upstream);
+
 			if (src_action != PIM_ACTION_NOTHING)
 			    add_jp_entry(mrtentry_srcs->upstream,
 					 PIM_JOIN_PRUNE_HOLDTIME,
@@ -856,12 +854,10 @@ age_routes()
 			    /* Have both (S,G) and (*,G) (or (*,*,RP)).
 			     * Check if need to send (S,G) PRUNE toward RP
 			     */
-			    if (mrtentry_srcs->upstream
-				!= mrtentry_wide->upstream) {
+			    if (mrtentry_srcs->upstream != mrtentry_wide->upstream) {
 				if (dont_calc_action != TRUE)
-				    src_action_rp =
-					join_or_prune(mrtentry_srcs,
-						      mrtentry_wide->upstream);
+				    src_action_rp = join_or_prune(mrtentry_srcs,
+								  mrtentry_wide->upstream);
 				/* XXX: TODO: do error check if
 				 * src_action == PIM_ACTION_JOIN, which should
 				 * be an error.
