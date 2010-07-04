@@ -134,8 +134,8 @@ timer_setTimer(delay, action, data)
     
     /* create a node */	
     node = (struct timeout_q *)malloc(sizeof(struct timeout_q));
-    if (node == 0) {
-	logit(LOG_WARNING, 0, "Malloc Failed in timer_settimer\n");
+    if (!node) {
+	logit(LOG_ERR, 0, "Failed malloc() in timer_settimer\n");
 	return -1;
     }
     node->func = action; 
