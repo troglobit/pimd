@@ -183,7 +183,7 @@ int k_req_incoming(u_int32 source, struct rpfctl *rpfp)
     flags |= RTF_HOST;
     flags |= RTF_GATEWAY;
     errno = 0;
-    memset (m_rtmsg, 0, sizeof(m_rtmsg));
+    memset (&m_rtmsg, 0, sizeof(m_rtmsg));
 
 #define rtm m_rtmsg.m_rtm
     rtm.rtm_type	= RTM_GET;
