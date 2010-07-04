@@ -40,9 +40,7 @@
  *
  */
 
-
 #include "defs.h"
-
 
 /*
  * Exported variables.
@@ -52,6 +50,10 @@ char    *igmp_send_buf;  	/* output packet buffer              */
 int     igmp_socket;	      	/* socket for all network I/O        */
 u_int32 allhosts_group;	      	/* allhosts  addr in net order       */
 u_int32 allrouters_group;	/* All-Routers addr in net order     */
+
+#ifdef RAW_OUTPUT_IS_RAW
+extern int curttl;
+#endif /* RAW_OUTPUT_IS_RAW */
 
 /*
  * Local functions definitions.
@@ -84,7 +86,7 @@ init_igmp()
     k_set_loop(igmp_socket, FALSE);	/* disable multicast loopback     */
     
     ip         = (struct ip *)igmp_send_buf;
-    bzero(ip, sizeof(*ip));
+    memset(ip, 0, sizeof(*ip));
     ip->ip_v   = IPVERSION;
     ip->ip_hl  = (sizeof(struct ip) >> 2);
     ip->ip_tos = 0xc0;                  /* Internet Control   */
@@ -301,9 +303,6 @@ send_igmp(buf, src, dst, type, code, group, datalen)
     struct ip *ip;
     struct igmp *igmp;
     int sendlen;
-#ifdef RAW_OUTPUT_IS_RAW
-    extern int curttl;
-#endif /* RAW_OUTPUT_IS_RAW */
     int setloop = 0;
 
     /* Prepare the IP header */
@@ -337,21 +336,22 @@ send_igmp(buf, src, dst, type, code, group, datalen)
 #endif /* RAW_OUTPUT_IS_RAW */
     }
     
-    bzero((void *)&sdst, sizeof(sdst));
+    memset(&sdst, 0, sizeof(sdst));
     sdst.sin_family = AF_INET;
 #ifdef HAVE_SA_LEN
     sdst.sin_len = sizeof(sdst);
 #endif
     sdst.sin_addr.s_addr = dst;
-    if (sendto(igmp_socket, igmp_send_buf, sendlen, 0,
-	       (struct sockaddr *)&sdst, sizeof(sdst)) < 0) {
+    if (sendto(igmp_socket, igmp_send_buf, sendlen, 0, (struct sockaddr *)&sdst, sizeof(sdst)) < 0) {
 	if (errno == ENETDOWN || errno == ENODEV)
 	    check_vif_state();
 	else
 	    logit(log_level(IPPROTO_IGMP, type, code), errno,
 		"sendto to %s on %s", inet_fmt(dst, s1, sizeof(s1)), inet_fmt(src, s2, sizeof(s2)));
+
 	if (setloop)
 	    k_set_loop(igmp_socket, FALSE);
+
 	return;
     }
     
