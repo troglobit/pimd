@@ -158,11 +158,9 @@ void config_vifs_from_kernel(void)
          */
         if (ioctl(udp_socket, SIOCGIFNETMASK, (char *)&ifr) < 0) {
             if (!(flags & IFF_POINTOPOINT)) {
-                logit(LOG_ERR, errno, "ioctl SIOCGIFNETMASK for %s",
-                      ifr.ifr_name);
-            } else {
-                mask = 0xffffffff;
+                logit(LOG_ERR, errno, "ioctl SIOCGIFNETMASK for %s", ifr.ifr_name);
             }
+	    mask = 0xffffffff;
         } else {
             mask = ((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr;
         }
