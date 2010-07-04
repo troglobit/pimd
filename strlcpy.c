@@ -18,6 +18,7 @@
 
 #include <sys/types.h>
 #include <string.h>
+#include "defs.h"
 
 /*
  * Copy src to string dst of size siz.  At most siz-1 characters
