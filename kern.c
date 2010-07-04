@@ -42,7 +42,6 @@
 
 #include "defs.h"
 
-
 #ifdef RAW_OUTPUT_IS_RAW
 int curttl = 0;
 #endif
