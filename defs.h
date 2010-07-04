@@ -72,7 +72,7 @@
 #endif /* SYSV || bsdi || SunOS 4.x */
 #include <time.h>
 #include <sys/time.h>
-#include <linux/if.h>
+#include <net/if.h>
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
