@@ -354,6 +354,7 @@ void logit(int severity, int syserr, const char *format, ...)
     char *msg;
     struct timeval now;
     struct tm *thyme;
+    time_t lt;
 
     va_start(ap, format);
     vsnprintf(&fmt[10], sizeof(fmt) - 10, format, ap);
@@ -366,7 +367,9 @@ void logit(int severity, int syserr, const char *format, ...)
      */
     if (haveterminal && (debug || severity <= LOG_WARNING)) {
         gettimeofday(&now, NULL);
-        thyme = localtime(&now.tv_sec);
+        lt = now.tv_sec;
+	thyme = localtime(&lt);
+
         if (!debug)
             fprintf(stderr, "%s: ", __progname);
         fprintf(stderr, "%02d:%02d:%02d.%03ld %s", thyme->tm_hour,
