@@ -12,58 +12,62 @@
 #       * Original Makefile
 #
 
-# VERSION       ?= $(shell git tag -l | tail -1)
-VERSION       ?= 2.1.2-rc1
-EXEC           = pimd
-PKG            = $(EXEC)-$(VERSION)
-ARCHIVE        = $(PKG).tar.bz2
+# VERSION      ?= $(shell git tag -l | tail -1)
+VERSION      ?= 2.1.2-rc2
+EXEC          = pimd
+CONFIG        = $(EXEC).conf
+PKG           = $(EXEC)-$(VERSION)
+ARCHIVE       = $(PKG).tar.bz2
 
-ROOTDIR       ?= $(dir $(shell pwd))
-CC             = $(CROSS)gcc
+ROOTDIR      ?= $(dir $(shell pwd))
+CC           ?= $(CROSS)gcc
 
-prefix        ?= /usr/local
-sysconfdir    ?= /etc
-datadir        = $(prefix)/share/doc/pimd
-mandir         = $(prefix)/share/man/man8
+prefix       ?= /usr/local
+sysconfdir   ?= /etc
+datadir       = $(prefix)/share/doc/pimd
+mandir        = $(prefix)/share/man/man8
 
-IGMP_OBJS      = igmp.o igmp_proto.o trace.o
-ROUTER_OBJS    = inet.o kern.o main.o config.o debug.o netlink.o routesock.o \
-		 vers.o callout.o
+
+# Uncomment the following line if you want to use RSRR (Routing
+# Support for Resource Reservations), currently used by RSVP.
+#RSRRDEF       = -DRSRR
+RSRR_OBJS     = rsrr.o
+
+IGMP_OBJS     = igmp.o igmp_proto.o trace.o
+ROUTER_OBJS   = inet.o kern.o main.o config.o debug.o netlink.o routesock.o \
+		vers.o callout.o ${RSRR_OBJS}
 ifndef HAVE_STRLCPY
-ROUTER_OBJS   += strlcpy.o
+ROUTER_OBJS  += strlcpy.o
 endif
 ifndef HAVE_PIDFILE
 ROUTER_OBJS  += pidfile.o
 endif
-PIM_OBJS       = route.o vif.o timer.o mrt.o pim.o pim_proto.o rp.o
-DVMRP_OBJS     = dvmrp_proto.o
-RSRR_OBJS      = rsrr.o
-RSRR_HDRS      = rsrr.h rsrr_var.h
-HDRS           = debug.h defs.h dvmrp.h igmpv2.h mrt.h pathnames.h pimd.h \
-		 trace.h vif.h $(RSRR_HDRS)
-OBJS           = $(IGMP_OBJS) $(ROUTER_OBJS) $(PIM_OBJS) $(DVMRP_OBJS) \
-		 $(SNMP_OBJS) $(RSRR_OBJS)
-SRCS           = $(OBJS:.o=.c)
-DEPS           = $(addprefix .,$(SRCS:.c=.d))
-DISTFILES      = README README.config README.config.jp README.debug \
-		 CHANGES INSTALL LICENSE LICENSE.mrouted \
-		 TODO CREDITS FAQ AUTHORS
+PIM_OBJS      = route.o vif.o timer.o mrt.o pim.o pim_proto.o rp.o
+DVMRP_OBJS    = dvmrp_proto.o
 
 include rules.mk
 include config.mk
 include snmp.mk
 
-MCAST_INCLUDE  = -Iinclude
-PURIFY         = purify -cache-dir=/tmp -collector=/import/pkgs/gcc/lib/gcc-lib/sparc-sun-sunos4.1.3_U1/2.7.2.2/ld
-MISCDEFS       = -D__BSD_SOURCE -D_GNU_SOURCE -DPIM
-MISCDEFS      += -W -Wall -Werror
-COMMON_CFLAGS  = $(MCAST_INCLUDE) $(SNMPDEF) $(RSRRDEF) $(MISCDEFS)
-CFLAGS         = $(INCLUDES) $(DEFS) $(COMMON_CFLAGS) $(USERCOMPILE)
+## Common
+CFLAGS        = $(MCAST_INCLUDE) $(SNMPDEF) $(RSRRDEF) $(INCLUDES) $(DEFS) $(USERCOMPILE)
+CFLAGS       += -O2 -W -Wall -Werror
+#CFLAGS       += -O -g
+LDLIBS        = $(SNMPLIBDIR) $(SNMPLIBS) $(LIB2)
+OBJS          = $(IGMP_OBJS) $(ROUTER_OBJS) $(PIM_OBJS) $(DVMRP_OBJS) \
+		$(SNMP_OBJS) $(RSRR_OBJS)
+SRCS          = $(OBJS:.o=.c)
+DEPS          = $(addprefix .,$(SRCS:.c=.d))
+MANS          = $(addsuffix .8,$(EXEC))
+DISTFILES     = README README.config README.config.jp README.debug \
+		CHANGES INSTALL LICENSE LICENSE.mrouted \
+		TODO CREDITS FAQ AUTHORS
 
-LDLIBS         = $(SNMPLIBDIR) $(SNMPLIBS) $(LIB2)
+LINT          = splint
+LINTFLAGS     = $(MCAST_INCLUDE) $(filter-out -W -Wall -Werror, $(CFLAGS)) -posix-lib -weak -skipposixheaders
 
-LINT           = splint
-LINTFLAGS      = $(MCAST_INCLUDE) $(filter-out -W -Wall -g, $(CFLAGS)) -posix-lib -weak -skipposixheaders
+PURIFY        = purify
+PURIFYFLAGS   = -cache-dir=/tmp -collector=/import/pkgs/gcc/lib/gcc-lib/sparc-sun-sunos4.1.3_U1/2.7.2.2/ld
 
 all: $(EXEC)
 
@@ -74,7 +78,7 @@ endif
 	$(Q)$(CC) $(CFLAGS) $(LDFLAGS) -Wl,-Map,$@.map -o $@ $^ $(LDLIBS$(LDLIBS-$(@)))
 
 purify: $(OBJS)
-	@$(PURIFY) $(CC) $(LDFLAGS) -o $(EXEC) $(CFLAGS) $(OBJS) $(LDLIBS)
+	@$(PURIFY) $(PURIFYFLAGS) $(CC) $(LDFLAGS) -o $(EXEC) $(CFLAGS) $(OBJS) $(LDLIBS)
 
 vers.c:
 	@echo $(VERSION) | sed -e 's/.*/char todaysversion[]="&";/' > vers.c
@@ -86,17 +90,21 @@ install: $(EXEC)
 	$(Q)install -d $(DESTDIR)$(datadir)
 	$(Q)install -d $(DESTDIR)$(mandir)
 	$(Q)install -m 0755 $(EXEC) $(DESTDIR)$(prefix)/sbin/$(EXEC)
-	$(Q)install --backup=existing -m 0644 $(EXEC).conf $(DESTDIR)$(sysconfdir)/$(EXEC).conf
+	$(Q)install --backup=existing -m 0644 $(CONFIG) $(DESTDIR)$(sysconfdir)/$(CONFIG)
 	$(Q)for file in $(DISTFILES); do \
 		install -m 0644 $$file $(DESTDIR)$(datadir)/$$file; \
 	done
-	$(Q)install -m 0644 $(EXEC).8 $(DESTDIR)$(mandir)/$(EXEC).8
+	$(Q)for file in $(MANS); do \
+		install -m 0644 $$file $(DESTDIR)$(mandir)/$$file; \
+	done
 
 uninstall:
 	-$(Q)$(RM) $(DESTDIR)$(prefix)/sbin/$(EXEC)
-	-$(Q)$(RM) $(DESTDIR)$(sysconfdir)/$(EXEC).conf
+	-$(Q)$(RM) $(DESTDIR)$(sysconfdir)/$(CONFIG)
 	-$(Q)$(RM) -r $(DESTDIR)$(datadir)
-	-$(Q)$(RM) $(DESTDIR)$(mandir)/$(EXEC).8
+	-$(Q)for file in $(MANS); do \
+		$(RM) $(DESTDIR)$(mandir)/$$file; \
+	done
 
 clean: $(SNMPCLEAN)
 	-$(Q)$(RM) $(OBJS) $(EXEC)
