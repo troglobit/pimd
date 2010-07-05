@@ -14,7 +14,4 @@
 # End SNMP support
 
 #CONFIGCONFIGCONFIG
-# Uncomment the following line if you want to use RSRR (Routing
-# Support for Resource Reservations), currently used by RSVP.
-#RSRRDEF=	-DRSRR
 

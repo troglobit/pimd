@@ -24,6 +24,9 @@
  * noted when applicable.
  */
 
+#ifndef __RSRR_VAR_H__
+#define __RSRR_VAR_H__
+
 /* RSRR things that are only needed by mrouted. */
 
 /* Cache of Route Query messages, distinguished by source,
@@ -38,4 +41,6 @@ struct rsrr_cache {
     int client_length;			/* Length of client   */
     struct rsrr_cache *next;		/* next cache item    */
 };
+
+#endif  /* __RSRR_VAR_H__ */
 

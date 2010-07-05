@@ -699,9 +699,6 @@ static void restart(int i __attribute__((unused)))
 	exit(s);
 #endif /* SNMP */
     init_vifs();
-#ifdef RSRR
-    rsrr_init();
-#endif /* RSRR */
 
     /* schedule timer interrupts */
     timer_setTimer(TIMER_INTERVAL, timer, NULL);

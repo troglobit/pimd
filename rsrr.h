@@ -51,7 +51,6 @@
 #define RSRR_ROUTE_QUERY   3
 #define RSRR_ROUTE_REPLY   4
 
-
 /* Each definition represents the position of the bit from right to left. */
 /* All not defined bits are zeroes */
 
@@ -134,7 +133,7 @@ struct rsrr_vif {
  * Flags are defined above.
  */
 struct rsrr_rq {
-    u_int32   dest_addr;		/* destination */
+    u_int32 dest_addr;			/* destination */
     u_int32 source_addr;		/* source      */
     u_int32 query_id;			/* query ID    */
 };

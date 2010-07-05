@@ -252,7 +252,6 @@ typedef void (*ihfunc_t) (int, fd_set *);
 
 #ifdef SYSV
 #define bcopy(a, b, c)		memcpy((b), (a), (c))
-#define bzero(s, n)		memset((s), 0, (n))
 #define setlinebuf(s)		setvbuf((s), (NULL), (_IOLBF), 0)
 #define RANDOM()                lrand48()
 #else
@@ -283,10 +282,6 @@ extern u_int32		allrouters_group;
 extern u_int32		allpimrouters_group;
 extern build_jp_message_t *build_jp_message_pool;
 extern int		build_jp_message_pool_counter;
-
-#ifdef RSRR
-extern int		rsrr_socket;
-#endif /* RSRR */
 
 extern u_long		virtual_time;
 extern char	       *configfilename;
@@ -497,8 +492,8 @@ extern void	k_set_loop		(int socket, int l);
 extern void	k_set_if		(int socket, u_int32 ifa);
 extern void	k_join			(int socket, u_int32 grp, struct uvif *v);
 extern void	k_leave			(int socket, u_int32 grp, struct uvif *v);
-extern void	k_init_pim		();
-extern void	k_stop_pim		();
+extern void	k_init_pim		(int socket);
+extern void	k_stop_pim		(int socket);
 extern int	k_del_mfc		(int socket, u_int32 source, u_int32 group);
 extern int	k_chg_mfc		(int socket, u_int32 source, u_int32 group, vifi_t iif, vifbitmap_t oifs,
                                          u_int32 rp_addr);

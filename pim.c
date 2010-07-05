@@ -33,7 +33,6 @@
 
 #include "defs.h"
 
-
 /*
  * Exported variables.
  */
@@ -43,6 +42,9 @@ char	*pim_send_buf;		/* output packet buffer  */
 u_int32	allpimrouters_group;	/* ALL_PIM_ROUTERS address in net order */
 int	pim_socket;		/* socket for PIM control msgs */
 
+#ifdef RAW_OUTPUT_IS_RAW
+extern int curttl;
+#endif /* RAW_OUTPUT_IS_RAW */
 
 /*
  * Local function definitions.
@@ -73,7 +75,7 @@ void init_pim(void)
 
     /* One time setup in the buffers */
     ip           = (struct ip *)pim_send_buf;
-    bzero(ip, sizeof(*ip));
+    memset(ip, 0, sizeof(*ip));
     ip->ip_v     = IPVERSION;
     ip->ip_hl    = (sizeof(struct ip) >> 2);
     ip->ip_tos   = 0;    /* TODO: setup?? */
@@ -221,9 +223,6 @@ void send_pim(char *buf, u_int32 src, u_int32 dst, int type, int datalen)
     struct ip *ip;
     pim_header_t *pim;
     int sendlen;
-#ifdef RAW_OUTPUT_IS_RAW
-    extern int curttl;
-#endif /* RAW_OUTPUT_IS_RAW */
     int setloop = 0;
 
     /* Prepare the IP header */
@@ -263,7 +262,7 @@ void send_pim(char *buf, u_int32 src, u_int32 dst, int type, int datalen)
 #endif /* RAW_OUTPUT_IS_RAW */
     }
 
-    bzero((void *)&sdst, sizeof(sdst));
+    memset(&sdst, 0, sizeof(sdst));
     sdst.sin_family = AF_INET;
 #ifdef HAVE_SA_LEN
     sdst.sin_len = sizeof(sdst);
@@ -354,7 +353,7 @@ void send_pim_unicast(char *buf, u_int32 src, u_int32 dst, int type, int datalen
     }
 #endif /* !BROKEN_CISCO_CHECKSUM */
 
-    bzero((void *)&sdst, sizeof(sdst));
+    memset(&sdst, 0, sizeof(sdst));
     sdst.sin_family = AF_INET;
 #ifdef HAVE_SA_LEN
     sdst.sin_len = sizeof(sdst);
