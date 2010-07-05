@@ -31,21 +31,14 @@
  *  $Id: pim_proto.c,v 1.47 2003/05/28 22:57:16 pavlin Exp $
  */
 
-
 #include <arpa/inet.h>
 #include "defs.h"
 
 /*
  * Local functions definitions.
  */
-static int parse_pim_hello         (char *pktPtr,
-                                    size_t datalen,
-                                    u_int32 src,
-                                    u_int16 *holdtime);
-static int send_pim_register_stop  (u_int32 reg_src,
-                                    u_int32 reg_dst,
-                                    u_int32 inner_source,
-                                    u_int32 inner_grp);
+static int parse_pim_hello         (char *pim_message, size_t datalen, u_int32 src, u_int16 *holdtime);
+static int send_pim_register_stop  (u_int32 reg_src, u_int32 reg_dst, u_int32 inner_source, u_int32 inner_grp);
 static build_jp_message_t *get_jp_working_buff (void);
 static void return_jp_working_buff (pim_nbr_entry_t *pim_nbr);
 static void pack_jp_message        (pim_nbr_entry_t *pim_nbr);
@@ -63,16 +56,12 @@ int build_jp_message_pool_counter;
 /************************************************************************
  *                        PIM_HELLO
  ************************************************************************/
-int
-receive_pim_hello(src, dst, pim_message, datalen)
-    u_int32 src, dst __attribute__((unused));
-    register char *pim_message;
-    size_t datalen;
+int receive_pim_hello(u_int32 src, u_int32 dst __attribute__((unused)), char *pim_message, size_t datalen)
 {
     vifi_t vifi;
     struct uvif *v;
-    register pim_nbr_entry_t *nbr, *prev_nbr, *new_nbr;
-    u_int16 holdtime;
+    pim_nbr_entry_t *nbr, *prev_nbr, *new_nbr;
+    u_int16 holdtime = 0;
     int     bsr_length;
     u_int8  *data_ptr;
     srcentry_t *srcentry_ptr;
@@ -80,7 +69,7 @@ receive_pim_hello(src, dst, pim_message, datalen)
 
     /* Checksum */
     if (inet_cksum((u_int16 *)pim_message, datalen))
-        return(FALSE);
+        return FALSE;
 
     if ((vifi = find_vif_direct(src)) == NO_VIF) {
         /* Either a local vif or somehow received PIM_HELLO from
@@ -89,20 +78,23 @@ receive_pim_hello(src, dst, pim_message, datalen)
         if (local_address(src) == NO_VIF)
             logit(LOG_INFO, 0, "Ignoring PIM_HELLO from non-neighbor router %s",
                   inet_fmt(src, s1, sizeof(s1)));
-        return(FALSE);
+        return FALSE;
     }
 
     v = &uvifs[vifi];
     if (v->uv_flags & (VIFF_DOWN | VIFF_DISABLED | VIFF_REGISTER))
-        return(FALSE);    /* Shoudn't come on this interface */
+        return FALSE;    /* Shoudn't come on this interface */
+
     data_ptr = (u_int8 *)(pim_message + sizeof(pim_header_t));
 
     /* Get the Holdtime (in seconds) from the message. Return if error. */
     if (parse_pim_hello(pim_message, datalen, src, &holdtime) == FALSE)
-        return(FALSE);
-    IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER)
+        return FALSE;
+
+    IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER) {
         logit(LOG_DEBUG, 0, "PIM HELLO holdtime from %s is %u",
               inet_fmt(src, s1, sizeof(s1)), holdtime);
+    }
 
     for (prev_nbr = (pim_nbr_entry_t *)NULL, nbr = v->uv_pim_neighbors;
          nbr != (pim_nbr_entry_t *)NULL;
@@ -113,6 +105,7 @@ receive_pim_hello(src, dst, pim_message, datalen)
          */
         if (ntohl(src) < ntohl(nbr->address))
             continue;
+
         if (src == nbr->address) {
             /* We already have an entry for this host */
             if (0 == holdtime) {
@@ -123,17 +116,20 @@ receive_pim_hello(src, dst, pim_message, datalen)
                 logit(LOG_INFO, 0, "PIM HELLO received: neighbor %s going down",
                       inet_fmt(src, s1, sizeof(s1)));
                 delete_pim_nbr(nbr);
-                return(TRUE);
+
+                return TRUE;
             }
             SET_TIMER(nbr->timer, holdtime);
-            return(TRUE);
+
+            return TRUE;
         }
-        else
+        else {
             /*
              * No entry for this neighbor. Exit the loop and create an
              * entry for it.
              */
             break;
+	}
     }
 
     /*
@@ -170,8 +166,7 @@ receive_pim_hello(src, dst, pim_message, datalen)
          * send an RP-Set message to the new neighbor.
          */
         if ((bsr_length = create_pim_bootstrap_message(pim_send_buf)))
-            send_pim_unicast(pim_send_buf, v->uv_lcl_addr, src,
-                             PIM_BOOTSTRAP, bsr_length);
+            send_pim_unicast(pim_send_buf, v->uv_lcl_addr, src, PIM_BOOTSTRAP, bsr_length);
 
         /* The router with highest network address is the elected DR */
         if (ntohl(v->uv_lcl_addr) < ntohl(src)) {
@@ -182,15 +177,19 @@ receive_pim_hello(src, dst, pim_message, datalen)
             for (srcentry_ptr = srclist->next;
                  srcentry_ptr != (srcentry_t *)NULL;
                  srcentry_ptr = srcentry_ptr->next) {
+
                 /* If not directly connected source for vifi */
                 if ((srcentry_ptr->incoming != vifi)
                     || (srcentry_ptr->upstream != (pim_nbr_entry_t *)NULL))
                     continue;
+
                 for (mrtentry_ptr = srcentry_ptr->mrtlink;
                      mrtentry_ptr != (mrtentry_t *)NULL;
                      mrtentry_ptr = mrtentry_ptr->srcnext) {
+
                     if (!(mrtentry_ptr->flags & MRTF_SG))
                         continue;  /* This is not (S,G) entry */
+
                     /* Remove the register oif */
                     VIFM_CLR(reg_vif_num, mrtentry_ptr->joined_oifs);
                     change_interfaces(mrtentry_ptr,
@@ -212,13 +211,12 @@ receive_pim_hello(src, dst, pim_message, datalen)
 
     IF_DEBUG(DEBUG_PIM_HELLO)
         dump_vifs(stderr);      /* Show we got a new neighbor */
-    return(TRUE);
+
+    return TRUE;
 }
 
 
-void
-delete_pim_nbr(nbr_delete)
-    pim_nbr_entry_t *nbr_delete;
+void delete_pim_nbr(pim_nbr_entry_t *nbr_delete)
 {
     srcentry_t *srcentry_ptr;
     srcentry_t *srcentry_ptr_next;
@@ -368,12 +366,7 @@ delete_pim_nbr(nbr_delete)
 
 
 /* TODO: simplify it! */
-static int
-parse_pim_hello(pim_message, datalen, src, holdtime)
-    char *pim_message;
-    size_t datalen;
-    u_int32 src;
-    u_int16 *holdtime;
+static int parse_pim_hello(char *pim_message, size_t datalen, u_int32 src, u_int16 *holdtime)
 {
     u_int8 *pim_hello_message;
     u_int8 *data_ptr;
@@ -389,21 +382,20 @@ parse_pim_hello(pim_message, datalen, src, holdtime)
         data_ptr = pim_hello_message;
         GET_HOSTSHORT(option_type, data_ptr);
         GET_HOSTSHORT(option_length, data_ptr);
-        switch (option_type) {
-            case PIM_MESSAGE_HELLO_HOLDTIME:
-                if (PIM_MESSAGE_HELLO_HOLDTIME_LENGTH != option_length) {
-                    IF_DEBUG(DEBUG_PIM_HELLO)
-                        logit(LOG_DEBUG, 0,
-                              "PIM HELLO Holdtime from %s: invalid OptionLength = %u",
-                              inet_fmt(src, s1, sizeof(s1)), option_length);
-                    return (FALSE);
-                }
-                GET_HOSTSHORT(*holdtime, data_ptr);
-                holdtime_received_ok = TRUE;
-                break;
-            default:
-                /* Ignore any unknown options */
-                break;
+
+        if (option_type == PIM_MESSAGE_HELLO_HOLDTIME) {
+	    if (PIM_MESSAGE_HELLO_HOLDTIME_LENGTH != option_length) {
+		IF_DEBUG(DEBUG_PIM_HELLO) {
+		    logit(LOG_DEBUG, 0, "PIM HELLO Holdtime from %s: invalid OptionLength = %u",
+			  inet_fmt(src, s1, sizeof(s1)), option_length);
+		}
+		return FALSE;
+	    }
+
+	    GET_HOSTSHORT(*holdtime, data_ptr);
+	    holdtime_received_ok = TRUE;
+	} else {
+	    /* Ignore any unknown options */
         }
 
         /* Move to the next option */
@@ -417,22 +409,20 @@ parse_pim_hello(pim_message, datalen, src, holdtime)
 #else
         option_total_length = (sizeof(pim_hello_t) + option_length);
 #endif /* BOUNDARY_32_BIT */
+
         datalen -= option_total_length;
         pim_hello_message += option_total_length;
     }
-    return (holdtime_received_ok);
+
+    return holdtime_received_ok;
 }
 
 
-int
-send_pim_hello(v, holdtime)
-    struct uvif *v;
-    u_int16 holdtime;
+int send_pim_hello(struct uvif *v, u_int16 holdtime)
 {
     char   *buf;
     u_int8 *data_ptr;
-
-    int datalen;
+    int     datalen;
 
     buf = pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t);
     data_ptr = (u_int8 *)buf;
@@ -441,11 +431,10 @@ send_pim_hello(v, holdtime)
     PUT_HOSTSHORT(holdtime, data_ptr);
 
     datalen = data_ptr - (u_int8 *)buf;
-
-    send_pim(pim_send_buf, v->uv_lcl_addr, allpimrouters_group, PIM_HELLO,
-             datalen);
+    send_pim(pim_send_buf, v->uv_lcl_addr, allpimrouters_group, PIM_HELLO, datalen);
     SET_TIMER(v->uv_pim_hello_timer, PIM_TIMER_HELLO_PERIOD);
-    return(TRUE);
+
+    return TRUE;
 }
 
 
@@ -457,11 +446,7 @@ send_pim_hello(v, holdtime)
  * AND AT THE SAME TIME IGNORE ANY CACHE_MISS
  * SIGNALS FROM THE KERNEL.
  */
-int
-receive_pim_register(reg_src, reg_dst, pim_message, datalen)
-    u_int32 reg_src, reg_dst;
-    char *pim_message;
-    size_t datalen;
+int receive_pim_register(u_int32 reg_src, u_int32 reg_dst, char *pim_message, size_t datalen)
 {
     u_int32 inner_src, inner_grp;
     pim_register_t *register_p;
@@ -476,13 +461,13 @@ receive_pim_register(reg_src, reg_dst, pim_message, datalen)
      * This is suppose to be done in the kernel, but some older kernel
      * versions do not pefrorm the check for the NULL register messages.
      */
-    if (datalen < sizeof(pim_header_t) + sizeof(pim_register_t)
-        + sizeof(struct ip)) {
-        IF_DEBUG(DEBUG_PIM_REGISTER)
-            logit(LOG_INFO, 0,
-                  "PIM register: short packet (len = %d) from %s",
+    if (datalen < sizeof(pim_header_t) + sizeof(pim_register_t) + sizeof(struct ip)) {
+        IF_DEBUG(DEBUG_PIM_REGISTER) {
+            logit(LOG_INFO, 0, "PIM register: short packet (len = %d) from %s",
                   datalen, inet_fmt(reg_src, s1, sizeof(s1)));
-        return(FALSE);
+	}
+
+        return FALSE;
     }
 
     /*
@@ -492,21 +477,19 @@ receive_pim_register(reg_src, reg_dst, pim_message, datalen)
      * verify the checksum over the first 8 bytes, and if fails,
      * then over the whole Register
      */
-    if ((inet_cksum((u_int16 *)pim_message,
-                    sizeof(pim_header_t) + sizeof(pim_register_t)))
+    if ((inet_cksum((u_int16 *)pim_message, sizeof(pim_header_t) + sizeof(pim_register_t)))
         && (inet_cksum((u_int16 *)pim_message, datalen))) {
-        IF_DEBUG(DEBUG_PIM_REGISTER)
-            logit(LOG_DEBUG, 0,
-                  "PIM REGISTER from DR %s: invalid PIM header checksum",
+        IF_DEBUG(DEBUG_PIM_REGISTER) {
+            logit(LOG_DEBUG, 0, "PIM REGISTER from DR %s: invalid PIM header checksum",
                   inet_fmt(reg_src, s1, sizeof(s1)));
-        return (FALSE);
+	}
+
+        return FALSE;
     }
 
     register_p = (pim_register_t *)(pim_message + sizeof(pim_header_t));
-
-    borderBit = ntohl(register_p->reg_flags) & PIM_MESSAGE_REGISTER_BORDER_BIT;
-    nullRegisterBit =
-        ntohl(register_p->reg_flags) & PIM_MESSAGE_REGISTER_NULL_REGISTER_BIT;
+    borderBit       = ntohl(register_p->reg_flags) & PIM_MESSAGE_REGISTER_BORDER_BIT;
+    nullRegisterBit = ntohl(register_p->reg_flags) & PIM_MESSAGE_REGISTER_NULL_REGISTER_BIT;
 
     /* initialize the pointer to the encapsulated packet */
     ip = (struct ip *)(register_p + 1);
@@ -514,11 +497,10 @@ receive_pim_register(reg_src, reg_dst, pim_message, datalen)
     /* check the IP version (especially for the NULL register...see above) */
     if (ip->ip_v != IPVERSION && (! nullRegisterBit)) {
         IF_DEBUG(DEBUG_PIM_REGISTER)
-            logit(LOG_INFO, 0,
-                  "PIM register: incorrect IP version (%d) of the inner"
-                  " packet from %s",
+            logit(LOG_INFO, 0, "PIM register: incorrect IP version (%d) of the inner packet from %s",
                   ip->ip_v, inet_fmt(reg_src, s1, sizeof(s1)));
-        return(FALSE);
+
+        return FALSE;
     }
 
     /* We are keeping all addresses in network order, so no need for ntohl()*/
@@ -531,38 +513,37 @@ receive_pim_register(reg_src, reg_dst, pim_message, datalen)
      */
     if ((!inet_valid_host(inner_src)) || (!IN_MULTICAST(ntohl(inner_grp)))) {
         if (!inet_valid_host(inner_src)) {
-            logit(LOG_WARNING, 0,
-                  "Inner source address of register message by %s is invalid: %s",
+            logit(LOG_WARNING, 0, "Inner source address of register message by %s is invalid: %s",
                   inet_fmt(reg_src, s1, sizeof(s1)), inet_fmt(inner_src, s2, sizeof(s2)));
         }
         if (!IN_MULTICAST(ntohl(inner_grp))) {
-            logit(LOG_WARNING, 0,
-                  "Inner group address of register message by %s is invalid: %s",
+            logit(LOG_WARNING, 0, "Inner group address of register message by %s is invalid: %s",
                   inet_fmt(reg_src, s1, sizeof(s1)), inet_fmt(inner_grp, s2, sizeof(s2)));
         }
         send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
-        return (FALSE);
+
+        return FALSE;
     }
 
-    mrtentry_ptr = find_route(inner_src, inner_grp,
-                              MRTF_SG | MRTF_WC | MRTF_PMBR, DONT_CREATE);
-
-    if (mrtentry_ptr == (mrtentry_t *)NULL) {
+    mrtentry_ptr = find_route(inner_src, inner_grp, MRTF_SG | MRTF_WC | MRTF_PMBR, DONT_CREATE);
+    if (!mrtentry_ptr) {
         /* No routing entry. Send REGISTER_STOP and return. */
-        IF_DEBUG(DEBUG_PIM_REGISTER)
-            logit(LOG_DEBUG, 0,
-                  "No routing entry for source %s and/or group %s" ,
+        IF_DEBUG(DEBUG_PIM_REGISTER) {
+            logit(LOG_DEBUG, 0, "No routing entry for source %s and/or group %s" ,
                   inet_fmt(inner_src, s1, sizeof(s1)), inet_fmt(inner_grp, s2, sizeof(s2)));
+	}
         /* TODO: XXX: shoudn't be inner_src=INADDR_ANY? Not in the spec. */
         send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
-        return (TRUE);
+
+        return TRUE;
     }
 
     /* XXX: not in the spec: check if I am the RP for that group */
     if ((my_cand_rp_address != reg_dst)
         || (check_mrtentry_rp(mrtentry_ptr, my_cand_rp_address) == FALSE)) {
         send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
-        return (TRUE);
+
+        return TRUE;
     }
 
     if (mrtentry_ptr->flags & MRTF_SG) {
@@ -572,12 +553,11 @@ receive_pim_register(reg_src, reg_dst, pim_message, datalen)
         if (!(mrtentry_ptr->flags & MRTF_SPT)) { /* The SPT bit is not set */
             if (!nullRegisterBit) {
                 calc_oifs(mrtentry_ptr, &oifs);
-                if (VIFM_ISEMPTY(oifs)
-                    && (mrtentry_ptr->incoming == reg_vif_num)) {
-                    send_pim_register_stop(reg_dst, reg_src, inner_grp,
-                                           inner_src);
-                    return (TRUE);
+                if (VIFM_ISEMPTY(oifs) && (mrtentry_ptr->incoming == reg_vif_num)) {
+                    send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
+                    return TRUE;
                 }
+
                 /*
                  * TODO: XXX: BUG!!!
                  * The data will be forwarded by the kernel MFC!!!
@@ -591,30 +571,30 @@ receive_pim_register(reg_src, reg_dst, pim_message, datalen)
                  */
                 if (borderBit) {
                     if (mrtentry_ptr->pmbr_addr != reg_src) {
-                        send_pim_register_stop(reg_dst, reg_src,
-                                               inner_grp, inner_src);
-                        return (TRUE);
+                        send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
 
+                        return TRUE;
                     }
                 }
-                return (TRUE);
+
+                return TRUE;
             }
+
             /* TODO: XXX: if NULL_REGISTER and has (S,G) with SPT=0, then..?*/
-            return (TRUE);
+            return TRUE;
         }
         else {
             /* The SPT bit is set */
             send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
-            return (TRUE);
+            return TRUE;
         }
     }
     if (mrtentry_ptr->flags & (MRTF_WC | MRTF_PMBR)) {
         if (borderBit) {
             /* Create (S,G) state. The oifs will be the copied from the
              * existing (*,G) or (*,*,RP) entry. */
-            mrtentry_ptr2 = find_route(inner_src, inner_grp, MRTF_SG,
-                                       CREATE);
-            if (mrtentry_ptr2 != (mrtentry_t *)NULL) {
+            mrtentry_ptr2 = find_route(inner_src, inner_grp, MRTF_SG, CREATE);
+            if (mrtentry_ptr2) {
                 mrtentry_ptr2->pmbr_addr = reg_src;
                 /* Clear the SPT flag */
                 mrtentry_ptr2->flags &= ~(MRTF_SPT | MRTF_NEW);
@@ -635,10 +615,11 @@ receive_pim_register(reg_src, reg_dst, pim_message, datalen)
         calc_oifs(mrtentry_ptr, &oifs);
         if (VIFM_ISEMPTY(oifs)) {
             send_pim_register_stop(reg_dst, reg_src, inner_grp, INADDR_ANY_N);
-            return (FALSE);
+
+            return FALSE;
         }
         /* XXX: TODO: check with the spec again */
-        else{
+        else {
             if (!nullRegisterBit) {
                 /* Install cache entry in the kernel */
                 /* TODO: XXX: probably redundant here, because the
@@ -654,10 +635,12 @@ receive_pim_register(reg_src, reg_dst, pim_message, datalen)
                 k_chg_mfc(igmp_socket, mfc_source, inner_grp,
                           mrtentry_ptr->incoming, mrtentry_ptr->oifs,
                           mrtentry_ptr->group->rpaddr);
-                return(TRUE);
+
+                return TRUE;
             }
         }
-        return(TRUE);
+
+        return TRUE;
     }
 
     if (mrtentry_ptr->flags & MRTF_PMBR) {
@@ -667,10 +650,9 @@ receive_pim_register(reg_src, reg_dst, pim_message, datalen)
             /* XXX: have to create either (S,G) or (*,G).
              * The choice below is (*,G)
              */
-            mrtentry_ptr2 = find_route(INADDR_ANY_N, inner_grp, MRTF_WC,
-                                       CREATE);
-            if (mrtentry_ptr2 == (mrtentry_t *)NULL)
-                return(FALSE);
+            mrtentry_ptr2 = find_route(INADDR_ANY_N, inner_grp, MRTF_WC, CREATE);
+            if (!mrtentry_ptr2)
+                return FALSE;
             if (mrtentry_ptr2->flags & MRTF_NEW) {
                 /* TODO: something else? Have the feeling sth is missing */
                 mrtentry_ptr2->flags &= ~MRTF_NEW;
@@ -687,62 +669,61 @@ receive_pim_register(reg_src, reg_dst, pim_message, datalen)
                       mrtentry_ptr->incoming, mrtentry_ptr->oifs,
                       mrtentry_ptr2->group->rpaddr);
 
-            return(TRUE);
+            return TRUE;
         }
     }
 
     /* Shoudn't happen: invalid routing entry? */
     /* XXX: TODO: shoudn't be inner_src=INADDR_ANY? Not in the spec. */
     send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
-    return(TRUE);
+
+    return TRUE;
 }
 
 
-int
-send_pim_register(packet)
-    char *packet;
+int send_pim_register(char *packet)
 {
-    register struct ip *ip;
-    u_int32 source, group;
+    struct ip  *ip;
+    u_int32     source, group;
     vifi_t	vifi;
-    rpentry_t *rpentry_ptr;
+    rpentry_t  *rpentry_ptr;
     mrtentry_t *mrtentry_ptr;
     mrtentry_t *mrtentry_ptr2;
-
-    u_int32 reg_src, reg_dst;
-    int pktlen = 0;
-    char *buf;
+    u_int32     reg_src, reg_dst;
+    int         pktlen = 0;
+    char       *buf;
 
     ip = (struct ip *)packet;
     source = ip->ip_src.s_addr;
     group = ip->ip_dst.s_addr;
 
     if ((vifi = find_vif_direct_local(source)) == NO_VIF)
-        return(FALSE);
+        return FALSE;
 
     if (!(uvifs[vifi].uv_flags & VIFF_DR))
-        return(FALSE);          /* I am not the DR for that subnet */
+        return FALSE;		/* I am not the DR for that subnet */
 
     rpentry_ptr = rp_match(group);
-    if (rpentry_ptr == (rpentry_t *)NULL)
-        return(FALSE);     /* No RP for this group */
-    if (local_address(rpentry_ptr->address) != NO_VIF)
+    if (!rpentry_ptr)
+        return FALSE;		/* No RP for this group */
+
+    if (local_address(rpentry_ptr->address) != NO_VIF) {
         /* TODO: XXX: not sure it is working! */
-        return(FALSE);     /* I am the RP for this group */
+        return FALSE;		/* I am the RP for this group */
+    }
 
     mrtentry_ptr = find_route(source, group, MRTF_SG, CREATE);
-    if (mrtentry_ptr == (mrtentry_t *)NULL)
-        return(FALSE);    /* Cannot create (S,G) state */
+    if (!mrtentry_ptr)
+        return FALSE;		/* Cannot create (S,G) state */
 
     if (mrtentry_ptr->flags & MRTF_NEW) {
         /* A new entry */
         mrtentry_ptr->flags &= ~MRTF_NEW;
         RESET_TIMER(mrtentry_ptr->rs_timer); /* Reset the Register-Suppression timer */
-        if ((mrtentry_ptr2 = mrtentry_ptr->group->grp_route) ==
-            (mrtentry_t *)NULL)
-            mrtentry_ptr2 =
-                mrtentry_ptr->group->active_rp_grp->rp->rpentry->mrtlink;
-        if (mrtentry_ptr2 != (mrtentry_t *)NULL) {
+	mrtentry_ptr2 = mrtentry_ptr->group->grp_route;
+        if (!mrtentry_ptr2)
+            mrtentry_ptr2 = mrtentry_ptr->group->active_rp_grp->rp->rpentry->mrtlink;
+        if (mrtentry_ptr2) {
             FIRE_TIMER(mrtentry_ptr2->jp_timer); /* Timeout the Join/Prune timer */
             /* TODO: explicitly call this function?
                send_pim_join_prune(mrtentry_ptr2->upstream->vifi,
@@ -784,30 +765,29 @@ send_pim_register(packet)
 #endif /* PIM_OLD_KERNEL */
 
         buf = pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t);
-
-        bzero(buf, sizeof(pim_register_t)); /* No flags set */
+        memset(buf, 0, sizeof(pim_register_t)); /* No flags set */
         buf += sizeof(pim_register_t);
 
         /* Copy the data packet at the back of the register packet */
         /* TODO: check pktlen. ntohs? */
         pktlen = ntohs(ip->ip_len);
-        bcopy((char *)ip, buf, pktlen);
+        memcpy(ip, buf, pktlen);
         pktlen += sizeof(pim_register_t);
         reg_src = uvifs[vifi].uv_lcl_addr;
         reg_dst = mrtentry_ptr->group->rpaddr;
         send_pim_unicast(pim_send_buf, reg_src, reg_dst,
                          PIM_REGISTER, pktlen);
-        return(TRUE);
+
+        return TRUE;
     }
-    return(TRUE);
+
+    return TRUE;
 }
 
 
-int
-send_pim_null_register(mrtentry_ptr)
-    mrtentry_t *mrtentry_ptr;
+int send_pim_null_register(mrtentry_t *mrtentry_ptr)
 {
-    register struct ip *ip;
+    struct ip *ip;
     pim_register_t *pim_register;
     int pktlen =0;
     vifi_t vifi;
@@ -815,11 +795,11 @@ send_pim_null_register(mrtentry_ptr)
 
     /* No directly connected source; no local address */
     if ((vifi = find_vif_direct_local(mrtentry_ptr->source->address))== NO_VIF)
-        return(FALSE);
+        return FALSE;
 
     pim_register = (pim_register_t *)(pim_send_buf + sizeof(struct ip) +
                                       sizeof(pim_header_t));
-    bzero((char *)pim_register, sizeof(pim_register_t));
+    memset(pim_register, 0, sizeof(pim_register_t));
     pim_register->reg_flags = htonl(pim_register->reg_flags
                                     | PIM_MESSAGE_REGISTER_NULL_REGISTER_BIT);
 
@@ -850,18 +830,15 @@ send_pim_null_register(mrtentry_ptr)
     reg_source = uvifs[vifi].uv_lcl_addr;
 
     send_pim_unicast(pim_send_buf, reg_source, dest, PIM_REGISTER, pktlen);
-    return(TRUE);
+
+    return TRUE;
 }
 
 
 /************************************************************************
  *                        PIM_REGISTER_STOP
  ************************************************************************/
-int
-receive_pim_register_stop(reg_src, reg_dst, pim_message, datalen)
-    u_int32 reg_src, reg_dst;
-    char *pim_message;
-    register size_t datalen;
+int receive_pim_register_stop(u_int32 reg_src, u_int32 reg_dst, char *pim_message, size_t datalen)
 {
     pim_register_stop_t *pim_regstop_p;
     pim_encod_grp_addr_t encod_grp;
@@ -872,7 +849,7 @@ receive_pim_register_stop(reg_src, reg_dst, pim_message, datalen)
 
     /* Checksum */
     if (inet_cksum((u_int16 *)pim_message, datalen))
-        return(FALSE);
+        return FALSE;
 
     pim_regstop_p = (pim_register_stop_t *)(pim_message +
                                             sizeof(pim_header_t));
@@ -880,22 +857,23 @@ receive_pim_register_stop(reg_src, reg_dst, pim_message, datalen)
     GET_EGADDR(&encod_grp, data_ptr);
     GET_EUADDR(&encod_unisrc, data_ptr);
 
-    IF_DEBUG(DEBUG_PIM_REGISTER)
+    IF_DEBUG(DEBUG_PIM_REGISTER) {
         logit(LOG_DEBUG, 0, "Received PIM_REGISTER_STOP from RP %s to %s for src = %s and group = %s", inet_fmt(reg_src, s1, sizeof(s1)), inet_fmt(reg_dst, s2, sizeof(s2)),
               inet_fmt(encod_unisrc.unicast_addr, s3, sizeof(s3)),
               inet_fmt(encod_grp.mcast_addr, s4, sizeof(s4)));
+    }
+
     /* TODO: apply the group mask and do register_stop for all grp addresses */
     /* TODO: check for SourceAddress == 0 */
-    mrtentry_ptr = find_route(encod_unisrc.unicast_addr, encod_grp.mcast_addr,
-                              MRTF_SG, DONT_CREATE);
-    if (mrtentry_ptr == (mrtentry_t *)NULL)
-        return(FALSE);
+    mrtentry_ptr = find_route(encod_unisrc.unicast_addr, encod_grp.mcast_addr, MRTF_SG, DONT_CREATE);
+    if (!mrtentry_ptr)
+        return FALSE;
 
     /* XXX: not in the spec: check if the PIM_REGISTER_STOP originator is
      * really the RP
      */
     if (check_mrtentry_rp(mrtentry_ptr, reg_src) == FALSE)
-        return (FALSE);
+        return FALSE;
 
     /* restart the Register-Suppression timer */
     SET_TIMER(mrtentry_ptr->rs_timer, (0.5 * PIM_REGISTER_SUPPRESSION_TIMEOUT)
@@ -907,64 +885,64 @@ receive_pim_register_stop(reg_src, reg_dst, pim_message, datalen)
                       mrtentry_ptr->joined_oifs, pruned_oifs,
                       mrtentry_ptr->leaves,
                       mrtentry_ptr->asserted_oifs, 0);
-    return(TRUE);
+
+    return TRUE;
 }
 
 
 /* TODO: optional rate limiting is not implemented yet */
 /* Unicasts a REGISTER_STOP message to the DR */
 static int
-send_pim_register_stop(reg_src, reg_dst, inner_grp, inner_src)
-    u_int32 reg_src, reg_dst, inner_grp, inner_src;
+send_pim_register_stop(u_int32 reg_src, u_int32 reg_dst, u_int32 inner_grp, u_int32 inner_src)
 {
-    char *buf;
+    char   *buf;
     u_int8 *data_ptr;
 
-    buf = pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t);
+    buf      = pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t);
     data_ptr = (u_int8 *)buf;
     PUT_EGADDR(inner_grp, SINGLE_GRP_MSKLEN, 0, data_ptr);
     PUT_EUADDR(inner_src, data_ptr);
-    send_pim_unicast(pim_send_buf, reg_src, reg_dst, PIM_REGISTER_STOP,
-                     data_ptr - (u_int8 *)buf);
-    return(TRUE);
+    send_pim_unicast(pim_send_buf, reg_src, reg_dst, PIM_REGISTER_STOP, data_ptr - (u_int8 *)buf);
+
+    return TRUE;
 }
 
 
 /************************************************************************
  *                        PIM_JOIN_PRUNE
  ************************************************************************/
-int
-join_or_prune(mrtentry_ptr, upstream_router)
-    mrtentry_t *mrtentry_ptr;
-    pim_nbr_entry_t *upstream_router;
+int join_or_prune(mrtentry_t *mrtentry_ptr, pim_nbr_entry_t *upstream_router)
 {
     vifbitmap_t entry_oifs;
     mrtentry_t *mrtentry_grp;
 
-    if ((mrtentry_ptr == (mrtentry_t *)NULL)
-        || (upstream_router == (pim_nbr_entry_t *)NULL))
-        return (PIM_ACTION_NOTHING);
+    if (!mrtentry_ptr || !upstream_router)
+        return PIM_ACTION_NOTHING;
 
     calc_oifs(mrtentry_ptr, &entry_oifs);
     if (mrtentry_ptr->flags & (MRTF_PMBR | MRTF_WC)) {
         /* (*,*,RP) or (*,G) entry */
         /* The (*,*,RP) or (*,G) J/P messages are sent only toward the RP */
         if (upstream_router != mrtentry_ptr->upstream)
-            return (PIM_ACTION_NOTHING);
+            return PIM_ACTION_NOTHING;
 
         /* TODO: XXX: Can we have (*,*,RP) prune? */
         if (VIFM_ISEMPTY(entry_oifs)) {
             /* NULL oifs */
+
             if (!(uvifs[mrtentry_ptr->incoming].uv_flags & VIFF_DR))
                 /* I am not the DR for that subnet. */
-                return (PIM_ACTION_PRUNE);
+                return PIM_ACTION_PRUNE;
+
             if (VIFM_ISSET(mrtentry_ptr->incoming, mrtentry_ptr->leaves))
                 /* I am the DR and have local leaves */
-                return (PIM_ACTION_JOIN);
+                return PIM_ACTION_JOIN;
+
             /* Probably the last local member hast timeout */
-            return (PIM_ACTION_PRUNE);
+            return PIM_ACTION_PRUNE;
         }
-        return (PIM_ACTION_JOIN);
+
+        return PIM_ACTION_JOIN;
     }
 
     if (mrtentry_ptr->flags & MRTF_SG) {
@@ -974,58 +952,55 @@ join_or_prune(mrtentry_ptr, upstream_router)
             if (!(mrtentry_ptr->flags & MRTF_RP)) {
                 /* Upstream router toward S */
                 if (VIFM_ISEMPTY(entry_oifs)) {
-                    if ((mrtentry_ptr->group->active_rp_grp
-                         != (rp_grp_entry_t *)NULL)
-                        && (mrtentry_ptr->group->rpaddr
-                            == my_cand_rp_address)) {
+                    if (mrtentry_ptr->group->active_rp_grp &&
+			mrtentry_ptr->group->rpaddr == my_cand_rp_address) {
                         /* (S,G) at the RP. Don't send Join/Prune
                          * (see the end of Section 3.3.2)
                          */
-                        return (PIM_ACTION_NOTHING);
+                        return PIM_ACTION_NOTHING;
                     }
-                    return (PIM_ACTION_PRUNE);
+
+                    return PIM_ACTION_PRUNE;
                 }
-                else
-                    return(PIM_ACTION_JOIN);
+                else {
+                    return PIM_ACTION_JOIN;
+		}
             }
             else {
                 /* Upstream router toward RP */
                 if (VIFM_ISEMPTY(entry_oifs))
-                    return (PIM_ACTION_PRUNE);
+                    return PIM_ACTION_PRUNE;
             }
         }
 
         /* Looks like the case when the upstream router toward S is
          * different from the upstream router toward RP
          */
-        if (mrtentry_ptr->group->active_rp_grp == (rp_grp_entry_t *)NULL)
-            return (PIM_ACTION_NOTHING);
-        mrtentry_grp = mrtentry_ptr->group->grp_route;
-        if (mrtentry_grp == (mrtentry_t *)NULL)
-            mrtentry_grp =
-                mrtentry_ptr->group->active_rp_grp->rp->rpentry->mrtlink;
-        if (mrtentry_grp == (mrtentry_t *)NULL)
-            return (PIM_ACTION_NOTHING);
-        if (mrtentry_grp->upstream != upstream_router)
-            return (PIM_ACTION_NOTHING); /* XXX: shoudn't happen */
+        if (!mrtentry_ptr->group->active_rp_grp)
+            return PIM_ACTION_NOTHING;
 
-        if ((!(mrtentry_ptr->flags & MRTF_RP))
-            && (mrtentry_ptr->flags & MRTF_SPT)) {
-            return (PIM_ACTION_PRUNE);
-        }
+        mrtentry_grp = mrtentry_ptr->group->grp_route;
+        if (!mrtentry_grp) {
+            mrtentry_grp = mrtentry_ptr->group->active_rp_grp->rp->rpentry->mrtlink;
+	    if (!mrtentry_grp)
+		return PIM_ACTION_NOTHING;
+	}
+
+        if (mrtentry_grp->upstream != upstream_router)
+            return PIM_ACTION_NOTHING; /* XXX: shoudn't happen */
+
+        if (!(mrtentry_ptr->flags & MRTF_RP) && (mrtentry_ptr->flags & MRTF_SPT))
+            return PIM_ACTION_PRUNE;
     }
-    return (PIM_ACTION_NOTHING);
+
+    return PIM_ACTION_NOTHING;
 }
 
 
 /* TODO: when parsing, check if we go beyong message size */
 /* TODO: too long, simplify it! */
 #define PIM_JOIN_PRUNE_MINLEN (4 + PIM_ENCODE_UNI_ADDR_LEN + 4)
-int
-receive_pim_join_prune(src, dst, pim_message, datalen)
-    u_int32 src, dst __attribute__((unused));
-    char *pim_message;
-    register int datalen;
+int receive_pim_join_prune(u_int32 src, u_int32 dst __attribute__((unused)), char *pim_message, int datalen)
 {
     vifi_t vifi;
     struct uvif *v;
@@ -1065,31 +1040,31 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
         /* Either a local vif or somehow received PIM_JOIN_PRUNE from
          * non-directly connected router. Ignore it.
          */
-        if (local_address(src) == NO_VIF)
-            logit(LOG_INFO, 0,
-                  "Ignoring PIM_JOIN_PRUNE from non-neighbor router %s",
+        if (local_address(src) == NO_VIF) {
+            logit(LOG_INFO, 0, "Ignoring PIM_JOIN_PRUNE from non-neighbor router %s",
                   inet_fmt(src, s1, sizeof(s1)));
-        return(FALSE);
+	}
+
+        return FALSE;
     }
 
     /* Checksum */
     if (inet_cksum((u_int16 *)pim_message, datalen))
-        return(FALSE);
+        return FALSE;
 
     v = &uvifs[vifi];
-    if (uvifs[vifi].uv_flags &
-        (VIFF_DOWN | VIFF_DISABLED | VIFF_NONBRS | VIFF_REGISTER))
-        return(FALSE);    /* Shoudn't come on this interface */
+    if (uvifs[vifi].uv_flags & (VIFF_DOWN | VIFF_DISABLED | VIFF_NONBRS | VIFF_REGISTER))
+        return FALSE;    /* Shoudn't come on this interface */
 
     /* sanity check for the minimum length */
     if (datalen < PIM_JOIN_PRUNE_MINLEN) {
-        logit(LOG_NOTICE, 0,
-              "receive_pim_join_prune: Join/Prune message size(%u) is"
-              " too short from %s on %s",
+        logit(LOG_NOTICE, 0, "receive_pim_join_prune: Join/Prune message size(%u) is too short from %s on %s",
               datalen, inet_fmt(src, s1, sizeof(s1)), v->uv_name);
-        return(FALSE);
+
+        return FALSE;
     }
     /*
+
      * TODO: Sanity check for the message length through all the groups
      * (see Kame's pim6sd).
      */
@@ -1100,7 +1075,7 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
     GET_BYTE(reserved, data_ptr);
     GET_BYTE(num_groups, data_ptr);
     if (num_groups == 0)
-        return (FALSE);    /* No indication for groups in the message */
+        return FALSE;    /* No indication for groups in the message */
     GET_HOSTSHORT(holdtime, data_ptr);
 
     if (uni_target_addr.unicast_addr != v->uv_lcl_addr) {
@@ -1113,8 +1088,9 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
          * here. The Join/Prune sending function will take care of that.
          */
         upstream_router = find_pim_nbr(uni_target_addr.unicast_addr);
-        if (upstream_router == (pim_nbr_entry_t *)NULL)
-            return (FALSE);   /* I have no such neighbor */
+        if (!upstream_router)
+            return FALSE;   /* I have no such neighbor */
+
         while (num_groups--) {
             GET_EGADDR(&encod_group, data_ptr);
             GET_HOSTSHORT(num_j_srcs, data_ptr);
@@ -1122,13 +1098,11 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
             MASKLEN_TO_MASK(encod_group.masklen, g_mask);
             group = encod_group.mcast_addr;
             if (!IN_MULTICAST(ntohl(group))) {
-                data_ptr +=
-                    (num_j_srcs + num_p_srcs) * sizeof(pim_encod_src_addr_t);
+                data_ptr += (num_j_srcs + num_p_srcs) * sizeof(pim_encod_src_addr_t);
                 continue; /* Ignore this group and jump to the next */
             }
 
-            if ((ntohl(group) == CLASSD_PREFIX) &&
-                (encod_group.masklen == STAR_STAR_RP_MSKLEN)) {
+            if ((ntohl(group) == CLASSD_PREFIX) && (encod_group.masklen == STAR_STAR_RP_MSKLEN)) {
                 /* (*,*,RP) Join suppression */
 
                 while(num_j_srcs--) {
@@ -1136,17 +1110,17 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
                     source = encod_src.src_addr;
                     if (!inet_valid_host(source))
                         continue;
+
                     s_flags = encod_src.flags;
                     MASKLEN_TO_MASK(encod_src.masklen, s_mask);
-                    if ((s_flags & USADDR_RP_BIT) &&
-                        (s_flags & USADDR_WC_BIT)) {
+                    if ((s_flags & USADDR_RP_BIT) && (s_flags & USADDR_WC_BIT)) {
                         /* This is the RP address. */
                         rpentry_ptr = rp_find(source);
-                        if (rpentry_ptr == (rpentry_t *)NULL)
+                        if (!rpentry_ptr)
                             continue; /* Don't have such RP. Ignore */
+
                         mrtentry_rp = rpentry_ptr->mrtlink;
-                        my_action = join_or_prune(mrtentry_rp,
-                                                  upstream_router);
+                        my_action = join_or_prune(mrtentry_rp, upstream_router);
                         if (my_action != PIM_ACTION_JOIN)
                             continue;
 
@@ -1154,16 +1128,15 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
                         /* TODO: XXX: TIMER implem. dependency! */
                         if (mrtentry_rp->jp_timer > holdtime)
                             continue;
-                        if ((mrtentry_rp->jp_timer == holdtime)
-                            && (ntohl(src) > ntohl(v->uv_lcl_addr)))
+
+                        if ((mrtentry_rp->jp_timer == holdtime) && (ntohl(src) > ntohl(v->uv_lcl_addr)))
                             continue;
 
                         /* Set the Join/Prune suppression timer for this
                          * routing entry by increasing the current
                          * Join/Prune timer.
                          */
-                        jp_value = PIM_JOIN_PRUNE_PERIOD +
-                            0.5 * (RANDOM() % PIM_JOIN_PRUNE_PERIOD);
+                        jp_value = PIM_JOIN_PRUNE_PERIOD + 0.5 * (RANDOM() % PIM_JOIN_PRUNE_PERIOD);
                         /* TODO: XXX: TIMER implem. dependency! */
                         if (mrtentry_rp->jp_timer < jp_value)
                             SET_TIMER(mrtentry_rp->jp_timer, jp_value);
@@ -1183,56 +1156,50 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
                         continue;
                     s_flags = encod_src.flags;
                     MASKLEN_TO_MASK(encod_src.masklen, s_mask);
-                    if ((s_flags & USADDR_RP_BIT) &&
-                        (s_flags & USADDR_WC_BIT)) {
+                    if ((s_flags & USADDR_RP_BIT) && (s_flags & USADDR_WC_BIT)) {
                         /* This is the RP address. */
                         rpentry_ptr = rp_find(source);
-                        if (rpentry_ptr == (rpentry_t *)NULL)
+                        if (!rpentry_ptr)
                             continue; /* Don't have such RP. Ignore */
+
                         mrtentry_rp = rpentry_ptr->mrtlink;
-                        my_action = join_or_prune(mrtentry_rp,
-                                                  upstream_router);
+                        my_action = join_or_prune(mrtentry_rp, upstream_router);
                         if (my_action == PIM_ACTION_PRUNE) {
                             /* TODO: XXX: TIMER implem. dependency! */
                             if ((mrtentry_rp->jp_timer < holdtime)
-                                || ((mrtentry_rp->jp_timer == holdtime)
-                                    && (ntohl(src) > ntohl(v->uv_lcl_addr)))){
+				|| ((mrtentry_rp->jp_timer == holdtime) &&
+				    (ntohl(src) > ntohl(v->uv_lcl_addr)))) {
                                 /* Suppress the Prune */
-                                jp_value = PIM_JOIN_PRUNE_PERIOD +
-                                    0.5 * (RANDOM() % PIM_JOIN_PRUNE_PERIOD);
+                                jp_value = PIM_JOIN_PRUNE_PERIOD + 0.5 * (RANDOM() % PIM_JOIN_PRUNE_PERIOD);
                                 if (mrtentry_rp->jp_timer < jp_value)
                                     SET_TIMER(mrtentry_rp->jp_timer, jp_value);
                             }
-                        }
-                        else if (my_action == PIM_ACTION_JOIN) {
+                        } else if (my_action == PIM_ACTION_JOIN) {
                             /* Override the Prune by scheduling a Join */
                             jp_value = (RANDOM() % (int)(10 * PIM_RANDOM_DELAY_JOIN_TIMEOUT)) / 10;
                             /* TODO: XXX: TIMER implem. dependency! */
                             if (mrtentry_rp->jp_timer > jp_value)
                                 SET_TIMER(mrtentry_rp->jp_timer, jp_value);
                         }
+
                         /* Check all (*,G) and (S,G) matching to this RP.
                          * If my_action == JOIN, then send a Join and override
                          * the (*,*,RP) Prune.
                          */
-                        for (grpentry_ptr =
-                                 rpentry_ptr->cand_rp->rp_grp_next->grplink;
+                        for (grpentry_ptr = rpentry_ptr->cand_rp->rp_grp_next->grplink;
                              grpentry_ptr != (grpentry_t *)NULL;
                              grpentry_ptr = grpentry_ptr->rpnext) {
-                            my_action = join_or_prune(grpentry_ptr->grp_route,
-                                                      upstream_router);
+                            my_action = join_or_prune(grpentry_ptr->grp_route, upstream_router);
                             if (my_action == PIM_ACTION_JOIN) {
                                 jp_value = (RANDOM() % (int)(10 * PIM_RANDOM_DELAY_JOIN_TIMEOUT)) / 10;
                                 /* TODO: XXX: TIMER implem. dependency! */
-                                if (grpentry_ptr->grp_route->jp_timer >
-                                    jp_value)
+                                if (grpentry_ptr->grp_route->jp_timer > jp_value)
                                     SET_TIMER(grpentry_ptr->grp_route->jp_timer, jp_value);
                             }
                             for (mrtentry_srcs = grpentry_ptr->mrtlink;
                                  mrtentry_srcs != (mrtentry_t *)NULL;
                                  mrtentry_srcs = mrtentry_srcs->grpnext) {
-                                my_action = join_or_prune(mrtentry_srcs,
-                                                          upstream_router);
+                                my_action = join_or_prune(mrtentry_srcs, upstream_router);
                                 if (my_action == PIM_ACTION_JOIN) {
                                     jp_value = (RANDOM() % (int)(10 * PIM_RANDOM_DELAY_JOIN_TIMEOUT)) / 10;
                                     /* TODO: XXX: TIMER implem. dependency! */
@@ -1257,18 +1224,20 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
                 source = encod_src.src_addr;
                 if (!inet_valid_host(source))
                     continue;
+
                 s_flags = encod_src.flags;
                 MASKLEN_TO_MASK(encod_src.masklen, s_mask);
 
                 if ((s_flags & USADDR_RP_BIT) && (s_flags & USADDR_WC_BIT)) {
                     /* (*,G) JOIN_REQUEST (toward the RP) */
-                    mrtentry_ptr = find_route(INADDR_ANY_N, group, MRTF_WC,
-                                              DONT_CREATE);
-                    if (mrtentry_ptr == NULL)
+                    mrtentry_ptr = find_route(INADDR_ANY_N, group, MRTF_WC, DONT_CREATE);
+                    if (!mrtentry_ptr)
                         continue;
+
                     my_action = join_or_prune(mrtentry_ptr, upstream_router);
                     if (my_action != PIM_ACTION_JOIN)
                         continue;
+
                     /* (*,G) Join suppresion */
                     if (source != mrtentry_ptr->group->active_rp_grp->rp->rpentry->address)
                         continue;  /* The RP address doesn't match. Ignore. */
@@ -1277,21 +1246,21 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
                     /* TODO: XXX: TIMER implem. dependency! */
                     if (mrtentry_ptr->jp_timer > holdtime)
                         continue;
-                    if ((mrtentry_ptr->jp_timer == holdtime)
-                        && (ntohl(src) > ntohl(v->uv_lcl_addr)))
+
+                    if ((mrtentry_ptr->jp_timer == holdtime) && (ntohl(src) > ntohl(v->uv_lcl_addr)))
                         continue;
-                    jp_value = PIM_JOIN_PRUNE_PERIOD +
-                        0.5 * (RANDOM() % PIM_JOIN_PRUNE_PERIOD);
+
+                    jp_value = PIM_JOIN_PRUNE_PERIOD + 0.5 * (RANDOM() % PIM_JOIN_PRUNE_PERIOD);
                     if (mrtentry_ptr->jp_timer < jp_value)
                         SET_TIMER(mrtentry_ptr->jp_timer, jp_value);
                     continue;
                 } /* End of (*,G) Join suppression */
 
                 /* (S,G) Join suppresion */
-                mrtentry_ptr = find_route(source, group, MRTF_SG,
-                                          DONT_CREATE);
-                if (mrtentry_ptr == NULL)
+                mrtentry_ptr = find_route(source, group, MRTF_SG, DONT_CREATE);
+                if (!mrtentry_ptr)
                     continue;
+
                 my_action = join_or_prune(mrtentry_ptr, upstream_router);
                 if (my_action != PIM_ACTION_JOIN)
                     continue;
@@ -1300,11 +1269,11 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
                 /* TODO: XXX: TIMER implem. dependency! */
                 if (mrtentry_ptr->jp_timer > holdtime)
                     continue;
-                if ((mrtentry_ptr->jp_timer == holdtime)
-                    && (ntohl(src) > ntohl(v->uv_lcl_addr)))
+
+                if ((mrtentry_ptr->jp_timer == holdtime) && (ntohl(src) > ntohl(v->uv_lcl_addr)))
                     continue;
-                jp_value = PIM_JOIN_PRUNE_PERIOD +
-                    0.5 * (RANDOM() % PIM_JOIN_PRUNE_PERIOD);
+
+                jp_value = PIM_JOIN_PRUNE_PERIOD + 0.5 * (RANDOM() % PIM_JOIN_PRUNE_PERIOD);
                 if (mrtentry_ptr->jp_timer < jp_value)
                     SET_TIMER(mrtentry_ptr->jp_timer, jp_value);
                 continue;
@@ -1316,18 +1285,19 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
                 source = encod_src.src_addr;
                 if (!inet_valid_host(source))
                     continue;
+
                 s_flags = encod_src.flags;
                 MASKLEN_TO_MASK(encod_src.masklen, s_mask);
                 if ((s_flags & USADDR_RP_BIT) && (s_flags & USADDR_WC_BIT)) {
                     /* (*,G) prune suppression */
                     rpentry_ptr = rp_match(group);
-                    if ((rpentry_ptr == (rpentry_t *)NULL)
-                        || (rpentry_ptr->address != source))
+                    if (!rpentry_ptr || (rpentry_ptr->address != source))
                         continue;  /* No such RP or it is different. Ignore */
-                    mrtentry_ptr = find_route(INADDR_ANY_N, group, MRTF_WC,
-                                              DONT_CREATE);
-                    if (mrtentry_ptr == NULL)
+
+                    mrtentry_ptr = find_route(INADDR_ANY_N, group, MRTF_WC, DONT_CREATE);
+                    if (!mrtentry_ptr)
                         continue;
+
                     my_action = join_or_prune(mrtentry_ptr, upstream_router);
                     if (my_action == PIM_ACTION_PRUNE) {
                         /* TODO: XXX: TIMER implem. dependency! */
@@ -1335,8 +1305,7 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
                             || ((mrtentry_ptr->jp_timer == holdtime)
                                 && (ntohl(src) > ntohl(v->uv_lcl_addr)))) {
                             /* Suppress the Prune */
-                            jp_value = PIM_JOIN_PRUNE_PERIOD +
-                                0.5 * (RANDOM() % PIM_JOIN_PRUNE_PERIOD);
+                            jp_value = PIM_JOIN_PRUNE_PERIOD + 0.5 * (RANDOM() % PIM_JOIN_PRUNE_PERIOD);
                             if (mrtentry_ptr->jp_timer < jp_value)
                                 SET_TIMER(mrtentry_ptr->jp_timer, jp_value);
                         }
@@ -1356,8 +1325,7 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
                     for (mrtentry_srcs = mrtentry_ptr->group->mrtlink;
                          mrtentry_srcs != (mrtentry_t *)NULL;
                          mrtentry_srcs = mrtentry_srcs->grpnext) {
-                        my_action = join_or_prune(mrtentry_srcs,
-                                                  upstream_router);
+                        my_action = join_or_prune(mrtentry_srcs, upstream_router);
                         if (my_action == PIM_ACTION_JOIN) {
                             jp_value = (RANDOM() % (int)(10 * PIM_RANDOM_DELAY_JOIN_TIMEOUT)) / 10;
                             /* TODO: XXX: TIMER implem. dependency! */
@@ -1369,10 +1337,10 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
                 }
 
                 /* (S,G) prune suppression */
-                mrtentry_ptr = find_route(source, group, MRTF_SG,
-                                          DONT_CREATE);
+                mrtentry_ptr = find_route(source, group, MRTF_SG, DONT_CREATE);
                 if (mrtentry_ptr == NULL)
                     continue;
+
                 my_action = join_or_prune(mrtentry_ptr, upstream_router);
                 if (my_action == PIM_ACTION_PRUNE) {
                     /* Suppress the (S,G) Prune */
@@ -1380,8 +1348,7 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
                     if ((mrtentry_ptr->jp_timer < holdtime)
                         || ((mrtentry_ptr->jp_timer == holdtime)
                             && (ntohl(src) > ntohl(v->uv_lcl_addr)))) {
-                        jp_value = PIM_JOIN_PRUNE_PERIOD +
-                            0.5 * (RANDOM() % PIM_JOIN_PRUNE_PERIOD);
+                        jp_value = PIM_JOIN_PRUNE_PERIOD + 0.5 * (RANDOM() % PIM_JOIN_PRUNE_PERIOD);
                         if (mrtentry_ptr->jp_timer < jp_value)
                             SET_TIMER(mrtentry_ptr->jp_timer, jp_value);
                     }
@@ -1395,7 +1362,7 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
                 }
             }  /* while (num_p_srcs--) */
         }  /* while (num_groups--) */
-        return(TRUE);
+        return TRUE;
     }   /* End of Join/Prune suppression code */
 
     /* I am the target of this join, so process the message */
@@ -1441,13 +1408,12 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
         GET_HOSTSHORT(num_j_srcs, data_ptr);
         GET_HOSTSHORT(num_p_srcs, data_ptr);
         group = encod_group.mcast_addr;
-        if ((ntohl(group) != CLASSD_PREFIX)
-            || (encod_group.masklen != STAR_STAR_RP_MSKLEN)) {
+        if ((ntohl(group) != CLASSD_PREFIX) || (encod_group.masklen != STAR_STAR_RP_MSKLEN)) {
             /* This is not (*,*,RP). Jump to the next group. */
-            data_ptr +=
-                (num_j_srcs + num_p_srcs) * sizeof(pim_encod_src_addr_t);
+            data_ptr += (num_j_srcs + num_p_srcs) * sizeof(pim_encod_src_addr_t);
             continue;
         }
+
         /* (*,*,RP) found. For each RP and each (*,G) and each (S,G) clear
          * the pruned oif, but do not update the kernel.
          */
@@ -1487,34 +1453,28 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
         GET_HOSTSHORT(num_p_srcs, data_ptr);
         group = encod_group.mcast_addr;
         if (!IN_MULTICAST(ntohl(group))) {
-            data_ptr +=
-                (num_j_srcs + num_p_srcs) * sizeof(pim_encod_src_addr_t);
-            continue;   /* Ignore this group and jump to the next one */
+            data_ptr += (num_j_srcs + num_p_srcs) * sizeof(pim_encod_src_addr_t);
+            continue;		/* Ignore this group and jump to the next one */
         }
 
         if ((ntohl(group) == CLASSD_PREFIX)
             && (encod_group.masklen == STAR_STAR_RP_MSKLEN)) {
             /* This is (*,*,RP). Jump to the next group. */
-            data_ptr +=
-                (num_j_srcs + num_p_srcs) * sizeof(pim_encod_src_addr_t);
+            data_ptr += (num_j_srcs + num_p_srcs) * sizeof(pim_encod_src_addr_t);
             continue;
         }
 
         rpentry_ptr = rp_match(group);
         if (rpentry_ptr == (rpentry_t *)NULL) {
-            data_ptr +=
-                (num_j_srcs + num_p_srcs) * sizeof(pim_encod_src_addr_t);
+            data_ptr += (num_j_srcs + num_p_srcs) * sizeof(pim_encod_src_addr_t);
             continue;
         }
 
         data_ptr_group_j_start = data_ptr;
-        data_ptr_group_p_start = data_ptr +
-            num_j_srcs * sizeof(pim_encod_src_addr_t);
-        data_ptr_group_end = data_ptr +
-            (num_j_srcs + num_p_srcs) * sizeof(pim_encod_src_addr_t);
+        data_ptr_group_p_start = data_ptr + num_j_srcs * sizeof(pim_encod_src_addr_t);
+        data_ptr_group_end = data_ptr + (num_j_srcs + num_p_srcs) * sizeof(pim_encod_src_addr_t);
 
-        /*
-         * Scan the Join part for (*,G) Join and then clear the
+        /* Scan the Join part for (*,G) Join and then clear the
          * particular interface from pruned_oifs for all (S,G).
          * If the RP address in the Join message is different from
          * the local match, ignore the whole group.
@@ -1523,8 +1483,7 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
         ignore_group = FALSE;
         while (num_j_srcs_tmp--) {
             GET_ESADDR(&encod_src, data_ptr);
-            if ((encod_src.flags & USADDR_RP_BIT)
-                && (encod_src.flags & USADDR_WC_BIT)) {
+            if ((encod_src.flags & USADDR_RP_BIT) && (encod_src.flags & USADDR_WC_BIT)) {
                 /* This is the RP address, i.e. (*,G) Join.
                  * Check if the RP-mapping is consistent and if "yes",
                  * then Reset the pruned_oifs for all (S,G) entries.
@@ -1533,9 +1492,9 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
                     ignore_group = TRUE;
                     break;
                 }
-                mrtentry_ptr = find_route(INADDR_ANY_N, group,
-                                          MRTF_WC, DONT_CREATE);
-                if (mrtentry_ptr != (mrtentry_t *)NULL) {
+
+                mrtentry_ptr = find_route(INADDR_ANY_N, group, MRTF_WC, DONT_CREATE);
+                if (mrtentry_ptr) {
                     for (mrtentry_srcs = mrtentry_ptr->group->mrtlink;
                          mrtentry_srcs != (mrtentry_t *)NULL;
                          mrtentry_srcs = mrtentry_srcs->grpnext)
@@ -1546,8 +1505,7 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
         }
 
         if (ignore_group == TRUE) {
-            data_ptr +=
-                (num_j_srcs_tmp + num_p_srcs) * sizeof(pim_encod_src_addr_t);
+            data_ptr += (num_j_srcs_tmp + num_p_srcs) * sizeof(pim_encod_src_addr_t);
             continue;
         }
 
@@ -1558,13 +1516,14 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
             source = encod_src.src_addr;
             if (!inet_valid_host(source))
                 continue;
+
             s_flags = encod_src.flags;
             if (!(s_flags & (USADDR_WC_BIT | USADDR_RP_BIT))) {
                 /* (S,G) prune sent toward S */
-                mrtentry_ptr = find_route(source, group, MRTF_SG,
-                                          DONT_CREATE);
-                if (mrtentry_ptr == (mrtentry_t *)NULL)
+                mrtentry_ptr = find_route(source, group, MRTF_SG, DONT_CREATE);
+                if (!mrtentry_ptr)
                     continue;   /* I don't have (S,G) to prune. Ignore. */
+
                 /* If the link is point-to-point, timeout the oif
                  * immediately, otherwise decrease the timer to allow
                  * other downstream routers to override the prune.
@@ -1572,13 +1531,11 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
                 /* TODO: XXX: increase the entry timer? */
                 if (v->uv_flags & VIFF_POINT_TO_POINT) {
                     FIRE_TIMER(mrtentry_ptr->vif_timers[vifi]);
-                }
-                else {
+                } else {
                     /* TODO: XXX: TIMER implem. dependency! */
-                    if (mrtentry_ptr->vif_timers[vifi] >
-                        mrtentry_ptr->vif_deletion_delay[vifi])
+                    if (mrtentry_ptr->vif_timers[vifi] > mrtentry_ptr->vif_deletion_delay[vifi])
                         SET_TIMER(mrtentry_ptr->vif_timers[vifi],
-                                  mrtentry_ptr->vif_deletion_delay[vifi]);
+				  mrtentry_ptr->vif_deletion_delay[vifi]);
                 }
                 IF_TIMER_NOT_SET(mrtentry_ptr->vif_timers[vifi]) {
                     VIFM_CLR(vifi, mrtentry_ptr->joined_oifs);
@@ -1593,20 +1550,16 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
                 continue;
             }
 
-            if ((s_flags & USADDR_RP_BIT)
-                && (!(s_flags & USADDR_WC_BIT))) {
+            if ((s_flags & USADDR_RP_BIT) && (!(s_flags & USADDR_WC_BIT))) {
                 /* ~(S,G)RPbit prune sent toward the RP */
-                mrtentry_ptr = find_route(source, group, MRTF_SG,
-                                          DONT_CREATE);
-                if (mrtentry_ptr != (mrtentry_t *)NULL) {
+                mrtentry_ptr = find_route(source, group, MRTF_SG, DONT_CREATE);
+                if (mrtentry_ptr) {
                     SET_TIMER(mrtentry_ptr->timer, holdtime);
                     if (v->uv_flags & VIFF_POINT_TO_POINT) {
                         FIRE_TIMER(mrtentry_ptr->vif_timers[vifi]);
-                    }
-                    else {
+                    } else {
                         /* TODO: XXX: TIMER implem. dependency! */
-                        if (mrtentry_ptr->vif_timers[vifi] >
-                            mrtentry_ptr->vif_deletion_delay[vifi])
+                        if (mrtentry_ptr->vif_timers[vifi] > mrtentry_ptr->vif_deletion_delay[vifi])
                             SET_TIMER(mrtentry_ptr->vif_timers[vifi],
                                       mrtentry_ptr->vif_deletion_delay[vifi]);
                     }
@@ -1622,16 +1575,14 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
                     }
                     continue;
                 }
+
                 /* There is no (S,G) entry. Check for (*,G) or (*,*,RP) */
-                mrtentry_ptr = find_route(INADDR_ANY_N, group,
-                                          MRTF_WC | MRTF_PMBR,
-                                          DONT_CREATE);
-                if (mrtentry_ptr != (mrtentry_t *)NULL) {
-                    mrtentry_ptr = find_route(source, group,
-                                              MRTF_SG | MRTF_RP,
-                                              CREATE);
-                    if (mrtentry_ptr == (mrtentry_t *)NULL)
+                mrtentry_ptr = find_route(INADDR_ANY_N, group, MRTF_WC | MRTF_PMBR, DONT_CREATE);
+                if (mrtentry_ptr) {
+                    mrtentry_ptr = find_route(source, group, MRTF_SG | MRTF_RP, CREATE);
+                    if (!mrtentry_ptr)
                         continue;
+
                     mrtentry_ptr->flags &= ~MRTF_NEW;
                     RESET_TIMER(mrtentry_ptr->vif_timers[vifi]);
                     /* TODO: XXX: The spec doens't say what value to use for
@@ -1656,10 +1607,8 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
 
             if ((s_flags & USADDR_RP_BIT) && (s_flags & USADDR_WC_BIT)) {
                 /* (*,G) Prune */
-                mrtentry_ptr = find_route(INADDR_ANY_N, group,
-                                          MRTF_WC | MRTF_PMBR,
-                                          DONT_CREATE);
-                if (mrtentry_ptr != (mrtentry_t *)NULL) {
+                mrtentry_ptr = find_route(INADDR_ANY_N, group, MRTF_WC | MRTF_PMBR, DONT_CREATE);
+                if (mrtentry_ptr) {
                     if (mrtentry_ptr->flags & MRTF_WC) {
                         /* TODO: XXX: Should check the whole Prune list in
                          * advance for (*,G) prune and if the RP address
@@ -1668,13 +1617,12 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
                          */
                         if (mrtentry_ptr->group->active_rp_grp->rp->rpentry->address != source)
                             continue; /* The RP address doesn't match. */
+
                         if (v->uv_flags & VIFF_POINT_TO_POINT) {
                             FIRE_TIMER(mrtentry_ptr->vif_timers[vifi]);
-                        }
-                        else {
+                        } else {
                             /* TODO: XXX: TIMER implem. dependency! */
-                            if (mrtentry_ptr->vif_timers[vifi] >
-                                mrtentry_ptr->vif_deletion_delay[vifi])
+                            if (mrtentry_ptr->vif_timers[vifi] > mrtentry_ptr->vif_deletion_delay[vifi])
                                 SET_TIMER(mrtentry_ptr->vif_timers[vifi],
                                           mrtentry_ptr->vif_deletion_delay[vifi]);
                         }
@@ -1690,13 +1638,15 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
                         }
                         continue;
                     }
+
                     /* No (*,G) entry, but found (*,*,RP). Create (*,G) */
                     if (mrtentry_ptr->source->address != source)
                         continue; /* The RP address doesn't match. */
-                    mrtentry_ptr = find_route(INADDR_ANY_N, group,
-                                              MRTF_WC, CREATE);
-                    if (mrtentry_ptr == (mrtentry_t *)NULL)
+
+                    mrtentry_ptr = find_route(INADDR_ANY_N, group, MRTF_WC, CREATE);
+                    if (!mrtentry_ptr)
                         continue;
+
                     mrtentry_ptr->flags &= ~MRTF_NEW;
                     RESET_TIMER(mrtentry_ptr->vif_timers[vifi]);
                     /* TODO: XXX: should only lower the oif timer, so it can
@@ -1722,18 +1672,18 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
             source = encod_src.src_addr;
             if (!inet_valid_host(source))
                 continue;
+
             s_flags = encod_src.flags;
             MASKLEN_TO_MASK(encod_src.masklen, s_mask);
-            if ((s_flags & USADDR_WC_BIT)
-                && (s_flags & USADDR_RP_BIT)) {
+            if ((s_flags & USADDR_WC_BIT) && (s_flags & USADDR_RP_BIT)) {
                 /* (*,G) Join toward RP */
                 /* It has been checked already that this RP address is
                  * the same as the local RP-maping.
                  */
-                mrtentry_ptr = find_route(INADDR_ANY_N, group, MRTF_WC,
-                                          CREATE);
-                if (mrtentry_ptr == (mrtentry_t *)NULL)
+                mrtentry_ptr = find_route(INADDR_ANY_N, group, MRTF_WC, CREATE);
+                if (!mrtentry_ptr)
                     continue;
+
                 VIFM_SET(vifi, mrtentry_ptr->joined_oifs);
                 VIFM_CLR(vifi, mrtentry_ptr->pruned_oifs);
                 VIFM_CLR(vifi, mrtentry_ptr->asserted_oifs);
@@ -1772,9 +1722,11 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
                 /* (S,G) Join toward S */
                 if (vifi == get_iif(source))
                     continue;  /* Ignore this (S,G) Join */
+
                 mrtentry_ptr = find_route(source, group, MRTF_SG, CREATE);
-                if (mrtentry_ptr == (mrtentry_t *)NULL)
+                if (!mrtentry_ptr)
                     continue;
+
                 VIFM_SET(vifi, mrtentry_ptr->joined_oifs);
                 VIFM_CLR(vifi, mrtentry_ptr->pruned_oifs);
                 VIFM_CLR(vifi, mrtentry_ptr->asserted_oifs);
@@ -1809,7 +1761,8 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
 
     /* Now process the (*,*,RP) Join/Prune */
     if (star_star_rp_found != TRUE)
-        return (TRUE);
+        return TRUE;
+
     data_ptr = data_ptr_start;
     while (num_groups--) {
         /* The conservative approach is to scan again the whole message,
@@ -1833,12 +1786,13 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
             source = encod_src.src_addr;
             if (!inet_valid_host(source))
                 continue;
+
             s_flags = encod_src.flags;
             MASKLEN_TO_MASK(encod_src.masklen, s_mask);
-            mrtentry_ptr = find_route(source, INADDR_ANY_N, MRTF_PMBR,
-                                      CREATE);
+            mrtentry_ptr = find_route(source, INADDR_ANY_N, MRTF_PMBR, CREATE);
             if (mrtentry_ptr == (mrtentry_t *)NULL)
                 continue;
+
             VIFM_SET(vifi, mrtentry_ptr->joined_oifs);
             VIFM_CLR(vifi, mrtentry_ptr->pruned_oifs);
             VIFM_CLR(vifi, mrtentry_ptr->asserted_oifs);
@@ -1864,7 +1818,7 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
              */
             for (rp_grp_entry_ptr = mrtentry_ptr->source->cand_rp->rp_grp_next;
                  rp_grp_entry_ptr != (rp_grp_entry_t *)NULL;
-                 rp_grp_entry_ptr = rp_grp_entry_ptr->rp_grp_next)
+                 rp_grp_entry_ptr = rp_grp_entry_ptr->rp_grp_next) {
                 for (grpentry_ptr = rp_grp_entry_ptr->grplink;
                      grpentry_ptr != (grpentry_t *)NULL;
                      grpentry_ptr = grpentry_ptr->rpnext) {
@@ -1888,6 +1842,7 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
                                           mrtentry_srcs->leaves,
                                           mrtentry_srcs->asserted_oifs, 0);
                 }
+	    }
             continue;
         }
 
@@ -1897,12 +1852,13 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
             source = encod_src.src_addr;
             if (!inet_valid_host(source))
                 continue;
+
             s_flags = encod_src.flags;
             MASKLEN_TO_MASK(encod_src.masklen, s_mask);
-            mrtentry_ptr = find_route(source, INADDR_ANY_N, MRTF_PMBR,
-                                      DONT_CREATE);
+            mrtentry_ptr = find_route(source, INADDR_ANY_N, MRTF_PMBR, DONT_CREATE);
             if (mrtentry_ptr == (mrtentry_t *)NULL)
                 continue;
+
             /* If the link is point-to-point, timeout the oif
              * immediately, otherwise decrease the timer to allow
              * other downstream routers to override the prune.
@@ -1910,11 +1866,9 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
             /* TODO: XXX: increase the entry timer? */
             if (v->uv_flags & VIFF_POINT_TO_POINT) {
                 FIRE_TIMER(mrtentry_ptr->vif_timers[vifi]);
-            }
-            else {
+            } else {
                 /* TODO: XXX: TIMER implem. dependency! */
-                if (mrtentry_ptr->vif_timers[vifi] >
-                    mrtentry_ptr->vif_deletion_delay[vifi])
+                if (mrtentry_ptr->vif_timers[vifi] > mrtentry_ptr->vif_deletion_delay[vifi])
                     SET_TIMER(mrtentry_ptr->vif_timers[vifi],
                               mrtentry_ptr->vif_deletion_delay[vifi]);
             }
@@ -1933,7 +1887,7 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
         }
     } /* For all groups processing (*,*,R) */
 
-    return(TRUE);
+    return TRUE;
 }
 
 
@@ -1955,11 +1909,7 @@ receive_pim_join_prune(src, dst, pim_message, datalen)
  *
  * If pim_nbr is not NULL, then send to only this particular PIM neighbor,
  */
-int
-send_periodic_pim_join_prune(vifi, pim_nbr, holdtime)
-    vifi_t vifi;
-    pim_nbr_entry_t *pim_nbr;
-    u_int16 holdtime;
+int send_periodic_pim_join_prune(vifi_t vifi, pim_nbr_entry_t *pim_nbr, u_int16 holdtime)
 {
     grpentry_t *grpentry_ptr;
     mrtentry_t *mrtentry_ptr;
@@ -1980,22 +1930,19 @@ send_periodic_pim_join_prune(vifi, pim_nbr, holdtime)
     v = &uvifs[vifi];
 
     /* Check the (*,G) and (S,G) entries */
-    for(grpentry_ptr = grplist; grpentry_ptr != (grpentry_t *)NULL;
-        grpentry_ptr = grpentry_ptr->next) {
+    for(grpentry_ptr = grplist; grpentry_ptr; grpentry_ptr = grpentry_ptr->next) {
         mrtentry_ptr = grpentry_ptr->grp_route;
         /* TODO: XXX: TIMER implem. dependency! */
-        if ((mrtentry_ptr != (mrtentry_t *)NULL)
-            && (mrtentry_ptr->incoming == vifi)
+        if (mrtentry_ptr
+	    && (mrtentry_ptr->incoming == vifi)
             && (mrtentry_ptr->jp_timer <= TIMER_INTERVAL)) {
 
             /* If join/prune to a particular neighbor only was specified */
-            if ((pim_nbr != (pim_nbr_entry_t *)NULL)
-                && (mrtentry_ptr->upstream != pim_nbr))
+            if (pim_nbr && mrtentry_ptr->upstream != pim_nbr)
                 continue;
 
             /* TODO: XXX: The J/P suppression timer is not in the spec! */
-            if (!VIFM_ISEMPTY(mrtentry_ptr->joined_oifs) ||
-                (v->uv_flags & VIFF_DR)) {
+            if (!VIFM_ISEMPTY(mrtentry_ptr->joined_oifs) || (v->uv_flags & VIFF_DR)) {
                 add_jp_entry(mrtentry_ptr->upstream, holdtime,
                              grpentry_ptr->group,
                              SINGLE_GRP_MSKLEN,
@@ -2014,13 +1961,9 @@ send_periodic_pim_join_prune(vifi, pim_nbr, holdtime)
         }
 
         /* Check the (S,G) entries */
-        for (mrtentry_ptr = grpentry_ptr->mrtlink;
-             mrtentry_ptr != (mrtentry_t *)NULL;
-             mrtentry_ptr = mrtentry_ptr->grpnext) {
-
+        for (mrtentry_ptr = grpentry_ptr->mrtlink; mrtentry_ptr; mrtentry_ptr = mrtentry_ptr->grpnext) {
             /* If join/prune to a particular neighbor only was specified */
-            if ((pim_nbr != (pim_nbr_entry_t *)NULL)
-                && (mrtentry_ptr->upstream != pim_nbr))
+            if (pim_nbr && mrtentry_ptr->upstream != pim_nbr)
                 continue;
 
             if (mrtentry_ptr->flags & MRTF_RP) {
@@ -2028,11 +1971,10 @@ send_periodic_pim_join_prune(vifi, pim_nbr, holdtime)
                 src_addr = mrtentry_ptr->source->address;
                 if (VIFM_ISEMPTY(mrtentry_ptr->joined_oifs)
                     || ((find_vif_direct_local(src_addr) != NO_VIF)
-                        && grpentry_ptr->grp_route != (mrtentry_t *)NULL))
+                        && grpentry_ptr->grp_route))
                     /* TODO: XXX: TIMER implem. dependency! */
                     if ((grpentry_ptr->grp_route->incoming == vifi)
-                        && (grpentry_ptr->grp_route->jp_timer
-                            <= TIMER_INTERVAL))
+                        && (grpentry_ptr->grp_route->jp_timer <= TIMER_INTERVAL))
                         /* S is directly connected. Send toward RP */
                         add_jp_entry(grpentry_ptr->grp_route->upstream,
                                      holdtime,
@@ -2053,7 +1995,7 @@ send_periodic_pim_join_prune(vifi, pim_nbr, holdtime)
                 }
                 else {
                     /* TODO: XXX: TIMER implem. dependency! */
-                    if ((mrtentry_ptr->incoming == vifi )
+                    if ((mrtentry_ptr->incoming == vifi)
                         && (mrtentry_ptr->jp_timer <= TIMER_INTERVAL))
                         add_jp_entry(mrtentry_ptr->upstream, holdtime,
                                      grpentry_ptr->group, SINGLE_GRP_MSKLEN,
@@ -2062,12 +2004,10 @@ send_periodic_pim_join_prune(vifi, pim_nbr, holdtime)
                 }
                 /* TODO: XXX: TIMER implem. dependency! */
                 if ((mrtentry_ptr->flags & MRTF_SPT)
-                    && (grpentry_ptr->grp_route != (mrtentry_t *)NULL)
-                    && (mrtentry_ptr->incoming !=
-                        grpentry_ptr->grp_route->incoming)
+                    && grpentry_ptr->grp_route
+                    && (mrtentry_ptr->incoming != grpentry_ptr->grp_route->incoming)
                     && (grpentry_ptr->grp_route->incoming == vifi)
-                    && (grpentry_ptr->grp_route->jp_timer
-                        <= TIMER_INTERVAL))
+                    && (grpentry_ptr->grp_route->jp_timer <= TIMER_INTERVAL))
                     add_jp_entry(grpentry_ptr->grp_route->upstream, holdtime,
                                  grpentry_ptr->group, SINGLE_GRP_MSKLEN,
                                  mrtentry_ptr->source->address,
@@ -2078,55 +2018,38 @@ send_periodic_pim_join_prune(vifi, pim_nbr, holdtime)
     }
 
     /* Check the (*,*,RP) entries */
-    for (cand_rp_ptr = cand_rp_list; cand_rp_ptr != (cand_rp_t *)NULL;
-         cand_rp_ptr = cand_rp_ptr->next) {
+    for (cand_rp_ptr = cand_rp_list; cand_rp_ptr; cand_rp_ptr = cand_rp_ptr->next) {
         rpentry_ptr = cand_rp_ptr->rpentry;
 
         /* If join/prune to a particular neighbor only was specified */
-        if ((pim_nbr != (pim_nbr_entry_t *)NULL)
-            && (rpentry_ptr->upstream != pim_nbr))
+        if (pim_nbr && rpentry_ptr->upstream != pim_nbr)
             continue;
 
         /* TODO: XXX: TIMER implem. dependency! */
-        if ((rpentry_ptr->mrtlink != (mrtentry_t *)NULL)
+        if (rpentry_ptr->mrtlink
             && (rpentry_ptr->incoming == vifi)
-            && (rpentry_ptr->mrtlink->jp_timer <= TIMER_INTERVAL)){
-            add_jp_entry(rpentry_ptr->upstream, holdtime,
-                         htonl(CLASSD_PREFIX), STAR_STAR_RP_MSKLEN,
-                         rpentry_ptr->address,
-                         SINGLE_SRC_MSKLEN, MRTF_RP | MRTF_WC,
-                         PIM_ACTION_JOIN);
+            && (rpentry_ptr->mrtlink->jp_timer <= TIMER_INTERVAL)) {
+            add_jp_entry(rpentry_ptr->upstream, holdtime, htonl(CLASSD_PREFIX), STAR_STAR_RP_MSKLEN,
+                         rpentry_ptr->address, SINGLE_SRC_MSKLEN, MRTF_RP | MRTF_WC, PIM_ACTION_JOIN);
         }
     }
 
     /* Send all pending Join/Prune messages */
-    for (pim_nbr_ptr = v->uv_pim_neighbors;
-         pim_nbr_ptr != (pim_nbr_entry_t *)NULL;
-         pim_nbr_ptr = pim_nbr->next) {
-
+    for (pim_nbr_ptr = v->uv_pim_neighbors; pim_nbr_ptr; pim_nbr_ptr = pim_nbr->next) {
         /* If join/prune to a particular neighbor only was specified */
-        if ((pim_nbr != (pim_nbr_entry_t *)NULL)
-            && (pim_nbr_ptr != pim_nbr))
+        if (pim_nbr && (pim_nbr_ptr != pim_nbr))
             continue;
 
         pack_and_send_jp_message(pim_nbr_ptr);
     }
 
-    return(TRUE);
+    return TRUE;
 }
 
 
-int
-add_jp_entry(pim_nbr, holdtime, group, grp_msklen, source, src_msklen,
-             addr_flags, join_prune)
-    pim_nbr_entry_t *pim_nbr;
-    u_int16 holdtime;
-    u_int32 group;
-    u_int8 grp_msklen;
-    u_int32 source;
-    u_int8 src_msklen;
-    u_int16 addr_flags;
-    u_int8 join_prune;
+int add_jp_entry(pim_nbr_entry_t *pim_nbr, u_int16 holdtime, u_int32 group,
+		 u_int8 grp_msklen, u_int32 source, u_int8 src_msklen,
+		 u_int16 addr_flags, u_int8 join_prune)
 {
     build_jp_message_t *bjpm;
     u_int8 *data_ptr;
@@ -2134,8 +2057,7 @@ add_jp_entry(pim_nbr, holdtime, group, grp_msklen, source, src_msklen,
     int rp_flag;
 
     bjpm = pim_nbr->build_jp_message;
-
-    if (bjpm != (build_jp_message_t *)NULL) {
+    if (bjpm) {
         if ((bjpm->jp_message_size + bjpm->join_list_size +
              bjpm->prune_list_size + bjpm->rp_list_join_size +
              bjpm->rp_list_prune_size >= MAX_JP_MESSAGE_SIZE)
@@ -2151,7 +2073,7 @@ add_jp_entry(pim_nbr, holdtime, group, grp_msklen, source, src_msklen,
         }
     }
 
-    if (bjpm != (build_jp_message_t *)NULL) {
+    if (bjpm) {
         if ((bjpm->curr_group != group)
             || (bjpm->curr_group_msklen != grp_msklen)
             || (bjpm->holdtime != holdtime)) {
@@ -2159,8 +2081,13 @@ add_jp_entry(pim_nbr, holdtime, group, grp_msklen, source, src_msklen,
         }
     }
 
-    if (bjpm == (build_jp_message_t *)NULL) {
+    if (!bjpm) {
         bjpm = get_jp_working_buff();
+	if (!bjpm) {
+	    logit(LOG_ERR, 0, "Failed allocating working buffer in add_jp_entry()\n");
+	    exit (-1);
+	}
+
         pim_nbr->build_jp_message = bjpm;
         data_ptr = bjpm->jp_message;
         PUT_EUADDR(pim_nbr->address, data_ptr);
@@ -2176,27 +2103,28 @@ add_jp_entry(pim_nbr, holdtime, group, grp_msklen, source, src_msklen,
     bjpm->curr_group = group;
     bjpm->curr_group_msklen = grp_msklen;
 
-    if ((group == htonl(CLASSD_PREFIX))
-        && (grp_msklen == STAR_STAR_RP_MSKLEN))
+    if (group == htonl(CLASSD_PREFIX) && grp_msklen == STAR_STAR_RP_MSKLEN)
         rp_flag = TRUE;
     else
         rp_flag = FALSE;
 
-    switch(join_prune) {
+    switch (join_prune) {
         case PIM_ACTION_JOIN:
             if (rp_flag == TRUE)
                 data_ptr = bjpm->rp_list_join + bjpm->rp_list_join_size;
             else
                 data_ptr = bjpm->join_list + bjpm->join_list_size;
             break;
+
         case PIM_ACTION_PRUNE:
             if (rp_flag == TRUE)
                 data_ptr = bjpm->rp_list_prune + bjpm->rp_list_prune_size;
             else
                 data_ptr = bjpm->prune_list + bjpm->prune_list_size;
             break;
+
         default:
-            return(FALSE);
+            return FALSE;
     }
 
     flags |= USADDR_S_BIT;   /* Mandatory for PIMv2 */
@@ -2206,48 +2134,52 @@ add_jp_entry(pim_nbr, holdtime, group, grp_msklen, source, src_msklen,
         flags |= USADDR_WC_BIT;
     PUT_ESADDR(source, src_msklen, flags, data_ptr);
 
-    switch(join_prune) {
+    switch (join_prune) {
         case PIM_ACTION_JOIN:
             if (rp_flag == TRUE) {
                 bjpm->rp_list_join_size = data_ptr - bjpm->rp_list_join;
                 bjpm->rp_list_join_number++;
-            }
-            else {
+            } else {
                 bjpm->join_list_size = data_ptr - bjpm->join_list;
                 bjpm->join_addr_number++;
             }
             break;
+
         case PIM_ACTION_PRUNE:
             if (rp_flag == TRUE) {
                 bjpm->rp_list_prune_size = data_ptr - bjpm->rp_list_prune;
                 bjpm->rp_list_prune_number++;
-            }
-            else {
+            } else {
                 bjpm->prune_list_size = data_ptr - bjpm->prune_list;
                 bjpm->prune_addr_number++;
             }
             break;
+
         default:
-            return(FALSE);
+            return FALSE;
     }
 
-    return(TRUE);
+    return TRUE;
 }
 
 
 /* TODO: check again the size of the buffers */
-static build_jp_message_t *
-get_jp_working_buff()
+static build_jp_message_t *get_jp_working_buff(void)
 {
     build_jp_message_t *bjpm_ptr;
 
     if (build_jp_message_pool_counter == 0) {
         bjpm_ptr = (build_jp_message_t *)malloc(sizeof(build_jp_message_t));
+	if (!bjpm_ptr)
+	    return NULL;
+
         bjpm_ptr->next = (build_jp_message_t *)NULL;
-        bjpm_ptr->jp_message =
-            (u_int8 *)malloc(MAX_JP_MESSAGE_SIZE +
-                             sizeof(pim_jp_encod_grp_t) +
-                             2*sizeof(pim_encod_src_addr_t));
+        bjpm_ptr->jp_message = (u_int8 *)malloc(MAX_JP_MESSAGE_SIZE +
+						sizeof(pim_jp_encod_grp_t) +
+						2 * sizeof(pim_encod_src_addr_t));
+	if (!bjpm_ptr->jp_message)
+	    return NULL;
+
         bjpm_ptr->jp_message_size = 0;
         bjpm_ptr->join_list_size = 0;
         bjpm_ptr->join_addr_number = 0;
@@ -2268,32 +2200,32 @@ get_jp_working_buff()
         bjpm_ptr->curr_group = INADDR_ANY_N;
         bjpm_ptr->curr_group_msklen = 0;
         bjpm_ptr->holdtime = 0;
+
         return bjpm_ptr;
     }
-    else {
-        bjpm_ptr = build_jp_message_pool;
-        build_jp_message_pool = build_jp_message_pool->next;
-        build_jp_message_pool_counter--;
-        bjpm_ptr->jp_message_size   = 0;
-        bjpm_ptr->join_list_size    = 0;
-        bjpm_ptr->join_addr_number  = 0;
-        bjpm_ptr->prune_list_size   = 0;
-        bjpm_ptr->prune_addr_number = 0;
-        bjpm_ptr->curr_group        = INADDR_ANY_N;
-        bjpm_ptr->curr_group_msklen = 0;
-        return (bjpm_ptr);
-    }
+
+    bjpm_ptr = build_jp_message_pool;
+    build_jp_message_pool = build_jp_message_pool->next;
+    build_jp_message_pool_counter--;
+    bjpm_ptr->jp_message_size   = 0;
+    bjpm_ptr->join_list_size    = 0;
+    bjpm_ptr->join_addr_number  = 0;
+    bjpm_ptr->prune_list_size   = 0;
+    bjpm_ptr->prune_addr_number = 0;
+    bjpm_ptr->curr_group        = INADDR_ANY_N;
+    bjpm_ptr->curr_group_msklen = 0;
+
+    return bjpm_ptr;
 }
 
 
-static void
-return_jp_working_buff(pim_nbr)
-    pim_nbr_entry_t *pim_nbr;
+static void return_jp_working_buff(pim_nbr_entry_t *pim_nbr)
 {
     build_jp_message_t *bjpm_ptr = pim_nbr->build_jp_message;
 
-    if (bjpm_ptr == (build_jp_message_t *)NULL)
+    if (!bjpm_ptr)
         return;
+
     /* Don't waste memory by keeping too many free buffers */
     /* TODO: check/modify the definitions for POOL_NUMBER and size */
     if (build_jp_message_pool_counter >= MAX_JP_MESSAGE_POOL_NUMBER) {
@@ -2303,8 +2235,7 @@ return_jp_working_buff(pim_nbr)
         free((void *)bjpm_ptr->rp_list_join);
         free((void *)bjpm_ptr->rp_list_prune);
         free((void *)bjpm_ptr);
-    }
-    else {
+    } else {
         bjpm_ptr->next = build_jp_message_pool;
         build_jp_message_pool = bjpm_ptr;
         build_jp_message_pool_counter++;
@@ -2319,24 +2250,22 @@ return_jp_working_buff(pim_nbr)
  * Modify some of the functions below such that the
  * outgoing messages place (*,*,RP) at the beginning, not at the end.
  */
-static void
-pack_jp_message(pim_nbr)
-    pim_nbr_entry_t *pim_nbr;
+static void pack_jp_message(pim_nbr_entry_t *pim_nbr)
 {
     build_jp_message_t *bjpm;
     u_int8 *data_ptr;
 
     bjpm = pim_nbr->build_jp_message;
-    if ((bjpm == (build_jp_message_t *)NULL)
-        || (bjpm->curr_group == INADDR_ANY_N))
+    if (!bjpm || (bjpm->curr_group == INADDR_ANY_N))
         return;
+
     data_ptr = bjpm->jp_message + bjpm->jp_message_size;
     PUT_EGADDR(bjpm->curr_group, bjpm->curr_group_msklen, 0, data_ptr);
     PUT_HOSTSHORT(bjpm->join_addr_number, data_ptr);
     PUT_HOSTSHORT(bjpm->prune_addr_number, data_ptr);
-    bcopy(bjpm->join_list, data_ptr, bjpm->join_list_size);
+    memcpy(bjpm->join_list, data_ptr, bjpm->join_list_size);
     data_ptr += bjpm->join_list_size;
-    bcopy(bjpm->prune_list, data_ptr, bjpm->prune_list_size);
+    memcpy(bjpm->prune_list, data_ptr, bjpm->prune_list_size);
     data_ptr += bjpm->prune_list_size;
     bjpm->jp_message_size = (data_ptr - bjpm->jp_message);
     bjpm->curr_group = INADDR_ANY_N;
@@ -2346,6 +2275,7 @@ pack_jp_message(pim_nbr)
     bjpm->prune_list_size = 0;
     bjpm->prune_addr_number = 0;
     (*bjpm->num_groups_ptr)++;
+
     if (*bjpm->num_groups_ptr == ((u_int8)~0 - 1)) {
         if (bjpm->rp_list_join_number + bjpm->rp_list_prune_number) {
             /* Add the (*,*,RP) at the end */
@@ -2353,9 +2283,9 @@ pack_jp_message(pim_nbr)
             PUT_EGADDR(htonl(CLASSD_PREFIX), STAR_STAR_RP_MSKLEN, 0, data_ptr);
             PUT_HOSTSHORT(bjpm->rp_list_join_number, data_ptr);
             PUT_HOSTSHORT(bjpm->rp_list_prune_number, data_ptr);
-            bcopy(bjpm->rp_list_join, data_ptr, bjpm->rp_list_join_size);
+            memcpy(bjpm->rp_list_join, data_ptr, bjpm->rp_list_join_size);
             data_ptr += bjpm->rp_list_join_size;
-            bcopy(bjpm->rp_list_prune, data_ptr, bjpm->rp_list_prune_size);
+            memcpy(bjpm->rp_list_prune, data_ptr, bjpm->rp_list_prune_size);
             data_ptr += bjpm->rp_list_prune_size;
             bjpm->jp_message_size = (data_ptr - bjpm->jp_message);
             bjpm->rp_list_join_size = 0;
@@ -2369,28 +2299,26 @@ pack_jp_message(pim_nbr)
 }
 
 
-void
-pack_and_send_jp_message(pim_nbr)
-    pim_nbr_entry_t *pim_nbr;
+void pack_and_send_jp_message(pim_nbr_entry_t *pim_nbr)
 {
     u_int8 *data_ptr;
     build_jp_message_t *bjpm;
 
-    if ((pim_nbr == (pim_nbr_entry_t *)NULL)
-        || ((bjpm = pim_nbr->build_jp_message) == (build_jp_message_t *)NULL))
+    if (!pim_nbr || !pim_nbr->build_jp_message)
         return;
 
     pack_jp_message(pim_nbr);
 
+    bjpm = pim_nbr->build_jp_message;
     if (bjpm->rp_list_join_number + bjpm->rp_list_prune_number) {
         /* Add the (*,*,RP) at the end */
         data_ptr = bjpm->jp_message + bjpm->jp_message_size;
         PUT_EGADDR(htonl(CLASSD_PREFIX), STAR_STAR_RP_MSKLEN, 0, data_ptr);
         PUT_HOSTSHORT(bjpm->rp_list_join_number, data_ptr);
         PUT_HOSTSHORT(bjpm->rp_list_prune_number, data_ptr);
-        bcopy(bjpm->rp_list_join, data_ptr, bjpm->rp_list_join_size);
+        memcpy(bjpm->rp_list_join, data_ptr, bjpm->rp_list_join_size);
         data_ptr += bjpm->rp_list_join_size;
-        bcopy(bjpm->rp_list_prune, data_ptr, bjpm->rp_list_prune_size);
+        memcpy(bjpm->rp_list_prune, data_ptr, bjpm->rp_list_prune_size);
         data_ptr += bjpm->rp_list_prune_size;
         bjpm->jp_message_size = (data_ptr - bjpm->jp_message);
         bjpm->rp_list_join_size = 0;
@@ -2403,16 +2331,14 @@ pack_and_send_jp_message(pim_nbr)
 }
 
 
-static void
-send_jp_message(pim_nbr)
-    pim_nbr_entry_t *pim_nbr;
+static void send_jp_message(pim_nbr_entry_t *pim_nbr)
 {
     u_int16 datalen;
     vifi_t vifi;
 
     datalen = pim_nbr->build_jp_message->jp_message_size;
     vifi = pim_nbr->vifi;
-    bcopy(pim_nbr->build_jp_message->jp_message,
+    memcpy(pim_nbr->build_jp_message->jp_message,
           pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t), datalen);
     send_pim(pim_send_buf, uvifs[vifi].uv_lcl_addr, allpimrouters_group,
              PIM_JOIN_PRUNE, datalen);
@@ -2423,11 +2349,7 @@ send_jp_message(pim_nbr)
 /************************************************************************
  *                        PIM_ASSERT
  ************************************************************************/
-int
-receive_pim_assert(src, dst, pim_message, datalen)
-    u_int32 src, dst __attribute__((unused));
-    register char *pim_message;
-    int datalen;
+int receive_pim_assert(u_int32 src, u_int32 dst __attribute__((unused)), char *pim_message, int datalen)
 {
     vifi_t vifi;
     pim_encod_uni_addr_t eusaddr;
@@ -2445,26 +2367,26 @@ receive_pim_assert(src, dst, pim_message, datalen)
     u_int8  local_wins;
     pim_nbr_entry_t *original_upstream_router;
 
-
-    if ((vifi = find_vif_direct(src)) == NO_VIF) {
+    vifi = find_vif_direct(src);
+    if (vifi == NO_VIF) {
         /* Either a local vif or somehow received PIM_ASSERT from
          * non-directly connected router. Ignore it.
          */
         if (local_address(src) == NO_VIF)
-            logit(LOG_INFO, 0,
-                  "Ignoring PIM_ASSERT from non-neighbor router %s",
+            logit(LOG_INFO, 0, "Ignoring PIM_ASSERT from non-neighbor router %s",
                   inet_fmt(src, s1, sizeof(s1)));
-        return(FALSE);
+
+        return FALSE;
     }
 
     /* Checksum */
     if (inet_cksum((u_int16 *)pim_message, datalen))
-        return(FALSE);
+        return FALSE;
 
     v = &uvifs[vifi];
-    if (uvifs[vifi].uv_flags &
-        (VIFF_DOWN | VIFF_DISABLED | VIFF_NONBRS | VIFF_REGISTER))
-        return(FALSE);    /* Shoudn't come on this interface */
+    if (uvifs[vifi].uv_flags & (VIFF_DOWN | VIFF_DISABLED | VIFF_NONBRS | VIFF_REGISTER))
+        return FALSE;    /* Shoudn't come on this interface */
+
     data_ptr = (u_int8 *)(pim_message + sizeof(pim_header_t));
 
     /* Get the group and source addresses */
@@ -2480,42 +2402,38 @@ receive_pim_assert(src, dst, pim_message, datalen)
     group = egaddr.mcast_addr;
     /* Find the longest "active" entry, i.e. the one with a kernel mirror */
     if (assert_rptbit) {
-        mrtentry_ptr = find_route(INADDR_ANY_N, group,
-                                  MRTF_WC | MRTF_PMBR, DONT_CREATE);
-        if (mrtentry_ptr != (mrtentry_t *)NULL)
+        mrtentry_ptr = find_route(INADDR_ANY_N, group, MRTF_WC | MRTF_PMBR, DONT_CREATE);
+        if (mrtentry_ptr)
             if (!(mrtentry_ptr->flags & MRTF_KERNEL_CACHE))
                 if (mrtentry_ptr->flags & MRTF_WC) {
-                    mrtentry_ptr =
-                        mrtentry_ptr->group->active_rp_grp->rp->rpentry->mrtlink;
+                    mrtentry_ptr = mrtentry_ptr->group->active_rp_grp->rp->rpentry->mrtlink;
                 }
-    }
-    else {
-        mrtentry_ptr = find_route(source, group,
-                                  MRTF_SG | MRTF_WC | MRTF_PMBR, DONT_CREATE);
-        if ((mrtentry_ptr != (mrtentry_t *)NULL))
+    } else {
+        mrtentry_ptr = find_route(source, group, MRTF_SG | MRTF_WC | MRTF_PMBR, DONT_CREATE);
+        if (mrtentry_ptr)
             if (!(mrtentry_ptr->flags & MRTF_KERNEL_CACHE)) {
                 if (mrtentry_ptr->flags & MRTF_SG) {
                     mrtentry_ptr2 = mrtentry_ptr->group->grp_route;
-                    if ((mrtentry_ptr2 != (mrtentry_t *)NULL)
-                        && (mrtentry_ptr2->flags & MRTF_KERNEL_CACHE))
+                    if (mrtentry_ptr2 && (mrtentry_ptr2->flags & MRTF_KERNEL_CACHE))
                         mrtentry_ptr = mrtentry_ptr2;
                     else
                         mrtentry_ptr = mrtentry_ptr->group->active_rp_grp->rp->rpentry->mrtlink;
-                }
-                else
+                } else {
                     if (mrtentry_ptr->flags & MRTF_WC)
                         mrtentry_ptr = mrtentry_ptr->group->active_rp_grp->rp->rpentry->mrtlink;
+		}
             }
     }
-    if ((mrtentry_ptr == (mrtentry_t *)NULL)
-        || (!(mrtentry_ptr->flags & MRTF_KERNEL_CACHE)))
+
+    if (!mrtentry_ptr || !(mrtentry_ptr->flags & MRTF_KERNEL_CACHE)) {
         /* No routing entry or not "active" entry. Ignore the assert */
-        return(FALSE);
+        return FALSE;
+    }
 
     /* Prepare the local preference and metric */
     if ((mrtentry_ptr->flags & MRTF_PMBR)
         || ((mrtentry_ptr->flags & MRTF_SG)
-            && (!(mrtentry_ptr->flags & MRTF_RP)))){
+            && !(mrtentry_ptr->flags & MRTF_RP))) {
         /* Either (S,G) (toward S) or (*,*,RP). */
         /* TODO: XXX: get the info from mrtentry, or source or from kernel ? */
         /*
@@ -2524,8 +2442,7 @@ receive_pim_assert(src, dst, pim_message, datalen)
         */
         local_metric = mrtentry_ptr->metric;
         local_preference = mrtentry_ptr->preference;
-    }
-    else {
+    } else {
         /* Should be (*,G) or (S,G)RPbit entry.
          * Get what we need from the RP info.
          */
@@ -2541,10 +2458,10 @@ receive_pim_assert(src, dst, pim_message, datalen)
     }
 
     local_rptbit = (mrtentry_ptr->flags & MRTF_RP);
-    if (local_rptbit)
+    if (local_rptbit) {
         /* Make the RPT bit the most significant one */
         local_preference |= PIM_ASSERT_RPT_BIT;
-
+    }
 
     if (VIFM_ISSET(vifi, mrtentry_ptr->oifs)) {
         /* The ASSERT has arrived on oif */
@@ -2566,26 +2483,22 @@ receive_pim_assert(src, dst, pim_message, datalen)
         if (local_wins == TRUE) {
             /* TODO: verify the parameters */
             send_pim_assert(source, group, vifi, mrtentry_ptr);
-            return(TRUE);
+            return TRUE;
         }
 
         /* Create a "better" routing entry and try again */
-
-        if ((assert_rptbit) && (mrtentry_ptr->flags & MRTF_PMBR)) {
+        if (assert_rptbit && (mrtentry_ptr->flags & MRTF_PMBR)) {
             /* The matching entry was (*,*,RP). Create (*,G) */
             mrtentry_ptr2 = find_route(INADDR_ANY_N, group, MRTF_WC, CREATE);
-        }
-        else if ((!assert_rptbit) &&
-                 (mrtentry_ptr->flags & (MRTF_WC | MRTF_PMBR))) {
+        } else if (!assert_rptbit && (mrtentry_ptr->flags & (MRTF_WC | MRTF_PMBR))) {
             /* create (S,G) */
             mrtentry_ptr2 = find_route(source, group, MRTF_SG, CREATE);
-        }
-        else {
+        } else {
             /* We have no chance to win. Give up and prune the oif */
             mrtentry_ptr2 = (mrtentry_t *)NULL;
         }
 
-        if (mrtentry_ptr2 != (mrtentry_t *)NULL) {
+        if (mrtentry_ptr2) {
             mrtentry_ptr2->flags &= ~MRTF_NEW;
             /* TODO: XXX: The spec doesn't say what entry timer value
              * to use when the routing entry is created because of asserts.
@@ -2605,8 +2518,7 @@ receive_pim_assert(src, dst, pim_message, datalen)
                 local_metric = mrtentry_ptr->metric;
                 local_preference = mrtentry_ptr->preference;
                 local_preference |= PIM_ASSERT_RPT_BIT;
-            }
-            else {
+            } else {
                 /* (S,G) toward the source */
                 /* TODO: where to get the metric from ? */
                 /*
@@ -2620,11 +2532,10 @@ receive_pim_assert(src, dst, pim_message, datalen)
             local_wins = compare_metrics(local_preference, local_metric,
                                          v->uv_lcl_addr, assert_preference,
                                          assert_metric, src);
-
             if (local_wins == TRUE) {
                 /* TODO: verify the parameters */
                 send_pim_assert(source, group, vifi, mrtentry_ptr);
-                return(TRUE);
+                return TRUE;
             }
             /* We lost, but have created the entry which has to be pruned */
             mrtentry_ptr = mrtentry_ptr2;
@@ -2644,7 +2555,8 @@ receive_pim_assert(src, dst, pim_message, datalen)
                           mrtentry_ptr->pruned_oifs,
                           mrtentry_ptr->leaves,
                           mrtentry_ptr->asserted_oifs, 0);
-        return(FALSE);  /* Doesn't matter the return value */
+
+        return FALSE;  /* Doesn't matter the return value */
     } /* End of assert received on oif */
 
 
@@ -2652,7 +2564,7 @@ receive_pim_assert(src, dst, pim_message, datalen)
         /* Assert received on iif */
         if (assert_rptbit) {
             if (!(mrtentry_ptr->flags & MRTF_RP))
-                return(TRUE);       /* The locally used upstream router will
+                return TRUE;       /* The locally used upstream router will
                                      * win the assert, so don't change it.
                                      */
         }
@@ -2670,7 +2582,7 @@ receive_pim_assert(src, dst, pim_message, datalen)
                                      assert_preference, assert_metric, src);
 
         if (local_wins == TRUE)
-            return(TRUE); /* return whatever */
+            return TRUE; /* return whatever */
 
         /* The upstream must be changed to the winner */
         mrtentry_ptr->preference = assert_preference;
@@ -2682,28 +2594,22 @@ receive_pim_assert(src, dst, pim_message, datalen)
             original_upstream_router = mrtentry_ptr->source->upstream;
         else
             if (mrtentry_ptr->flags & MRTF_RP)
-                original_upstream_router =
-                    mrtentry_ptr->group->active_rp_grp->rp->rpentry->upstream;
+                original_upstream_router = mrtentry_ptr->group->active_rp_grp->rp->rpentry->upstream;
             else
                 original_upstream_router = mrtentry_ptr->source->upstream;
         if (mrtentry_ptr->upstream != original_upstream_router) {
             mrtentry_ptr->flags |= MRTF_ASSERTED;
             SET_TIMER(mrtentry_ptr->assert_timer, PIM_ASSERT_TIMEOUT);
-        }
-        else
+        } else {
             mrtentry_ptr->flags &= ~MRTF_ASSERTED;
+	}
     }
 
-    return (TRUE);
+    return TRUE;
 }
 
 
-int
-send_pim_assert(source, group, vifi, mrtentry_ptr)
-    u_int32 source;
-    u_int32 group;
-    vifi_t vifi;
-    mrtentry_t *mrtentry_ptr;
+int send_pim_assert(u_int32 source, u_int32 group, vifi_t vifi, mrtentry_t *mrtentry_ptr)
 {
     u_int8 *data_ptr;
     u_int8 *data_start_ptr;
@@ -2717,10 +2623,9 @@ send_pim_assert(source, group, vifi, mrtentry_ptr)
      * sent over VIFF_TUNNEL.
      */
     if (uvifs[vifi].uv_flags & (VIFF_REGISTER | VIFF_TUNNEL))
-        return (FALSE);
+        return FALSE;
 
-    data_ptr = (u_int8 *)(pim_send_buf + sizeof(struct ip)
-                          + sizeof(pim_header_t));
+    data_ptr = (u_int8 *)(pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t));
     data_start_ptr = data_ptr;
     PUT_EGADDR(group, SINGLE_GRP_MSKLEN, 0, data_ptr);
     PUT_EUADDR(source, data_ptr);
@@ -2734,15 +2639,13 @@ send_pim_assert(source, group, vifi, mrtentry_ptr)
         /* TODO:
            set_incoming(srcentry_ptr, PIM_IIF_RP);
         */
-    }
-    else if (mrtentry_ptr->flags & MRTF_RP) {
+    } else if (mrtentry_ptr->flags & MRTF_RP) {
         /* (*,G) or (S,G)RPbit (iif toward RP) */
         srcentry_ptr = mrtentry_ptr->group->active_rp_grp->rp->rpentry;
         /* TODO:
            set_incoming(srcentry_ptr, PIM_IIF_RP);
         */
-    }
-    else {
+    } else {
         /* (S,G) toward S */
         srcentry_ptr = mrtentry_ptr->source;
         /* TODO:
@@ -2764,20 +2667,13 @@ send_pim_assert(source, group, vifi, mrtentry_ptr)
     send_pim(pim_send_buf, uvifs[vifi].uv_lcl_addr, allpimrouters_group,
              PIM_ASSERT, data_ptr - data_start_ptr);
 
-    return (TRUE);
+    return TRUE;
 }
 
 
 /* Return TRUE if the local win, otherwise FALSE */
-static int
-compare_metrics(local_preference, local_metric, local_address,
-                remote_preference, remote_metric, remote_address)
-    u_int32 local_preference;
-    u_int32 local_metric;
-    u_int32 local_address;
-    u_int32 remote_preference;
-    u_int32 remote_metric;
-    u_int32 remote_address;
+static int compare_metrics(u_int32 local_preference, u_int32 local_metric, u_int32 local_address,
+			   u_int32 remote_preference, u_int32 remote_metric, u_int32 remote_address)
 {
     /* Now lets see who has a smaller gun (aka "asserts war") */
     /* FYI, the smaller gun...err metric wins, but if the same
@@ -2789,14 +2685,19 @@ compare_metrics(local_preference, local_metric, local_address,
      */
     if (remote_preference > local_preference)
         return TRUE;
+
     if (remote_preference < local_preference)
         return FALSE;
+
     if (remote_metric > local_metric)
         return TRUE;
+
     if (remote_metric < local_metric)
         return FALSE;
+
     if (ntohl(local_address) > ntohl(remote_address))
         return TRUE;
+
     return FALSE;
 }
 
@@ -2805,11 +2706,7 @@ compare_metrics(local_preference, local_metric, local_address,
  *                        PIM_BOOTSTRAP
  ************************************************************************/
 #define PIM_BOOTSTRAP_MINLEN (PIM_MINLEN + PIM_ENCODE_UNI_ADDR_LEN)
-int
-receive_pim_bootstrap(src, dst, pim_message, datalen)
-    u_int32 src, dst;
-    char *pim_message;
-    int datalen;
+int receive_pim_bootstrap(u_int32 src, u_int32 dst, char *pim_message, int datalen)
 {
     u_int8               *data_ptr;
     u_int8               *max_data_ptr;
@@ -2838,28 +2735,27 @@ receive_pim_bootstrap(src, dst, pim_message, datalen)
     rp_grp_entry_t       *grp_rp_entry_ptr;
     rp_grp_entry_t       *grp_rp_entry_next;
 
-
     /* Checksum */
     if (inet_cksum((u_int16 *)pim_message, datalen))
-        return(FALSE);
+        return FALSE;
+
     if (find_vif_direct(src) == NO_VIF) {
         /* Either a local vif or somehow received PIM_BOOTSTRAP from
          * non-directly connected router. Ignore it.
          */
         if (local_address(src) == NO_VIF)
-            logit(LOG_INFO, 0,
-                  "Ignoring PIM_BOOTSTRAP from non-neighbor router %s",
+            logit(LOG_INFO, 0, "Ignoring PIM_BOOTSTRAP from non-neighbor router %s",
                   inet_fmt(src, s1, sizeof(s1)));
-        return(FALSE);
+
+        return FALSE;
     }
 
     /* sanity check for the minimum length */
     if (datalen < PIM_BOOTSTRAP_MINLEN) {
-        logit(LOG_NOTICE, 0,
-              "receive_pim_bootstrap: Bootstrap message size(%u) is "
-              "too short from %s",
+        logit(LOG_NOTICE, 0, "receive_pim_bootstrap: Bootstrap message size(%u) is too short from %s",
               datalen, inet_fmt(src, s1, sizeof(s1)));
-        return(FALSE);
+
+        return FALSE;
     }
 
     data_ptr = (u_int8 *)(pim_message + sizeof(pim_header_t));
@@ -2872,7 +2768,7 @@ receive_pim_bootstrap(src, dst, pim_message, datalen)
     new_bsr_address = new_bsr_uni_addr.unicast_addr;
 
     if (local_address(new_bsr_address) != NO_VIF)
-        return(FALSE); /* The new BSR is one of my local addresses */
+        return FALSE; /* The new BSR is one of my local addresses */
 
     /*
      * Compare the current BSR priority with the priority of the BSR
@@ -2886,68 +2782,69 @@ receive_pim_bootstrap(src, dst, pim_message, datalen)
         ((curr_bsr_priority == new_bsr_priority)
          && (ntohl(curr_bsr_address) > ntohl(new_bsr_address)))) {
         /* The message's BSR is less preferred than the current BSR */
-        return(FALSE);  /* Ignore the received BSR message */
+        return FALSE;  /* Ignore the received BSR message */
     }
-
 
     /* Check the iif, if this was PIM-ROUTERS multicast */
     if (dst == allpimrouters_group) {
         k_req_incoming(new_bsr_address, &rpfc);
-        if ((rpfc.iif == NO_VIF) ||
-            rpfc.rpfneighbor.s_addr == INADDR_ANY_N) {
+        if (rpfc.iif == NO_VIF || rpfc.rpfneighbor.s_addr == INADDR_ANY_N) {
             /* coudn't find a route to the BSR */
-            return(FALSE);
+            return FALSE;
         }
 
         neighbor_addr = rpfc.rpfneighbor.s_addr;
         incoming = rpfc.iif;
-        if (uvifs[incoming].uv_flags &
-            (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER))
-            return(FALSE);    /* Shoudn't arrive on that interface */
+        if (uvifs[incoming].uv_flags & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER))
+            return FALSE;	/* Shoudn't arrive on that interface */
 
         /* Find the upstream router */
         for (n = uvifs[incoming].uv_pim_neighbors; n != NULL; n = n->next) {
             if (ntohl(neighbor_addr) < ntohl(n->address))
                 continue;
+
             if (neighbor_addr == n->address) {
                 rpf_neighbor = n;
                 break;
             }
-            return(FALSE);   /* No neighbor toward BSR found */
+
+            return FALSE;	/* No neighbor toward BSR found */
         }
 
-        if ((n == (pim_nbr_entry_t *)NULL) || (n->address != src))
-            return(FALSE);/* Sender of this message is not the RPF neighbor */
+        if (!n || n->address != src)
+            return FALSE;	/* Sender of this message is not the RPF neighbor */
 
-    }
-    else {
-        if (local_address(dst) == NO_VIF)
+    } else {
+        if (local_address(dst) == NO_VIF) {
             /* TODO: XXX: this situation should be handled earlier:
              * The destination is neither ALL_PIM_ROUTERS neither me
              */
-            return(FALSE);
+            return FALSE;
+	}
 
         /* Probably unicasted from the current DR */
         if (cand_rp_list != (cand_rp_t *)NULL) {
             /* Hmmm, I do have a Cand-RP-list, but some neighbor has a
              * different opinion and is unicasting it to me. Ignore this guy.
              */
-            return(FALSE);
+            return FALSE;
         }
+
         for (vifi = 0; vifi < numvifs; vifi++) {
-            if (uvifs[vifi].uv_flags
-                & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER))
+            if (uvifs[vifi].uv_flags & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER))
                 continue;
+
             if (uvifs[vifi].uv_lcl_addr == dst) {
                 incoming = vifi;
                 break;
             }
         }
+
         if (incoming == NO_VIF) {
             /* Cannot find the receiving iif toward that DR */
             IF_DEBUG(DEBUG_RPF | DEBUG_PIM_BOOTSTRAP)
                 logit(LOG_DEBUG, 0, "Unicast boostrap message from %s to ignored: cannot find iif", inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
-            return(FALSE);
+            return FALSE;
         }
         /* TODO: check the sender is directly connected and I am really the DR */
     }
@@ -2965,12 +2862,11 @@ receive_pim_bootstrap(src, dst, pim_message, datalen)
     for (vifi = 0; vifi < numvifs; vifi++) {
         if (vifi == incoming)
             continue;
-        if (uvifs[vifi].uv_flags & (VIFF_DISABLED | VIFF_DOWN |
-                                    VIFF_REGISTER | VIFF_NONBRS))
+
+        if (uvifs[vifi].uv_flags & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER | VIFF_NONBRS))
             continue;
 
-        bcopy(pim_message, (char *)(pim_send_buf + sizeof(struct ip)),
-              datalen);
+        memcpy(pim_message, (char *)(pim_send_buf + sizeof(struct ip)), datalen);
         send_pim(pim_send_buf, uvifs[vifi].uv_lcl_addr, allpimrouters_group,
                  PIM_BOOTSTRAP, datalen - sizeof(pim_header_t));
     }
@@ -2981,8 +2877,7 @@ receive_pim_bootstrap(src, dst, pim_message, datalen)
      */
     min_datalen = 22;
 
-    if ((new_bsr_fragment_tag != curr_bsr_fragment_tag) ||
-        new_bsr_address != curr_bsr_address) {
+    if (new_bsr_fragment_tag != curr_bsr_fragment_tag || new_bsr_address != curr_bsr_address) {
         /* Throw away the old segment */
         delete_rp_list(&segmented_cand_rp_list, &segmented_grp_mask_list);
     }
@@ -3004,6 +2899,7 @@ receive_pim_bootstrap(src, dst, pim_message, datalen)
                             curr_group_addr.mcast_addr, curr_group_mask);
             continue;
         }
+
         if (curr_rp_count == curr_frag_rp_count) {
             /* Add all RPs */
             while(curr_frag_rp_count--) {
@@ -3021,6 +2917,7 @@ receive_pim_bootstrap(src, dst, pim_message, datalen)
             }
             continue;
         }
+
         /*
          * This is a partial list of the RPs for this group prefix.
          * Save until all segments arrive.
@@ -3035,12 +2932,11 @@ receive_pim_bootstrap(src, dst, pim_message, datalen)
             else
                 break;
         }
+
         if ((grp_mask_ptr != (grp_mask_t *)NULL)
             && (grp_mask_ptr->group_addr == curr_group_addr.mcast_addr)
             && (grp_mask_ptr->group_mask == curr_group_mask)
-            && (grp_mask_ptr->group_rp_number + curr_frag_rp_count
-                == curr_rp_count)) {
-
+            && (grp_mask_ptr->group_rp_number + curr_frag_rp_count == curr_rp_count)) {
             /* All missing PRs have arrived. Add all RP entries */
             while(curr_frag_rp_count--) {
                 GET_EUADDR(&curr_rp_addr, data_ptr);
@@ -3058,6 +2954,7 @@ receive_pim_bootstrap(src, dst, pim_message, datalen)
                                  curr_bsr_hash_mask,
                                  curr_bsr_fragment_tag);
             }
+
             /* Add the rest from the previously saved segments */
             for(grp_rp_entry_ptr = grp_mask_ptr->grp_rp_next;
                 grp_rp_entry_ptr != (rp_grp_entry_t *)NULL;
@@ -3076,8 +2973,7 @@ receive_pim_bootstrap(src, dst, pim_message, datalen)
                             &segmented_grp_mask_list,
                             curr_group_addr.mcast_addr,
                             curr_group_mask);
-        }
-        else {
+        } else {
             /*Add the partially received RP-list to the group of pending RPs*/
             while(curr_frag_rp_count--) {
                 GET_EUADDR(&curr_rp_addr, data_ptr);
@@ -3113,8 +3009,7 @@ receive_pim_bootstrap(src, dst, pim_message, datalen)
                  grp_rp_entry_ptr = grp_rp_entry_next) {
                 grp_rp_entry_next = grp_rp_entry_ptr->grp_rp_next;
                 if (grp_rp_entry_ptr->fragment_tag != curr_bsr_fragment_tag)
-                    delete_rp_grp_entry(&cand_rp_list, &grp_mask_list,
-                                        grp_rp_entry_ptr);
+                    delete_rp_grp_entry(&cand_rp_list, &grp_mask_list, grp_rp_entry_ptr);
             }
         }
     }
@@ -3137,20 +3032,18 @@ receive_pim_bootstrap(src, dst, pim_message, datalen)
         }
     }
 
-    return (TRUE);
+    return TRUE;
 }
 
 
-void
-send_pim_bootstrap()
+void send_pim_bootstrap(void)
 {
     int datalen;
     vifi_t vifi;
 
     if ((datalen = create_pim_bootstrap_message(pim_send_buf))) {
         for (vifi = 0; vifi < numvifs; vifi++) {
-            if (uvifs[vifi].uv_flags & (VIFF_DISABLED | VIFF_DOWN |
-                                        VIFF_REGISTER))
+            if (uvifs[vifi].uv_flags & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER))
                 continue;
             send_pim(pim_send_buf, uvifs[vifi].uv_lcl_addr,
                      allpimrouters_group, PIM_BOOTSTRAP, datalen);
@@ -3167,11 +3060,7 @@ send_pim_bootstrap()
  * ignore it.
  */
 #define PIM_CAND_RP_ADV_MINLEN (PIM_MINLEN + PIM_ENCODE_UNI_ADDR_LEN)
-int
-receive_pim_cand_rp_adv(src, dst, pim_message, datalen)
-    u_int32 src, dst __attribute__((unused));
-    char *pim_message;
-    int datalen;
+int receive_pim_cand_rp_adv(u_int32 src, u_int32 dst __attribute__((unused)), char *pim_message, int datalen)
 {
     u_int8 prefix_cnt;
     u_int8 priority;
@@ -3186,16 +3075,14 @@ receive_pim_cand_rp_adv(src, dst, pim_message, datalen)
         return FALSE;
 
     /* if I am not the bootstrap RP, then do not accept the message */
-    if ((cand_bsr_flag == FALSE) || (curr_bsr_address != my_bsr_address)) {
+    if (cand_bsr_flag == FALSE || curr_bsr_address != my_bsr_address)
         return FALSE;
-    }
 
     /* sanity check for the minimum length */
     if (datalen < PIM_CAND_RP_ADV_MINLEN) {
-        logit(LOG_NOTICE, 0,
-              "receive_pim_cand_rp_adv: cand_RP message size(%u) is "
-              "too short from %s",
+        logit(LOG_NOTICE, 0, "receive_pim_cand_rp_adv: cand_RP message size(%u) is too short from %s",
               datalen, inet_fmt(src, s1, sizeof(s1)));
+
         return FALSE;
     }
 
@@ -3214,8 +3101,10 @@ receive_pim_cand_rp_adv(src, dst, pim_message, datalen)
                          htonl(ALL_MCAST_GROUPS_ADDR), grp_mask,
                          my_bsr_hash_mask,
                          curr_bsr_fragment_tag);
+
         return TRUE;
     }
+
     while (prefix_cnt--) {
         GET_EGADDR(&encod_grp_addr, data_ptr);
         MASKLEN_TO_MASK(encod_grp_addr.masklen, grp_mask);
@@ -3231,8 +3120,7 @@ receive_pim_cand_rp_adv(src, dst, pim_message, datalen)
 }
 
 
-int
-send_pim_cand_rp_adv()
+int send_pim_cand_rp_adv(void)
 {
     u_int8 prefix_cnt;
     u_int32 grp_mask;
@@ -3240,7 +3128,8 @@ send_pim_cand_rp_adv()
     u_int8 *data_ptr;
 
     if (!inet_valid_host(curr_bsr_address))
-        return(FALSE);  /* No BSR yet */
+        return FALSE;  /* No BSR yet */
+
     if (curr_bsr_address == my_bsr_address) {
         /* I am the BSR and have to include my own group_prefix stuff */
         prefix_cnt = *cand_rp_adv_message.prefix_cnt_ptr;
@@ -3253,8 +3142,9 @@ send_pim_cand_rp_adv()
                              htonl(ALL_MCAST_GROUPS_ADDR),
                              my_bsr_hash_mask,
                              grp_mask, curr_bsr_fragment_tag);
-            return(TRUE);
+            return TRUE;
         }
+
         /* TODO: hardcoding!! */
         data_ptr = cand_rp_adv_message.buffer + (4 + 6);
         while (prefix_cnt--) {
@@ -3269,15 +3159,15 @@ send_pim_cand_rp_adv()
                              curr_bsr_fragment_tag);
             /* TODO: Check for datalen */
         }
-        return(TRUE);
+
+        return TRUE;
     }
 
-    data_ptr = (u_int8 *)(pim_send_buf + sizeof(struct ip)
-                          + sizeof(pim_header_t));
-    bcopy((char *)cand_rp_adv_message.buffer, (char *)data_ptr,
-          cand_rp_adv_message.message_size);
+    data_ptr = (u_int8 *)(pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t));
+    memcpy((char *)cand_rp_adv_message.buffer, (char *)data_ptr, cand_rp_adv_message.message_size);
     send_pim_unicast(pim_send_buf, my_cand_rp_address, curr_bsr_address,
                      PIM_CAND_RP_ADV, cand_rp_adv_message.message_size);
+
     return TRUE;
 }
 
