@@ -74,7 +74,7 @@ accept_mtrace(src, dst, group, data, no, datalen)
     /* TODO */
     struct sioc_sg_req sg_req;
 #endif /* 0 */
-    u_int32 parent_address;
+    u_int32 parent_address = INADDR_ANY;
 
     /* Remember qid across invocations */
     static u_int32 oqid = 0;
