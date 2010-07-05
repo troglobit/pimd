@@ -126,7 +126,7 @@ mrtentry_t *find_route(u_int32 source, u_int32 group, u_int16 flags, char create
     mrtentry_t *mrtentry_ptr_wc;
     mrtentry_t *mrtentry_ptr_pmbr;
     mrtentry_t *mrtentry_ptr_2;
-    rpentry_t  *rpentry_ptr;
+    rpentry_t  *rpentry_ptr = NULL;
     rp_grp_entry_t *rp_grp_entry_ptr;
 
     if (flags & (MRTF_SG | MRTF_WC)) {
