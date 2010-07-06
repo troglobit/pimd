@@ -61,30 +61,34 @@ void init_pim_mrt(void)
     /* The first entry has address 'INADDR_ANY' and is not used */
     /* The order is the smallest address first. */
     srclist             = (srcentry_t *)malloc(sizeof(srcentry_t));
-    srclist->next       = (srcentry_t *)NULL;
-    srclist->prev       = (srcentry_t *)NULL;
+    if (!srclist)
+	logit(LOG_ERR, 0, "Ran out of memory in init_pim_mrt()");
+    srclist->next       = NULL;
+    srclist->prev       = NULL;
     srclist->address	= INADDR_ANY_N;
-    srclist->mrtlink    = (mrtentry_t *)NULL;
+    srclist->mrtlink    = NULL;
     srclist->incoming   = NO_VIF;
-    srclist->upstream   = (pim_nbr_entry_t *)NULL;
+    srclist->upstream   = NULL;
     srclist->metric     = 0;
     srclist->preference = 0;
     RESET_TIMER(srclist->timer);
-    srclist->cand_rp    = (cand_rp_t *)NULL;
+    srclist->cand_rp    = NULL;
 
     /* Initialize the group list */
     /* The first entry has address 'INADDR_ANY' and is not used */
     /* The order is the smallest address first. */
     grplist             = (grpentry_t *)malloc(sizeof(grpentry_t));
-    grplist->next       = (grpentry_t *)NULL;
-    grplist->prev       = (grpentry_t *)NULL;
-    grplist->rpnext     = (grpentry_t *)NULL;
-    grplist->rpprev     = (grpentry_t *)NULL;
+    if (!grplist)
+	logit(LOG_ERR, 0, "Ran out of memory in init_pim_mrt()");
+    grplist->next       = NULL;
+    grplist->prev       = NULL;
+    grplist->rpnext     = NULL;
+    grplist->rpprev     = NULL;
     grplist->group	= INADDR_ANY_N;
     grplist->rpaddr     = INADDR_ANY_N;
-    grplist->mrtlink    = (mrtentry_t *)NULL;
-    grplist->active_rp_grp = (rp_grp_entry_t *)NULL;
-    grplist->grp_route   = (mrtentry_t *)NULL;
+    grplist->mrtlink    = NULL;
+    grplist->active_rp_grp = NULL;
+    grplist->grp_route   = NULL;
 }
 
 
@@ -93,13 +97,13 @@ grpentry_t *find_group(u_int32 group)
     grpentry_t *grpentry_ptr;
 
     if (!IN_MULTICAST(ntohl(group)))
-        return (grpentry_t *)NULL;
+        return NULL;
 
     if (search_grplist(group, &grpentry_ptr) == TRUE) {
         /* Group found! */
-        return (grpentry_ptr);
+        return grpentry_ptr;
     }
-    return (grpentry_t *)NULL;
+    return NULL;
 }
 
 
@@ -108,13 +112,13 @@ srcentry_t *find_source(u_int32 source)
     srcentry_t *srcentry_ptr;
 
     if (!inet_valid_host(source))
-        return (srcentry_t *)NULL;
+        return NULL;
 
     if (search_srclist(source, &srcentry_ptr) == TRUE) {
         /* Source found! */
-        return (srcentry_ptr);
+        return srcentry_ptr;
     }
-    return (srcentry_t *)NULL;
+    return NULL;
 }
 
 
@@ -131,12 +135,12 @@ mrtentry_t *find_route(u_int32 source, u_int32 group, u_int16 flags, char create
 
     if (flags & (MRTF_SG | MRTF_WC)) {
         if (!IN_MULTICAST(ntohl(group)))
-            return (mrtentry_t *)NULL;
+            return NULL;
     }
 
     if (flags & MRTF_SG)
         if (!inet_valid_host(source))
-            return (mrtentry_t *)NULL;
+            return NULL;
 
     if (create == DONT_CREATE) {
         if (flags & (MRTF_SG | MRTF_WC)) {
@@ -144,35 +148,34 @@ mrtentry_t *find_route(u_int32 source, u_int32 group, u_int16 flags, char create
                 /* Group not found. Return the (*,*,RP) entry */
                 if (flags & MRTF_PMBR) {
                     rpentry_ptr = rp_match(group);
-                    if (rpentry_ptr != (rpentry_t *)NULL)
-                        return (rpentry_ptr->mrtlink);
+                    if (rpentry_ptr)
+                        return rpentry_ptr->mrtlink;
                 }
-                return (mrtentry_t *)NULL;
+                return NULL;
             }
             /* Search for the source */
             if (flags & MRTF_SG) {
                 if (search_grpmrtlink(grpentry_ptr, source,
                                       &mrtentry_ptr) == TRUE) {
                     /* Exact (S,G) entry found */
-                    return (mrtentry_ptr);
+                    return mrtentry_ptr;
                 }
             }
             /* No (S,G) entry. Return the (*,G) entry (if exist) */
-            if ((flags & MRTF_WC) &&
-                (grpentry_ptr->grp_route != (mrtentry_t *)NULL))
-                return (grpentry_ptr->grp_route);
+            if ((flags & MRTF_WC) && grpentry_ptr->grp_route)
+                return grpentry_ptr->grp_route;
         }
         /* Return the (*,*,RP) entry */
         if (flags & MRTF_PMBR) {
-            rpentry_ptr = (rpentry_t *)NULL;
+            rpentry_ptr = NULL;
             if (group != INADDR_ANY_N)
                 rpentry_ptr = rp_match(group);
             else if (source != INADDR_ANY_N)
                 rpentry_ptr = rp_find(source);
-            if (rpentry_ptr != (rpentry_t *)NULL)
-                return (rpentry_ptr->mrtlink);
+            if (rpentry_ptr)
+                return rpentry_ptr->mrtlink;
         }
-        return (mrtentry_t *)NULL;
+        return NULL;
     }
 
 
@@ -180,18 +183,17 @@ mrtentry_t *find_route(u_int32 source, u_int32 group, u_int16 flags, char create
 
     if (flags & (MRTF_SG | MRTF_WC)) {
         grpentry_ptr = create_grpentry(group);
-        if (grpentry_ptr == (grpentry_t *)NULL) {
-            return (mrtentry_t *)NULL;
+        if (!grpentry_ptr) {
+            return NULL;
         }
-        if (grpentry_ptr->active_rp_grp == (rp_grp_entry_t *)NULL) {
+        if (!grpentry_ptr->active_rp_grp) {
             rp_grp_entry_ptr = rp_grp_match(group);
-            if (rp_grp_entry_ptr == (rp_grp_entry_t *)NULL) {
-                if ((grpentry_ptr->mrtlink == (mrtentry_t *)NULL)
-                    && (grpentry_ptr->grp_route == (mrtentry_t *)NULL)) {
+            if (!rp_grp_entry_ptr) {
+                if (!grpentry_ptr->mrtlink && !grpentry_ptr->grp_route) {
                     /* New created grpentry. Delete it. */
                     delete_grpentry(grpentry_ptr);
                 }
-                return (mrtentry_t *)NULL;
+                return NULL;
             }
             rpentry_ptr = rp_grp_entry_ptr->rp->rpentry;
             grpentry_ptr->active_rp_grp = rp_grp_entry_ptr;
@@ -199,30 +201,30 @@ mrtentry_t *find_route(u_int32 source, u_int32 group, u_int16 flags, char create
             /* Link to the top of the rp_grp_chain */
             grpentry_ptr->rpnext = rp_grp_entry_ptr->grplink;
             rp_grp_entry_ptr->grplink = grpentry_ptr;
-            if (grpentry_ptr->rpnext != (grpentry_t *)NULL)
+            if (grpentry_ptr->rpnext)
                 grpentry_ptr->rpnext->rpprev = grpentry_ptr;
         }
-        else
+        else {
             rpentry_ptr = grpentry_ptr->active_rp_grp->rp->rpentry;
+	}
     }
 
-    mrtentry_ptr_wc = mrtentry_ptr_pmbr = (mrtentry_t *)NULL;
+    mrtentry_ptr_wc = mrtentry_ptr_pmbr = NULL;
 
     if (flags & MRTF_WC) {
         /* Setup the (*,G) routing entry */
-        mrtentry_ptr_wc = create_mrtentry((srcentry_t *)NULL, grpentry_ptr,
-                                          MRTF_WC);
-        if (mrtentry_ptr_wc == (mrtentry_t *)NULL) {
-            if (grpentry_ptr->mrtlink == (mrtentry_t *)NULL) {
+        mrtentry_ptr_wc = create_mrtentry(NULL, grpentry_ptr, MRTF_WC);
+        if (!mrtentry_ptr_wc) {
+            if (!grpentry_ptr->mrtlink) {
                 /* New created grpentry. Delete it. */
                 delete_grpentry(grpentry_ptr);
             }
-            return (mrtentry_t *)NULL;
+            return NULL;
         }
         if (mrtentry_ptr_wc->flags & MRTF_NEW) {
             mrtentry_ptr_pmbr = rpentry_ptr->mrtlink;
             /* Copy the oif list from the (*,*,RP) entry */
-            if (mrtentry_ptr_pmbr != (mrtentry_t *)NULL) {
+            if (mrtentry_ptr_pmbr) {
                 VOIF_COPY(mrtentry_ptr_pmbr, mrtentry_ptr_wc);
             }
             mrtentry_ptr_wc->incoming = rpentry_ptr->incoming;
@@ -235,48 +237,46 @@ mrtentry_t *find_route(u_int32 source, u_int32 group, u_int16 flags, char create
 #endif /* RSRR */
         }
         if (!(flags & MRTF_SG)) {
-            return (mrtentry_ptr_wc);
+            return mrtentry_ptr_wc;
         }
     }
 
     if (flags & MRTF_SG) {
         /* Setup the (S,G) routing entry */
         srcentry_ptr = create_srcentry(source);
-        if (srcentry_ptr == (srcentry_t *)NULL) {
+        if (!srcentry_ptr) {
             /* TODO: XXX: The MRTF_NEW flag check may be misleading?? check */
-            if (((grpentry_ptr->grp_route == (mrtentry_t *)NULL)
-                 || ((grpentry_ptr->grp_route != (mrtentry_t *)NULL)
-                     && (grpentry_ptr->grp_route->flags & MRTF_NEW)))
-                && (grpentry_ptr->mrtlink == (mrtentry_t *)NULL)) {
+            if ((!grpentry_ptr->grp_route || (grpentry_ptr->grp_route && (grpentry_ptr->grp_route->flags & MRTF_NEW)))
+                && !grpentry_ptr->mrtlink) {
                 /* New created grpentry. Delete it. */
                 delete_grpentry(grpentry_ptr);
             }
-            return (mrtentry_t *)NULL;
+            return NULL;
         }
 
         mrtentry_ptr = create_mrtentry(srcentry_ptr, grpentry_ptr, MRTF_SG);
-        if (mrtentry_ptr == (mrtentry_t *)NULL) {
-            if (((grpentry_ptr->grp_route == (mrtentry_t *)NULL)
-                 || ((grpentry_ptr->grp_route != (mrtentry_t *)NULL)
-                     && (grpentry_ptr->grp_route->flags & MRTF_NEW)))
-                && (grpentry_ptr->mrtlink == (mrtentry_t *)NULL)) {
+        if (!mrtentry_ptr) {
+            if ((!grpentry_ptr->grp_route
+		 || (grpentry_ptr->grp_route && (grpentry_ptr->grp_route->flags & MRTF_NEW)))
+                && !grpentry_ptr->mrtlink) {
                 /* New created grpentry. Delete it. */
                 delete_grpentry(grpentry_ptr);
             }
-            if (srcentry_ptr->mrtlink == (mrtentry_t *)NULL) {
+            if (!srcentry_ptr->mrtlink) {
                 /* New created srcentry. Delete it. */
                 delete_srcentry(srcentry_ptr);
             }
-            return (mrtentry_t *)NULL;
+
+            return NULL;
         }
 
         if (mrtentry_ptr->flags & MRTF_NEW) {
-            if ((mrtentry_ptr_2 = grpentry_ptr->grp_route)
-                == (mrtentry_t *)NULL) {
+	    mrtentry_ptr_2 = grpentry_ptr->grp_route;
+            if (!mrtentry_ptr_2) {
                 mrtentry_ptr_2 = rpentry_ptr->mrtlink;
             }
             /* Copy the oif list from the existing (*,G) or (*,*,RP) entry */
-            if (mrtentry_ptr_2 != (mrtentry_t *)NULL) {
+            if (mrtentry_ptr_2) {
                 VOIF_COPY(mrtentry_ptr_2, mrtentry_ptr);
                 if (flags & MRTF_RP) {
                     /* ~(S,G) prune entry */
@@ -298,7 +298,7 @@ mrtentry_t *find_route(u_int32 source, u_int32 group, u_int16 flags, char create
             rsrr_cache_bring_up(mrtentry_ptr);
 #endif /* RSRR */
         }
-        return (mrtentry_ptr);
+        return mrtentry_ptr;
     }
 
     if (flags & MRTF_PMBR) {
@@ -307,61 +307,59 @@ mrtentry_t *find_route(u_int32 source, u_int32 group, u_int16 flags, char create
             rpentry_ptr = rp_match(group);
         else if (source != INADDR_ANY_N) {
             rpentry_ptr = rp_find(source);
-            if (rpentry_ptr == (rpentry_t *)NULL) {
-                return (mrtentry_t *)NULL;
+            if (!rpentry_ptr) {
+                return NULL;
             }
         }
         else
-            return (mrtentry_t *)NULL; /* source == group == INADDR_ANY */
-        if (rpentry_ptr->mrtlink != (mrtentry_t *)NULL)
-            return (rpentry_ptr->mrtlink);
-        mrtentry_ptr = create_mrtentry(rpentry_ptr, (grpentry_t *)NULL,
-                                       MRTF_PMBR);
-        if (mrtentry_ptr == (mrtentry_t *)NULL)
-            return (mrtentry_t *)NULL;
+            return NULL; /* source == group == INADDR_ANY */
+        if (rpentry_ptr->mrtlink)
+            return rpentry_ptr->mrtlink;
+        mrtentry_ptr = create_mrtentry(rpentry_ptr, NULL, MRTF_PMBR);
+        if (!mrtentry_ptr)
+            return NULL;
         mrtentry_ptr->incoming = rpentry_ptr->incoming;
         mrtentry_ptr->upstream = rpentry_ptr->upstream;
         mrtentry_ptr->metric   = rpentry_ptr->metric;
         mrtentry_ptr->preference = rpentry_ptr->preference;
-        return(mrtentry_ptr);
+
+        return mrtentry_ptr;
     }
 
-    return (mrtentry_t *)NULL;
+    return NULL;
 }
 
 
 void delete_srcentry(srcentry_t *srcentry_ptr)
 {
-    mrtentry_t *mrtentry_ptr;
-    mrtentry_t *mrtentry_next;
+    mrtentry_t *ptr;
+    mrtentry_t *next;
 
-    if (srcentry_ptr == (srcentry_t *)NULL)
+    if (!srcentry_ptr)
         return;
+
     /* TODO: XXX: the first entry is unused and always there */
     srcentry_ptr->prev->next =  srcentry_ptr->next;
-    if (srcentry_ptr->next != (srcentry_t *)NULL)
+    if (srcentry_ptr->next)
         srcentry_ptr->next->prev = srcentry_ptr->prev;
 
-    for (mrtentry_ptr = srcentry_ptr->mrtlink;
-         mrtentry_ptr != (mrtentry_t *)NULL;
-         mrtentry_ptr = mrtentry_next) {
-        mrtentry_next = mrtentry_ptr->srcnext;
-        if (mrtentry_ptr->flags & MRTF_KERNEL_CACHE)
+    for (ptr = srcentry_ptr->mrtlink; ptr; ptr = next) {
+        next = ptr->srcnext;
+        if (ptr->flags & MRTF_KERNEL_CACHE)
             /* Delete the kernel cache first */
-            delete_mrtentry_all_kernel_cache(mrtentry_ptr);
-        if (mrtentry_ptr->grpprev != (mrtentry_t *)NULL)
-            mrtentry_ptr->grpprev->grpnext = mrtentry_ptr->grpnext;
-        else {
-            mrtentry_ptr->group->mrtlink = mrtentry_ptr->grpnext;
-            if ((mrtentry_ptr->grpnext == (mrtentry_t *)NULL)
-                && (mrtentry_ptr->group->grp_route == (mrtentry_t *)NULL)) {
+            delete_mrtentry_all_kernel_cache(ptr);
+        if (ptr->grpprev) {
+            ptr->grpprev->grpnext = ptr->grpnext;
+	} else {
+            ptr->group->mrtlink = ptr->grpnext;
+            if (!ptr->grpnext && !ptr->group->grp_route) {
                 /* Delete the group entry if it has no (*,G) routing entry */
-                delete_grpentry(mrtentry_ptr->group);
+                delete_grpentry(ptr->group);
             }
         }
-        if (mrtentry_ptr->grpnext != (mrtentry_t *)NULL)
-            mrtentry_ptr->grpnext->grpprev = mrtentry_ptr->grpprev;
-        FREE_MRTENTRY(mrtentry_ptr);
+        if (ptr->grpnext)
+            ptr->grpnext->grpprev = ptr->grpprev;
+        FREE_MRTENTRY(ptr);
     }
     free((char *)srcentry_ptr);
 }
@@ -369,17 +367,18 @@ void delete_srcentry(srcentry_t *srcentry_ptr)
 
 void delete_grpentry(grpentry_t *grpentry_ptr)
 {
-    mrtentry_t *mrtentry_ptr;
-    mrtentry_t *mrtentry_next;
+    mrtentry_t *ptr;
+    mrtentry_t *next;
 
-    if (grpentry_ptr == (grpentry_t *)NULL)
+    if (!grpentry_ptr)
         return;
+
     /* TODO: XXX: the first entry is unused and always there */
     grpentry_ptr->prev->next = grpentry_ptr->next;
-    if (grpentry_ptr->next != (grpentry_t *)NULL)
+    if (grpentry_ptr->next)
         grpentry_ptr->next->prev = grpentry_ptr->prev;
 
-    if (grpentry_ptr->grp_route != (mrtentry_t *)NULL) {
+    if (grpentry_ptr->grp_route) {
         if (grpentry_ptr->grp_route->flags & MRTF_KERNEL_CACHE)
             delete_mrtentry_all_kernel_cache(grpentry_ptr->grp_route);
         FREE_MRTENTRY(grpentry_ptr->grp_route);
@@ -395,25 +394,23 @@ void delete_grpentry(grpentry_t *grpentry_ptr)
             grpentry_ptr->active_rp_grp->grplink = grpentry_ptr->rpnext;
     }
 
-    for (mrtentry_ptr = grpentry_ptr->mrtlink;
-         mrtentry_ptr != (mrtentry_t *)NULL;
-         mrtentry_ptr = mrtentry_next) {
-        mrtentry_next = mrtentry_ptr->grpnext;
-        if (mrtentry_ptr->flags & MRTF_KERNEL_CACHE)
+    for (ptr = grpentry_ptr->mrtlink; ptr; ptr = next) {
+        next = ptr->grpnext;
+        if (ptr->flags & MRTF_KERNEL_CACHE)
             /* Delete the kernel cache first */
-            delete_mrtentry_all_kernel_cache(mrtentry_ptr);
-        if (mrtentry_ptr->srcprev != (mrtentry_t *)NULL)
-            mrtentry_ptr->srcprev->srcnext = mrtentry_ptr->srcnext;
+            delete_mrtentry_all_kernel_cache(ptr);
+        if (ptr->srcprev)
+            ptr->srcprev->srcnext = ptr->srcnext;
         else {
-            mrtentry_ptr->source->mrtlink = mrtentry_ptr->srcnext;
-            if (mrtentry_ptr->srcnext == (mrtentry_t *)NULL) {
+            ptr->source->mrtlink = ptr->srcnext;
+            if (!ptr->srcnext) {
                 /* Delete the srcentry if this was the last routing entry */
-                delete_srcentry(mrtentry_ptr->source);
+                delete_srcentry(ptr->source);
             }
         }
-        if (mrtentry_ptr->srcnext != (mrtentry_t *)NULL)
-            mrtentry_ptr->srcnext->srcprev = mrtentry_ptr->srcprev;
-        FREE_MRTENTRY(mrtentry_ptr);
+        if (ptr->srcnext)
+            ptr->srcnext->srcprev = ptr->srcprev;
+        FREE_MRTENTRY(ptr);
     }
     free((char *)grpentry_ptr);
 }
@@ -511,12 +508,12 @@ static int search_srclist(u_int32 source, srcentry_t **sourceEntry)
             continue;
         if (s->address == source) {
             *sourceEntry = s;
-            return(TRUE);
+            return TRUE;
         }
         break;
     }
     *sourceEntry = s_prev;   /* The insertion point is between s_prev and s */
-    return(FALSE);
+    return FALSE;
 }
 
 
@@ -534,12 +531,13 @@ static int search_grplist(u_int32 group, grpentry_t **groupEntry)
             continue;
         if (g->group == group) {
             *groupEntry = g;
-            return(TRUE);
+            return TRUE;
         }
         break;
     }
     *groupEntry = g_prev;    /* The insertion point is between g_prev and g */
-    return(FALSE);
+
+    return FALSE;
 }
 
 
@@ -549,13 +547,13 @@ static srcentry_t *create_srcentry(u_int32 source)
     srcentry_t *srcentry_prev;
 
     if (search_srclist(source, &srcentry_prev) == TRUE)
-        return (srcentry_prev);
+        return srcentry_prev;
 
     srcentry_ptr = (srcentry_t *)malloc(sizeof(srcentry_t));
-    if (srcentry_ptr == (srcentry_t *)NULL) {
+    if (!srcentry_ptr) {
         logit(LOG_WARNING, 0, "Memory allocation error for srcentry %s",
 	      inet_fmt(source, s1, sizeof(s1)));
-        return (srcentry_t *)NULL;
+        return NULL;
     }
 
     srcentry_ptr->address = source;
@@ -565,21 +563,23 @@ static srcentry_t *create_srcentry(u_int32 source)
      */
     if (set_incoming(srcentry_ptr, PIM_IIF_SOURCE) == FALSE) {
         free((char *)srcentry_ptr);
-        return (srcentry_t *)NULL;
+        return NULL;
     }
-    srcentry_ptr->mrtlink = (mrtentry_t *)NULL;
     RESET_TIMER(srcentry_ptr->timer);
-    srcentry_ptr->cand_rp = (cand_rp_t *)NULL;
-    srcentry_ptr->next	= srcentry_prev->next;
-    srcentry_prev->next = srcentry_ptr;
-    srcentry_ptr->prev = srcentry_prev;
-    if (srcentry_ptr->next != (srcentry_t *)NULL)
+    srcentry_ptr->mrtlink = NULL;
+    srcentry_ptr->cand_rp = NULL;
+    srcentry_ptr->next	  = srcentry_prev->next;
+    srcentry_prev->next   = srcentry_ptr;
+    srcentry_ptr->prev    = srcentry_prev;
+    if (srcentry_ptr->next)
         srcentry_ptr->next->prev = srcentry_ptr;
 
-    IF_DEBUG(DEBUG_MFC)
+    IF_DEBUG(DEBUG_MFC) {
         logit(LOG_DEBUG, 0, "create source entry, source %s",
 	      inet_fmt(source, s1, sizeof(s1)));
-    return (srcentry_ptr);
+    }
+
+    return srcentry_ptr;
 }
 
 
@@ -589,13 +589,13 @@ static grpentry_t *create_grpentry(u_int32 group)
     grpentry_t *grpentry_prev;
 
     if (search_grplist(group, &grpentry_prev) == TRUE)
-        return (grpentry_prev);
+        return grpentry_prev;
 
     grpentry_ptr = (grpentry_t *)malloc(sizeof(grpentry_t));
-    if (grpentry_ptr == (grpentry_t *)NULL) {
+    if (!grpentry_ptr) {
         logit(LOG_WARNING, 0, "Memory allocation error for grpentry %s",
 	      inet_fmt(group, s1, sizeof(s1)));
-        return (grpentry_t *)NULL;
+        return NULL;
     }
 
     /*
@@ -606,22 +606,24 @@ static grpentry_t *create_grpentry(u_int32 group)
      */
     grpentry_ptr->group         = group;
     grpentry_ptr->rpaddr        = INADDR_ANY_N;
-    grpentry_ptr->mrtlink       = (mrtentry_t *)NULL;
-    grpentry_ptr->active_rp_grp	= (rp_grp_entry_t *)NULL;
-    grpentry_ptr->grp_route     = (mrtentry_t *)NULL;
-    grpentry_ptr->rpnext        = (grpentry_t *)NULL;
-    grpentry_ptr->rpprev        = (grpentry_t *)NULL;
+    grpentry_ptr->mrtlink       = NULL;
+    grpentry_ptr->active_rp_grp	= NULL;
+    grpentry_ptr->grp_route     = NULL;
+    grpentry_ptr->rpnext        = NULL;
+    grpentry_ptr->rpprev        = NULL;
 
     /* Now it is safe to include the new group entry */
     grpentry_ptr->next		= grpentry_prev->next;
     grpentry_prev->next         = grpentry_ptr;
     grpentry_ptr->prev          = grpentry_prev;
-    if (grpentry_ptr->next != (grpentry_t *)NULL)
+    if (grpentry_ptr->next)
         grpentry_ptr->next->prev = grpentry_ptr;
 
-    IF_DEBUG(DEBUG_MFC)
+    IF_DEBUG(DEBUG_MFC) {
         logit(LOG_DEBUG, 0, "create group entry, group %s", inet_fmt(group, s1, sizeof(s1)));
-    return(grpentry_ptr);
+    }
+
+    return grpentry_ptr;
 }
 
 
@@ -646,12 +648,12 @@ static int search_srcmrtlink(srcentry_t *srcentry_ptr, u_int32 group, mrtentry_t
             continue;
         if (mrtentry_ptr->group->group == group) {
             *mrtPtr = mrtentry_ptr;
-            return(TRUE);
+            return TRUE;
         }
         break;
     }
     *mrtPtr = m_prev;
-    return(FALSE);
+    return FALSE;
 }
 
 
@@ -676,12 +678,12 @@ static int search_grpmrtlink(grpentry_t *grpentry_ptr, u_int32 source, mrtentry_
             continue;
         if (source == mrtentry_ptr->source->address) {
             *mrtPtr = mrtentry_ptr;
-            return(TRUE);
+            return TRUE;
         }
         break;
     }
     *mrtPtr = m_prev;
-    return(FALSE);
+    return FALSE;
 }
 
 
@@ -732,7 +734,7 @@ static mrtentry_t *alloc_mrtentry(srcentry_t *srcentry_ptr, grpentry_t *grpentry
     mrtentry_ptr = (mrtentry_t *)malloc(sizeof(mrtentry_t));
     if (mrtentry_ptr == (mrtentry_t *)NULL) {
         logit(LOG_WARNING, 0, "alloc_mrtentry(): out of memory");
-        return (mrtentry_t *)NULL;
+        return NULL;
     }
 
     /*
@@ -778,7 +780,7 @@ static mrtentry_t *alloc_mrtentry(srcentry_t *srcentry_ptr, grpentry_t *grpentry
         (mrtentry_ptr->vif_deletion_delay == (u_int16 *)NULL)) {
         logit(LOG_WARNING, 0, "alloc_mrtentry(): out of memory");
         FREE_MRTENTRY(mrtentry_ptr);
-        return (mrtentry_t *)NULL;
+        return NULL;
     }
     /* Reset the timers */
     for (i = 0, i_ptr = mrtentry_ptr->vif_timers; i < vif_numbers;
@@ -796,7 +798,7 @@ static mrtentry_t *alloc_mrtentry(srcentry_t *srcentry_ptr, grpentry_t *grpentry
     RESET_TIMER(mrtentry_ptr->assert_rate_timer);
     mrtentry_ptr->kernel_cache = (kernel_cache_t *)NULL;
 
-    return(mrtentry_ptr);
+    return mrtentry_ptr;
 }
 
 
@@ -807,14 +809,13 @@ static mrtentry_t *create_mrtentry(srcentry_t *srcentry_ptr, grpentry_t *grpentr
     u_int32 source;
     u_int32 group;
 
-
     if (flags & MRTF_SG) {
         /* (S,G) entry */
         source = srcentry_ptr->address;
         group  = grpentry_ptr->group;
 
         if (search_grpmrtlink(grpentry_ptr, source, &r_grp_insert) == TRUE) {
-            return(r_grp_insert);
+            return r_grp_insert;
         }
         if (search_srcmrtlink(srcentry_ptr, group, &r_src_insert) == TRUE) {
             /*
@@ -824,14 +825,14 @@ static mrtentry_t *create_mrtentry(srcentry_t *srcentry_ptr, grpentry_t *grpentr
             logit(LOG_ERR, 0, "MRT inconsistency for src %s and grp %s\n",
 		  inet_fmt(source, s1, sizeof(s1)), inet_fmt(group, s2, sizeof(s2)));
             /* not reached but to make lint happy */
-            return (mrtentry_t *)NULL;
+            return NULL;
         }
         /*
          * Create and insert in group mrtlink and source mrtlink chains.
          */
         r_new = alloc_mrtentry(srcentry_ptr, grpentry_ptr);
         if (r_new == (mrtentry_t *)NULL)
-            return (mrtentry_t *)NULL;
+            return NULL;
         /*
          * r_new has to be insert right after r_grp_insert in the
          * grp mrtlink chain and right after r_src_insert in the
@@ -840,34 +841,34 @@ static mrtentry_t *create_mrtentry(srcentry_t *srcentry_ptr, grpentry_t *grpentr
         insert_grpmrtlink(r_new, r_grp_insert, grpentry_ptr);
         insert_srcmrtlink(r_new, r_src_insert, srcentry_ptr);
         r_new->flags |= MRTF_SG;
-        return (r_new);
+        return r_new;
     }
 
     if (flags & MRTF_WC) {
         /* (*,G) entry */
         if (grpentry_ptr->grp_route != (mrtentry_t *)NULL)
-            return (grpentry_ptr->grp_route);
+            return grpentry_ptr->grp_route;
         r_new = alloc_mrtentry(srcentry_ptr, grpentry_ptr);
         if (r_new == (mrtentry_t *)NULL)
-            return (mrtentry_t *)NULL;
+            return NULL;
         grpentry_ptr->grp_route = r_new;
         r_new->flags |= (MRTF_WC | MRTF_RP);
-        return (r_new);
+        return r_new;
     }
 
     if (flags & MRTF_PMBR) {
         /* (*,*,RP) entry */
         if (srcentry_ptr->mrtlink != (mrtentry_t *)NULL)
-            return (srcentry_ptr->mrtlink);
+            return srcentry_ptr->mrtlink;
         r_new = alloc_mrtentry(srcentry_ptr, grpentry_ptr);
         if (r_new == (mrtentry_t *)NULL)
-            return (mrtentry_t *)NULL;
+            return NULL;
         srcentry_ptr->mrtlink = r_new;
         r_new->flags |= (MRTF_PMBR | MRTF_RP);
-        return (r_new);
+        return r_new;
     }
 
-    return (mrtentry_t *)NULL;
+    return NULL;
 }
 
 
