@@ -136,7 +136,9 @@ int k_req_incoming(u_int32 source, struct rpfctl *rpf)
     logit(LOG_DEBUG, 0, "NETLINK: ask path to %s",
 	inet_fmt(rpf->source.s_addr, s1, sizeof(s1)));
     
-    if ((rlen = sendto(routing_socket, buf, n->nlmsg_len, 0, (struct sockaddr *) &addr, sizeof(addr))) < 0) {
+    while ((rlen = sendto(routing_socket, buf, n->nlmsg_len, 0, (struct sockaddr *) &addr, sizeof(addr))) < 0) {
+	if (errno == EINTR)
+	    continue;		/* Received signal, retry syscall. */
 	logit(LOG_WARNING, errno, "Error writing to routing socket");
 
 	return FALSE;
@@ -146,7 +148,7 @@ int k_req_incoming(u_int32 source, struct rpfctl *rpf)
 	l = recvfrom(routing_socket, buf, sizeof(buf), 0, (struct sockaddr *) &addr, &alen);
 	if (l < 0) {
 	    if (errno == EINTR)
-		continue;
+		continue;		/* Received signal, retry syscall. */
 	    logit(LOG_WARNING, errno, "Error writing to routing socket");
 
 	    return FALSE;
