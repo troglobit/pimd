@@ -59,7 +59,7 @@ void init_pim(void)
 
     /* Setup the PIM raw socket */
     if ((pim_socket = socket(AF_INET, SOCK_RAW, IPPROTO_PIM)) < 0)
-        logit(LOG_ERR, errno, "PIM socket");
+        logit(LOG_ERR, errno, "Failed creating PIM socket");
     k_hdr_include(pim_socket, TRUE);      /* include IP header when sending */
     k_set_sndbuf(pim_socket, SO_SEND_BUF_SIZE_MAX,
                  SO_SEND_BUF_SIZE_MIN);   /* lots of output buffering        */
@@ -72,6 +72,8 @@ void init_pim(void)
 
     pim_recv_buf = malloc(RECV_BUF_SIZE);
     pim_send_buf = malloc(SEND_BUF_SIZE);
+    if (!pim_recv_buf || !pim_send_buf)
+	logit(LOG_ERR, 0, "Ran out of memory in init_pim()");
 
     /* One time setup in the buffers */
     ip           = (struct ip *)pim_send_buf;
@@ -79,17 +81,17 @@ void init_pim(void)
     ip->ip_v     = IPVERSION;
     ip->ip_hl    = (sizeof(struct ip) >> 2);
     ip->ip_tos   = 0;    /* TODO: setup?? */
-    ip->ip_id    = 0;                     /* let kernel fill in */
+    ip->ip_id    = 0;	 /* let kernel fill in */
     ip->ip_off   = 0;
     ip->ip_p     = IPPROTO_PIM;
 #ifdef old_Linux
-    ip->ip_csum = 0;                     /* let kernel fill in               */
+    ip->ip_csum = 0;		/* let kernel fill in */
 #else
-    ip->ip_sum = 0;                     /* let kernel fill in               */
+    ip->ip_sum = 0;		/* let kernel fill in */
 #endif /* old_Linux */
 
     if (register_input_handler(pim_socket, pim_read) < 0)
-        logit(LOG_ERR, 0,  "cannot register pim_read() as an input handler");
+        logit(LOG_ERR, 0,  "Failed registering pim_read() as an input handler");
 
     /* Initialize the building Join/Prune messages working area */
     build_jp_message_pool = (build_jp_message_t *)NULL;
@@ -100,7 +102,7 @@ void init_pim(void)
 /* Read a PIM message */
 static void pim_read(int f __attribute__((unused)), fd_set *rfd __attribute__((unused)))
 {
-    ssize_t pim_recvlen;
+    ssize_t len;
     socklen_t dummy = 0;
 #if defined(SYSV) || defined(__USE_SVID)
     sigset_t block, oblock;
@@ -108,10 +110,11 @@ static void pim_read(int f __attribute__((unused)), fd_set *rfd __attribute__((u
     int omask;
 #endif
 
-    pim_recvlen = recvfrom(pim_socket, pim_recv_buf, RECV_BUF_SIZE, 0, NULL, &dummy);
-    if (pim_recvlen < 0) {
-        if (errno != EINTR)
-            logit(LOG_ERR, errno, "PIM recvfrom");
+    while ((len = recvfrom(pim_socket, pim_recv_buf, RECV_BUF_SIZE, 0, NULL, &dummy)) < 0) {
+	if (errno == EINTR)
+	    continue;		/* Received signal, retry syscall. */
+
+	logit(LOG_ERR, errno, "Failed recvfrom() in pim_read()");
         return;
     }
 
@@ -125,7 +128,7 @@ static void pim_read(int f __attribute__((unused)), fd_set *rfd __attribute__((u
     omask = sigblock(sigmask(SIGALRM));
 #endif /* SYSV */
 
-    accept_pim(pim_recvlen);
+    accept_pim(len);
 
 #if defined(SYSV) || defined(__USE_SVID)
     (void)sigprocmask(SIG_SETMASK, &oblock, (sigset_t *)NULL);
@@ -268,9 +271,10 @@ void send_pim(char *buf, u_int32 src, u_int32 dst, int type, int datalen)
     sdst.sin_len = sizeof(sdst);
 #endif
     sdst.sin_addr.s_addr = dst;
-    if (sendto(pim_socket, buf, sendlen, 0,
-               (struct sockaddr *)&sdst, sizeof(sdst)) < 0) {
-        if (errno == ENETDOWN)
+    while (sendto(pim_socket, buf, sendlen, 0, (struct sockaddr *)&sdst, sizeof(sdst)) < 0) {
+	if (errno == EINTR)
+	    continue;		/* Received signal, retry syscall. */
+        else if (errno == ENETDOWN)
             check_vif_state();
         else
             logit(LOG_WARNING, errno, "sendto from %s to %s",
@@ -359,9 +363,10 @@ void send_pim_unicast(char *buf, u_int32 src, u_int32 dst, int type, int datalen
     sdst.sin_len = sizeof(sdst);
 #endif
     sdst.sin_addr.s_addr = dst;
-    if (sendto(pim_socket, buf, sendlen, 0,
-               (struct sockaddr *)&sdst, sizeof(sdst)) < 0) {
-        if (errno == ENETDOWN)
+    while (sendto(pim_socket, buf, sendlen, 0, (struct sockaddr *)&sdst, sizeof(sdst)) < 0) {
+	if (errno == EINTR)
+	    continue;		/* Received signal, retry syscall. */
+        else if (errno == ENETDOWN)
             check_vif_state();
         else
             logit(LOG_WARNING, errno, "sendto from %s to %s",
