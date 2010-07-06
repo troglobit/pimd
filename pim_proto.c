@@ -137,6 +137,8 @@ int receive_pim_hello(u_int32 src, u_int32 dst __attribute__((unused)), char *pi
      * It must be added right after `prev_nbr`
      */
     new_nbr = (pim_nbr_entry_t *)malloc(sizeof(pim_nbr_entry_t));
+    if (!new_nbr)
+	logit(LOG_ERR, 0, "Ran out of memory in receive_pim_hello()");
     new_nbr->address          = src;
     new_nbr->vifi             = vifi;
     SET_TIMER(new_nbr->timer, holdtime);
@@ -2177,26 +2179,54 @@ static build_jp_message_t *get_jp_working_buff(void)
         bjpm_ptr->jp_message = (u_int8 *)malloc(MAX_JP_MESSAGE_SIZE +
 						sizeof(pim_jp_encod_grp_t) +
 						2 * sizeof(pim_encod_src_addr_t));
-	if (!bjpm_ptr->jp_message)
+	if (!bjpm_ptr->jp_message) {
+	    free(bjpm_ptr);
 	    return NULL;
+	}
 
         bjpm_ptr->jp_message_size = 0;
         bjpm_ptr->join_list_size = 0;
         bjpm_ptr->join_addr_number = 0;
         bjpm_ptr->join_list = (u_int8 *)malloc(MAX_JOIN_LIST_SIZE +
                                                sizeof(pim_encod_src_addr_t));
+	if (!bjpm_ptr->join_list) {
+	    free(bjpm_ptr->jp_message);
+	    free(bjpm_ptr);
+	    return NULL;
+	}
         bjpm_ptr->prune_list_size = 0;
         bjpm_ptr->prune_addr_number = 0;
         bjpm_ptr->prune_list = (u_int8 *)malloc(MAX_PRUNE_LIST_SIZE +
                                                 sizeof(pim_encod_src_addr_t));
+	if (!bjpm_ptr->prune_list) {
+	    free(bjpm_ptr->join_list);
+	    free(bjpm_ptr->jp_message);
+	    free(bjpm_ptr);
+	    return NULL;
+	}
         bjpm_ptr->rp_list_join_size = 0;
         bjpm_ptr->rp_list_join_number = 0;
         bjpm_ptr->rp_list_join = (u_int8 *)malloc(MAX_JOIN_LIST_SIZE +
                                                   sizeof(pim_encod_src_addr_t));
+	if (!bjpm_ptr->rp_list_join) {
+	    free(bjpm_ptr->prune_list);
+	    free(bjpm_ptr->join_list);
+	    free(bjpm_ptr->jp_message);
+	    free(bjpm_ptr);
+	    return NULL;
+	}
         bjpm_ptr->rp_list_prune_size = 0;
         bjpm_ptr->rp_list_prune_number = 0;
         bjpm_ptr->rp_list_prune = (u_int8 *)malloc(MAX_PRUNE_LIST_SIZE +
                                                    sizeof(pim_encod_src_addr_t));
+	if (!bjpm_ptr->rp_list_prune) {
+	    free(bjpm_ptr->rp_list_join);
+	    free(bjpm_ptr->prune_list);
+	    free(bjpm_ptr->join_list);
+	    free(bjpm_ptr->jp_message);
+	    free(bjpm_ptr);
+	    return NULL;
+	}
         bjpm_ptr->curr_group = INADDR_ANY_N;
         bjpm_ptr->curr_group_msklen = 0;
         bjpm_ptr->holdtime = 0;
