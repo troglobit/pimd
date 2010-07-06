@@ -201,6 +201,8 @@ add_cand_rp(used_cand_rp_list, address)
     
     /* Create and insert the new entry between cand_rp_prev and cand_rp */
     cand_rp_new = (cand_rp_t *)malloc(sizeof(cand_rp_t));
+    if (!cand_rp_new)
+	logit(LOG_ERR, 0, "Ran out of memory in add_cand_rp()");
     cand_rp_new->rp_grp_next = (rp_grp_entry_t *)NULL;
     cand_rp_new->next = cand_rp;
     cand_rp_new->prev = cand_rp_prev;
@@ -214,6 +216,8 @@ add_cand_rp(used_cand_rp_list, address)
     }
 
     rpentry_ptr = (rpentry_t *)malloc(sizeof(rpentry_t));
+    if (!rpentry_ptr)
+	logit(LOG_ERR, 0, "Ran out of memory in add_cand_rp()");
     cand_rp_new->rpentry = rpentry_ptr;
     rpentry_ptr->next = (srcentry_t *)NULL;
     rpentry_ptr->prev  = (srcentry_t *)NULL;
@@ -272,6 +276,8 @@ add_grp_mask(used_grp_mask_list, group_addr, group_mask, hash_mask)
     }
 
     grp_mask_tmp = (grp_mask_t *)malloc(sizeof(grp_mask_t));
+    if (!grp_mask_tmp)
+	logit(LOG_ERR, 0, "Ran out of memory in add_grp_mask()");
     grp_mask_tmp->grp_rp_next = (rp_grp_entry_t *)NULL;
     grp_mask_tmp->next = grp_mask;
     grp_mask_tmp->prev = grp_mask_prev;
@@ -404,6 +410,8 @@ add_rp_grp_entry(used_cand_rp_list, used_grp_mask_list,
     
     /* Create and link the new entry */
     grp_rp_entry_new = (rp_grp_entry_t *)malloc(sizeof(rp_grp_entry_t));
+    if (!grp_rp_entry_new)
+	logit(LOG_ERR, 0, "Ran out of memory in add_rp_grp_entry()");
     grp_rp_entry_new->grp_rp_next = grp_rp_entry_next;
     grp_rp_entry_new->grp_rp_prev = grp_rp_entry_prev;
     if (grp_rp_entry_next != (rp_grp_entry_t *)NULL)
