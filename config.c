@@ -858,6 +858,10 @@ int parse_rp_address(char *s)
 
     /* save */
     rph = malloc(sizeof(*rph));
+    if (!rph) {
+	logit(LOG_WARNING, 0, "Ran out of memory in parse_rp_address()");
+	return FALSE;
+    }
     rph->address = local;
     rph->group = group_addr;
     VAL_TO_MASK(rph->mask, masklen);
@@ -1119,15 +1123,18 @@ void config_vifs_from_file(void)
     line_num = 0;
 
     if ((f = fopen(configfilename, "r")) == NULL) {
-        if (errno != ENOENT) logit(LOG_WARNING, errno, "can't open %s",
-                                   configfilename);
+        if (errno != ENOENT)
+	    logit(LOG_WARNING, errno, "Cannot open %s", configfilename);
         return;
     }
 
     /* TODO: HARDCODING!!! */
     cand_rp_adv_message.buffer =
         (u_int8 *)malloc(4 + sizeof(pim_encod_uni_addr_t)
-                         + 255*sizeof(pim_encod_grp_addr_t));
+                           + 255 * sizeof(pim_encod_grp_addr_t));
+    if (!cand_rp_adv_message.buffer) {
+	logit(LOG_ERR, errno, "Ran out of memory in config_vifs_from_file()");
+    }
     cand_rp_adv_message.prefix_cnt_ptr  = cand_rp_adv_message.buffer;
     /* By default, if no group_prefix configured, then prefix_cnt == 0
      * implies group_prefix = 224.0.0.0 and masklen = 4.
@@ -1201,8 +1208,7 @@ void config_vifs_from_file(void)
         logit(LOG_ERR, 0, "Syntax Error in %s", configfilename);
     }
 
-    cand_rp_adv_message.message_size = cand_rp_adv_message.insert_data_ptr
-        - cand_rp_adv_message.buffer;
+    cand_rp_adv_message.message_size = cand_rp_adv_message.insert_data_ptr - cand_rp_adv_message.buffer;
     if (cand_rp_flag != FALSE) {
         /* Prepare the RP info */
         my_cand_rp_holdtime = 2.5 * my_cand_rp_adv_period;
