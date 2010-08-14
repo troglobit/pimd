@@ -28,9 +28,6 @@
  * SUCH DAMAGE.
  */
 /*
- *  $Id: vif.h,v 1.14 2001/09/10 20:31:37 pavlin Exp $
- */
-/*
  * Part of this program has been derived from mrouted.
  * The mrouted program is covered by the license in the accompanying file
  * named "LICENSE.mrouted".
@@ -159,9 +156,9 @@ struct uvif {
     int             uv_local_pref;  /* default local preference for assert  */
     int             uv_local_metric;/* default local metric for assert      */
     struct pim_nbr_entry *uv_pim_neighbors; /* list of PIM neighbor routers */
-#ifdef Linux
+#ifdef __linux__
     int             uv_ifindex;     /* because RTNETLINK returns only index */
-#endif /* Linux */
+#endif /* __linux__ */
 };
 
 /* TODO: define VIFF_KERNEL_FLAGS */

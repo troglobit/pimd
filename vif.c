@@ -28,9 +28,6 @@
  * SUCH DAMAGE.
  */
 /*
- *  $Id: vif.c,v 1.22 2001/09/10 20:31:37 pavlin Exp $
- */
-/*
  * Part of this program has been derived from mrouted.
  * The mrouted program is covered by the license in the accompanying file
  * named "LICENSE.mrouted".
@@ -186,9 +183,9 @@ zero_vif(v, t)
     v->uv_pim_neighbors	= (struct pim_nbr_entry *)NULL;
     v->uv_local_pref	= default_source_preference;
     v->uv_local_metric	= default_source_metric;
-#ifdef Linux
+#ifdef __linux__
     v->uv_ifindex	= -1;
-#endif /* Linux */
+#endif /* __linux__ */
 }
 
 
@@ -348,7 +345,7 @@ static void start_vif(vifi_t vifi)
 	 */
 	send_pim_hello(v, PIM_TIMER_HELLO_HOLDTIME);
     }
-#ifdef Linux
+#ifdef __linux__
     else {
 	struct ifreq ifr;
 	
@@ -362,7 +359,7 @@ static void start_vif(vifi_t vifi)
 	}
 	v->uv_ifindex = ifr.ifr_ifindex;
     }
-#endif /* Linux */
+#endif /* __linux__ */
 }
 
 

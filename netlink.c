@@ -7,11 +7,8 @@
  * COPYRIGHT/AUTHORSHIP by Fred Griffoul <griffoul@ccrle.nec.de>
  * (until proven otherwise).
  */
-/*
- * $Id: netlink.c,v 1.8 2003/02/18 18:46:54 pavlin Exp $
- */
 
-#ifdef Linux
+#ifdef __linux__
 
 #include <sys/param.h>
 #include <sys/file.h>
@@ -229,7 +226,7 @@ static int getmsg(struct rtmsg *rtm, int msglen, struct rpfctl *rpf)
     return TRUE;
 }
 
-#endif /* Linux */
+#endif /* __linux__ */
 
 /**
  * Local Variables:

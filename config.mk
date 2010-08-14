@@ -97,8 +97,7 @@ MCAST_INCLUDE = -Iinclude
 ## Solaris 2.x
 #LIB2         = -L/usr/ucblib -lucb -L/usr/lib -lsocket -lnsl
 
-## Linux v2.2, or later
+## Linux	-D__linux__ is defined by the OS
 INCLUDES      = -Iinclude/linux
-DEFS         += -DLinux \
-		-DRAW_INPUT_IS_RAW -DRAW_OUTPUT_IS_RAW \
+DEFS         += -DRAW_INPUT_IS_RAW -DRAW_OUTPUT_IS_RAW \
 		-DIOCTL_OK_ON_RAW_SOCKET \

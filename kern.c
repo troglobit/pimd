@@ -28,9 +28,6 @@
  * SUCH DAMAGE.
  */
 /*
- *  $Id: kern.c,v 1.24 2003/02/12 21:56:55 pavlin Exp $
- */
-/*
  * Part of this program has been derived from mrouted.
  * The mrouted program is covered by the license in the accompanying file
  * named "LICENSE.mrouted".
@@ -240,23 +237,23 @@ void k_set_if(int socket, u_int32 ifa)
  */
 void k_join(int socket, u_int32 grp, struct uvif *v)
 {
-#ifdef Linux
+#ifdef __linux__
     struct ip_mreqn mreq;
 #else
     struct ip_mreq mreq;
-#endif /* Linux */
+#endif /* __linux__ */
 
-#ifdef Linux
+#ifdef __linux__
     mreq.imr_ifindex = v->uv_ifindex;
     mreq.imr_address.s_addr = v->uv_lcl_addr;
 #else
     mreq.imr_interface.s_addr = v->uv_lcl_addr;
-#endif /* Linux */
+#endif /* __linux__ */
     mreq.imr_multiaddr.s_addr = grp;
 
     if (setsockopt(socket, IPPROTO_IP, IP_ADD_MEMBERSHIP,
                    (char *)&mreq, sizeof(mreq)) < 0) {
-#ifdef Linux
+#ifdef __linux__
         logit(LOG_WARNING, errno,
               "cannot join group %s on interface %s (ifindex %d)",
               inet_fmt(grp, s1, sizeof(s1)), inet_fmt(v->uv_lcl_addr, s2, sizeof(s2)), v->uv_ifindex);
@@ -264,7 +261,7 @@ void k_join(int socket, u_int32 grp, struct uvif *v)
         logit(LOG_WARNING, errno,
               "cannot join group %s on interface %s",
               inet_fmt(grp, s1, sizeof(s1)), inet_fmt(v->uv_lcl_addr, s2, sizeof(s2)));
-#endif /* Linux */
+#endif /* __linux__ */
     }
 }
 
@@ -274,22 +271,22 @@ void k_join(int socket, u_int32 grp, struct uvif *v)
  */
 void k_leave(int socket, u_int32 grp, struct uvif *v)
 {
-#ifdef Linux
+#ifdef __linux__
     struct ip_mreqn mreq;
 #else
     struct ip_mreq mreq;
-#endif /* Linux */
+#endif /* __linux__ */
 
-#ifdef Linux
+#ifdef __linux__
     mreq.imr_ifindex = v->uv_ifindex;
     mreq.imr_address.s_addr = v->uv_lcl_addr;
 #else
     mreq.imr_interface.s_addr = v->uv_lcl_addr;
-#endif /* Linux */
+#endif /* __linux__ */
     mreq.imr_multiaddr.s_addr = grp;
 
     if (setsockopt(socket, IPPROTO_IP, IP_DROP_MEMBERSHIP, (char *)&mreq, sizeof(mreq)) < 0) {
-#ifdef Linux
+#ifdef __linux__
         logit(LOG_WARNING, errno,
               "cannot leave group %s on interface %s (ifindex %d)",
               inet_fmt(grp, s1, sizeof(s1)), inet_fmt(v->uv_lcl_addr, s2, sizeof(s2)), v->uv_ifindex);
@@ -297,7 +294,7 @@ void k_leave(int socket, u_int32 grp, struct uvif *v)
         logit(LOG_WARNING, errno,
               "cannot leave group %s on interface %s",
               inet_fmt(grp, s1, sizeof(s1)), inet_fmt(v->uv_lcl_addr, s2, sizeof(s2)));
-#endif /* Linux */
+#endif /* __linux__ */
     }
 }
 

@@ -28,21 +28,6 @@
  * SUCH DAMAGE.
  */
 /*
- *  $Id: defs.h,v 1.43 2003/05/21 10:40:27 pavlin Exp $
- */
-/*
- * Part of this program has been derived from mrouted.
- * The mrouted program is covered by the license in the accompanying file
- * named "LICENSE.mrouted".
- *
- * The mrouted program is COPYRIGHT 1989 by The Board of Trustees of
- * Leland Stanford Junior University.
- *
- */
-/*
- *  $Id: defs.h,v 1.43 2003/05/21 10:40:27 pavlin Exp $
- */
-/*
  * Part of this program has been derived from mrouted.
  * The mrouted program is covered by the license in the accompanying file
  * named "LICENSE.mrouted".
@@ -85,7 +70,7 @@
 #include <net/route.h>
 #undef rtentry
 #endif /* bsdi or __FreeBSD_version >= 220000 */
-#ifdef Linux
+#ifdef __linux__
 #if 1
 #include <netinet/mroute.h>
 #endif /* 0 */
@@ -95,7 +80,7 @@
 #endif /* 0 */
 #else
 #include <netinet/ip_mroute.h>
-#endif /* Linux */
+#endif /* __linux__ */
 #include <strings.h>
 #ifdef RSRR
 #include <sys/un.h>
@@ -164,13 +149,13 @@ typedef void (*ihfunc_t) (int, fd_set *);
  * Various definitions to make it working for different platforms
  */
 /* The old style sockaddr definition doesn't have sa_len */
-#if (defined(BSD) && (BSD >= 199006)) /* sa_len was added with 4.3-Reno */ 
+#if defined(_AIX) || (defined(BSD) && (BSD >= 199006)) /* sa_len was added with 4.3-Reno */
 #define HAVE_SA_LEN
 #endif
 
 /* Versions of Solaris older than 2.6 don't have routing sockets. */
 /* XXX TODO: check FreeBSD version and add all other platforms */
-#if defined (Linux) || (defined(SunOS) && SunOS >=56) || defined (__FreeBSD__) || defined (IRIX) || defined (__bsdi__) || defined(NetBSD) || defined(OpenBSD)
+#if defined (__linux__) || (defined(SunOS) && SunOS >=56) || defined (__FreeBSD__) || defined (IRIX) || defined (__bsdi__) || defined(NetBSD) || defined(OpenBSD)
 #define HAVE_ROUTING_SOCKETS	1
 #endif
 
@@ -353,7 +338,7 @@ extern char		s2[MAX_INET_BUF_LEN];
 extern char		s3[MAX_INET_BUF_LEN];
 extern char		s4[MAX_INET_BUF_LEN];
 
-#if !((defined(BSD) && (BSD >= 199103)) || (defined(Linux)))
+#if !((defined(BSD) && (BSD >= 199103)) || (defined(__linux__)))
 extern int		errno;
 extern int		sys_nerr;
 extern char *		sys_errlist[];

@@ -28,9 +28,6 @@
  * SUCH DAMAGE.
  */
 /*
- *  $Id: config.c,v 1.27 2002/12/06 06:47:15 pavlin Exp $
- */
-/*
  * Part of this program has been derived from mrouted.
  * The mrouted program is covered by the license in the accompanying file
  * named "LICENSE.mrouted".
@@ -245,7 +242,7 @@ void config_vifs_from_kernel(void)
 
             }
         }
-#ifdef Linux
+#ifdef __linux__
         {
             struct ifreq ifridx;
 
@@ -270,7 +267,7 @@ void config_vifs_from_kernel(void)
                   v->uv_name, inet_fmt(addr, s1, sizeof(s1)), netname(subnet, mask),
                   numvifs, v->uv_ifindex, v->uv_rate_limit);
         }
-#else /* !Linux */
+#else /* !__linux__ */
         if (flags & IFF_POINTOPOINT) {
             logit(LOG_INFO, 0,
                   "installing %s (%s -> %s) as vif #%u - rate=%d",
@@ -282,7 +279,7 @@ void config_vifs_from_kernel(void)
                   v->uv_name, inet_fmt(addr, s1, sizeof(s1)), netname(subnet, mask),
                   numvifs, v->uv_rate_limit);
         }
-#endif /* Linux */
+#endif /* __linux__ */
 
         ++numvifs;
 

@@ -28,9 +28,6 @@
  * SUCH DAMAGE.
  */
 /*
- *  $Id: routesock.c,v 1.20 2003/02/18 18:46:54 pavlin Exp $
- */
-/*
  * Part of this program has been derived from mrouted.
  * The mrouted program is covered by the license in the accompanying file
  * named "LICENSE.mrouted".
@@ -40,7 +37,7 @@
  *
  */
 
-#ifndef Linux	/* XXX: netlink.c is for Linux; both files will merge in the future */
+#ifndef __linux__	/* XXX: netlink.c is for Linux; both files will merge in the future */
 #include <sys/param.h>
 #include <sys/file.h>
 #include "defs.h"
@@ -343,7 +340,7 @@ int k_req_incoming(u_int32 source, struct rpfctl *rpfcinfo)
 }
 #endif	/* HAVE_ROUTING_SOCKETS */
 
-#endif /* !Linux */
+#endif /* !__linux__ */
 
 /**
  * Local Variables:
