@@ -28,9 +28,6 @@
  * SUCH DAMAGE.
  */
 /*
- *  $Id: pathnames.h,v 1.7 2001/09/10 20:31:36 pavlin Exp $
- */
-/*
  * Part of this program has been derived from mrouted.
  * The mrouted program is covered by the license in the accompanying file
  * named "LICENSE.mrouted".
@@ -44,13 +41,10 @@
 
 #define _PATH_PIMD_CONF         "/etc/pimd.conf"
 
-#if (defined(BSD) && (BSD >= 199103))
+#if (defined(BSD) && (BSD >= 199103)) || defined(__linux__)
 #define _PATH_PIMD_DUMP         "/var/tmp/pimd.dump"
 #define _PATH_PIMD_CACHE        "/var/tmp/pimd.cache"
-#elif defined(Linux)
-#define _PATH_PIMD_DUMP         "/var/tmp/pimd.dump"
-#define _PATH_PIMD_CACHE        "/var/tmp/pimd.cache"
-#else
+#else  /* Really old system ... */
 #define _PATH_PIMD_DUMP         "/usr/tmp/pimd.dump"
 #define _PATH_PIMD_CACHE        "/usr/tmp/pimd.cache"
 #endif
