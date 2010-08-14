@@ -155,8 +155,13 @@ typedef void (*ihfunc_t) (int, fd_set *);
 
 /* Versions of Solaris older than 2.6 don't have routing sockets. */
 /* XXX TODO: check FreeBSD version and add all other platforms */
-#if defined (__linux__) || (defined(SunOS) && SunOS >=56) || defined (__FreeBSD__) || defined (IRIX) || defined (__bsdi__) || defined(NetBSD) || defined(OpenBSD)
+#if defined(__linux__) || (defined(SunOS) && SunOS >=56) || defined (__FreeBSD__) || defined (IRIX) || defined (__bsdi__) || defined(NetBSD) || defined(OpenBSD)
 #define HAVE_ROUTING_SOCKETS	1
+#endif
+
+/* uClibc, OpenBSD, NetBSD, FreeBSD, Solaris and Mac OS X all have strlcpy/strlcat (Glibc/Eglibc does not.) */
+#if defined(__UCLIBC__) || defined(OpenBSD) || defined(NetBSD) || defined(__FreeBSD__)
+#define HAVE_STRLCPY
 #endif
 
 #define TRUE			1
