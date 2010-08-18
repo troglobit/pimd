@@ -175,13 +175,13 @@ int usage(void)
     size_t i, j, k;
     struct debugname *d;
 
-    fputs("Usage: pimd [-fhN] [-c FILE] [-d [LEVEL][,LEVEL...]]\n", stderr);
-    fputs("  -c, --config=FILE      Configuration file to use, default /etc/pimd.conf\n", stderr);
-    fputs("  -d, --debug[=LEVEL]    Debug level, see below for valid levels\n", stderr);
-    fputs("  -f, --foreground       Run in foreground, do not detach from calling terminal\n", stderr);
-    fputs("  -h, --help             Show this help text\n", stderr);
-    fputs("  -N, --disable-vifs     Disable all virtual interfaces (phyint) by default\n", stderr);
-    fputs("  -v, --version          Show pimd version\n", stderr);
+    fprintf(stderr, "Usage: %s [-fhN] [-c FILE] [-d [LEVEL][,LEVEL...]]\n\n", __progname);
+    fputs("    -c, --config=FILE    Configuration file to use, default /etc/pimd.conf\n", stderr);
+    fputs("    -d, --debug[=LEVEL]  Debug level, see below for valid levels\n", stderr);
+    fputs("    -f, --foreground     Run in foreground, do not detach from calling terminal\n", stderr);
+    fputs("    -h, --help           Show this help text\n", stderr);
+    fputs("    -N, --disable-vifs   Disable all virtual interfaces (phyint) by default\n", stderr);
+    fprintf(stderr, "    -v, --version        Show %s version\n", __progname);
     fputs("\n", stderr);
 
     j = 0xffffffff;
