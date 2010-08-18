@@ -1,18 +1,20 @@
 README for pimd, the PIM-SM v2 multicast daemon
 ===============================================
-
 This is pimd, a lightweight, stand-alone implementation of Protocol Independent
-Multicast-Sparse Mode that may be freely distributed and/or deployed under BSD
-license.  The project implements the full PIM-SM specification according to RFC
-2362 with a few noted exceptions (see the RELEASE.NOTES for details).
+Multicast-Sparse Mode that may be freely distributed and/or deployed under the
+BSD license.  The project implements the full PIM-SM specification according to
+RFC 2362 with a few noted exceptions (see the RELEASE.NOTES for details).
 
 The software should compile and run on most UNIX varieties, including FreeBSD,
 BSDi, NetBSD, OpenBSD, SunOS, IRIX, Solaris 2.5, Solaris 2.6, and GNU/Linux.
 It has, however, not been thoroughly tested on all these.
 
-NOTE: If you have any questions, suggestions, bug reports, etc., do NOT send
-      them to the PIM IETF Working Group mailing list!  Instead, contact the
-      current maintainer, see the file AUTHORS.
+If you have any questions, suggestions, bug reports, patches, or pull requests,
+please do NOT send them to the PIM IETF Working Group mailing list!  Instead,
+contact the current maintainer, see the file AUTHORS, or use the github issue
+tracker at:
+
+	http://github.com/troglobit/pimd/issues
 
 The following helpful text is a rip-off from the book Linux Routing.  See
 http://linux-networks.net/New.Riders-Linux.Routing/tindex.htm for more.
