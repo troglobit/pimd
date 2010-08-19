@@ -170,7 +170,35 @@ int register_input_handler(int fd, ihfunc_t func)
     return 0;
 }
 
-int usage(void)
+static void do_randomize(void)
+{
+#define rol32(data,shift) ((data) >> (shift)) | ((data) << (32 - (shift)))
+   int fd;
+   unsigned int seed;
+
+   /* Setup a fallback seed based on quasi random. */
+#ifdef SYSV
+   seed = time(NULL);
+#else
+   seed = time(NULL) ^ gethostid();
+#endif
+   seed = rol32(seed, seed);
+
+   fd = open("/dev/urandom", O_RDONLY);
+   if (fd >= 0) {
+       if (-1 == read(fd, &seed, sizeof(seed)))
+	   warn("Failed reading entropy from /dev/urandom");
+       close(fd);
+  }
+
+#ifdef SYSV
+   srand48(seed);
+#else
+   srandom(seed);
+#endif
+}
+
+static int usage(void)
 {
     size_t i, j, k;
     struct debugname *d;
@@ -331,16 +359,8 @@ int main(int argc, char *argv[])
 #endif /* LOG_DAEMON */
 
     logit(LOG_DEBUG, 0, "%s starting", versionstring);
-    
-/* TODO: XXX: use a combination of time and hostid to initialize the random
- * generator.
- */
-#ifdef SYSV
-    srand48(time(NULL));
-#else
-    srandom(gethostid());
-#endif
 
+    do_randomize();
     time(&boottime);
     
     /* Start up the log rate-limiter */
