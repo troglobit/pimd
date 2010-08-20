@@ -90,7 +90,7 @@ install: $(EXEC)
 	$(Q)install -d $(DESTDIR)$(datadir)
 	$(Q)install -d $(DESTDIR)$(mandir)
 	$(Q)install -m 0755 $(EXEC) $(DESTDIR)$(prefix)/sbin/$(EXEC)
-	$(Q)install --backup=existing -m 0644 $(CONFIG) $(DESTDIR)$(sysconfdir)/$(CONFIG)
+	$(Q)install -b -m 0644 $(CONFIG) $(DESTDIR)$(sysconfdir)/$(CONFIG)
 	$(Q)for file in $(DISTFILES); do \
 		install -m 0644 $$file $(DESTDIR)$(datadir)/$$file; \
 	done
