@@ -51,54 +51,61 @@ DEFS = -D__BSD_SOURCE -D_GNU_SOURCE -DPIM
 # If the multicast header files are not in the standard place on your system,
 # define MCAST_INCLUDE to be an appropriate `-I' options for the C compiler.
 #MCAST_INCLUDE=	-I/sys
-MCAST_INCLUDE = -Iinclude
 
 ## FreeBSD	-D__FreeBSD__ is defined by the OS
 ## FreeBSD-3.x, FreeBSD-4.x
-#INCLUDES     = -Iinclude/freebsd
+# Seems to already have ip_mroute.h and pim.h, add -Iinclude/freebsd if
+# ip_mroute.h or in.h is missing on your system and -Iinclude for pim.h
+#INCLUDES     =
 #DEFS        += -DHAVE_STRTONUM -DHAVE_STRLCPY -DHAVE_PIDFILE
 ## FreeBSD-2.x
-#INCLUDES     = -Iinclude/freebsd2
+#INCLUDES     = -Iinclude -Iinclude/freebsd2
 #DEFS        +=
 
 ## NetBSD	-DNetBSD is defined by the OS
-#INCLUDES     = -Iinclude/netbsd
+# Seems to already have ip_mroute.h and pim.h, add -Iinclude/netbsd if
+# ip_mroute.h or in.h is missing on your system and -Iinclude for pim.h
+#INCLUDES     =
 #DEFS        += -DHAVE_STRTONUM -DHAVE_STRLCPY -DHAVE_PIDFILE
 
 ## OpenBSD	-DOpenBSD is defined by the OS
-#INCLUDES     = -Iinclude/openbsd
+# Seems to already have ip_mroute.h and pim.h, add -Iinclude/openbsd if
+# ip_mroute.h or in.h is missing on your system and -Iinclude for pim.h
+#INCLUDES     =
 #DEFS        += -DHAVE_STRTONUM -DHAVE_STRLCPY -DHAVE_PIDFILE
 
 ## BSDI		-D__bsdi__ is defined by the OS
-#INCLUDES     =
+#INCLUDES     = -Iinclude
 #DEFS        +=
 
 ## SunOS, OSF1, gcc
-#INCLUDES     = -Iinclude/sunos-gcc
+#INCLUDES     = -Iinclude -Iinclude/sunos-gcc
 #DEFS        += -DSunOS=43
 
 ## SunOS, OSF1, cc
-#INCLUDES     = -Iinclude/sunos-cc
+#INCLUDES     = -Iinclude -Iinclude/sunos-cc
 #DEFS        += -DSunOS=43
 
 ## IRIX
-#INCLUDES     =
+#INCLUDES     = -Iinclude
 #DEFS        += -D_BSD_SIGNALS -DIRIX
 
 ## Solaris 2.5, gcc
-#INCLUDES     =
+#INCLUDES     = -Iinclude
 #DEFS        += -DSYSV -DSunOS=55
 ## Solaris 2.5, cc
-#INCLUDES     =
+#INCLUDES     = -Iinclude
 #DEFS        += -DSYSV -DSunOS=55
 ## Solaris 2.6
-#INCLUDES     =
+#INCLUDES     = -Iinclude
 #DEFS        += -DSYSV -DSunOS=56
 ## Solaris 2.x
 #LIB2         = -L/usr/ucblib -lucb -L/usr/lib -lsocket -lnsl
 
 ## Linux	-D__linux__ is defined by the OS
+# GNU/Linux systems do not seem to ship pim.h and pim_var.h,
+# use local include/netinet
 # For uClibc based Linux systems, add -DHAVE_STRLCPY to DEFS
-INCLUDES      = -Iinclude/linux
+INCLUDES      = -Iinclude
 DEFS         += -DRAW_INPUT_IS_RAW -DRAW_OUTPUT_IS_RAW \
 		-DIOCTL_OK_ON_RAW_SOCKET \
