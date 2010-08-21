@@ -312,9 +312,6 @@ void send_pim_unicast(char *buf, u_int32 src, u_int32 dst, int type, int datalen
     struct ip *ip;
     pim_header_t *pim;
     int sendlen;
-#ifdef RAW_OUTPUT_IS_RAW
-    extern int curttl;
-#endif /* RAW_OUTPUT_IS_RAW */
 
     /* Prepare the IP header */
     ip                 = (struct ip *)buf;
