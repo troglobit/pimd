@@ -102,7 +102,7 @@ typedef u_char  u_int8;
 #if (BSD >= 199103)
 #include <machine/endian.h>
 #else
-#ifdef linux
+#ifdef __linux__
 #include <endian.h>
 #else
 #define LITTLE_ENDIAN	1234	/* least-significant byte first (vax, pc) */
