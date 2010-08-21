@@ -119,7 +119,6 @@ EXTRA_OBJS =
 # use local include/netinet
 # For uClibc based Linux systems, add -DHAVE_STRLCPY to DEFS
 INCLUDES      = -Iinclude
-DEFS         += -DRAW_INPUT_IS_RAW -DRAW_OUTPUT_IS_RAW \
-		-DIOCTL_OK_ON_RAW_SOCKET
+DEFS         += -DRAW_INPUT_IS_RAW -DRAW_OUTPUT_IS_RAW -DIOCTL_OK_ON_RAW_SOCKET
 EXTRA_OBJS   += strlcpy.o pidfile.o
 
