@@ -126,62 +126,6 @@ struct igmpmsg
  *	That's all usermode folks
  */
 
-#ifdef __KERNEL__
-extern struct sock *mroute_socket;
-extern int ip_mroute_setsockopt(struct sock *, int, char *, int);
-extern int ip_mroute_getsockopt(struct sock *, int, char *, int *);
-extern int ipmr_ioctl(struct sock *sk, int cmd, unsigned long arg);
-extern void mroute_close(struct sock *sk);
-extern void ipmr_forward(struct sk_buff *skb, int is_frag);
-extern int ip_mr_find_tunnel(__u32, __u32);
-extern void ip_mr_init(void);
-
-
-struct vif_device
-{
-	struct device 	*dev;			/* Device we are using */
-	unsigned long	bytes_in,bytes_out;
-	unsigned long	pkt_in,pkt_out;		/* Statistics 			*/
-	unsigned long	rate_limit;		/* Traffic shaping (NI) 	*/
-	unsigned char	threshold;		/* TTL threshold 		*/
-	unsigned short	flags;			/* Control flags 		*/
-	__u32		local,remote;		/* Addresses(remote for tunnels)*/
-	int		link;			/* Physical interface index	*/
-};
-
-struct mfc_cache 
-{
-	struct mfc_cache *next;			/* Next entry on cache line 	*/
-	__u32 mfc_mcastgrp;			/* Group the entry belongs to 	*/
-	__u32 mfc_origin;			/* Source of packet 		*/
-	vifi_t mfc_parent;			/* Source interface		*/
-	struct timer_list mfc_timer;		/* Expiry timer			*/
-	int mfc_flags;				/* Flags on line		*/
-	struct sk_buff_head mfc_unresolved;	/* Unresolved buffers		*/
-	int mfc_queuelen;			/* Unresolved buffer counter	*/
-	unsigned long mfc_last_assert;
-	int mfc_minvif;
-	int mfc_maxvif;
-	unsigned long mfc_bytes;
-	unsigned long mfc_pkt;
-	unsigned long mfc_wrong_if;
-	unsigned char mfc_ttls[MAXVIFS];	/* TTL thresholds		*/
-};
-
-#define MFC_QUEUED		1
-#define MFC_RESOLVED		2
-#define MFC_NOTIFY		4
-
-
-#define MFC_LINES		64
-
-#ifdef __BIG_ENDIAN
-#define MFC_HASH(a,b)	((((a)>>24)^((b)>>26))&(MFC_LINES-1))
-#else
-#define MFC_HASH(a,b)	(((a)^((b)>>2))&(MFC_LINES-1))
-#endif		
-
-#endif
 
 
 #define MFC_ASSERT_THRESH (3*HZ)		/* Maximal freq. of asserts */
@@ -194,31 +138,5 @@ struct mfc_cache
 #define IGMPMSG_WRONGVIF	2		/* For PIM assert processing (unused) */
 #define IGMPMSG_WHOLEPKT	3		/* For PIM Register processing */
 
-#ifdef __KERNEL__
-
-#define PIM_V1_VERSION		__constant_htonl(0x10000000)
-#define PIM_V1_REGISTER		1
-
-#define PIM_VERSION		2
-#define PIM_REGISTER		1
-
-#define PIM_NULL_REGISTER	__constant_htonl(0x40000000)
-
-/* PIMv2 register message header layout (ietf-draft-idmr-pimvsm-v2-00.ps */
-
-struct pimreghdr
-{
-	__u8	type;
-	__u8	reserved;
-	__u16	csum;
-	__u32	flags;
-};
-
-extern int pim_rcv(struct sk_buff * , unsigned short);
-extern int pim_rcv_v1(struct sk_buff * , unsigned short len);
-
-struct rtmsg;
-extern int ipmr_get_route(struct sk_buff *skb, struct rtmsg *rtm, int nowait);
-#endif
 
 #endif
