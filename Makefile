@@ -36,15 +36,10 @@ RSRR_OBJS     = rsrr.o
 IGMP_OBJS     = igmp.o igmp_proto.o trace.o
 ROUTER_OBJS   = inet.o kern.o main.o config.o debug.o netlink.o routesock.o \
 		vers.o callout.o ${RSRR_OBJS}
-ifndef HAVE_STRLCPY
-ROUTER_OBJS  += strlcpy.o
-endif
-ifndef HAVE_PIDFILE
-ROUTER_OBJS  += pidfile.o
-endif
 PIM_OBJS      = route.o vif.o timer.o mrt.o pim.o pim_proto.o rp.o
 DVMRP_OBJS    = dvmrp_proto.o
 
+# BSD Make use .include
 include rules.mk
 include config.mk
 include snmp.mk
@@ -55,7 +50,7 @@ CFLAGS       += -O2 -W -Wall -Werror
 #CFLAGS       += -O -g
 LDLIBS        = $(SNMPLIBDIR) $(SNMPLIBS) $(LIB2)
 OBJS          = $(IGMP_OBJS) $(ROUTER_OBJS) $(PIM_OBJS) $(DVMRP_OBJS) \
-		$(SNMP_OBJS) $(RSRR_OBJS)
+		$(SNMP_OBJS) $(RSRR_OBJS) $(EXTRA_OBJS)
 SRCS          = $(OBJS:.o=.c)
 DEPS          = $(addprefix .,$(SRCS:.c=.d))
 MANS          = $(addsuffix .8,$(EXEC))

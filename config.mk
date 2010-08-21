@@ -5,7 +5,10 @@
 # -D_GNU_SOURCE : Use GNU extensions, where possible
 # -D_BSD_SOURCE : Use functions derived from 4.3 BSD Unix rather than POSIX.1
 # -DPIM : Enable PIM extensions in RSRR
-DEFS = -D__BSD_SOURCE -D_GNU_SOURCE -DPIM
+DEFS       = -D__BSD_SOURCE -D_GNU_SOURCE -DPIM
+
+# For locally provided objects missing on some platforms, e.g., strlcpy.o
+EXTRA_OBJS =
 
 # Misc. definitions
 # -DBROKEN_CISCO_CHECKSUM :
@@ -58,37 +61,45 @@ DEFS = -D__BSD_SOURCE -D_GNU_SOURCE -DPIM
 # ip_mroute.h or in.h is missing on your system and -Iinclude for pim.h
 #INCLUDES     =
 #DEFS        += -DHAVE_STRTONUM -DHAVE_STRLCPY -DHAVE_PIDFILE
+#EXTRA_OBJS  +=
 ## FreeBSD-2.x
 #INCLUDES     = -Iinclude -Iinclude/freebsd2
 #DEFS        +=
+#EXTRA_OBJS  += strlcpy.o pidfile.o
 
 ## NetBSD	-DNetBSD is defined by the OS
 # Seems to already have ip_mroute.h and pim.h, add -Iinclude/netbsd if
 # ip_mroute.h or in.h is missing on your system and -Iinclude for pim.h
 #INCLUDES     =
 #DEFS        += -DHAVE_STRTONUM -DHAVE_STRLCPY -DHAVE_PIDFILE
+#EXTRA_OBJS  +=
 
 ## OpenBSD	-DOpenBSD is defined by the OS
 # Seems to already have ip_mroute.h and pim.h, add -Iinclude/openbsd if
 # ip_mroute.h or in.h is missing on your system and -Iinclude for pim.h
 #INCLUDES     =
 #DEFS        += -DHAVE_STRTONUM -DHAVE_STRLCPY -DHAVE_PIDFILE
+#EXTRA_OBJS  +=
 
 ## BSDI		-D__bsdi__ is defined by the OS
 #INCLUDES     = -Iinclude
 #DEFS        +=
+#EXTRA_OBJS  += strlcpy.o pidfile.o
 
 ## SunOS, OSF1, gcc
 #INCLUDES     = -Iinclude -Iinclude/sunos-gcc
 #DEFS        += -DSunOS=43
+#EXTRA_OBJS  += strlcpy.o pidfile.o
 
 ## SunOS, OSF1, cc
 #INCLUDES     = -Iinclude -Iinclude/sunos-cc
 #DEFS        += -DSunOS=43
+#EXTRA_OBJS  += strlcpy.o pidfile.o
 
 ## IRIX
 #INCLUDES     = -Iinclude
 #DEFS        += -D_BSD_SIGNALS -DIRIX
+#EXTRA_OBJS  += strlcpy.o pidfile.o
 
 ## Solaris 2.5, gcc
 #INCLUDES     = -Iinclude
@@ -100,6 +111,7 @@ DEFS = -D__BSD_SOURCE -D_GNU_SOURCE -DPIM
 #INCLUDES     = -Iinclude
 #DEFS        += -DSYSV -DSunOS=56
 ## Solaris 2.x
+#EXTRA_OBJS  += strlcpy.o pidfile.o
 #LIB2         = -L/usr/ucblib -lucb -L/usr/lib -lsocket -lnsl
 
 ## Linux	-D__linux__ is defined by the OS
@@ -108,4 +120,6 @@ DEFS = -D__BSD_SOURCE -D_GNU_SOURCE -DPIM
 # For uClibc based Linux systems, add -DHAVE_STRLCPY to DEFS
 INCLUDES      = -Iinclude
 DEFS         += -DRAW_INPUT_IS_RAW -DRAW_OUTPUT_IS_RAW \
-		-DIOCTL_OK_ON_RAW_SOCKET \
+		-DIOCTL_OK_ON_RAW_SOCKET
+EXTRA_OBJS   += strlcpy.o pidfile.o
+
