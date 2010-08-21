@@ -3,6 +3,10 @@
 # Protocol Independent Multicast, Sparse-Mode version 2.0
 #
 # 2010-01-16  Joachim Nilsson <jocke@vmlinux.org>
+#       * Cleanup unportable rules.mk and simplify for build
+#         using BSD make, and similar.
+#
+# 2010-01-16  Joachim Nilsson <jocke@vmlinux.org>
 #       * Cleanup and refactoring for cross building.
 #
 # 2003-03-27  Antonin Kral <A.Kral@sh.cvut.cz>
@@ -13,13 +17,14 @@
 #
 
 # VERSION      ?= $(shell git tag -l | tail -1)
-VERSION      ?= 2.1.2-rc2
+VERSION      ?= 2.1.2-rc3
 EXEC          = pimd
 CONFIG        = $(EXEC).conf
 PKG           = $(EXEC)-$(VERSION)
 ARCHIVE       = $(PKG).tar.bz2
 
 ROOTDIR      ?= $(dir $(shell pwd))
+RM           ?= rm -f
 CC           ?= $(CROSS)gcc
 
 prefix       ?= /usr/local
@@ -39,10 +44,9 @@ ROUTER_OBJS   = inet.o kern.o main.o config.o debug.o netlink.o routesock.o \
 PIM_OBJS      = route.o vif.o timer.o mrt.o pim.o pim_proto.o rp.o
 DVMRP_OBJS    = dvmrp_proto.o
 
-# BSD Make use .include
-include rules.mk
+# BSD Make use .include "FILE"
 include config.mk
-include snmp.mk
+#include snmp.mk
 
 ## Common
 CFLAGS        = $(MCAST_INCLUDE) $(SNMPDEF) $(RSRRDEF) $(INCLUDES) $(DEFS) $(USERCOMPILE)
@@ -66,11 +70,13 @@ PURIFYFLAGS   = -cache-dir=/tmp -collector=/import/pkgs/gcc/lib/gcc-lib/sparc-su
 
 all: $(EXEC)
 
+%.o: %.c
+	@printf "  CC      $(subst $(ROOTDIR),,$(shell pwd))/$@\n"
+	@$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
+
 $(EXEC): $(OBJS) $(CMULIBS)
-ifdef Q
 	@printf "  LINK    $(subst $(ROOTDIR),,$(shell pwd))/$@\n"
-endif
-	$(Q)$(CC) $(CFLAGS) $(LDFLAGS) -Wl,-Map,$@.map -o $@ $^ $(LDLIBS$(LDLIBS-$(@)))
+	@$(CC) $(CFLAGS) $(LDFLAGS) -Wl,-Map,$@.map -o $@ $^ $(LDLIBS$(LDLIBS-$(@)))
 
 purify: $(OBJS)
 	@$(PURIFY) $(PURIFYFLAGS) $(CC) $(LDFLAGS) -o $(EXEC) $(CFLAGS) $(OBJS) $(LDLIBS)
@@ -79,38 +85,42 @@ vers.c:
 	@echo $(VERSION) | sed -e 's/.*/char todaysversion[]="&";/' > vers.c
 
 install: $(EXEC)
-	$(Q)[ -n "$(DESTDIR)" -a ! -d $(DESTDIR) ] || install -d $(DESTDIR)
-	$(Q)install -d $(DESTDIR)$(prefix)/sbin
-	$(Q)install -d $(DESTDIR)$(sysconfdir)
-	$(Q)install -d $(DESTDIR)$(datadir)
-	$(Q)install -d $(DESTDIR)$(mandir)
-	$(Q)install -m 0755 $(EXEC) $(DESTDIR)$(prefix)/sbin/$(EXEC)
-	$(Q)install -b -m 0644 $(CONFIG) $(DESTDIR)$(sysconfdir)/$(CONFIG)
-	$(Q)for file in $(DISTFILES); do \
+	@[ -n "$(DESTDIR)" -a ! -d $(DESTDIR) ] || install -d $(DESTDIR)
+	@install -d $(DESTDIR)$(prefix)/sbin
+	@install -d $(DESTDIR)$(sysconfdir)
+	@install -d $(DESTDIR)$(datadir)
+	@install -d $(DESTDIR)$(mandir)
+	@install -m 0755 $(EXEC) $(DESTDIR)$(prefix)/sbin/$(EXEC)
+	@install -b -m 0644 $(CONFIG) $(DESTDIR)$(sysconfdir)/$(CONFIG)
+	@for file in $(DISTFILES); do \
 		install -m 0644 $$file $(DESTDIR)$(datadir)/$$file; \
 	done
-	$(Q)for file in $(MANS); do \
+	@for file in $(MANS); do \
 		install -m 0644 $$file $(DESTDIR)$(mandir)/$$file; \
 	done
 
 uninstall:
-	-$(Q)$(RM) $(DESTDIR)$(prefix)/sbin/$(EXEC)
-	-$(Q)$(RM) $(DESTDIR)$(sysconfdir)/$(CONFIG)
-	-$(Q)$(RM) -r $(DESTDIR)$(datadir)
-	-$(Q)for file in $(MANS); do \
+	-@$(RM) $(DESTDIR)$(prefix)/sbin/$(EXEC)
+	-@$(RM) $(DESTDIR)$(sysconfdir)/$(CONFIG)
+	-@$(RM) -r $(DESTDIR)$(datadir)
+	-@for file in $(MANS); do \
 		$(RM) $(DESTDIR)$(mandir)/$$file; \
 	done
 
 clean: $(SNMPCLEAN)
-	-$(Q)$(RM) $(OBJS) $(EXEC)
+	-@$(RM) $(OBJS) $(EXEC)
 
 distclean:
-	-$(Q)$(RM) $(OBJS) core $(EXEC) vers.c tags TAGS *.o *.map .*.d *.out tags TAGS
+	-@$(RM) $(OBJS) core $(EXEC) vers.c tags TAGS *.o *.map .*.d *.out tags TAGS
 
 dist:
 	@echo "Building bzip2 tarball of $(PKG) in parent dir..."
 	git archive --format=tar --prefix=$(PKG)/ $(VERSION) | bzip2 >../$(ARCHIVE)
 	@(cd ..; md5sum $(ARCHIVE))
+
+build-deb:
+	@echo "Building .deb if $(PKG)..."
+	git-buildpackage --git-ignore-new --git-upstream-branch=master
 
 lint:
 	@$(LINT) $(LINTFLAGS) $(SRCS)
@@ -143,10 +153,3 @@ snmpclean:
 	@for dir in snmpd snmplib; do \
 		make -C $$dir clean;  \
 	done
-
-build-deb:
-	git-buildpackage --git-ignore-new --git-upstream-branch=master
-
-ifneq ($(MAKECMDGOALS),clean)
--include $(DEPS)
-endif

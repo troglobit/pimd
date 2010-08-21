@@ -11,7 +11,4 @@
 #SNMP_SRCS=	snmp.c
 #SNMP_OBJS=	snmp.o
 #SNMPCLEAN=	snmpclean
-# End SNMP support
-
-#CONFIGCONFIGCONFIG
 
