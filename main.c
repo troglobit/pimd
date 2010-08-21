@@ -426,7 +426,7 @@ int main(int argc, char *argv[])
 	(void)open("/", 0);
 	(void)dup2(0, 1);
 	(void)dup2(0, 2);
-#if defined(SYSV) || defined(__USE_SVID)
+#ifdef SYSV
 	(void)setpgrp();
 #else 
 #ifdef TIOCNOTTY
