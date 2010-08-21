@@ -47,7 +47,6 @@ extern int log_nmsgs;
 #define LOG_MAX_MSGS	20	/* if > 20/minute then shut up for a while */
 #define LOG_SHUT_UP	600	/* shut up for 10 minutes */
 
-
 /* Debug values definition */
 /* DVMRP reserved for future use */
 #define DEBUG_DVMRP_PRUNE     0x00000001
@@ -70,7 +69,6 @@ extern int log_nmsgs;
 #define DEBUG_TRACE           0x00000080
 #define DEBUG_TIMEOUT         0x00000100
 #define DEBUG_PKT             0x00000200
-
 
 /* Kernel related */
 #define DEBUG_IF              0x00000400
@@ -103,11 +101,5 @@ extern int log_nmsgs;
 #define DEBUG_ASSERT          ( DEBUG_PIM_ASSERT )
 #define DEBUG_ALL             0xffffffff
 
-
 #define DEBUG_DEFAULT   0xffffffff/*  default if "-d" given without value */
-
-
-
-
-
 
