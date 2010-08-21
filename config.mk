@@ -56,18 +56,18 @@ MCAST_INCLUDE = -Iinclude
 ## FreeBSD	-D__FreeBSD__ is defined by the OS
 ## FreeBSD-3.x, FreeBSD-4.x
 #INCLUDES     = -Iinclude/freebsd
-#DEFS        +=
+#DEFS        += -DHAVE_STRTONUM -DHAVE_STRLCPY -DHAVE_PIDFILE
 ## FreeBSD-2.x
 #INCLUDES     = -Iinclude/freebsd2
 #DEFS        +=
 
 ## NetBSD	-DNetBSD is defined by the OS
 #INCLUDES     = -Iinclude/netbsd
-#DEFS        +=
+#DEFS        += -DHAVE_STRTONUM -DHAVE_STRLCPY -DHAVE_PIDFILE
 
 ## OpenBSD	-DOpenBSD is defined by the OS
 #INCLUDES     = -Iinclude/openbsd
-#DEFS        +=
+#DEFS        += -DHAVE_STRTONUM -DHAVE_STRLCPY -DHAVE_PIDFILE
 
 ## BSDI		-D__bsdi__ is defined by the OS
 #INCLUDES     =
@@ -98,6 +98,7 @@ MCAST_INCLUDE = -Iinclude
 #LIB2         = -L/usr/ucblib -lucb -L/usr/lib -lsocket -lnsl
 
 ## Linux	-D__linux__ is defined by the OS
+# For uClibc based Linux systems, add -DHAVE_STRLCPY to DEFS
 INCLUDES      = -Iinclude/linux
 DEFS         += -DRAW_INPUT_IS_RAW -DRAW_OUTPUT_IS_RAW \
 		-DIOCTL_OK_ON_RAW_SOCKET \

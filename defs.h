@@ -70,12 +70,20 @@
 #include <net/route.h>
 #undef rtentry
 #endif /* bsdi or __FreeBSD_version >= 220000 */
+#if defined(HAVE_STRLCPY)
+#include <string.h>
+#endif
+#if defined(HAVE_STRTONUM)
+#include <stdlib.h>
+#endif
+#if defined(HAVE_PIDFILE)
+#include <util.h>
+#endif
 #ifdef __linux__
 #if 1
 #include <netinet/mroute.h>
 #endif /* 0 */
-/* TODO: XXX: needed for RedHat-6.1, maybe delete for other versions? */
-#if 0
+#if 0 /* TODO: XXX: needed for RedHat-6.1, maybe delete for other versions? */
 #include <linux/mroute.h>
 #endif /* 0 */
 #else
@@ -157,11 +165,6 @@ typedef void (*ihfunc_t) (int, fd_set *);
 /* XXX TODO: check FreeBSD version and add all other platforms */
 #if defined(__linux__) || (defined(SunOS) && SunOS >=56) || defined (__FreeBSD__) || defined (IRIX) || defined (__bsdi__) || defined(NetBSD) || defined(OpenBSD)
 #define HAVE_ROUTING_SOCKETS	1
-#endif
-
-/* uClibc, OpenBSD, NetBSD, FreeBSD, Solaris and Mac OS X all have strlcpy/strlcat (Glibc/Eglibc does not.) */
-#if defined(__UCLIBC__) || defined(OpenBSD) || defined(NetBSD) || defined(__FreeBSD__)
-#define HAVE_STRLCPY
 #endif
 
 #define TRUE			1
