@@ -85,9 +85,9 @@ static struct debugname {
     {   "dvmrp_detail",	    DEBUG_DVMRP_DETAIL,   5	    },
     {   "dvmrp_prunes",	    DEBUG_DVMRP_PRUNE,    8	    },
     {   "dvmrp_pruning",    DEBUG_DVMRP_PRUNE,    8	    },
-    {   "dvmrp_mrt",        DEBUG_DVMRP_ROUTE,    7	    },
     {   "dvmrp_routes",	    DEBUG_DVMRP_ROUTE,    7	    },
     {   "dvmrp_routing",    DEBUG_DVMRP_ROUTE,    7	    },
+    {   "dvmrp_mrt",        DEBUG_DVMRP_ROUTE,    7	    },
     {   "dvmrp_neighbors",  DEBUG_DVMRP_PEER,     7	    },
     {   "dvmrp_peers",	    DEBUG_DVMRP_PEER,     8	    },
     {   "dvmrp_hello",      DEBUG_DVMRP_PEER,     7	    },
@@ -104,8 +104,8 @@ static struct debugname {
     {   "traceroute",       DEBUG_TRACE,          2	    },
     {   "timeout",	    DEBUG_TIMEOUT,        2	    },
     {   "callout",	    DEBUG_TIMEOUT,        3	    },
-    {   "pkt",	            DEBUG_PKT,  	  2	    },
     {   "packets",	    DEBUG_PKT,  	  2	    },
+    {   "pkt",	            DEBUG_PKT,  	  2	    },
     {   "interfaces",       DEBUG_IF,   	  2	    },
     {   "vif",	            DEBUG_IF,   	  1	    },
     {   "kernel",           DEBUG_KERN,           2	    },
@@ -117,6 +117,7 @@ static struct debugname {
     {   "pim_detail",       DEBUG_PIM_DETAIL,     5	    },
     {   "pim_hello",        DEBUG_PIM_HELLO,      5	    },
     {   "pim_neighbors",    DEBUG_PIM_HELLO,      5	    },
+    {   "pim_peers",        DEBUG_PIM_HELLO,      5	    },
     {   "pim_register",     DEBUG_PIM_REGISTER,   5	    },
     {   "registers",        DEBUG_PIM_REGISTER,   2	    },
     {   "pim_join_prune",   DEBUG_PIM_JOIN_PRUNE, 5	    },
@@ -141,9 +142,10 @@ static struct debugname {
     {   "routes",	    DEBUG_MRT,            1	    },
     {   "routing",	    DEBUG_MRT,            1	    },
     {   "mrt",  	    DEBUG_MRT,            1	    },
+    {   "neighbors",        DEBUG_NEIGHBORS,      1	    },
     {   "routers",          DEBUG_NEIGHBORS,      6	    },
     {   "mrouters",         DEBUG_NEIGHBORS,      7	    },
-    {   "neighbors",        DEBUG_NEIGHBORS,      1	    },
+    {   "peers",            DEBUG_NEIGHBORS,      1	    },
     {   "timers",           DEBUG_TIMER,          1	    },
     {   "asserts",          DEBUG_ASSERT,         1	    },
     {   "all",              DEBUG_ALL,            2         },
@@ -219,7 +221,7 @@ static int usage(void)
 	if ((j & d->level) == d->level) {
 	    if (k++)
 		fputs(", ", stderr);
-	    if (!(k % 7))
+	    if (!(k % 5))
 		fputs("\n    ", stderr);
 
 	    fputs(d->name, stderr);
