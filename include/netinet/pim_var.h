@@ -27,7 +27,6 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-/* $Id: pim_var.h,v 1.15 2003/05/21 10:24:39 pavlin Exp $ */
 
 #ifndef _NETINET_PIM_VAR_H_
 #define _NETINET_PIM_VAR_H_
@@ -58,23 +57,15 @@ struct pimstat {
 	u_quad_t pims_snd_registers_bytes; /* sent regs. bytes (data only)   */
 };
 
-#ifndef __P
-#ifdef __STDC__
-#define __P(x)  x
-#else
-#define __P(x)  ()
-#endif
-#endif
-
 #if (defined(KERNEL)) || (defined(_KERNEL))
 extern struct pimstat pimstat;
 
 #if defined(NetBSD) || defined(__OpenBSD__)
-void pim_input __P((struct mbuf *, ...));
+void pim_input(struct mbuf *, ...);
 #elif (defined(__FreeBSD__) && (__FreeBSD_version >= 400000))
-void pim_input __P((struct mbuf *, int, int));
+void pim_input(struct mbuf *, int, int);
 #else
-void pim_input __P((struct mbuf *, int));
+void pim_input(struct mbuf *, int);
 #endif /* ! (NetBSD || OpenBSD) */
 #endif /* KERNEL */
 
@@ -104,7 +95,7 @@ SYSCTL_DECL(_net_inet_pim);
 	0,				\
 	0,				\
 }
-int	pim_sysctl __P((int *, u_int, void *, size_t *, void *, size_t));
+int	pim_sysctl(int *, u_int, void *, size_t *, void *, size_t);
 #endif /* NetBSD || OpenBSD || bsdi */
 
 #endif /* _NETINET_PIM_VAR_H_ */

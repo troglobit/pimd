@@ -1,5 +1,3 @@
-/*	$FreeBSD$	*/
-
 /*
  * Copyright (c) 1996-2000
  * University of Southern California/Information Sciences Institute.
