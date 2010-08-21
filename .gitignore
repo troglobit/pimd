@@ -2,3 +2,5 @@ vers.c
 pimd
 debian/files
 pimd.map
+*.o
+.*.d
