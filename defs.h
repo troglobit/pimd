@@ -62,6 +62,11 @@
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
 #include <netinet/igmp.h>
+#ifdef __linux__
+#include <linux/mroute.h>
+#else
+#include <netinet/ip_mroute.h>
+#endif /* __linux__ */
 #ifdef __FreeBSD__      /* sigh */
 #include <osreldate.h>
 #endif /* __FreeBSD__ */
@@ -79,16 +84,6 @@
 #if defined(HAVE_PIDFILE)
 #include <util.h>
 #endif
-#ifdef __linux__
-#if 1
-#include <netinet/mroute.h>
-#endif /* 0 */
-#if 0 /* TODO: XXX: needed for RedHat-6.1, maybe delete for other versions? */
-#include <linux/mroute.h>
-#endif /* 0 */
-#else
-#include <netinet/ip_mroute.h>
-#endif /* __linux__ */
 #include <strings.h>
 #ifdef RSRR
 #include <sys/un.h>
