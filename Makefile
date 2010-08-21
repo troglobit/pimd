@@ -44,8 +44,10 @@ ROUTER_OBJS   = inet.o kern.o main.o config.o debug.o netlink.o routesock.o \
 PIM_OBJS      = route.o vif.o timer.o mrt.o pim.o pim_proto.o rp.o
 DVMRP_OBJS    = dvmrp_proto.o
 
-# BSD Make use .include "FILE"
+# This magic trick looks like a comment, but works on BSD PMake
+#include <config.mk>
 include config.mk
+#include <snmp.mk>
 #include snmp.mk
 
 ## Common
