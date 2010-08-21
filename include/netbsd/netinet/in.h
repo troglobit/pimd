@@ -12,11 +12,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *	This product includes software developed by the University of
- *	California, Berkeley and its contributors.
- * 4. Neither the name of the University nor the names of its contributors
+ * 3. Neither the name of the University nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
  *
@@ -47,42 +43,104 @@
  * Protocols
  */
 #define	IPPROTO_IP		0		/* dummy for IP */
+#define IPPROTO_HOPOPTS		IPPROTO_IP	/* Hop-by-hop option header */
 #define	IPPROTO_ICMP		1		/* control message protocol */
 #define	IPPROTO_IGMP		2		/* group mgmt protocol */
 #define	IPPROTO_GGP		3		/* gateway^2 (deprecated) */
 #define	IPPROTO_IPIP		4		/* IP inside IP */
+#define	IPPROTO_IPV4		IPPROTO_IPIP	/* IP inside IP */
 #define	IPPROTO_TCP		6		/* tcp */
 #define	IPPROTO_EGP		8		/* exterior gateway protocol */
 #define	IPPROTO_PUP		12		/* pup */
 #define	IPPROTO_UDP		17		/* user datagram protocol */
 #define	IPPROTO_IDP		22		/* xns idp */
 #define	IPPROTO_TP		29 		/* tp-4 w/ class negotiation */
-#define	IPPROTO_ESP		50 		/* encap. security payload */
-#define	IPPROTO_AH		51 		/* authentication header */
+#define IPPROTO_IPV6		41		/* IPv6 in IPv6 */
+#define IPPROTO_ROUTING		43		/* Routing header */
+#define IPPROTO_FRAGMENT	44		/* Fragmentation/reassembly header */
+#define IPPROTO_RSVP		46		/* resource reservation */
+#define	IPPROTO_GRE		47		/* GRE encap, RFCs 1701/1702 */
+#define	IPPROTO_ESP		50		/* Encap. Security Payload */
+#define	IPPROTO_AH		51		/* Authentication header */
+#define	IPPROTO_MOBILE		55		/* IP Mobility, RFC 2004 */
+#define IPPROTO_ICMPV6		58		/* ICMP for IPv6 */
+#define IPPROTO_NONE		59		/* No next header */
+#define IPPROTO_DSTOPTS		60		/* Destination options header */
 #define	IPPROTO_EON		80		/* ISO cnlp */
+#define IPPROTO_ETHERIP		97		/* Ethernet in IPv4 */
 #define	IPPROTO_ENCAP		98		/* encapsulation header */
-#define IPPROTO_PIM		103		/* Protocol Independent Mcast */
-
+#define IPPROTO_PIM		103		/* Protocol indep. multicast */
+#define IPPROTO_IPCOMP		108		/* IP Payload Comp. Protocol */
+#define	IPPROTO_CARP		112		/* CARP */
+#define	IPPROTO_PFSYNC		240		/* PFSYNC */
 #define	IPPROTO_RAW		255		/* raw IP packet */
+
 #define	IPPROTO_MAX		256
+
+/* Only used internally, so it can be outside the range of valid IP protocols */
+#define	IPPROTO_DIVERT		258		/* Divert sockets */
 
 
 /*
+ * From FreeBSD:
+ *
  * Local port number conventions:
+ *
+ * When a user does a bind(2) or connect(2) with a port number of zero,
+ * a non-conflicting local port address is chosen.
+ * The default range is IPPORT_RESERVED through
+ * IPPORT_USERRESERVED, although that is settable by sysctl.
+ *
+ * A user may set the IPPROTO_IP option IP_PORTRANGE to change this
+ * default assignment range.
+ *
+ * The value IP_PORTRANGE_DEFAULT causes the default behavior.
+ *
+ * The value IP_PORTRANGE_HIGH changes the range of candidate port numbers
+ * into the "high" range.  These are reserved for client outbound connections
+ * which do not want to be filtered by any firewalls.
+ *
+ * The value IP_PORTRANGE_LOW changes the range to the "low" are
+ * that is (by convention) restricted to privileged processes.  This
+ * convention is based on "vouchsafe" principles only.  It is only secure
+ * if you trust the remote host to restrict these ports.
+ *
+ * The default range of ports and the high range can be changed by
+ * sysctl(3).  (net.inet.ip.port{hi}{first,last})
+ *
+ * Changing those values has bad security implications if you are
+ * using a a stateless firewall that is allowing packets outside of that
+ * range in order to allow transparent outgoing connections.
+ *
+ * Such a firewall configuration will generally depend on the use of these
+ * default values.  If you change them, you may find your Security
+ * Administrator looking for you with a heavy object.
+ */
+
+/*
  * Ports < IPPORT_RESERVED are reserved for
  * privileged processes (e.g. root).
  * Ports > IPPORT_USERRESERVED are reserved
  * for servers, not necessarily privileged.
  */
 #define	IPPORT_RESERVED		1024
-#define	IPPORT_USERRESERVED	5000
+#define	IPPORT_USERRESERVED	49151
 
 /*
- * Internet address (a structure for historical reasons)
+ * Default local port range to use by setting IP_PORTRANGE_HIGH
+ */
+#define IPPORT_HIFIRSTAUTO	49152
+#define IPPORT_HILASTAUTO	65535
+
+/*
+ * IP Version 4 Internet address (a structure for historical reasons)
  */
 struct in_addr {
-	u_int32_t s_addr;
+	in_addr_t s_addr;
 };
+
+/* last return value of *_input(), meaning "all job for this pkt is done".  */
+#define	IPPROTO_DONE		257
 
 /*
  * Definitions of bits in internet address integers.
@@ -144,18 +202,22 @@ struct in_addr {
 
 #define	INADDR_UNSPEC_GROUP	__IPADDR(0xe0000000)	/* 224.0.0.0 */
 #define	INADDR_ALLHOSTS_GROUP	__IPADDR(0xe0000001)	/* 224.0.0.1 */
+#define	INADDR_ALLROUTERS_GROUP __IPADDR(0xe0000002)	/* 224.0.0.2 */
+#define	INADDR_CARP_GROUP	__IPADDR(0xe0000012)	/* 224.0.0.18 */
+#define	INADDR_PFSYNC_GROUP	__IPADDR(0xe00000f0)	/* 224.0.0.240 */
+#define INADDR_MAX_LOCAL_GROUP	__IPADDR(0xe00000ff)	/* 224.0.0.255 */
 
 #define	IN_LOOPBACKNET		127			/* official! */
 
 /*
- * Socket address, internet style.
+ * IP Version 4 socket address.
  */
 struct sockaddr_in {
-	u_int8_t  sin_len;
-	u_int8_t  sin_family;
-	u_int16_t sin_port;
-	struct	  in_addr sin_addr;
-	int8_t	  sin_zero[8];
+	u_int8_t    sin_len;
+	sa_family_t sin_family;
+	in_port_t   sin_port;
+	struct	    in_addr sin_addr;
+	int8_t	    sin_zero[8];
 };
 
 /*
@@ -167,7 +229,11 @@ struct sockaddr_in {
  */
 struct ip_opts {
 	struct in_addr	ip_dst;		/* first hop, 0 w/o src rt */
+#if defined(__cplusplus)
+	int8_t		Ip_opts[40];	/* cannot have same name as class */
+#else
 	int8_t		ip_opts[40];	/* actually variable in size */
+#endif
 };
 
 /*
@@ -187,15 +253,54 @@ struct ip_opts {
 #define	IP_MULTICAST_LOOP	11   /* u_char; set/get IP multicast loopback */
 #define	IP_ADD_MEMBERSHIP	12   /* ip_mreq; add an IP group membership */
 #define	IP_DROP_MEMBERSHIP	13   /* ip_mreq; drop an IP group membership */
-#define	IP_RECVIF		20   /* bool; receive reception if w/dgram */
-#define	IP_ERRORMTU		21   /* int; get MTU of last xmit = EMSGSIZE */
+
+/* 14-17 left empty for future compatibility with FreeBSD */
+
+#define IP_PORTRANGE		19   /* int; range to choose for unspec port */
+#define IP_AUTH_LEVEL		20   /* int; authentication used */
+#define IP_ESP_TRANS_LEVEL	21   /* int; transport encryption */
+#define IP_ESP_NETWORK_LEVEL	22   /* int; full-packet encryption */
+#define IP_IPSEC_LOCAL_ID	23   /* buf; IPsec local ID */
+#define IP_IPSEC_REMOTE_ID	24   /* buf; IPsec remote ID */
+#define IP_IPSEC_LOCAL_CRED	25   /* buf; IPsec local credentials */
+#define IP_IPSEC_REMOTE_CRED	26   /* buf; IPsec remote credentials */
+#define IP_IPSEC_LOCAL_AUTH	27   /* buf; IPsec local auth material */
+#define IP_IPSEC_REMOTE_AUTH	28   /* buf; IPsec remote auth material */
+#define IP_IPCOMP_LEVEL		29   /* int; compression used */
+#define IP_RECVIF		30   /* bool; receive reception if w/dgram */
+#define IP_RECVTTL		31   /* bool; receive IP TTL w/dgram */
+#define IP_MINTTL		32   /* minimum TTL for packet or drop */
+#define IP_RECVDSTPORT		33   /* bool; receive IP dst port w/dgram */
+
+/*
+ * Security levels - IPsec, not IPSO
+ */
+
+#define IPSEC_LEVEL_BYPASS      0x00    /* Bypass policy altogether */
+#define IPSEC_LEVEL_NONE        0x00    /* Send clear, accept any */
+#define IPSEC_LEVEL_AVAIL       0x01    /* Send secure if SA available */
+#define IPSEC_LEVEL_USE         0x02    /* Send secure, accept any */
+#define IPSEC_LEVEL_REQUIRE     0x03    /* Require secure inbound, also use */
+#define IPSEC_LEVEL_UNIQUE      0x04    /* Use outbound SA that is unique */
+#define IPSEC_LEVEL_DEFAULT     IPSEC_LEVEL_AVAIL
+
+#define IPSEC_AUTH_LEVEL_DEFAULT IPSEC_LEVEL_DEFAULT
+#define IPSEC_ESP_TRANS_LEVEL_DEFAULT IPSEC_LEVEL_DEFAULT
+#define IPSEC_ESP_NETWORK_LEVEL_DEFAULT IPSEC_LEVEL_DEFAULT
+#define IPSEC_IPCOMP_LEVEL_DEFAULT IPSEC_LEVEL_DEFAULT
 
 /*
  * Defaults and limits for options
  */
 #define	IP_DEFAULT_MULTICAST_TTL  1	/* normally limit m'casts to 1 hop  */
 #define	IP_DEFAULT_MULTICAST_LOOP 1	/* normally hear sends if a member  */
-#define	IP_MAX_MEMBERSHIPS	20	/* per socket; must fit in one mbuf */
+/*
+ * The imo_membership vector for each socket starts at IP_MIN_MEMBERSHIPS
+ * and is dynamically allocated at run-time, bounded by IP_MAX_MEMBERSHIPS,
+ * and is reallocated when needed, sized according to a power-of-two increment.
+ */
+#define	IP_MIN_MEMBERSHIPS	15
+#define	IP_MAX_MEMBERSHIPS	4095
 
 /*
  * Argument structure for IP_ADD_MEMBERSHIP and IP_DROP_MEMBERSHIP.
@@ -206,19 +311,32 @@ struct ip_mreq {
 };
 
 /*
+ * Argument for IP_PORTRANGE:
+ * - which range to search when port is unspecified at bind() or connect()
+ */
+#define IP_PORTRANGE_DEFAULT	0	/* default range */
+#define IP_PORTRANGE_HIGH	1	/* "high" - request firewall bypass */
+#define IP_PORTRANGE_LOW	2	/* "low" - vouchsafe security */
+
+/*
+ * Buffer lengths for strings containing printable IP addresses
+ */
+#define INET_ADDRSTRLEN		16
+
+/*
  * Definitions for inet sysctl operations.
  *
  * Third level is protocol number.
  * Fourth level is desired variable within that protocol.
  */
-#define	IPPROTO_MAXID	(IPPROTO_IDP + 1)	/* don't list to IPPROTO_MAX */
+#define	IPPROTO_MAXID	(IPPROTO_DIVERT + 1)	/* don't list to IPPROTO_MAX */
 
 #define	CTL_IPPROTO_NAMES { \
 	{ "ip", CTLTYPE_NODE }, \
 	{ "icmp", CTLTYPE_NODE }, \
 	{ "igmp", CTLTYPE_NODE }, \
 	{ "ggp", CTLTYPE_NODE }, \
-	{ 0, 0 }, \
+	{ "ipip", CTLTYPE_NODE }, \
 	{ 0, 0 }, \
 	{ "tcp", CTLTYPE_NODE }, \
 	{ 0, 0 }, \
@@ -236,7 +354,6 @@ struct ip_mreq {
 	{ 0, 0 }, \
 	{ 0, 0 }, \
 	{ 0, 0 }, \
-	{ "idp", CTLTYPE_NODE }, \
 	{ 0, 0 }, \
 	{ 0, 0 }, \
 	{ 0, 0 }, \
@@ -262,11 +379,15 @@ struct ip_mreq {
 	{ 0, 0 }, \
 	{ 0, 0 }, \
 	{ 0, 0 }, \
+	{ "gre", CTLTYPE_NODE }, \
 	{ 0, 0 }, \
 	{ 0, 0 }, \
+	{ "esp", CTLTYPE_NODE }, \
+	{ "ah", CTLTYPE_NODE }, \
 	{ 0, 0 }, \
 	{ 0, 0 }, \
 	{ 0, 0 }, \
+	{ "mobileip", CTLTYPE_NODE }, \
 	{ 0, 0 }, \
 	{ 0, 0 }, \
 	{ 0, 0 }, \
@@ -308,16 +429,168 @@ struct ip_mreq {
 	{ 0, 0 }, \
 	{ 0, 0 }, \
 	{ 0, 0 }, \
-	{ 0, 0 }, \
-	{ 0, 0 }, \
-	{ 0, 0 }, \
-	{ 0, 0 }, \
+	{ "etherip", CTLTYPE_NODE }, \
 	{ 0, 0 }, \
 	{ 0, 0 }, \
 	{ 0, 0 }, \
 	{ 0, 0 }, \
 	{ 0, 0 }, \
 	{ "pim", CTLTYPE_NODE }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ "ipcomp", CTLTYPE_NODE }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ "carp", CTLTYPE_NODE }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ "pfsync", CTLTYPE_NODE }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ 0, 0 }, \
+	{ "divert", CTLTYPE_NODE }, \
 }
 
 /*
@@ -329,35 +602,194 @@ struct ip_mreq {
 #ifdef notyet
 #define	IPCTL_DEFMTU		4	/* default MTU */
 #endif
-#define	IPCTL_FORWSRCRT		5	/* forward source-routed packets */
+#define	IPCTL_SOURCEROUTE	5	/* may perform source routes */
 #define	IPCTL_DIRECTEDBCAST	6	/* default broadcast behavior */
-#define	IPCTL_ALLOWSRCRT	7	/* allow/drop all source-routed pkts */
-#define	IPCTL_SUBNETSARELOCAL	8	/* treat subnets as local addresses */
-#define	IPCTL_MTUDISC		9	/* allow path MTU discovery */
-#define	IPCTL_MAXID	       10
+#define IPCTL_IPPORT_FIRSTAUTO	7
+#define IPCTL_IPPORT_LASTAUTO	8
+#define IPCTL_IPPORT_HIFIRSTAUTO 9
+#define IPCTL_IPPORT_HILASTAUTO	10
+#define	IPCTL_IPPORT_MAXQUEUE	11
+#define	IPCTL_ENCDEBUG		12
+#ifdef notdef	/*obsolete*/
+#define IPCTL_GIF_TTL		13	/* default TTL for gif encap packet */
+#endif
+#define IPCTL_IPSEC_EXPIRE_ACQUIRE 14   /* How long to wait for key mgmt. */
+#define IPCTL_IPSEC_EMBRYONIC_SA_TIMEOUT	15 /* new SA lifetime */
+#define IPCTL_IPSEC_REQUIRE_PFS 16
+#define IPCTL_IPSEC_SOFT_ALLOCATIONS            17
+#define IPCTL_IPSEC_ALLOCATIONS 18
+#define IPCTL_IPSEC_SOFT_BYTES  19
+#define IPCTL_IPSEC_BYTES       20
+#define IPCTL_IPSEC_TIMEOUT     21
+#define IPCTL_IPSEC_SOFT_TIMEOUT 22
+#define IPCTL_IPSEC_SOFT_FIRSTUSE 23
+#define IPCTL_IPSEC_FIRSTUSE    24
+#define IPCTL_IPSEC_ENC_ALGORITHM 25
+#define IPCTL_IPSEC_AUTH_ALGORITHM 26
+#define	IPCTL_MTUDISC		27	/* allow path MTU discovery */
+#define	IPCTL_MTUDISCTIMEOUT	28	/* allow path MTU discovery */
+#define	IPCTL_IPSEC_IPCOMP_ALGORITHM	29
+#define	IPCTL_IFQUEUE		30
+#define	IPCTL_MFORWARDING	31
+#define	IPCTL_MULTIPATH		32
+#define	IPCTL_STATS		33	/* IP statistics */
+#define	IPCTL_MRTPROTO		34	/* type of multicast */
+#define	IPCTL_MRTSTATS		35
+#define	IPCTL_ARPQUEUED		36
+#define	IPCTL_MAXID		37
 
 #define	IPCTL_NAMES { \
 	{ 0, 0 }, \
 	{ "forwarding", CTLTYPE_INT }, \
 	{ "redirect", CTLTYPE_INT }, \
 	{ "ttl", CTLTYPE_INT }, \
-	{ "mtu", CTLTYPE_INT }, \
-	{ "forwsrcrt", CTLTYPE_INT }, \
+	/* { "mtu", CTLTYPE_INT }, */ { 0, 0 }, \
+	{ "sourceroute", CTLTYPE_INT }, \
 	{ "directed-broadcast", CTLTYPE_INT }, \
-	{ "allowsrcrt", CTLTYPE_INT }, \
-	{ "subnetsarelocal", CTLTYPE_INT }, \
+	{ "portfirst", CTLTYPE_INT }, \
+	{ "portlast", CTLTYPE_INT }, \
+	{ "porthifirst", CTLTYPE_INT }, \
+	{ "porthilast", CTLTYPE_INT }, \
+	{ "maxqueue", CTLTYPE_INT }, \
+	{ "encdebug", CTLTYPE_INT }, \
+	{ 0, 0 }, \
+	{ "ipsec-expire-acquire", CTLTYPE_INT }, \
+	{ "ipsec-invalid-life", CTLTYPE_INT }, \
+	{ "ipsec-pfs", CTLTYPE_INT }, \
+	{ "ipsec-soft-allocs", CTLTYPE_INT }, \
+	{ "ipsec-allocs", CTLTYPE_INT }, \
+	{ "ipsec-soft-bytes", CTLTYPE_INT }, \
+	{ "ipsec-bytes", CTLTYPE_INT }, \
+	{ "ipsec-timeout", CTLTYPE_INT }, \
+	{ "ipsec-soft-timeout", CTLTYPE_INT }, \
+	{ "ipsec-soft-firstuse", CTLTYPE_INT }, \
+	{ "ipsec-firstuse", CTLTYPE_INT }, \
+	{ "ipsec-enc-alg", CTLTYPE_STRING }, \
+	{ "ipsec-auth-alg", CTLTYPE_STRING }, \
 	{ "mtudisc", CTLTYPE_INT }, \
+	{ "mtudisctimeout", CTLTYPE_INT }, \
+	{ "ipsec-comp-alg", CTLTYPE_STRING }, \
+	{ "ifq", CTLTYPE_NODE }, \
+	{ "mforwarding", CTLTYPE_INT }, \
+	{ "multipath", CTLTYPE_INT }, \
+	{ "stats", CTLTYPE_STRUCT }, \
+	{ "mrtproto", CTLTYPE_INT }, \
+	{ "mrtstats", CTLTYPE_STRUCT }, \
+	{ "arpqueued", CTLTYPE_INT }, \
+}
+#define	IPCTL_VARS { \
+	NULL, \
+	&ipforwarding, \
+	&ipsendredirects, \
+	&ip_defttl, \
+	NULL, \
+	NULL, \
+	&ip_directedbcast, \
+	&ipport_firstauto, \
+	&ipport_lastauto, \
+	&ipport_hifirstauto, \
+	&ipport_hilastauto, \
+	&ip_maxqueue, \
+	&encdebug, \
+	NULL, \
+	&ipsec_expire_acquire, \
+	&ipsec_keep_invalid, \
+	&ipsec_require_pfs, \
+	&ipsec_soft_allocations, \
+	&ipsec_exp_allocations, \
+	&ipsec_soft_bytes, \
+	&ipsec_exp_bytes, \
+	&ipsec_exp_timeout, \
+	&ipsec_soft_timeout, \
+	&ipsec_soft_first_use, \
+	&ipsec_exp_first_use, \
+	NULL, \
+	NULL, \
+	NULL, \
+	NULL, \
+	NULL, \
+	NULL, \
+	&ipmforwarding, \
+	&ipmultipath, \
+	NULL, \
+	NULL, \
+	NULL, \
+	&la_hold_total \
 }
 
+/* INET6 stuff */
+#define __KAME_NETINET_IN_H_INCLUDED_
+#include <netinet6/in6.h>
+#undef __KAME_NETINET_IN_H_INCLUDED_
 
-#ifdef _KERNEL
-extern	struct in_addr zeroin_addr;
+#ifndef _KERNEL
 
-int	in_broadcast __P((struct in_addr, struct ifnet *));
-int	in_canforward __P((struct in_addr));
-int	in_cksum __P((struct mbuf *, int));
-int	in_localaddr __P((struct in_addr));
-void	in_socktrim __P((struct sockaddr_in *));
+#include <sys/cdefs.h>
+
+__BEGIN_DECLS
+int	   bindresvport(int, struct sockaddr_in *);
+struct sockaddr;
+int	   bindresvport_sa(int, struct sockaddr *);
+__END_DECLS
+
+#else
+/*
+ * in_cksum_phdr:
+ *
+ *	Compute significant parts of the IPv4 checksum pseudo-header
+ *	for use in a delayed TCP/UDP checksum calculation.
+ *
+ *	Args:
+ *
+ *		src		Source IP address
+ *		dst		Destination IP address
+ *		lenproto	htons(proto-hdr-len + proto-number)
+ */
+static __inline u_int16_t __attribute__((__unused__))
+in_cksum_phdr(u_int32_t src, u_int32_t dst, u_int32_t lenproto)
+{
+	u_int32_t sum;
+
+	sum = lenproto +
+	      (u_int16_t)(src >> 16) +
+	      (u_int16_t)(src /*& 0xffff*/) +
+	      (u_int16_t)(dst >> 16) +
+	      (u_int16_t)(dst /*& 0xffff*/);
+
+	sum = (u_int16_t)(sum >> 16) + (u_int16_t)(sum /*& 0xffff*/);
+
+	if (sum > 0xffff)
+		sum -= 0xffff;
+
+	return (sum);
+}
+
+/*
+ * in_cksum_addword:
+ *
+ *	Add the two 16-bit network-order values, carry, and return.
+ */
+static __inline u_int16_t __attribute__((__unused__))
+in_cksum_addword(u_int16_t a, u_int16_t b)
+{
+	u_int32_t sum = a + b;
+
+	if (sum > 0xffff)
+		sum -= 0xffff;
+
+	return (sum);
+}
+
+extern	   struct in_addr zeroin_addr;
+
+int	   in_broadcast(struct in_addr, struct ifnet *);
+int	   in_canforward(struct in_addr);
+int	   in_cksum(struct mbuf *, int);
+int	   in4_cksum(struct mbuf *, u_int8_t, int, int);
+void	   in_delayed_cksum(struct mbuf *);
+int	   in_localaddr(struct in_addr, u_int);
+void	   in_socktrim(struct sockaddr_in *);
+char	  *inet_ntoa(struct in_addr);
 
 #define	in_hosteq(s,t)	((s).s_addr == (t).s_addr)
 #define	in_nullhost(x)	((x).s_addr == INADDR_ANY)
@@ -365,5 +797,5 @@ void	in_socktrim __P((struct sockaddr_in *));
 #define	satosin(sa)	((struct sockaddr_in *)(sa))
 #define	sintosa(sin)	((struct sockaddr *)(sin))
 #define	ifatoia(ifa)	((struct in_ifaddr *)(ifa))
-#endif
-#endif /* !_NETINET_IN_H_ */
+#endif /* _KERNEL */
+#endif /* _NETINET_IN_H_ */
