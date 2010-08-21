@@ -1,0 +1,9 @@
+This directory contains missing system headers.
+
+These files should only be used as a last ditch effort on systems that miss, e.g.
+netinet/ip_mroute.h, netinet/in.h or similar.  Some effort have been made to see
+to different locations across systems in the file defs.h.
+
+In most cases, the use of these files is activated by uncommenting the matching
+section in config.mk, or adding to the DEFS and INCLUDES.
+
