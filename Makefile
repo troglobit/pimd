@@ -71,11 +71,11 @@ PURIFYFLAGS   = -cache-dir=/tmp -collector=/import/pkgs/gcc/lib/gcc-lib/sparc-su
 all: $(EXEC)
 
 .c.o:
-	@printf "  CC      $(subst $(ROOTDIR),,$(shell pwd))/$@\n"
+	@printf "  CC      $@\n"
 	@$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
 
 $(EXEC): $(OBJS)
-	@printf "  LINK    $(subst $(ROOTDIR),,$(shell pwd))/$@\n"
+	@printf "  LINK    $@\n"
 	@$(CC) $(CFLAGS) $(LDFLAGS) -Wl,-Map,$@.map -o $@ $(OBJS) $(LDLIBS)
 
 purify: $(OBJS)
