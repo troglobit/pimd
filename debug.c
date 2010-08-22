@@ -277,7 +277,7 @@ void cdump(int i __attribute__((unused)))
 
     fp = fopen(cachefilename, "w");
     if (fp != NULL) {
-        /* TODO: implement it:
+        /* XXX: TODO: implement it:
            dump_cache(fp);
         */
         (void) fclose(fp);
@@ -292,12 +292,12 @@ void dump_vifs(FILE *fp)
     int width;
     int i;
 
-    fprintf(fp, "\nVirtual Interface Table\n %-4s %-17s %-20s %-8s %-14s %s",
+    fprintf(fp, "\nVirtual Interface Table\n %-3s  %-15s  %-20s %-8s %-14s %s",
             "Vif", "Local-Address", "Subnet", "Thresh", "Flags",
             "Neighbors\n");
 
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
-        fprintf(fp, "  %-3u %-17s ", vifi, inet_fmt(v->uv_lcl_addr, s1, sizeof(s1)));
+        fprintf(fp, " %3u  %-15s  ", vifi, inet_fmt(v->uv_lcl_addr, s1, sizeof(s1)));
         if (v->uv_flags & VIFF_REGISTER)
             fprintf(fp, "%-20s ", v->uv_name);
         else
@@ -330,7 +330,7 @@ void dump_vifs(FILE *fp)
             /* Print the first neighbor on the same line */
             for (i = width; i <= 15; i++)
                 fprintf(fp, " ");
-            fprintf(fp, "%-12s\n", inet_fmt(n->address, s1, sizeof(s1)));
+            fprintf(fp, "%-15s\n", inet_fmt(n->address, s1, sizeof(s1)));
             for (n = n->next; n != NULL; n = n->next)
                 fprintf(fp, "%64s %-15s\n", "", inet_fmt(n->address, s1, sizeof(s1)));
 

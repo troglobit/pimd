@@ -44,6 +44,7 @@
 #include "defs.h"
 #include <err.h>
 #include <getopt.h>
+#include <paths.h>
 #ifdef SNMP
 #include "snmp.h"
 #endif
@@ -200,6 +201,51 @@ static void do_randomize(void)
 #endif
 }
 
+/* Figure out the PID of a running daemon. */
+static pid_t daemon_pid(void)
+{
+    int result;
+    char *path = NULL;
+    FILE *fp;
+    pid_t pid = -1;
+
+    result = asprintf(&path, "%s%s.pid", _PATH_VARRUN, __progname);
+    if (result == -1 || path == NULL)
+	return -1;
+
+    fp = fopen(path, "r");
+    if (!fp) {
+	free(path);
+	return -1;
+    }
+
+    result = fscanf(fp, "%d", &pid);
+    fclose(fp);
+    free(path);
+
+    return pid;
+}
+
+/* Send signal to running daemon and the show resulting file. */
+static void killshow(int signo, char *file)
+{
+    pid_t pid = daemon_pid();
+    char buf[100];
+
+    if (pid > 0) {
+	if (file)
+	    remove(file);
+	kill(pid, signo);
+	if (file) {
+	    int result;
+
+	    usleep(200);
+	    snprintf(buf, sizeof(buf), "cat %s", file);
+	    result = system(buf);
+	}
+    }
+}
+
 static int usage(void)
 {
     size_t i, j, k;
@@ -212,6 +258,9 @@ static int usage(void)
     fputs("    -h, --help           Show this help text\n", stderr);
     fputs("    -N, --disable-vifs   Disable all virtual interfaces (phyint) by default\n", stderr);
     fprintf(stderr, "    -v, --version        Show %s version\n", __progname);
+    fputs("    -r, --show-routes    Show state of VIFs and multicast routing tables\n", stderr);
+//    fputs("    -i, --show-cache      Show internal cache tables\n", stderr);
+//    fputs("    -p,--show-debug      Show debug dump, only if debug is enabled\n", stderr);
     fputs("\n", stderr);
 
     j = 0xffffffff;
@@ -248,12 +297,15 @@ int main(int argc, char *argv[])
 	{"disable-vifs", 0, 0, 'N'},
 	{"help", 0, 0, 'h'},
 	{"version", 0, 0, 'v'},
+	{"show-routes", 0, 0, 'r'},
+//	{"show-cache", 0, 0, 'i'},
+//	{"show-debug", 0, 0, 'p'},
 	{0, 0, 0, 0}
     };
     
     snprintf(versionstring, sizeof (versionstring), "pimd version %s", todaysversion);
 
-    while ((ch = getopt_long (argc, argv, "c:d::fhNP::v", long_options, NULL)) != EOF) {
+    while ((ch = getopt_long (argc, argv, "c:d::fhNP::vr", long_options, NULL)) != EOF) {
 	switch (ch) {
 	    case 'c':
 		configfilename = optarg;
@@ -318,6 +370,18 @@ int main(int argc, char *argv[])
 		printf("%s\n", versionstring);
 		return 0;
 
+	    case 'r':
+		killshow(SIGUSR1, _PATH_PIMD_DUMP);
+		return 0;
+#if 0 /* XXX: TODO */
+	    case 'i':
+		killshow(SIGUSR2, _PATH_PIMD_CACHE);
+		return 0;
+
+	    case 'p':
+		killshow(SIGQUIT, NULL);
+		return 0;
+#endif
 	    default:
 		return usage();
 	}
