@@ -71,42 +71,60 @@ Regardless of the debug level,
 always writes warning and error messages to the system log daemon.
 Debug levels have the following effects:
 .Pp
-.Bl -tag -compact -offset indent
-.It packet
+.Bl -item -compact -offset indent
+.It
+.Cm packet
 Debug inbound/outbout packets
-.It prunes
+.It
+.Cm prunes
 Pruning operations, or pruned routes
-.It routes
+.It
+.Cm routes
 Routing messages
-.It rtdetail
+.It
+.Cm rtdetail
 Detailed routing information
-.It peers
+.It
+.Cm peers
 Neighbor gossip
-.It cache
+.It
+.Cm cache
 Debug routing cache
-.It timeout
+.It
+.Cm timeout
 Debug timeouts
-.It interface
+.It
+.Cm interface
 Show interface, or vif, debug messages
-.It groups
+.It
+.Cm groups
 Debug group memberships
-.It mtrace
+.It
+.Cm mtrace
 Multicast traceroute information
-.It igmp
+.It
+.Cm igmp
 Debug IGMP messages
-.It icmp
+.It
+.Cm icmp
 Debug ICMP messages
-.It rsrr
+.It
+.Cm rsrr
 Debug RSRR messages
-.It pim
+.It
+.Cm pim
 All PIM messages
-.It pim_routes
+.It
+.Cm pim_routes
 PIM routing messages
-.It pim_bsr
+.It
+.Cm pim_bsr
 PIM bootstrap router messages
-.It pim_detail
+.It
+.Cm pim_detail
 Detailed PIM debug
-.It pim_hello
+.It
+.Cm pim_hello
 Debug hello messages to/from neighbors
 .El
 .It Fl f, -foreground
