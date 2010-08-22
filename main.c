@@ -252,15 +252,16 @@ static int usage(void)
     struct debugname *d;
 
     fprintf(stderr, "Usage: %s [-fhN] [-c FILE] [-d [LEVEL][,LEVEL...]]\n\n", __progname);
-    fputs("    -c, --config=FILE    Configuration file to use, default /etc/pimd.conf\n", stderr);
-    fputs("    -d, --debug[=LEVEL]  Debug level, see below for valid levels\n", stderr);
-    fputs("    -f, --foreground     Run in foreground, do not detach from calling terminal\n", stderr);
-    fputs("    -h, --help           Show this help text\n", stderr);
-    fputs("    -N, --disable-vifs   Disable all virtual interfaces (phyint) by default\n", stderr);
-    fprintf(stderr, "    -v, --version        Show %s version\n", __progname);
-    fputs("    -r, --show-routes    Show state of VIFs and multicast routing tables\n", stderr);
-//    fputs("    -i, --show-cache      Show internal cache tables\n", stderr);
-//    fputs("    -p,--show-debug      Show debug dump, only if debug is enabled\n", stderr);
+    fputs("  -c, --config=FILE    Configuration file to use, default /etc/pimd.conf\n", stderr);
+    fputs("  -d, --debug[=LEVEL]  Debug level, see below for valid levels\n", stderr);
+    fputs("  -f, --foreground     Run in foreground, do not detach from calling terminal\n", stderr);
+    fputs("  -h, --help           Show this help text\n", stderr);
+    fputs("  -N, --disable-vifs   Disable all virtual interfaces (phyint) by default\n", stderr);
+    fprintf(stderr, "  -v, --version        Show %s version\n", __progname);
+    fputs("  -q, --quit-daemon    Send SIGTERM to a running daemon\n", stderr);
+    fputs("  -r, --show-routes    Show state of VIFs and multicast routing tables\n", stderr);
+//    fputs("  -i, --show-cache      Show internal cache tables\n", stderr);
+//    fputs("  -p,--show-debug      Show debug dump, only if debug is enabled\n", stderr);
     fputs("\n", stderr);
 
     j = 0xffffffff;
@@ -297,6 +298,7 @@ int main(int argc, char *argv[])
 	{"disable-vifs", 0, 0, 'N'},
 	{"help", 0, 0, 'h'},
 	{"version", 0, 0, 'v'},
+	{"quit-daemon", 0, 0, 'q'},
 	{"show-routes", 0, 0, 'r'},
 //	{"show-cache", 0, 0, 'i'},
 //	{"show-debug", 0, 0, 'p'},
@@ -305,7 +307,7 @@ int main(int argc, char *argv[])
     
     snprintf(versionstring, sizeof (versionstring), "pimd version %s", todaysversion);
 
-    while ((ch = getopt_long (argc, argv, "c:d::fhNP::vr", long_options, NULL)) != EOF) {
+    while ((ch = getopt_long (argc, argv, "c:d::fhNP::vqr", long_options, NULL)) != EOF) {
 	switch (ch) {
 	    case 'c':
 		configfilename = optarg;
@@ -368,6 +370,10 @@ int main(int argc, char *argv[])
 
 	    case 'v':
 		printf("%s\n", versionstring);
+		return 0;
+
+	    case 'q':
+		killshow(SIGTERM, NULL);
 		return 0;
 
 	    case 'r':
