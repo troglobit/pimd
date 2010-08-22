@@ -71,66 +71,58 @@ Regardless of the debug level,
 always writes warning and error messages to the system log daemon.
 Debug levels have the following effects:
 .Pp
-.Bl -item -compact -offset indent
-.It
-.Cm packet
+.\".Bl -item -compact -offset indent
+.Bl -tag -width TERM -compact
+.It Cm packet
 Debug inbound/outbout packets
-.It
-.Cm prunes
+.It Cm prunes
 Pruning operations, or pruned routes
-.It
-.Cm routes
+.It Cm routes
 Routing messages
-.It
-.Cm rtdetail
+.It Cm rtdetail
 Detailed routing information
-.It
-.Cm peers
+.It Cm peers
 Neighbor gossip
-.It
-.Cm cache
+.It Cm cache
 Debug routing cache
-.It
-.Cm timeout
+.It Cm timeout
 Debug timeouts
-.It
-.Cm interface
+.It Cm interface
 Show interface, or vif, debug messages
-.It
-.Cm groups
+.It Cm groups
 Debug group memberships
-.It
-.Cm mtrace
+.It Cm mtrace
 Multicast traceroute information
-.It
-.Cm igmp
+.It Cm igmp
 Debug IGMP messages
-.It
-.Cm icmp
+.It Cm icmp
 Debug ICMP messages
-.It
-.Cm rsrr
+.It Cm rsrr
 Debug RSRR messages
-.It
-.Cm pim
+.It Cm pim
 All PIM messages
-.It
-.Cm pim_routes
+.It Cm pim_routes
 PIM routing messages
-.It
-.Cm pim_bsr
+.It Cm pim_bsr
 PIM bootstrap router messages
-.It
-.Cm pim_detail
+.It Cm pim_detail
 Detailed PIM debug
-.It
-.Cm pim_hello
+.It Cm pim_hello
 Debug hello messages to/from neighbors
 .El
 .It Fl f, -foreground
 Run in foreground, do not detach from calling terminal
+.It Fl l, -reload-config
+Tell a running pimd to reload its configuration.  This is done by sending
+a SIGHUP to the PID listed in
+.Pa /var/run/pimd.pid .
 .It Fl N, -disable-vifs
 Disable all virtual interfaces (phyint) by default
+.It Fl q, --quit-daemon
+Tell a running pimd to quit.  Similar to --reload-config but this command sends SIGTERM.
+.It Fl r, --show-routes
+Show state of VIFs and multicast routing tables. This is command sends SIGUSR1 to a
+running pimd, similar to --reload-config.
 .It Fl v, -version
 Show
 .Nm
