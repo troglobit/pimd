@@ -2,27 +2,25 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.Dd $Mdocdate: May 26, 2010 $
+.Dd $Mdocdate: Aug 22 2010 $
 .\" Please adjust this date whenever revising the manpage.
 .Dt PIMD 8 SMM
 .Os
 .Sh NAME
 .Nm pimd
-.Nd PIMv2-SM dynamic multicast routing daemon
+.Nd PIM-SM v2 dynamic multicast routing daemon
 .Sh SYNOPSIS
 .Nm pimd
-.Op Fl fhN
-.Op Fl c Ar file
-.Op Fl d Op Ar level[,level...]
+.Op Fl fhlNqr
+.Op Fl c Ar FILE
+.Op Fl d Op Ar [LEVEL[,LEVEL,...]
 .Sh DESCRIPTION
 .Nm
-is the original USC implementation of the PIM-SM dynamic multicast routing protocol.
-Protocol Independent Multicast - Sparse Mode,
-.Nm
-, complies with version 2 of the protocol, which is in wide use today and is the
-multicast routing protocol used in many proprietary routers.
+is a lightweight stand-alone PIM-SM v2 multicast routing daemon.  This is the
+original USC (netweb/catarina) implementation of the protocol, which nowadays is
+fully free to use under the 3-clause BSD license.
 .Pp
-The PIM-SM architecture:
+Protocol Independent Multicast - Sparse Mode (PIM-SM):
 .Bl -bullet -compact
 .It
 maintains the traditional IP multicast service model of receiver-initiated membership;
@@ -43,8 +41,8 @@ The robustness, flexibility, and scaling properties of this architecture make it
 suited to large heterogeneous internetworks.
 .Pp
 .Nm
-does however only implement RFC 2362, which has been obsoleted by RFC 4601.  Please 
-see the TODO file for more information on this.
+implements RFC 2362, which has been obsoleted by RFC 4601.  Please see the TODO file
+for more information on this.
 .Sh OPTIONS
 This program follows the usual UNIX command line syntax, with long options starting
 with two dashes (`-').  The options are as follows:
@@ -54,7 +52,7 @@ Print a help message and exit.
 .It Fl c, -config=FILE
 Specify an alternative configuration file, instead of the default
 .Pa /etc/pimd.conf .
-.It Fl d, -debug[=level[,level...]
+.It Fl d, -debug[=LEVEL[,LEVEL...]
 By default,
 .Nm
 detaches from the invoking terminal.
@@ -71,8 +69,7 @@ Regardless of the debug level,
 always writes warning and error messages to the system log daemon.
 Debug levels have the following effects:
 .Pp
-.\".Bl -item -compact -offset indent
-.Bl -tag -width TERM -compact
+.Bl -tag -width TERM -compact -offset indent
 .It Cm packet
 Debug inbound/outbout packets
 .It Cm prunes
@@ -118,9 +115,9 @@ a SIGHUP to the PID listed in
 .Pa /var/run/pimd.pid .
 .It Fl N, -disable-vifs
 Disable all virtual interfaces (phyint) by default
-.It Fl q, --quit-daemon
+.It Fl q, -quit-daemon
 Tell a running pimd to quit.  Similar to --reload-config but this command sends SIGTERM.
-.It Fl r, --show-routes
+.It Fl r, -show-routes
 Show state of VIFs and multicast routing tables. This is command sends SIGUSR1 to a
 running pimd, similar to --reload-config.
 .It Fl v, -version
@@ -302,14 +299,15 @@ responds to the following signals:
 Restarts
 .Nm .
 The configuration file is reread every time this signal is evoked.
-.It INT
-Terminates execution gracefully (i.e. by sending
-good-bye messages to all neighboring routers).
 .It TERM
-The same as INT.
+Terminates execution gracefully (i.e. by sending good-bye messages to all neighboring
+routers).
+.It INT
+The same as TERM.
 .It USR1
 Dumps the internal state of VIFs and multicast routing tables to
 .Pa /var/tmp/pimd.dump .
+See also the --show-routes option above.
 .\" Not implemented yet, still TODO
 .\" .It USR2
 .\" Dumps the internal cache tables to
@@ -350,4 +348,4 @@ was written by Ahmed Helmy, George Edmond "Rusty" Eddy, and Pavlin Ivanov
 Radoslavov.  With contributions by many others.
 .Pp
 This manual page was initially written by Antonín Král for the Debian GNU/Linux
-system, it was later updated by Joachim Nilsson for the pimd project.
+system, and then updated by Joachim Nilsson for the GitHub pimd project.
