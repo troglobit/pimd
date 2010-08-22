@@ -266,14 +266,15 @@ static int usage(void)
 
     j = 0xffffffff;
     k = 0;
-    fputs("Valid debug levels:\n    ", stderr);
+    fputs("Valid debug levels:\n  ", stderr);
     for (i = 0, d = debugnames; i < ARRAY_LEN(debugnames); i++, d++) {
 	if ((j & d->level) == d->level) {
-	    if (k++)
-		fputs(", ", stderr);
-	    if (!(k % 5))
-		fputs("\n    ", stderr);
-
+	    if (k++) {
+		if (!(k % 5))
+		    fputs("\n  ", stderr);
+		else
+		    fputs(", ", stderr);
+	    }
 	    fputs(d->name, stderr);
 	    j &= ~d->level;
 	}
