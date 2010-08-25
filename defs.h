@@ -82,7 +82,10 @@
 #include <stdlib.h>
 #endif
 #if defined(HAVE_PIDFILE)
+#if defined(OpenBSD)
 #include <util.h>
+#else
+#include <libutil.h>
 #endif
 #include <strings.h>
 #ifdef RSRR
@@ -350,7 +353,7 @@ extern char *		sys_errlist[];
 
 #ifndef IGMP_MEMBERSHIP_QUERY
 #define IGMP_MEMBERSHIP_QUERY		IGMP_HOST_MEMBERSHIP_QUERY
-#if !(defined(NetBSD) || defined(OpenBSD))
+#if !(defined(NetBSD) || defined(OpenBSD) || defined(__FreeBSD__))
 #define IGMP_V1_MEMBERSHIP_REPORT	IGMP_HOST_MEMBERSHIP_REPORT
 #define IGMP_V2_MEMBERSHIP_REPORT	IGMP_HOST_NEW_MEMBERSHIP_REPORT
 #else
@@ -360,7 +363,7 @@ extern char *		sys_errlist[];
 #define IGMP_V2_LEAVE_GROUP		IGMP_HOST_LEAVE_MESSAGE
 #endif
 
-#if defined(NetBSD) || defined(OpenBSD)
+#if defined(NetBSD) || defined(OpenBSD) || defined(__FreeBSD__)
 #define IGMP_MTRACE_RESP		IGMP_MTRACE_REPLY
 #define IGMP_MTRACE			IGMP_MTRACE_QUERY
 #endif
