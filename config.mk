@@ -61,7 +61,7 @@ DEFS       = -D__BSD_SOURCE -D_GNU_SOURCE -DPIM
 # ip_mroute.h or in.h is missing on your system and -Iinclude for pim.h
 #INCLUDES     =
 #DEFS        += -DHAVE_STRTONUM -DHAVE_STRLCPY
-#EXTRA_OBJS   =
+#EXTRA_OBJS   = pidfile.o
 #EXTRA_LIBS   =
 ## FreeBSD-2.x
 #INCLUDES     = -Iinclude -Iinclude/freebsd2

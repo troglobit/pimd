@@ -215,8 +215,9 @@ int k_req_incoming(u_int32 source, struct rpfctl *rpfp)
 	    logit(LOG_DEBUG, errno, "Read from routing socket failed");
 	return FALSE;
     }
-    
-    if (getmsg(&rtm, l, &rpfinfo)){
+
+    memset(&rpfinfo, 0, sizeof(rpfinfo));
+    if (getmsg(&rtm, l, &rpfinfo)) {
 	rpfp->rpfneighbor.s_addr = rpfinfo.rpfneighbor.s_addr;
 	rpfp->iif = rpfinfo.iif;
     }
