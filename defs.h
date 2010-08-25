@@ -430,8 +430,8 @@ extern void	timer_clearTimer	(int);
 extern int	timer_leftTimer		(int);
 
 /* config.c */
-extern void	config_vifs_from_kernel	();
-extern void	config_vifs_from_file	();
+extern void	config_vifs_from_kernel	(void);
+extern void	config_vifs_from_file	(void);
 
 /* debug.c */
 extern char	*packet_kind		(u_int proto, u_int type, u_int code);
@@ -457,7 +457,7 @@ extern void	dvmrp_accept_graft	(u_int32 src, u_int32 dst, u_char *p, int datalen
 extern void	dvmrp_accept_g_ack	(u_int32 src, u_int32 dst, u_char *p, int datalen);
 
 /* igmp.c */
-extern void	init_igmp		();
+extern void	init_igmp		(void);
 extern void	send_igmp		(char *buf, u_int32 src, u_int32 dst, int type, int code, u_int32 group, int datalen);
 
 /* igmp_proto.c */
@@ -498,7 +498,7 @@ extern int	k_get_sg_cnt		(int socket, u_int32 source, u_int32 group, struct sg_c
 extern int	register_input_handler	(int fd, ihfunc_t func);
 
 /* mrt.c */
-extern void	init_pim_mrt		();
+extern void	init_pim_mrt		(void);
 extern mrtentry_t *find_route		(u_int32 source, u_int32 group, u_int16 flags, char create);
 extern grpentry_t *find_group		(u_int32 group);
 extern srcentry_t *find_source		(u_int32 source);
@@ -510,7 +510,7 @@ extern void	delete_single_kernel_cache (mrtentry_t *mrtentry_ptr, kernel_cache_t
 extern void	delete_single_kernel_cache_addr (mrtentry_t *mrtentry_ptr, u_int32 source, u_int32 group);
 extern void	add_kernel_cache	(mrtentry_t *mrtentry_ptr, u_int32 source, u_int32 group, u_int16 flags);
 /* pim.c */
-extern void	init_pim		();
+extern vod	init_pim		(void);
 extern void	send_pim		(char *buf, u_int32 src, u_int32 dst, int type, int datalen);
 extern void	send_pim_unicast	(char *buf, u_int32 src, u_int32 dst, int type, int datalen);
 
@@ -532,8 +532,8 @@ extern int	add_jp_entry		(pim_nbr_entry_t *pim_nbr, u_int16 holdtime, u_int32 gr
 extern void	pack_and_send_jp_message (pim_nbr_entry_t *pim_nbr);
 extern int	receive_pim_cand_rp_adv	(u_int32 src, u_int32 dst, char *pim_message, int datalen);
 extern int	receive_pim_bootstrap	(u_int32 src, u_int32 dst, char *pim_message, int datalen);
-extern int	send_pim_cand_rp_adv	();
-extern void	send_pim_bootstrap	();
+extern int	send_pim_cand_rp_adv	(void);
+extern void	send_pim_bootstrap	(void);
 
 /* route.c */
 extern int	set_incoming		(srcentry_t *srcentry_ptr, int srctype);
@@ -546,20 +546,20 @@ extern int	change_interfaces	(mrtentry_t *mrtentry_ptr,  vifi_t new_iif,
                                          vifbitmap_t new_joined_oifs_, vifbitmap_t new_pruned_oifs,
                                          vifbitmap_t new_leaves_, vifbitmap_t new_asserted_oifs, u_int16 flags);
 extern void	calc_oifs		(mrtentry_t *mrtentry_ptr, vifbitmap_t *oifs_ptr);
-extern void	process_kernel_call	();
+extern void	process_kernel_call	(void);
 extern int	delete_vif_from_mrt	(vifi_t vifi);
 extern mrtentry_t *switch_shortest_path	(u_int32 source, u_int32 group);
 
 /* routesock.c */
 extern int	k_req_incoming		(u_int32 source, struct rpfctl *rpfp);
 #ifdef HAVE_ROUTING_SOCKETS
-extern int	init_routesock		();
+extern int	init_routesock		(void);
 extern int	routing_socket;
 #endif /* HAVE_ROUTING_SOCKETS */
 
 /* rp.c */
-extern void	init_rp_and_bsr		();
-extern u_int16	bootstrap_initial_delay ();
+extern void	init_rp_and_bsr		(void);
+extern u_int16	bootstrap_initial_delay (void);
 extern rp_grp_entry_t *add_rp_grp_entry (cand_rp_t  **used_cand_rp_list,
                                          grp_mask_t **used_grp_mask_list,
                                          u_int32 rp_addr,
@@ -599,12 +599,12 @@ extern void	rsrr_cache_bring_up	(struct gtable *);
 #endif /* RSRR */
 
 /* timer.c */
-extern void	init_timers		();
-extern void	age_vifs		();
-extern void	age_routes		();
-extern void	age_misc		();
+extern void	init_timers		(void);
+extern void	age_vifs		(void);
+extern void	age_routes		(void);
+extern void	age_misc		(void);
 extern int	unicast_routing_changes	(srcentry_t *src_ent);
-extern int	clean_srclist		();
+extern int	clean_srclist		(void);
 
 /* trace.c */
 /* u_int is promoted u_char */
@@ -613,10 +613,10 @@ extern void	accept_neighbor_request	(u_int32 src, u_int32 dst);
 extern void	accept_neighbor_request2 (u_int32 src, u_int32 dst);
 
 /* vif.c */
-extern void	init_vifs		();
+extern void	init_vifs		(void);
 extern void	zero_vif		(struct uvif *, int);
-extern void	stop_all_vifs		();
-extern void	check_vif_state		();
+extern void	stop_all_vifs		(void);
+extern void	check_vif_state		(void);
 extern vifi_t	local_address		(u_int32 src);
 extern vifi_t	find_vif_direct		(u_int32 src);
 extern vifi_t	find_vif_direct_local	(u_int32 src);
