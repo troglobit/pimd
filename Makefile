@@ -2,7 +2,7 @@
 #
 # Protocol Independent Multicast, Sparse-Mode version 2.0
 #
-# 2010-01-16  Joachim Nilsson <jocke@vmlinux.org>
+# 2010-08-21  Joachim Nilsson <jocke@vmlinux.org>
 #       * Cleanup unportable rules.mk and simplify for build
 #         using BSD make, and similar.
 #
@@ -48,7 +48,7 @@ DVMRP_OBJS    = dvmrp_proto.o
 #include <config.mk>
 include config.mk
 #include <snmp.mk>
-#include snmp.mk
+include snmp.mk
 
 ## Common
 CFLAGS        = $(MCAST_INCLUDE) $(SNMPDEF) $(RSRRDEF) $(INCLUDES) $(DEFS) $(USERCOMPILE)
