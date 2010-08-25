@@ -62,11 +62,6 @@
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
 #include <netinet/igmp.h>
-#ifdef __linux__
-#include <linux/mroute.h>
-#else
-#include <netinet/ip_mroute.h>
-#endif /* __linux__ */
 #ifdef __FreeBSD__      /* sigh */
 #include <osreldate.h>
 #endif /* __FreeBSD__ */
@@ -75,6 +70,11 @@
 #include <net/route.h>
 #undef rtentry
 #endif /* bsdi or __FreeBSD_version >= 220000 */
+#ifdef __linux__
+#include <linux/mroute.h>
+#else
+#include <netinet/ip_mroute.h>
+#endif /* __linux__ */
 #if defined(HAVE_STRLCPY)
 #include <string.h>
 #endif
@@ -86,6 +86,7 @@
 #include <util.h>
 #else
 #include <libutil.h>
+#endif
 #endif
 #include <strings.h>
 #ifdef RSRR
