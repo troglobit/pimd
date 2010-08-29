@@ -84,7 +84,7 @@
 #include <stdlib.h>
 #endif
 #if defined(HAVE_PIDFILE)
-#if defined(OpenBSD)
+#if defined(OpenBSD) || defined(NetBSD)
 #include <util.h>
 #else
 #include <libutil.h>
