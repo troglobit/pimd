@@ -1256,8 +1256,8 @@ static char *next_word(char **s)
             case '\0' :
                 return(w);
             default   :
-                if (isascii(**s) && isupper(**s))
-                    **s = tolower(**s);
+                if (isascii((int)**s) && isupper((int)**s))
+                    **s = tolower((int)**s);
                 (*s)++;
         }
     }
