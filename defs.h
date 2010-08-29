@@ -512,7 +512,7 @@ extern void	delete_single_kernel_cache (mrtentry_t *mrtentry_ptr, kernel_cache_t
 extern void	delete_single_kernel_cache_addr (mrtentry_t *mrtentry_ptr, u_int32 source, u_int32 group);
 extern void	add_kernel_cache	(mrtentry_t *mrtentry_ptr, u_int32 source, u_int32 group, u_int16 flags);
 /* pim.c */
-extern vod	init_pim		(void);
+extern void	init_pim		(void);
 extern void	send_pim		(char *buf, u_int32 src, u_int32 dst, int type, int datalen);
 extern void	send_pim_unicast	(char *buf, u_int32 src, u_int32 dst, int type, int datalen);
 
