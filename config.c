@@ -295,20 +295,20 @@ void config_vifs_from_kernel(void)
 }
 
 
-#define UNKNOWN				-1
-#define EMPTY				1
-#define PHYINT				2
-#define CANDIDATE_RP			3
-#define RP_ADDRESS			64
-#define GROUP_PREFIX			4
-#define BOOTSTRAP_RP			5
-#define REG_THRESHOLD			6
-#define DATA_THRESHOLD			7
-#define DEFAULT_SOURCE_METRIC		8
-#define DEFAULT_SOURCE_PREFERENCE	9
-#define ALTNET				10
-#define MASKLEN				11
-#define SCOPED				12
+#define CONF_UNKNOWN				-1
+#define CONF_EMPTY				1
+#define CONF_PHYINT				2
+#define CONF_CANDIDATE_RP			3
+#define CONF_RP_ADDRESS				64
+#define CONF_GROUP_PREFIX			4
+#define CONF_BOOTSTRAP_RP			5
+#define CONF_REG_THRESHOLD			6
+#define CONF_DATA_THRESHOLD			7
+#define CONF_DEFAULT_SOURCE_METRIC		8
+#define CONF_DEFAULT_SOURCE_PREFERENCE		9
+#define CONF_ALTNET				10
+#define CONF_MASKLEN				11
+#define CONF_SCOPED				12
 
 
 /*
@@ -321,33 +321,33 @@ void config_vifs_from_kernel(void)
 static int wordToOption(char *word)
 {
     if (EQUAL(word, ""))
-        return EMPTY;
+        return CONF_EMPTY;
     if (EQUAL(word, "phyint"))
-        return PHYINT;
+        return CONF_PHYINT;
     if (EQUAL(word, "cand_rp"))
-        return CANDIDATE_RP;
+        return CONF_CANDIDATE_RP;
     if (EQUAL(word, "rp_address"))
-        return RP_ADDRESS;
+        return CONF_RP_ADDRESS;
     if (EQUAL(word, "group_prefix"))
-        return GROUP_PREFIX;
+        return CONF_GROUP_PREFIX;
     if (EQUAL(word, "cand_bootstrap_router"))
-        return BOOTSTRAP_RP;
+        return CONF_BOOTSTRAP_RP;
     if (EQUAL(word, "switch_register_threshold"))
-        return REG_THRESHOLD;
+        return CONF_REG_THRESHOLD;
     if (EQUAL(word, "switch_data_threshold"))
-        return DATA_THRESHOLD;
+        return CONF_DATA_THRESHOLD;
     if (EQUAL(word, "default_source_metric"))
-        return DEFAULT_SOURCE_METRIC;
+        return CONF_DEFAULT_SOURCE_METRIC;
     if (EQUAL(word, "default_source_preference"))
-        return DEFAULT_SOURCE_PREFERENCE;
+        return CONF_DEFAULT_SOURCE_PREFERENCE;
     if (EQUAL(word, "altnet"))
-        return ALTNET;
+        return CONF_ALTNET;
     if  (EQUAL(word, "masklen"))
-        return MASKLEN;
+        return CONF_MASKLEN;
     if  (EQUAL(word, "scoped"))
-        return SCOPED;
+        return CONF_SCOPED;
 
-    return UNKNOWN;
+    return CONF_UNKNOWN;
 }
 
 /**
@@ -1161,34 +1161,34 @@ void config_vifs_from_file(void)
         option = wordToOption(w);
 
         switch(option) {
-            case EMPTY:
+            case CONF_EMPTY:
                 continue;
                 break;
-            case PHYINT:
+            case CONF_PHYINT:
                 parse_phyint(s);
                 break;
-            case CANDIDATE_RP:
+            case CONF_CANDIDATE_RP:
                 parse_candidateRP(s);
                 break;
-            case RP_ADDRESS:
+            case CONF_RP_ADDRESS:
                 parse_rp_address(s);
                 break;
-            case GROUP_PREFIX:
+            case CONF_GROUP_PREFIX:
                 parse_group_prefix(s);
                 break;
-            case BOOTSTRAP_RP:
+            case CONF_BOOTSTRAP_RP:
                 parseBSR(s);
                 break;
-            case REG_THRESHOLD:
+            case CONF_REG_THRESHOLD:
                 parse_reg_threshold(s);
                 break;
-            case DATA_THRESHOLD:
+            case CONF_DATA_THRESHOLD:
                 parse_data_threshold(s);
                 break;
-            case DEFAULT_SOURCE_METRIC:
+            case CONF_DEFAULT_SOURCE_METRIC:
                 parse_default_source_metric(s);
                 break;
-            case DEFAULT_SOURCE_PREFERENCE:
+            case CONF_DEFAULT_SOURCE_PREFERENCE:
                 parse_default_source_preference(s);
                 break;
             default:
