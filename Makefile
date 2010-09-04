@@ -17,7 +17,7 @@
 #
 
 # VERSION      ?= $(shell git tag -l | tail -1)
-VERSION      ?= 2.1.2-rc3
+VERSION      ?= 2.1.2
 EXEC          = pimd
 CONFIG        = $(EXEC).conf
 PKG           = $(EXEC)-$(VERSION)
@@ -87,7 +87,6 @@ vers.c:
 	@echo $(VERSION) | sed -e 's/.*/char todaysversion[]="&";/' > vers.c
 
 install: $(EXEC)
-	@[ -n "$(DESTDIR)" -a ! -d $(DESTDIR) ] || install -d $(DESTDIR)
 	@install -d $(DESTDIR)$(prefix)/sbin
 	@install -d $(DESTDIR)$(sysconfdir)
 	@install -d $(DESTDIR)$(datadir)
