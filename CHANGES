@@ -1,11 +1,27 @@
- * Version 2.1.2, <ADD RELEASE DATE>
-  - Code cleanup, replace dangerous old string functions.
+ * Version 2.1.2, Sat Sep  4 17:00:00 CET 2010
+ CHANGES:
+  - License change on mrouted code from OpenBSD team =>
+    pimd fully free under 3-clause BSD!
+  - Code cleanup and ansification.
+  - Simplified Makefile so that it works seamlessly on GNU Make and BSD PMake.
+  - Replaced all calls to bzero() and bcopy() with memset() and memcpy().
   - Use getopt_long() for argument parsing.
-  - Improve --help output
+  - Add, and improve, -h,--help output.
   - Add -f,--foreground option.
   - Add -v,--version option.
+  - Add -l,--reload-config which sends SIGHUP to a running daemon.
+  - Add -r,--show-routes which sends SIGUSR1 to a running daemon.
+  - Add -q,--quit-daemon which sends SIGTERM to a running daemon.
   - Make it possible to call pimd as a regular user, for --help and --version.
-  - Update manpage with new options.
+  - Man page cleaned up, a lot, and updated with new options.
+ BUG FIX:
+  - Replaced dangerous old string functions with safer snprintf() and strlcpy()
+  - Added checks for malloc() return values, all over the code base.
+  - Fixed issues reported by Sparse (CC=cgcc).
+  - Make sure to retry syscalls recvfrom() and sendto() on signal (SIGINT).
+  - Fix build issues on OpenBSD 4.7 and FreeBSD 8.1 thanks to Guillaume Sellier.
+  - Kernel include issues on Ubuntu 8.04, Linux <= 2.6.25, by Nikola Knežević
+  - Fix build issues on NetBSD
 
  * Version 2.1.1, Sun Jan 17 15:14:17 CET 2010
   - Merged all patches from Lintrack.org:
@@ -20,16 +36,12 @@
     o 005-vifenable.diff
       Add enable keyword to phyint .conf option.
     o 006-dot19.diff
-      The lost alpha29.18 and alpha29.19 fixes by Pavlin.
+      The lost alpha29.18 and alpha29.19 fixes by Pavlin Radoslavov.
 
   - Bumping version again to celebrate the changes and make it easier for
     distributions to handle the upgrade.
 
  * Version 2.1.0-alpha29.19, Fri Jan 14 17:24:28 PST 2005
- CHANGES:
-  - pimd is officially RETIRED!
-    Add a note to README, and add a new file PIMD_IS_RETIRED.
-
  BUG FIX:
   - Don't ignore PIM Null Register messages if the IP version of the
     inner header is not valid.
