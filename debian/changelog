@@ -1,3 +1,9 @@
+pimd (2.1.2-2) unstable; urgency=low
+
+  * Patch from Joachim to fix FTBFS issue (Closes: #595584)
+
+ -- Antonin Kral <A.Kral@sh.cvut.cz>  Sun, 05 Sep 2010 21:06:41 +0200
+
 pimd (2.1.2-1) unstable; urgency=low
 
   * New upstream release
