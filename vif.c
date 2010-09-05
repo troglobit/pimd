@@ -49,19 +49,15 @@ vifi_t		numvifs;	/* Number of vifs in use                    */
 int             vifs_down;      /* 1=>some interfaces are down              */
 int             phys_vif;       /* An enabled vif                           */
 vifi_t		reg_vif_num;    /* really virtual interface for registers   */
-int		udp_socket;	/* Since the honkin' kernel doesn't support */
-				/* ioctls on raw IP sockets, we need a UDP  */
-				/* socket as well as our IGMP (raw) socket. */
-				/* How dumb.                                */
+int		udp_socket;	/* Since the honkin' kernel doesn't support
+				 * ioctls on raw IP sockets, we need a UDP
+				 * socket as well as our IGMP (raw) socket. */
 int             total_interfaces; /* Number of all interfaces: including the
 				   * non-configured, but excluding the
 				   * loopback interface and the non-multicast
 				   * capable interfaces.
 				   */
 
-/*
- * Forward declarations.
- */
 static void start_vif      (vifi_t vifi);
 static void stop_vif       (vifi_t vifi);
 static void start_all_vifs (void);
@@ -79,12 +75,9 @@ void init_vifs(void)
     reg_vif_num = NO_VIF;
     vifs_down = FALSE;
 
-    /*
-     * Configure the vifs based on the interface configuration of the
-     * the kernel and the contents of the configuration file.
-     * (Open a UDP socket for ioctl use in the config procedures if
-     * the kernel can't handle IOCTL's on the IGMP socket.)
-     */
+    /* Configure the vifs based on the interface configuration of the the kernel and
+     * the contents of the configuration file.  (Open a UDP socket for ioctl use in
+     * the config procedures if the kernel can't handle IOCTL's on the IGMP socket.) */
 #ifdef IOCTL_OK_ON_RAW_SOCKET
     udp_socket = igmp_socket;
 #else
@@ -92,9 +85,7 @@ void init_vifs(void)
 	logit(LOG_ERR, errno, "UDP socket");
 #endif
 
-    /*
-     * Clean up all vifs
-     */
+    /* Clean up all vifs */
     for (vifi = 0, v = uvifs; vifi < MAXVIFS; ++vifi, ++v) {
 	zero_vif(v, FALSE);
     }
@@ -103,6 +94,7 @@ void init_vifs(void)
     config_vifs_from_kernel();
     if (disable_all_by_default) {
        logit(LOG_INFO, 0, "Disabling all vifs from kernel");
+
        for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v)
           v->uv_flags |= VIFF_DISABLED;
     }
@@ -116,24 +108,22 @@ void init_vifs(void)
     phys_vif        = -1;
 	 
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
-	/* Initialize the outgoing timeout for each vif.
-	 * Currently use a fixed time 'PIM_JOIN_PRUNE_HOLDTIME'.
-	 * Later, may add a configurable array to feed these
-	 * parameters, or compute them as function of the i/f
-	 * bandwidth and the overall connectivity...etc.
-	 */
+	/* Initialize the outgoing timeout for each vif.  Currently use a fixed time
+	 * 'PIM_JOIN_PRUNE_HOLDTIME'.  Later, may add a configurable array to feed
+	 * these parameters, or compute them as function of the i/f bandwidth and the
+	 * overall connectivity...etc. */
 	SET_TIMER(v->uv_jp_timer, PIM_JOIN_PRUNE_HOLDTIME);
-	if (v->uv_flags
-	    & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER | VIFF_TUNNEL))
+	if (v->uv_flags & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER | VIFF_TUNNEL))
 	    continue;
+
 	if (phys_vif == -1)
 	    phys_vif = vifi;
+
 	enabled_vifs++;
     }
 
     if (enabled_vifs < 1) /* XXX: TODO: */
-	logit(LOG_ERR, 0, "can't forward: %s",
-	    enabled_vifs == 0 ? "no enabled vifs" : "only one enabled vif");
+	logit(LOG_ERR, 0, "can't forward: %s",enabled_vifs == 0 ? "no enabled vifs" : "only one enabled vif");
     
     k_init_pim(igmp_socket);	/* Call to kernel to initialize structures */
 
@@ -150,10 +140,7 @@ void init_vifs(void)
  * Initialize the passed vif with all appropriate default values.
  * "t" is true if a tunnel or register_vif, or false if a phyint.
  */
-void
-zero_vif(v, t)
-    struct uvif *v;
-    int t;
+void zero_vif(struct uvif *v, int t)
 {
     v->uv_flags		= 0;
     v->uv_metric	= DEFAULT_METRIC;
@@ -198,13 +185,13 @@ static int init_reg_vif(void)
     vifi_t i;
     
     v = &uvifs[numvifs];
-    v->uv_flags = 0; /* initialization */
+    v->uv_flags = 0;
+
     if ((numvifs + 1) == MAXVIFS) {
         /* Exit the program! The PIM router must have a Register vif */
-	logit(LOG_ERR, 0,
-	    "cannot install the Register vif: too many interfaces");
-	/* To make lint happy */
-	return (FALSE);
+	logit(LOG_ERR, 0, "cannot install the Register vif: too many interfaces");
+
+	return FALSE;
     }
     
     /*
@@ -218,26 +205,29 @@ static int init_reg_vif(void)
 #ifdef PIM_EXPERIMENTAL
     v->uv_flags |= VIFF_REGISTER_KERNEL_ENCAP;
 #endif
-    strlcpy(v->uv_name,"register_vif0", IFNAMSIZ);
+    strlcpy(v->uv_name, "register_vif0", sizeof(v->uv_name));
     
     /* Use the address of the first available physical interface to
      * create the register vif.
      */
-    for (i = 0; i < numvifs; i++)
-	if (uvifs[i].uv_flags
-	    & (VIFF_DOWN | VIFF_DISABLED | VIFF_REGISTER | VIFF_TUNNEL))
+    for (i = 0; i < numvifs; i++) {
+	if (uvifs[i].uv_flags & (VIFF_DOWN | VIFF_DISABLED | VIFF_REGISTER | VIFF_TUNNEL))
 	    continue;
-	else
-	    break;
+
+	break;
+    }
+
     if (i >= numvifs) {
 	logit(LOG_ERR, 0, "No physical interface enabled");
 	return -1;
     }
+
     v->uv_lcl_addr = uvifs[i].uv_lcl_addr;
     v->uv_threshold = MINTTL;
 
     numvifs++;
     total_interfaces++;
+
     return 0;
 }
 
@@ -249,33 +239,28 @@ static void start_all_vifs(void)
     u_int action;
 
     /* Start first the NON-REGISTER vifs */
-    for(action = 0; ; action = VIFF_REGISTER) {
+    for (action = 0; ; action = VIFF_REGISTER) {
 	for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
+	    /* If starting non-registers but the vif is a register or if starting
+	     * registers, but the interface is not a register, then just continue. */
 	    if ((v->uv_flags & VIFF_REGISTER) ^ action)
-		/* If starting non-registers but the vif is a register
-		 * or if starting registers, but the interface is not
-		 * a register, then just continue.
-		 */
 		continue;
+
 	    /* Start vif if not DISABLED or DOWN */
 	    if (v->uv_flags & (VIFF_DISABLED | VIFF_DOWN)) {
 		if (v->uv_flags & VIFF_DISABLED)
-		    logit(LOG_INFO, 0,
-			"%s is DISABLED; vif #%u out of service", 
-			v->uv_name, vifi);
+		    logit(LOG_INFO, 0, "%s is DISABLED; vif #%u out of service", v->uv_name, vifi);
 		else
-		    logit(LOG_INFO, 0,
-			"%s is DOWN; vif #%u out of service", 
-			v->uv_name, vifi);
-	    }
-	    else
+		    logit(LOG_INFO, 0, "%s is DOWN; vif #%u out of service", v->uv_name, vifi);
+	    } else {
 		start_vif(vifi);
+	    }
 	}
+
 	if (action == VIFF_REGISTER)
 	    break;   /* We are done */
     }
 }
-
 
 
 /*
@@ -304,8 +289,8 @@ static void start_vif(vifi_t vifi)
     struct uvif *v;
     u_int32    src;
 
-    v		    = &uvifs[vifi];
-    src             = v->uv_lcl_addr;
+    v	= &uvifs[vifi];
+    src = v->uv_lcl_addr;
     /* Initialy no router on any vif */
     if (v->uv_flags & VIFF_REGISTER) 
 	v->uv_flags = v->uv_flags & ~VIFF_DOWN;
@@ -374,7 +359,7 @@ static void stop_vif(vifi_t vifi)
 {
     struct uvif *v;
     struct listaddr *a;
-    register pim_nbr_entry_t *n, *next;
+    pim_nbr_entry_t *n, *next;
     struct vif_acl *acl;
     
     /*
@@ -403,16 +388,15 @@ static void stop_vif(vifi_t vifi)
     /* TODO: dummy! Implement it!! Any problems if don't use it? */
     delete_vif_from_mrt(vifi);
     
-    /*
-     * Delete the interface from the kernel's vif structure.
-     */
+    /* Delete the interface from the kernel's vif structure. */
     k_del_vif(igmp_socket, vifi);
-    v->uv_flags     = (v->uv_flags & ~VIFF_DR & ~VIFF_QUERIER & ~VIFF_NONBRS )
-	              | VIFF_DOWN;
+
+    v->uv_flags = (v->uv_flags & ~VIFF_DR & ~VIFF_QUERIER & ~VIFF_NONBRS) | VIFF_DOWN;
     if (!(v->uv_flags & VIFF_REGISTER)) {
 	RESET_TIMER(v->uv_pim_hello_timer);
 	RESET_TIMER(v->uv_jp_timer);
 	RESET_TIMER(v->uv_gq_timer);
+
 	for (n = v->uv_pim_neighbors; n != NULL; n = next) {
 	    next = n->next;	/* Free the space for each neighbour */
 	    free((char *)n);
@@ -429,8 +413,7 @@ static void stop_vif(vifi_t vifi)
     }
 
     vifs_down = TRUE;
-    logit(LOG_INFO, 0,
-	"%s goes down; vif #%u out of service", v->uv_name, vifi);
+    logit(LOG_INFO, 0, "%s goes down; vif #%u out of service", v->uv_name, vifi);
 }		
 
 
@@ -443,8 +426,8 @@ static void stop_vif(vifi_t vifi)
  */
 static int update_reg_vif(vifi_t register_vifi)
 {
-    register struct uvif *v;
-    register vifi_t vifi;
+    struct uvif *v;
+    vifi_t vifi;
 
     /* Find the first useable vif with solid physical background */
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
@@ -456,9 +439,10 @@ static int update_reg_vif(vifi_t register_vifi)
 	uvifs[register_vifi].uv_lcl_addr = uvifs[vifi].uv_lcl_addr;
 
 	start_vif(register_vifi);
-	IF_DEBUG(DEBUG_PIM_REGISTER | DEBUG_IF)
+	IF_DEBUG(DEBUG_PIM_REGISTER | DEBUG_IF) {
 	    logit(LOG_NOTICE, 0, "%s has come up; vif #%u now in service",
 		  uvifs[register_vifi].uv_name, register_vifi);
+	}
 
 	return 0;
     }
@@ -478,8 +462,8 @@ static int update_reg_vif(vifi_t register_vifi)
  */
 void check_vif_state(void)
 {
-    register vifi_t vifi;
-    register struct uvif *v;
+    vifi_t vifi;
+    struct uvif *v;
     struct ifreq ifr;
     static int checking_vifs = 0;
 
@@ -510,9 +494,8 @@ void check_vif_state(void)
               vifs_down = TRUE;
               continue;
            }
-           else {
-              logit(LOG_ERR, errno, "check_vif_state: ioctl SIOCGIFFLAGS for %s", ifr.ifr_name);
-           }
+
+	   logit(LOG_ERR, errno, "check_vif_state: ioctl SIOCGIFFLAGS for %s", ifr.ifr_name);
 	}
 
 	if (v->uv_flags & VIFF_DOWN) {
@@ -572,33 +555,36 @@ void check_vif_state(void)
 vifi_t find_vif_direct(u_int32 src)
 {
     vifi_t vifi;
-    register struct uvif *v;
-    register struct phaddr *p;
+    struct uvif *v;
+    struct phaddr *p;
 	
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
-	if (v->uv_flags
-	    & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER | VIFF_TUNNEL))
+	if (v->uv_flags & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER | VIFF_TUNNEL))
 	    continue;
+
 	if (src == v->uv_lcl_addr)
-	    return (NO_VIF);     /* src is one of our IP addresses */
+	    return NO_VIF;	/* src is one of our IP addresses */
+
 	if ((src & v->uv_subnetmask) == v->uv_subnet && 
 	    ((v->uv_subnetmask == 0xffffffff) ||
 	     (src != v->uv_subnetbcast)))
-	    return(vifi);
+	    return vifi;
+
 	/* Check the extra subnets for this vif */
 	/* TODO: don't think currently pimd can handle extra subnets */
 	for (p = v->uv_addrs; p; p = p->pa_next) {
 	    if ((src & p->pa_subnetmask) == p->pa_subnet &&
 		((p->pa_subnetmask == 0xffffffff) ||
 		 (src != p->pa_subnetbcast)))
-		return(vifi);
+		return vifi;
 	}
+
 	/* POINTOPOINT but not VIFF_TUNNEL interface (e.g., GRE) */
-	if ((v->uv_flags & VIFF_POINT_TO_POINT)
-	    && (src == v->uv_rmt_addr))
-	    return (vifi);
+	if ((v->uv_flags & VIFF_POINT_TO_POINT) && (src == v->uv_rmt_addr))
+	    return vifi;
     }
-    return (NO_VIF);
+
+    return NO_VIF;
 } 
 
 
@@ -609,20 +595,21 @@ vifi_t find_vif_direct(u_int32 src)
 vifi_t local_address(u_int32 src)
 {
     vifi_t vifi;
-    register struct uvif *v;
+    struct uvif *v;
     
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
 	/* TODO: XXX: what about VIFF_TUNNEL? */
-	if (v->uv_flags
-	    & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER))
+	if (v->uv_flags & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER))
 	    continue;
+
 	if (src != v->uv_lcl_addr)
 	    continue;
 	else 
-	    return(vifi);
-    }   
+	    return vifi;
+    }
+
     /* Returning NO_VIF means not a local address */
-    return (NO_VIF);	
+    return NO_VIF;	
 }
 
 /*
@@ -634,34 +621,36 @@ vifi_t local_address(u_int32 src)
 vifi_t find_vif_direct_local(u_int32 src)
 {
     vifi_t vifi;
-    register struct uvif *v;
-    register struct phaddr *p;
+    struct uvif *v;
+    struct phaddr *p;
     
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
 	/* TODO: XXX: what about VIFF_TUNNEL? */
-	if (v->uv_flags &
-	    (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER | VIFF_TUNNEL))
+	if (v->uv_flags & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER | VIFF_TUNNEL))
 	    continue;
+
 	if (src == v->uv_lcl_addr)
-	    return (vifi);     /* src is one of our IP addresses */
+	    return vifi;	/* src is one of our IP addresses */
+
 	if (((src & v->uv_subnetmask) == v->uv_subnet)
 	    && ((v->uv_subnetmask == 0xffffffff)
 		|| (src != v->uv_subnetbcast)))
-	    return(vifi);
+	    return vifi;
+
 	/* Check the extra subnets for this vif */
 	/* TODO: don't think currently pimd can handle extra subnets */
 	for (p = v->uv_addrs; p; p = p->pa_next) {
 	    if (((src & p->pa_subnetmask) == p->pa_subnet)
 		&& ((p->pa_subnetmask == 0xffffffff)
 		    || (src != p->pa_subnetbcast)))
-		return(vifi);
+		return vifi;
 	}
+
 	/* POINTOPOINT but not VIFF_TUNNEL interface (e.g., GRE) */
-	if ((v->uv_flags & VIFF_POINT_TO_POINT)
-	    && (src == v->uv_rmt_addr))
-	    return (vifi);
+	if ((v->uv_flags & VIFF_POINT_TO_POINT) && (src == v->uv_rmt_addr))
+	    return vifi;
     }
-    return (NO_VIF);
+    return NO_VIF;
 } 
 
 /*
@@ -679,10 +668,12 @@ u_int32 max_local_address(void)
 	/* TODO: XXX: What about VIFF_TUNNEL? */
 	if (v->uv_flags & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER))
 	    continue;
+
 	if (ntohl(v->uv_lcl_addr) > ntohl(max_address))
 	    max_address = v->uv_lcl_addr;
     }
-    return(max_address);
+
+    return max_address;
 }
 
 /**
