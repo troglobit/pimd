@@ -339,8 +339,9 @@ int k_req_incoming(u_int32 source, struct rpfctl *rpfcinfo)
 
     return TRUE;
 }
-#endif	/* HAVE_ROUTING_SOCKETS */
-
+#endif /* HAVE_ROUTING_SOCKETS */
+#else  /* Linux */
+static int dummy __attribute__((unused));
 #endif /* !__linux__ */
 
 /**

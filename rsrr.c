@@ -773,6 +773,8 @@ void rsrr_clean(void)
     unlink(RSRR_SERV_PATH);
 }
 
+#else  /* !RSRR */
+static int dummy __attribute__((unused));
 #endif /* RSRR */
 
 /**
