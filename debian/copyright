@@ -1,12 +1,15 @@
 This package was debianized by Antonin Kral <A.Kral@sh.cvut.cz> on
 Thu, 27 Mar 2003 10:12:47 +0100.
 
-It was downloaded from http://netweb.usc.edu/pim/pimd/
+It was originally downloaded from http://netweb.usc.edu/pim/pimd/
 
-Project homepage is http://netweb.usc.edu/pim/
+The current versions are hosted at GitHub:
+      http://github.com/troglobit/pimd
 
-Upstream Authors:
+Current Upstream Maintainers and Authors:
+ * Joachim Nilsson <troglobit@vmlinux.org>
 
+Original Upstream Authors:
  * Ahmed Helmy <ahelmy@catarina.usc.edu>
  * Rusty Eddy <eddy@isi.edu>
  * Pavlin Radoslavov <pavlin@catarina.usc.edu>
@@ -56,7 +59,7 @@ Copyright:
  */
 
 Additionally, pimd uses some code from mrouted. Mrouted Copyright statement
-follows:
+(from file 'LICENSE.mrouted') follows:
 
 Copyright (c) 2002 The Board of Trustees of the Leland Stanford Junior
 University

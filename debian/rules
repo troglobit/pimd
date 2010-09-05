@@ -48,6 +48,8 @@ install: build
 	# Add here commands to install the package into debian/pimd.
 	$(MAKE) install DESTDIR=$(CURDIR)/debian/pimd/ prefix=/usr
 	rm -f $(CURDIR)/debian/pimd/usr/share/doc/pimd/INSTALL
+	rm -f $(CURDIR)/debian/pimd/usr/share/doc/pimd/LICENSE
+	rm -f $(CURDIR)/debian/pimd/usr/share/doc/pimd/LICENSE.mrouted
 
 
 # Build architecture-independent files here.
