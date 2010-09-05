@@ -27,10 +27,6 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-/*
- *  $Id: rp.c,v 1.22 2003/02/10 19:49:53 pavlin Exp $
- */
-
 
 #include "defs.h"
 
@@ -102,8 +98,7 @@ void init_rp_and_bsr(void)
 	curr_bsr_address  = INADDR_ANY_N;  /* Lowest priority */
 	MASKLEN_TO_MASK(RP_DEFAULT_IPV4_HASHMASKLEN, curr_bsr_hash_mask);
 	SET_TIMER(pim_bootstrap_timer, PIM_BOOTSTRAP_TIMEOUT);
-    }
-    else {
+    } else {
 	curr_bsr_fragment_tag = RANDOM();
 	curr_bsr_priority = my_bsr_priority;
 	curr_bsr_address = my_bsr_address;
@@ -121,181 +116,170 @@ void init_rp_and_bsr(void)
 
 u_int16 bootstrap_initial_delay(void)
 {
-    long AddrDelay;
-    long Delay;
+    long addr_delay;
+    long delay;
     long log_mask;
     int  log_of_2;
-    u_int8 bestPriority;
+    u_int8 best_priority;
 
     /*
      * The bootstrap timer initial value (if Cand-BSR).
      * It depends of the bootstrap router priority:
      * higher priority has shorter value:
      * 
-     * Delay = 5 + 2*log_2(1 + bestPriority - myPriority) + AddrDelay;
+     * delay = 5 + 2 * log_2(1 + best_priority - myPriority) + addr_delay;
      *
-     *    bestPriority = Max(storedPriority, myPriority);
-     *    if (bestPriority == myPriority)
-     *        AddrDelay = log_2(bestAddr - myAddr)/16;
+     *    best_priority = Max(storedPriority, myPriority);
+     *    if (best_priority == myPriority)
+     *        addr_delay = log_2(bestAddr - myAddr)/16;
      *    else
-     *        AddrDelay = 2 - (myAddr/2^31);
+     *        addr_delay = 2 - (myAddr/2^31);
      */
 
-    bestPriority = max(curr_bsr_priority, my_bsr_priority);
-    if (bestPriority == my_bsr_priority) {
-	AddrDelay = ntohl(curr_bsr_address) - ntohl(my_bsr_address);
+    best_priority = max(curr_bsr_priority, my_bsr_priority);
+    if (best_priority == my_bsr_priority) {
+	addr_delay = ntohl(curr_bsr_address) - ntohl(my_bsr_address);
 	/* Calculate the integer part of log_2 of (bestAddr - myAddr) */
 	/* To do so, have to find the position number of the first bit
 	 * from left which is `1`
 	 */
-	log_mask = sizeof(AddrDelay) << 3;
+	log_mask = sizeof(addr_delay) << 3;
 	log_mask = (1 << (log_mask - 1));  /* Set the leftmost bit to `1` */
-	for (log_of_2 = (sizeof(AddrDelay) << 3) - 1 ; log_of_2; log_of_2--) {
-	    if (AddrDelay & log_mask)
+	for (log_of_2 = (sizeof(addr_delay) << 3) - 1 ; log_of_2; log_of_2--) {
+	    if (addr_delay & log_mask)
 		break;
 	    else
 		log_mask >>= 1;  /* Start shifting `1` on right */
 	}
-	AddrDelay = log_of_2 / 16;
+	addr_delay = log_of_2 / 16;
+    } else {
+	addr_delay = 2 - (ntohl(my_bsr_address) / ( 1 << 31));
     }
-    else
-	AddrDelay = 2 - (ntohl(my_bsr_address) / ( 1 << 31));
 
-    Delay = 1 + bestPriority - my_bsr_priority;
-    /* Calculate log_2(Delay) */
-    log_mask = sizeof(Delay) << 3;
+    delay = 1 + best_priority - my_bsr_priority;
+    /* Calculate log_2(delay) */
+    log_mask = sizeof(delay) << 3;
     log_mask = (1 << (log_mask - 1));  /* Set the leftmost bit to `1` */
-    for (log_of_2 = (sizeof(Delay) << 3) - 1 ; log_of_2; log_of_2--) {
-	if (Delay & log_mask)
+    for (log_of_2 = (sizeof(delay) << 3) - 1 ; log_of_2; log_of_2--) {
+	if (delay & log_mask)
 	    break;
 	else
 	    log_mask >>= 1;  /* Start shifting `1` on right */
     }
 
-    Delay = 5 + 2*log_of_2 + AddrDelay;
-    return (u_int16)Delay;
+    delay = 5 + 2 * log_of_2 + addr_delay;
+
+    return (u_int16)delay;
 }
     
 
-static cand_rp_t *
-add_cand_rp(used_cand_rp_list, address)
-    cand_rp_t **used_cand_rp_list;
-    u_int32   address;
+static cand_rp_t *add_cand_rp(cand_rp_t **used_cand_rp_list, u_int32 address)
 {
-    cand_rp_t *cand_rp_prev = (cand_rp_t *)NULL;
-    cand_rp_t *cand_rp;
-    cand_rp_t *cand_rp_new;
-    rpentry_t *rpentry_ptr;
+    cand_rp_t *prev = NULL;
+    cand_rp_t *next;
+    cand_rp_t *ptr;
+    rpentry_t *entry;
     u_int32 addr_h = ntohl(address);
     
     /* The ordering is the bigger first */
-    for (cand_rp = *used_cand_rp_list; cand_rp != (cand_rp_t *)NULL;
-	 cand_rp_prev = cand_rp, cand_rp = cand_rp->next) {
-	if (ntohl(cand_rp->rpentry->address) > addr_h)
+    for (next = *used_cand_rp_list; next; prev = next, next = next->next) {
+	if (ntohl(next->rpentry->address) > addr_h)
 	    continue;
-	if (cand_rp->rpentry->address == address)
-	    return(cand_rp);
+
+	if (next->rpentry->address == address)
+	    return next;
 	else
 	    break;
     }
     
-    /* Create and insert the new entry between cand_rp_prev and cand_rp */
-    cand_rp_new = (cand_rp_t *)malloc(sizeof(cand_rp_t));
-    if (!cand_rp_new)
+    /* Create and insert the new entry between prev and next */
+    ptr = (cand_rp_t *)malloc(sizeof(cand_rp_t));
+    if (!ptr)
 	logit(LOG_ERR, 0, "Ran out of memory in add_cand_rp()");
-    cand_rp_new->rp_grp_next = (rp_grp_entry_t *)NULL;
-    cand_rp_new->next = cand_rp;
-    cand_rp_new->prev = cand_rp_prev;
-    if (cand_rp != (cand_rp_t *)NULL)
-	cand_rp->prev = cand_rp_new;
-    if (cand_rp_prev == (cand_rp_t *)NULL) {
-	*used_cand_rp_list = cand_rp_new;
-    }
-    else {
-	cand_rp_prev->next = cand_rp_new;
-    }
+    ptr->rp_grp_next = NULL;
+    ptr->next = next;
+    ptr->prev = prev;
+    if (next)
+	next->prev = ptr;
+    if (prev == NULL)
+	*used_cand_rp_list = ptr;
+    else
+	prev->next = ptr;
 
-    rpentry_ptr = (rpentry_t *)malloc(sizeof(rpentry_t));
-    if (!rpentry_ptr)
+    entry = (rpentry_t *)malloc(sizeof(rpentry_t));
+    if (!entry)
 	logit(LOG_ERR, 0, "Ran out of memory in add_cand_rp()");
-    cand_rp_new->rpentry = rpentry_ptr;
-    rpentry_ptr->next = (srcentry_t *)NULL;
-    rpentry_ptr->prev  = (srcentry_t *)NULL;
-    rpentry_ptr->address = address;
-    rpentry_ptr->mrtlink = (mrtentry_t *)NULL;
-    rpentry_ptr->incoming = NO_VIF;
-    rpentry_ptr->upstream = (pim_nbr_entry_t *)NULL;
+    ptr->rpentry = entry;
+    entry->next = NULL;
+    entry->prev  = NULL;
+    entry->address = address;
+    entry->mrtlink = NULL;
+    entry->incoming = NO_VIF;
+    entry->upstream = NULL;
     /* TODO: setup the metric and the preference as ~0 (the lowest)? */
-    rpentry_ptr->metric = ~0;
-    rpentry_ptr->preference = ~0;
-    RESET_TIMER(rpentry_ptr->timer);
-    rpentry_ptr->cand_rp = cand_rp_new;
+    entry->metric = ~0;
+    entry->preference = ~0;
+    RESET_TIMER(entry->timer);
+    entry->cand_rp = ptr;
 
     /* TODO: XXX: check whether there is a route to that RP: if return value
      * is FALSE, then no route.
      */
-    if (local_address(rpentry_ptr->address) == NO_VIF)
+    if (local_address(entry->address) == NO_VIF)
 	/* TODO: check for error and delete */
-	set_incoming(rpentry_ptr, PIM_IIF_RP);
-    else {
+	set_incoming(entry, PIM_IIF_RP);
+    else
 	/* TODO: XXX: CHECK!!! */
-	rpentry_ptr->incoming = reg_vif_num;
-    }
+	entry->incoming = reg_vif_num;
 
-    return (cand_rp_new);
+    return ptr;
 }
 
 
-static grp_mask_t *
-add_grp_mask(used_grp_mask_list, group_addr, group_mask, hash_mask)
-    grp_mask_t **used_grp_mask_list;
-    u_int32    group_addr;
-    u_int32    group_mask;
-    u_int32    hash_mask;
+static grp_mask_t *add_grp_mask(grp_mask_t **used_grp_mask_list, u_int32 group_addr, u_int32 group_mask, u_int32 hash_mask)
 {
-    grp_mask_t *grp_mask_prev = (grp_mask_t *)NULL;
-    grp_mask_t *grp_mask;
-    grp_mask_t *grp_mask_tmp;
+    grp_mask_t *prev = NULL;
+    grp_mask_t *next;
+    grp_mask_t *ptr;
     u_int32 prefix_h = ntohl(group_addr & group_mask);
 
     /* The ordering of group_addr is: bigger first */
-    for (grp_mask = *used_grp_mask_list; grp_mask != (grp_mask_t *)NULL;
-         grp_mask_prev = grp_mask, grp_mask = grp_mask->next) {
-        if (ntohl(grp_mask->group_addr & grp_mask->group_mask) > prefix_h)
+    for (next = *used_grp_mask_list; next; prev = next, next = next->next) {
+        if (ntohl(next->group_addr & next->group_mask) > prefix_h)
             continue;
+
         /* The ordering of group_mask is: bigger (longer) first */
-        if ((grp_mask->group_addr & grp_mask->group_mask) ==
-            (group_addr & group_mask)) {
-            if (ntohl(grp_mask->group_mask) > ntohl(group_mask))
+        if ((next->group_addr & next->group_mask) == (group_addr & group_mask)) {
+            if (ntohl(next->group_mask) > ntohl(group_mask))
                 continue;
-            else if (grp_mask->group_mask == group_mask)
-                return(grp_mask);
+            else if (next->group_mask == group_mask)
+                return next;
             else
                 break;
         }
     }
 
-    grp_mask_tmp = (grp_mask_t *)malloc(sizeof(grp_mask_t));
-    if (!grp_mask_tmp)
+    ptr = (grp_mask_t *)malloc(sizeof(grp_mask_t));
+    if (!ptr)
 	logit(LOG_ERR, 0, "Ran out of memory in add_grp_mask()");
-    grp_mask_tmp->grp_rp_next = (rp_grp_entry_t *)NULL;
-    grp_mask_tmp->next = grp_mask;
-    grp_mask_tmp->prev = grp_mask_prev;
-    if (grp_mask != (grp_mask_t *)NULL)
-	grp_mask->prev = grp_mask_tmp;
-    if (grp_mask_prev == (grp_mask_t *)NULL){
-	*used_grp_mask_list = grp_mask_tmp;
-    }
-    else {
-	grp_mask_prev->next = grp_mask_tmp;
-    }
 
-    grp_mask_tmp->group_addr = group_addr;
-    grp_mask_tmp->group_mask = group_mask;
-    grp_mask_tmp->hash_mask  = hash_mask;
-    grp_mask_tmp->group_rp_number = 0;
-    grp_mask_tmp->fragment_tag = 0;
-    return(grp_mask_tmp);
+    ptr->grp_rp_next = (rp_grp_entry_t *)NULL;
+    ptr->next = next;
+    ptr->prev = prev;
+    if (next)
+	next->prev = ptr;
+    if (prev == NULL)
+	*used_grp_mask_list = ptr;
+    else
+	prev->next = ptr;
+
+    ptr->group_addr = group_addr;
+    ptr->group_mask = group_mask;
+    ptr->hash_mask  = hash_mask;
+    ptr->group_rp_number = 0;
+    ptr->fragment_tag = 0;
+
+    return ptr;
 }
 
 
@@ -303,27 +287,22 @@ add_grp_mask(used_grp_mask_list, group_addr, group_mask, hash_mask)
  * grp_mask may be required by the addition of the new entry!!!
  * Remapping all groups might be a costly process...
  */
-rp_grp_entry_t *
-add_rp_grp_entry(used_cand_rp_list, used_grp_mask_list,
-		 rp_addr, rp_priority, rp_holdtime, group_addr, group_mask,
-		 bsr_hash_mask,
-		 fragment_tag)
-    cand_rp_t **used_cand_rp_list;
-    grp_mask_t **used_grp_mask_list;
-    u_int32 rp_addr;
-    u_int8  rp_priority;
-    u_int16 rp_holdtime;
-    u_int32 group_addr;
-    u_int32 group_mask;
-    u_int32 bsr_hash_mask;
-    u_int16 fragment_tag;
+rp_grp_entry_t *add_rp_grp_entry(cand_rp_t  **used_cand_rp_list,
+				 grp_mask_t **used_grp_mask_list,
+				 u_int32 rp_addr,
+				 u_int8  rp_priority,
+				 u_int16 rp_holdtime,
+				 u_int32 group_addr,
+				 u_int32 group_mask,
+				 u_int32 bsr_hash_mask,
+				 u_int16 fragment_tag)
 {
     cand_rp_t *cand_rp_ptr;
-    grp_mask_t *grp_mask_ptr;
+    grp_mask_t *mask_ptr;
     rpentry_t *rpentry_ptr;
-    rp_grp_entry_t *grp_rp_entry_next;
-    rp_grp_entry_t *grp_rp_entry_new;
-    rp_grp_entry_t *grp_rp_entry_prev = (rp_grp_entry_t *)NULL;
+    rp_grp_entry_t *entry_next;
+    rp_grp_entry_t *entry_new;
+    rp_grp_entry_t *entry_prev = NULL;
     grpentry_t *grpentry_ptr_prev;
     grpentry_t *grpentry_ptr_next;
     u_int32 rp_addr_h;
@@ -331,59 +310,55 @@ add_rp_grp_entry(used_cand_rp_list, used_grp_mask_list,
 
     /* Input data verification */
     if (!inet_valid_host(rp_addr))
-	return (rp_grp_entry_t *)NULL;
+	return NULL;
     if (!IN_CLASSD(ntohl(group_addr)))
-	return (rp_grp_entry_t *)NULL;
+	return NULL;
 
-    grp_mask_ptr = add_grp_mask(used_grp_mask_list, group_addr, group_mask,
-				bsr_hash_mask);
-    if (grp_mask_ptr == (grp_mask_t *)NULL)
-	return (rp_grp_entry_t *)NULL;
+    mask_ptr = add_grp_mask(used_grp_mask_list, group_addr, group_mask, bsr_hash_mask);
+    if (mask_ptr == NULL)
+	return NULL;
 
 /* TODO: delete */
 #if 0
-    if (grp_mask_ptr->grp_rp_next != (rp_grp_entry_t *)NULL) {
+    if (mask_ptr->grp_rp_next) {
 	/* Check for obsolete grp_rp chain */
-	if ((my_bsr_address != curr_bsr_address)
-	    && (grp_mask_ptr->grp_rp_next->fragment_tag != fragment_tag)) {
+	if ((my_bsr_address != curr_bsr_address) && (mask_ptr->grp_rp_next->fragment_tag != fragment_tag)) {
 	    /* This grp_rp chain is obsolete. Delete it. */
-	    delete_grp_mask(used_cand_rp_list, used_grp_mask_list,
-			    group_addr, group_mask);
-	    grp_mask_ptr = add_grp_mask(used_grp_mask_list, group_addr,
-					group_mask, bsr_hash_mask);
-	    if (grp_mask_ptr == (grp_mask_t *)NULL)
-		return (rp_grp_entry_t *)NULL;
+	    delete_grp_mask(used_cand_rp_list, used_grp_mask_list, group_addr, group_mask);
+	    mask_ptr = add_grp_mask(used_grp_mask_list, group_addr, group_mask, bsr_hash_mask);
+
+	    if (mask_ptr == NULL)
+		return NULL;
 	}
     }
 #endif /* 0 */    
 
     cand_rp_ptr = add_cand_rp(used_cand_rp_list, rp_addr);
-    if (cand_rp_ptr == (cand_rp_t *)NULL) {
-	if (grp_mask_ptr->grp_rp_next == (rp_grp_entry_t *)NULL)
+    if (cand_rp_ptr == NULL) {
+	if (mask_ptr->grp_rp_next == NULL)
 	    delete_grp_mask(used_cand_rp_list, used_grp_mask_list,
 			    group_addr, group_mask);
-	return (rp_grp_entry_t *)NULL;
+	return NULL;
     }
     
     rpentry_ptr = cand_rp_ptr->rpentry;
     SET_TIMER(rpentry_ptr->timer, rp_holdtime);
     rp_addr_h = ntohl(rp_addr);
-    grp_mask_ptr->fragment_tag = fragment_tag;   /* For garbage collection */
+    mask_ptr->fragment_tag = fragment_tag;   /* For garbage collection */
 
-    grp_rp_entry_prev = (rp_grp_entry_t *)NULL;
-    grp_rp_entry_next = grp_mask_ptr->grp_rp_next;
+    entry_prev = NULL;
+    entry_next = mask_ptr->grp_rp_next;
     /* TODO: improve it */
-    if (grp_rp_entry_next != (rp_grp_entry_t *)NULL)
-	old_highest_priority = grp_rp_entry_next->priority;
-    for ( ; grp_rp_entry_next != (rp_grp_entry_t *)NULL;
-	  grp_rp_entry_prev = grp_rp_entry_next,
-	      grp_rp_entry_next = grp_rp_entry_next->grp_rp_next) {
+    if (entry_next != NULL)
+	old_highest_priority = entry_next->priority;
+    for ( ; entry_next; entry_prev = entry_next,
+	      entry_next = entry_next->grp_rp_next) {
 	/* Smaller value means higher priority. The entries are
 	 * sorted with the highest priority first.
 	 */
-	if (grp_rp_entry_next->priority < rp_priority)
+	if (entry_next->priority < rp_priority)
 	    continue;
-	if (grp_rp_entry_next->priority > rp_priority)
+	if (entry_next->priority > rp_priority)
 	    break;
 	
 	/*
@@ -393,9 +368,9 @@ add_rp_grp_entry(used_cand_rp_list, used_grp_mask_list,
 	 * so it will be easier to find an existing entry and update the
 	 * holdtime.
 	 */
-	if (ntohl(grp_rp_entry_next->rp->rpentry->address) > rp_addr_h)
+	if (ntohl(entry_next->rp->rpentry->address) > rp_addr_h)
 	    continue;
-	if (ntohl(grp_rp_entry_next->rp->rpentry->address) < rp_addr_h)
+	if (ntohl(entry_next->rp->rpentry->address) < rp_addr_h)
 	    break;
 	/* We already have this entry. Update the holdtime */
 	/* TODO: We shoudn't have old existing entry, because with the
@@ -403,53 +378,51 @@ add_rp_grp_entry(used_cand_rp_list, used_grp_mask_list,
 	 * (different fragment_tag). Debug and check and eventually
 	 * delete.
 	 */
-	grp_rp_entry_next->holdtime = rp_holdtime;
-	grp_rp_entry_next->fragment_tag = fragment_tag;
-	return (grp_rp_entry_next);
+	entry_next->holdtime = rp_holdtime;
+	entry_next->fragment_tag = fragment_tag;
+	return (entry_next);
     }
     
     /* Create and link the new entry */
-    grp_rp_entry_new = (rp_grp_entry_t *)malloc(sizeof(rp_grp_entry_t));
-    if (!grp_rp_entry_new)
+    entry_new = (rp_grp_entry_t *)malloc(sizeof(rp_grp_entry_t));
+    if (!entry_new)
 	logit(LOG_ERR, 0, "Ran out of memory in add_rp_grp_entry()");
-    grp_rp_entry_new->grp_rp_next = grp_rp_entry_next;
-    grp_rp_entry_new->grp_rp_prev = grp_rp_entry_prev;
-    if (grp_rp_entry_next != (rp_grp_entry_t *)NULL)
-	grp_rp_entry_next->grp_rp_prev = grp_rp_entry_new;
-    if (grp_rp_entry_prev == (rp_grp_entry_t *)NULL)
-	grp_mask_ptr->grp_rp_next = grp_rp_entry_new;
+    entry_new->grp_rp_next = entry_next;
+    entry_new->grp_rp_prev = entry_prev;
+    if (entry_next)
+	entry_next->grp_rp_prev = entry_new;
+    if (entry_prev == NULL)
+	mask_ptr->grp_rp_next = entry_new;
     else
-	grp_rp_entry_prev->grp_rp_next = grp_rp_entry_new;
+	entry_prev->grp_rp_next = entry_new;
     
     /*
      * The rp_grp_entry chain is not ordered, so just plug
      * the new entry at the head.
      */
-    grp_rp_entry_new->rp_grp_next = cand_rp_ptr->rp_grp_next;
-    if (cand_rp_ptr->rp_grp_next != (rp_grp_entry_t *)NULL)
-	cand_rp_ptr->rp_grp_next->rp_grp_prev = grp_rp_entry_new;
-    grp_rp_entry_new->rp_grp_prev = (rp_grp_entry_t *)NULL;
-    cand_rp_ptr->rp_grp_next = grp_rp_entry_new;
+    entry_new->rp_grp_next = cand_rp_ptr->rp_grp_next;
+    if (cand_rp_ptr->rp_grp_next)
+	cand_rp_ptr->rp_grp_next->rp_grp_prev = entry_new;
+    entry_new->rp_grp_prev = NULL;
+    cand_rp_ptr->rp_grp_next = entry_new;
     
-    grp_rp_entry_new->holdtime = rp_holdtime;
-    grp_rp_entry_new->fragment_tag = fragment_tag;
-    grp_rp_entry_new->priority = rp_priority;
-    grp_rp_entry_new->group = grp_mask_ptr;
-    grp_rp_entry_new->rp = cand_rp_ptr;
-    grp_rp_entry_new->grplink = (grpentry_t *)NULL;
+    entry_new->holdtime = rp_holdtime;
+    entry_new->fragment_tag = fragment_tag;
+    entry_new->priority = rp_priority;
+    entry_new->group = mask_ptr;
+    entry_new->rp = cand_rp_ptr;
+    entry_new->grplink = NULL;
 
-    grp_mask_ptr->group_rp_number++;
+    mask_ptr->group_rp_number++;
     
-    if (grp_mask_ptr->grp_rp_next->priority == rp_priority) {
+    if (mask_ptr->grp_rp_next->priority == rp_priority) {
 	/* The first entries are with the best priority. */
 	/* Adding this rp_grp_entry may result in group_to_rp remapping */
-	for (grp_rp_entry_next = grp_mask_ptr->grp_rp_next;
-	     grp_rp_entry_next != (rp_grp_entry_t *)NULL;
-	     grp_rp_entry_next = grp_rp_entry_next->grp_rp_next) {
-	    if (grp_rp_entry_next->priority > old_highest_priority)
+	for (entry_next = mask_ptr->grp_rp_next; entry_next; entry_next = entry_next->grp_rp_next) {
+	    if (entry_next->priority > old_highest_priority)
 		break;
-	    for (grpentry_ptr_prev = grp_rp_entry_next->grplink;
-		 grpentry_ptr_prev != (grpentry_t *)NULL; ) {
+
+	    for (grpentry_ptr_prev = entry_next->grplink; grpentry_ptr_prev; ) {
 		grpentry_ptr_next = grpentry_ptr_prev->rpnext;
 		remap_grpentry(grpentry_ptr_prev);
 		grpentry_ptr_prev = grpentry_ptr_next;
@@ -457,304 +430,251 @@ add_rp_grp_entry(used_cand_rp_list, used_grp_mask_list,
 	}
     }
     
-    return (grp_rp_entry_new);
+    return entry_new;
 }
 
 
-void
-delete_rp_grp_entry(used_cand_rp_list, used_grp_mask_list,
-		    rp_grp_entry_delete)
-    cand_rp_t **used_cand_rp_list;
-    grp_mask_t **used_grp_mask_list;
-    rp_grp_entry_t *rp_grp_entry_delete;
+void delete_rp_grp_entry(cand_rp_t **used_cand_rp_list, grp_mask_t **used_grp_mask_list, rp_grp_entry_t *entry)
 {
-    grpentry_t *grpentry_ptr;
-    grpentry_t *grpentry_ptr_next;
+    grpentry_t *ptr;
+    grpentry_t *ptr_next;
 
-    if (rp_grp_entry_delete == (rp_grp_entry_t *)NULL)
+    if (entry == NULL)
 	return;
-    rp_grp_entry_delete->group->group_rp_number--;
+    entry->group->group_rp_number--;
+
     /* Free the rp_grp* and grp_rp* links */
-    if (rp_grp_entry_delete->rp_grp_prev != (rp_grp_entry_t *)NULL)
-	rp_grp_entry_delete->rp_grp_prev->rp_grp_next =
-	    rp_grp_entry_delete->rp_grp_next;
+    if (entry->rp_grp_prev)
+	entry->rp_grp_prev->rp_grp_next = entry->rp_grp_next;
     else
-	rp_grp_entry_delete->rp->rp_grp_next =
-	    rp_grp_entry_delete->rp_grp_next;
-    if (rp_grp_entry_delete->rp_grp_next != (rp_grp_entry_t *)NULL)
-	rp_grp_entry_delete->rp_grp_next->rp_grp_prev =
-	    rp_grp_entry_delete->rp_grp_prev;
+	entry->rp->rp_grp_next = entry->rp_grp_next;
+    if (entry->rp_grp_next)
+	entry->rp_grp_next->rp_grp_prev = entry->rp_grp_prev;
     
-    if (rp_grp_entry_delete->grp_rp_prev != (rp_grp_entry_t *)NULL)
-	rp_grp_entry_delete->grp_rp_prev->grp_rp_next =
-	    rp_grp_entry_delete->grp_rp_next;
+    if (entry->grp_rp_prev)
+	entry->grp_rp_prev->grp_rp_next = entry->grp_rp_next;
     else
-	rp_grp_entry_delete->group->grp_rp_next =
-	    rp_grp_entry_delete->grp_rp_next;
-    if (rp_grp_entry_delete->grp_rp_next != (rp_grp_entry_t *)NULL)
-	rp_grp_entry_delete->grp_rp_next->grp_rp_prev =
-	    rp_grp_entry_delete->grp_rp_prev;
+	entry->group->grp_rp_next = entry->grp_rp_next;
+
+    if (entry->grp_rp_next)
+	entry->grp_rp_next->grp_rp_prev = entry->grp_rp_prev;
 
     /* Delete Cand-RP or Group-prefix if useless */
-    if (rp_grp_entry_delete->group->grp_rp_next ==
-	(rp_grp_entry_t *)NULL)
-	delete_grp_mask_entry(used_cand_rp_list, used_grp_mask_list,
-			      rp_grp_entry_delete->group);
-    if (rp_grp_entry_delete->rp->rp_grp_next ==
-	(rp_grp_entry_t *)NULL)
-	delete_rp_entry(used_cand_rp_list, used_grp_mask_list,
-			rp_grp_entry_delete->rp);
+    if (entry->group->grp_rp_next == NULL)
+	delete_grp_mask_entry(used_cand_rp_list, used_grp_mask_list, entry->group);
+
+    if (entry->rp->rp_grp_next == NULL)
+	delete_rp_entry(used_cand_rp_list, used_grp_mask_list, entry->rp);
     
     /* Remap all affected groups */
-    for (grpentry_ptr = rp_grp_entry_delete->grplink;
-	 grpentry_ptr != (grpentry_t *)NULL;
-	 grpentry_ptr = grpentry_ptr_next) {
-	grpentry_ptr_next = grpentry_ptr->rpnext;
-	remap_grpentry(grpentry_ptr);
+    for (ptr = entry->grplink; ptr; ptr = ptr_next) {
+	ptr_next = ptr->rpnext;
+	remap_grpentry(ptr);
     }
 
-    free((char *)rp_grp_entry_delete);
+    free((char *)entry);
 }
 
 /* TODO: XXX: the affected group entries will be partially
  * setup, because may have group routing entry, but NULL pointers to RP.
  * After the call to this function, must remap all group entries ASAP.
  */
-void
-delete_rp_list(used_cand_rp_list, used_grp_mask_list)
-    cand_rp_t  **used_cand_rp_list;
-    grp_mask_t **used_grp_mask_list;
+void delete_rp_list(cand_rp_t  **used_cand_rp_list, grp_mask_t **used_grp_mask_list)
 {
-    cand_rp_t      *cand_rp_ptr,  *cand_rp_next;
-    grp_mask_t     *grp_mask_ptr, *grp_mask_next;
-    rp_grp_entry_t *rp_grp_entry_ptr, *rp_grp_entry_next;
-    grpentry_t     *grpentry_ptr, *grpentry_ptr_next;
+    cand_rp_t      *cand_ptr,  *cand_next;
+    rp_grp_entry_t *entry_ptr, *entry_next;
+    grp_mask_t     *mask_ptr, *mask_next;
+    grpentry_t     *gentry_ptr, *gentry_ptr_next;
     
-    for (cand_rp_ptr = *used_cand_rp_list;
-	 cand_rp_ptr != (cand_rp_t *)NULL; ) {
-	cand_rp_next = cand_rp_ptr->next;
-	/* Free the mrtentry (if any) for this RP */
-	if (cand_rp_ptr->rpentry->mrtlink != (mrtentry_t *)NULL) {
-	    if (cand_rp_ptr->rpentry->mrtlink->flags & MRTF_KERNEL_CACHE)
-		delete_mrtentry_all_kernel_cache(cand_rp_ptr->rpentry->mrtlink);
-	    FREE_MRTENTRY(cand_rp_ptr->rpentry->mrtlink);
-	}
-	free(cand_rp_ptr->rpentry);
-	
-	/* Free the whole chain of rp_grp_entry for this RP */
-	for (rp_grp_entry_ptr = cand_rp_ptr->rp_grp_next;
-	     rp_grp_entry_ptr != (rp_grp_entry_t *)NULL;
-	     rp_grp_entry_ptr = rp_grp_entry_next) {
-	    rp_grp_entry_next = rp_grp_entry_ptr->rp_grp_next;
-	    /* Clear the RP related invalid pointers for all group entries */
-	    for (grpentry_ptr = rp_grp_entry_ptr->grplink;
-		 grpentry_ptr != (grpentry_t *)NULL;
-		 grpentry_ptr = grpentry_ptr_next) {
-		grpentry_ptr_next = grpentry_ptr->rpnext;
-		grpentry_ptr->rpnext = (grpentry_t *)NULL;
-		grpentry_ptr->rpprev = (grpentry_t *)NULL;
-		grpentry_ptr->active_rp_grp = (rp_grp_entry_t *)NULL;
-		grpentry_ptr->rpaddr = INADDR_ANY_N;
-	    }
-	    free(rp_grp_entry_ptr);
-	}
-	free(cand_rp_ptr);
-	cand_rp_ptr = cand_rp_next;
-    }
-    *used_cand_rp_list = (cand_rp_t *)NULL;
+    for (cand_ptr = *used_cand_rp_list; cand_ptr; ) {
+	cand_next = cand_ptr->next;
 
-    for (grp_mask_ptr = *used_grp_mask_list;
-	 grp_mask_ptr != (grp_mask_t *)NULL; 
-	 grp_mask_ptr = grp_mask_next) {
-	grp_mask_next = grp_mask_ptr->next;
-	free(grp_mask_ptr);
+	/* Free the mrtentry (if any) for this RP */
+	if (cand_ptr->rpentry->mrtlink) {
+	    if (cand_ptr->rpentry->mrtlink->flags & MRTF_KERNEL_CACHE)
+		delete_mrtentry_all_kernel_cache(cand_ptr->rpentry->mrtlink);
+	    FREE_MRTENTRY(cand_ptr->rpentry->mrtlink);
+	}
+	free(cand_ptr->rpentry);
+	
+	/* Free the whole chain of entry for this RP */
+	for (entry_ptr = cand_ptr->rp_grp_next; entry_ptr; entry_ptr = entry_next) {
+	    entry_next = entry_ptr->rp_grp_next;
+
+	    /* Clear the RP related invalid pointers for all group entries */
+	    for (gentry_ptr = entry_ptr->grplink; gentry_ptr; gentry_ptr = gentry_ptr_next) {
+		gentry_ptr_next = gentry_ptr->rpnext;
+		gentry_ptr->rpnext = NULL;
+		gentry_ptr->rpprev = NULL;
+		gentry_ptr->active_rp_grp = NULL;
+		gentry_ptr->rpaddr = INADDR_ANY_N;
+	    }
+
+	    free(entry_ptr);
+	}
+
+	free(cand_ptr);
+	cand_ptr = cand_next;
     }
-    *used_grp_mask_list = (grp_mask_t *)NULL;
+    *used_cand_rp_list = NULL;
+
+    for (mask_ptr = *used_grp_mask_list; mask_ptr; mask_ptr = mask_next) {
+	mask_next = mask_ptr->next;
+	free(mask_ptr);
+    }
+    *used_grp_mask_list = NULL;
 }
 
 
-void
-delete_grp_mask(used_cand_rp_list, used_grp_mask_list, group_addr, group_mask)
-    cand_rp_t **used_cand_rp_list;
-    grp_mask_t **used_grp_mask_list;
-    u_int32 group_addr;
-    u_int32 group_mask;
+void delete_grp_mask(cand_rp_t **used_cand_rp_list, grp_mask_t **used_grp_mask_list, u_int32 group_addr, u_int32 group_mask)
 {
-    grp_mask_t *grp_mask_ptr;
+    grp_mask_t *ptr;
     u_int32 prefix_h = ntohl(group_addr & group_mask);
 
-    for (grp_mask_ptr = *used_grp_mask_list;
-	 grp_mask_ptr != (grp_mask_t *)NULL;
-	 grp_mask_ptr = grp_mask_ptr->next) {
-        if (ntohl(grp_mask_ptr->group_addr & grp_mask_ptr->group_mask) >
-            prefix_h)
+    for (ptr = *used_grp_mask_list; ptr; ptr = ptr->next) {
+        if (ntohl(ptr->group_addr & ptr->group_mask) > prefix_h)
             continue;
-        if (grp_mask_ptr->group_addr == group_addr) {
-            if (ntohl(grp_mask_ptr->group_mask) > ntohl(group_mask))
+
+        if (ptr->group_addr == group_addr) {
+            if (ntohl(ptr->group_mask) > ntohl(group_mask))
                 continue;
-            else if (grp_mask_ptr->group_mask == group_mask)
+            else if (ptr->group_mask == group_mask)
                 break;
             else
                 return;   /* Not found */
         }
     }
     
-    if (grp_mask_ptr == (grp_mask_t *)NULL)
+    if (ptr == (grp_mask_t *)NULL)
 	return;       /* Not found */
     
-    delete_grp_mask_entry(used_cand_rp_list, used_grp_mask_list,
-			  grp_mask_ptr);
+    delete_grp_mask_entry(used_cand_rp_list, used_grp_mask_list, ptr);
 }
 
-static void
-delete_grp_mask_entry(used_cand_rp_list, used_grp_mask_list, grp_mask_delete)
-    cand_rp_t **used_cand_rp_list;
-    grp_mask_t **used_grp_mask_list;
-    grp_mask_t *grp_mask_delete;
+static void delete_grp_mask_entry(cand_rp_t **used_cand_rp_list, grp_mask_t **used_grp_mask_list, grp_mask_t *grp_mask_delete)
 {
-    grpentry_t *grpentry_ptr, *grpentry_ptr_next;
-    rp_grp_entry_t *grp_rp_entry_ptr;
-    rp_grp_entry_t *grp_rp_entry_next;
+    grpentry_t *grp_ptr, *grp_ptr_next;
+    rp_grp_entry_t *entry_ptr;
+    rp_grp_entry_t *entry_next;
 
-    if (grp_mask_delete == (grp_mask_t *)NULL)
+    if (grp_mask_delete == NULL)
 	return;
     
     /* Remove from the grp_mask_list first */
-    if (grp_mask_delete->prev != (grp_mask_t *)NULL)
+    if (grp_mask_delete->prev)
 	grp_mask_delete->prev->next = grp_mask_delete->next;
     else
 	*used_grp_mask_list = grp_mask_delete->next;
 
-    if (grp_mask_delete->next != (grp_mask_t *)NULL)
+    if (grp_mask_delete->next)
 	grp_mask_delete->next->prev = grp_mask_delete->prev;
     
     /* Remove all grp_rp entries for this grp_mask */
-    for (grp_rp_entry_ptr = grp_mask_delete->grp_rp_next;
-	 grp_rp_entry_ptr != (rp_grp_entry_t *)NULL;
-	 grp_rp_entry_ptr = grp_rp_entry_next) {
-	grp_rp_entry_next = grp_rp_entry_ptr->grp_rp_next;
-	/* Remap all related grpentry */
-	for (grpentry_ptr = grp_rp_entry_ptr->grplink;
-	     grpentry_ptr != (grpentry_t *)NULL;
-	     grpentry_ptr = grpentry_ptr_next) {
-	    grpentry_ptr_next = grpentry_ptr->rpnext;
-	    remap_grpentry(grpentry_ptr);
+    for (entry_ptr = grp_mask_delete->grp_rp_next; entry_ptr; entry_ptr = entry_next) {
+	entry_next = entry_ptr->grp_rp_next;
 
+	/* Remap all related grpentry */
+	for (grp_ptr = entry_ptr->grplink; grp_ptr; grp_ptr = grp_ptr_next) {
+	    grp_ptr_next = grp_ptr->rpnext;
+	    remap_grpentry(grp_ptr);
 	}
-	if (grp_rp_entry_ptr->rp_grp_prev != (rp_grp_entry_t *)NULL) {
-	    grp_rp_entry_ptr->rp_grp_prev->rp_grp_next =
-		grp_rp_entry_ptr->rp_grp_next;
-	}
-	else {
-	    grp_rp_entry_ptr->rp->rp_grp_next = grp_rp_entry_ptr->rp_grp_next;
-	}
-	if (grp_rp_entry_ptr->rp_grp_next != (rp_grp_entry_t *)NULL)
-	    grp_rp_entry_ptr->rp_grp_next->rp_grp_prev =
-		grp_rp_entry_ptr->rp_grp_prev;
-	if (grp_rp_entry_ptr->rp->rp_grp_next == (rp_grp_entry_t *)NULL) {
-	    /* Delete the RP entry */
-	    delete_rp_entry(used_cand_rp_list, used_grp_mask_list,
-			    grp_rp_entry_ptr->rp);
-	}
-	free(grp_rp_entry_ptr);
+
+	if (entry_ptr->rp_grp_prev != (rp_grp_entry_t *)NULL)
+	    entry_ptr->rp_grp_prev->rp_grp_next = entry_ptr->rp_grp_next;
+	else
+	    entry_ptr->rp->rp_grp_next = entry_ptr->rp_grp_next;
+
+	if (entry_ptr->rp_grp_next != NULL) 
+	    entry_ptr->rp_grp_next->rp_grp_prev = entry_ptr->rp_grp_prev;
+
+	/* Delete the RP entry */
+	if (entry_ptr->rp->rp_grp_next == NULL)
+	    delete_rp_entry(used_cand_rp_list, used_grp_mask_list, entry_ptr->rp);
+
+	free(entry_ptr);
     }
+
     free(grp_mask_delete);
 }
 
 /*
  * TODO: currently not used.
  */
-void
-delete_rp(used_cand_rp_list, used_grp_mask_list, rp_addr)
-    cand_rp_t **used_cand_rp_list;
-    grp_mask_t **used_grp_mask_list;
-    u_int32 rp_addr;
+void delete_rp(cand_rp_t **used_cand_rp_list, grp_mask_t **used_grp_mask_list, u_int32 rp_addr)
 {
-    cand_rp_t *cand_rp_ptr;
+    cand_rp_t *ptr;
     u_int32 rp_addr_h = ntohl(rp_addr);
 
-    for(cand_rp_ptr = *used_cand_rp_list;
-	cand_rp_ptr != (cand_rp_t *)NULL;
-	cand_rp_ptr = cand_rp_ptr->next) {
-	if (ntohl(cand_rp_ptr->rpentry->address) > rp_addr_h)
+    for(ptr = *used_cand_rp_list; ptr != NULL; ptr = ptr->next) {
+	if (ntohl(ptr->rpentry->address) > rp_addr_h)
 	    continue;
-	if (cand_rp_ptr->rpentry->address == rp_addr)
+
+	if (ptr->rpentry->address == rp_addr)
 	    break;
 	else
 	    return;   /* Not found */
     }
     
-    if (cand_rp_ptr == (cand_rp_t *)NULL)
+    if (ptr == NULL)
 	return;       /* Not found */
-    delete_rp_entry(used_cand_rp_list, used_grp_mask_list, cand_rp_ptr);
+
+    delete_rp_entry(used_cand_rp_list, used_grp_mask_list, ptr);
 }
 
 
-static void
-delete_rp_entry(used_cand_rp_list, used_grp_mask_list, cand_rp_delete)
-    cand_rp_t **used_cand_rp_list;
-    grp_mask_t **used_grp_mask_list;
-    cand_rp_t *cand_rp_delete;
+static void delete_rp_entry(cand_rp_t **used_cand_rp_list, grp_mask_t **used_grp_mask_list, cand_rp_t *cand_rp_delete)
 {
-    rp_grp_entry_t *rp_grp_entry_ptr;
-    rp_grp_entry_t *rp_grp_entry_next;
-    grpentry_t *grpentry_ptr;
-    grpentry_t *grpentry_ptr_next;
+    rp_grp_entry_t *entry_ptr;
+    rp_grp_entry_t *entry_next;
+    grpentry_t *grp_ptr;
+    grpentry_t *grp_ptr_next;
 
-    if (cand_rp_delete == (cand_rp_t *)NULL)
+    if (cand_rp_delete == NULL)
 	return;
     
     /* Remove from the cand-RP chain */
-    if (cand_rp_delete->prev != (cand_rp_t *)NULL)
+    if (cand_rp_delete->prev)
 	cand_rp_delete->prev->next = cand_rp_delete->next;
     else
 	*used_cand_rp_list = cand_rp_delete->next;
 
-    if (cand_rp_delete->next != (cand_rp_t *)NULL)
+    if (cand_rp_delete->next)
 	cand_rp_delete->next->prev = cand_rp_delete->prev;
     
-    if (cand_rp_delete->rpentry->mrtlink != (mrtentry_t *)NULL) {
+    if (cand_rp_delete->rpentry->mrtlink) {
 	if (cand_rp_delete->rpentry->mrtlink->flags & MRTF_KERNEL_CACHE)
 	    delete_mrtentry_all_kernel_cache(cand_rp_delete->rpentry->mrtlink);
+
 	FREE_MRTENTRY(cand_rp_delete->rpentry->mrtlink);
     }
     free ((char *)cand_rp_delete->rpentry);
 
     /* Remove all rp_grp entries for this RP */
-    for (rp_grp_entry_ptr = cand_rp_delete->rp_grp_next;
-	 rp_grp_entry_ptr != (rp_grp_entry_t *)NULL;
-	 rp_grp_entry_ptr = rp_grp_entry_next) {
-	rp_grp_entry_next = rp_grp_entry_ptr->rp_grp_next;
-	rp_grp_entry_ptr->group->group_rp_number--;
+    for (entry_ptr = cand_rp_delete->rp_grp_next; entry_ptr; entry_ptr = entry_next) {
+	entry_next = entry_ptr->rp_grp_next;
+	entry_ptr->group->group_rp_number--;
 
 	/* First take care of the grp_rp chain */
-	if (rp_grp_entry_ptr->grp_rp_prev != (rp_grp_entry_t *)NULL) {
-	    rp_grp_entry_ptr->grp_rp_prev->grp_rp_next =
-		rp_grp_entry_ptr->grp_rp_next;
-	}
-	else {
-	    rp_grp_entry_ptr->group->grp_rp_next =
-		rp_grp_entry_ptr->grp_rp_next;
-	}
-	if (rp_grp_entry_ptr->grp_rp_next != (rp_grp_entry_t *)NULL) {
-	    rp_grp_entry_ptr->grp_rp_next->grp_rp_prev =
-		rp_grp_entry_ptr->grp_rp_prev;
-	}
+	if (entry_ptr->grp_rp_prev)
+	    entry_ptr->grp_rp_prev->grp_rp_next = entry_ptr->grp_rp_next;
+	else
+	    entry_ptr->group->grp_rp_next = entry_ptr->grp_rp_next;
 
-	if (rp_grp_entry_ptr->grp_rp_next == (rp_grp_entry_t *)NULL) {
-	    delete_grp_mask_entry(used_cand_rp_list, used_grp_mask_list,
-				  rp_grp_entry_ptr->group);
-	}
+	if (entry_ptr->grp_rp_next)
+	    entry_ptr->grp_rp_next->grp_rp_prev = entry_ptr->grp_rp_prev;
+
+	if (entry_ptr->grp_rp_next == NULL)
+	    delete_grp_mask_entry(used_cand_rp_list, used_grp_mask_list, entry_ptr->group);
 	
 	/* Remap the related groups */
-	for (grpentry_ptr = rp_grp_entry_ptr->grplink;
-	     grpentry_ptr != (grpentry_t *)NULL;
-	     grpentry_ptr = grpentry_ptr_next) {
-	    grpentry_ptr_next = grpentry_ptr->rpnext;
-	    remap_grpentry(grpentry_ptr);
+	for (grp_ptr = entry_ptr->grplink; grp_ptr; grp_ptr = grp_ptr_next) {
+	    grp_ptr_next = grp_ptr->rpnext;
+	    remap_grpentry(grp_ptr);
 	}
-	free (rp_grp_entry_ptr);
+
+	free(entry_ptr);
     }
+
     free((char *)cand_rp_delete);
 }
 
@@ -765,46 +685,46 @@ delete_rp_entry(used_cand_rp_list, used_grp_mask_list, cand_rp_delete)
  * being a good reason to change the RP, so for performancy reasons
  * no check is performed whether the RP will be really different one.
  */
-int
-remap_grpentry(grpentry_ptr)
-    grpentry_t *grpentry_ptr;
+int remap_grpentry(grpentry_t *grpentry_ptr)
 {
     rpentry_t *rpentry_ptr;
-    rp_grp_entry_t *rp_grp_entry_ptr;
+    rp_grp_entry_t *entry_ptr;
     mrtentry_t *grp_route;
     mrtentry_t *mrtentry_ptr;
     
-    if (grpentry_ptr == (grpentry_t *)NULL)
-	return(FALSE);
+    if (grpentry_ptr == NULL)
+	return FALSE;
     
     /* Remove from the list of all groups matching to the same RP */
-    if (grpentry_ptr->rpprev != (grpentry_t *)NULL)
+    if (grpentry_ptr->rpprev) {
 	grpentry_ptr->rpprev->rpnext = grpentry_ptr->rpnext;
-    else {
-	if (grpentry_ptr->active_rp_grp != (rp_grp_entry_t *)NULL)
+    } else {
+	if (grpentry_ptr->active_rp_grp)
 	    grpentry_ptr->active_rp_grp->grplink = grpentry_ptr->rpnext;
     }
-    if (grpentry_ptr->rpnext != (grpentry_t *)NULL)
+
+    if (grpentry_ptr->rpnext)
 	grpentry_ptr->rpnext->rpprev = grpentry_ptr->rpprev;
     
-    rp_grp_entry_ptr = rp_grp_match(grpentry_ptr->group);
-    if (rp_grp_entry_ptr == (rp_grp_entry_t *)NULL) {
+    entry_ptr = rp_grp_match(grpentry_ptr->group);
+    if (entry_ptr == NULL) {
 	/* If cannot remap, delete the group */
 	delete_grpentry(grpentry_ptr);
-	return (FALSE);
+	return FALSE;
     }
-    rpentry_ptr = rp_grp_entry_ptr->rp->rpentry;
+    rpentry_ptr = entry_ptr->rp->rpentry;
     
     /* Add to the new chain of all groups mapping to the same RP */
     grpentry_ptr->rpaddr  = rpentry_ptr->address;
-    grpentry_ptr->active_rp_grp = rp_grp_entry_ptr;
-    grpentry_ptr->rpnext = rp_grp_entry_ptr->grplink;
-    if (grpentry_ptr->rpnext != (grpentry_t *)NULL)
+    grpentry_ptr->active_rp_grp = entry_ptr;
+    grpentry_ptr->rpnext = entry_ptr->grplink;
+    if (grpentry_ptr->rpnext)
 	grpentry_ptr->rpnext->rpprev = grpentry_ptr;
-    grpentry_ptr->rpprev = (grpentry_t *)NULL;
-    rp_grp_entry_ptr->grplink = grpentry_ptr;
+    grpentry_ptr->rpprev = NULL;
+    entry_ptr->grplink = grpentry_ptr;
     
-    if ((grp_route = grpentry_ptr->grp_route) != (mrtentry_t *)NULL) {
+    grp_route = grpentry_ptr->grp_route;
+    if (grp_route) {
 	grp_route->upstream   = rpentry_ptr->upstream;
 	grp_route->metric     = rpentry_ptr->metric;
 	grp_route->preference = rpentry_ptr->preference;
@@ -815,11 +735,10 @@ remap_grpentry(grpentry_ptr)
 			  grp_route->asserted_oifs, MFC_UPDATE_FORCE);
     }
 
-    for (mrtentry_ptr = grpentry_ptr->mrtlink;
-	 mrtentry_ptr != (mrtentry_t *)NULL;
-	 mrtentry_ptr = mrtentry_ptr->grpnext) {
+    for (mrtentry_ptr = grpentry_ptr->mrtlink; mrtentry_ptr; mrtentry_ptr = mrtentry_ptr->grpnext) {
 	if (!(mrtentry_ptr->flags & MRTF_RP))
 	    continue;
+
 	mrtentry_ptr->upstream = rpentry_ptr->upstream;
 	mrtentry_ptr->metric   = rpentry_ptr->metric;
 	mrtentry_ptr->preference = rpentry_ptr->preference;
@@ -830,99 +749,88 @@ remap_grpentry(grpentry_ptr)
 			  mrtentry_ptr->asserted_oifs, MFC_UPDATE_FORCE);
     }
 
-    return (TRUE);
+    return TRUE;
 }
 
 
-rpentry_t *
-rp_match(group)
-    u_int32 group;
+rpentry_t *rp_match(u_int32 group)
 {
-    rp_grp_entry_t *rp_grp_entry_ptr;
+    rp_grp_entry_t *ptr;
 
-    rp_grp_entry_ptr = rp_grp_match(group);
-    if (rp_grp_entry_ptr != (rp_grp_entry_t *)NULL)
-	return (rp_grp_entry_ptr->rp->rpentry);
-    else
-	return (rpentry_t *)NULL;
+    ptr = rp_grp_match(group);
+    if (ptr)
+	return ptr->rp->rpentry;
+
+    return NULL;
 }
 
-rp_grp_entry_t *
-rp_grp_match(group)
-    u_int32 group;
+rp_grp_entry_t *rp_grp_match(u_int32 group)
 {
-    grp_mask_t *grp_mask_ptr;
-    rp_grp_entry_t *grp_rp_entry_ptr;
-    rp_grp_entry_t *best_entry = (rp_grp_entry_t *)NULL;
-    u_int8 best_priority = ~0;  /* Smaller is better */
-    u_int32 best_hash_value = 0; /* Bigger is better */
-    u_int32 best_address_h = 0;  /* Bigger is better */
-    u_int32 curr_hash_value = 0;
-    u_int32 curr_address_h = 0;
-    
-    u_int32 group_h = ntohl(group);
+    grp_mask_t *mask_ptr;
+    rp_grp_entry_t *entry_ptr;
+    rp_grp_entry_t *best_entry = NULL;
+    u_int8 best_priority       = ~0; /* Smaller is better */
+    u_int32 best_hash_value    = 0;  /* Bigger is better */
+    u_int32 best_address_h     = 0;  /* Bigger is better */
+    u_int32 curr_hash_value    = 0;
+    u_int32 curr_address_h     = 0;
+    u_int32 group_h            = ntohl(group);
 
-    if (grp_mask_list == (grp_mask_t *)NULL)
-	return (rp_grp_entry_t *)NULL;
+    if (grp_mask_list == NULL)
+	return NULL;
 
-    for (grp_mask_ptr = grp_mask_list; grp_mask_ptr != (grp_mask_t *)NULL;
-	 grp_mask_ptr = grp_mask_ptr->next) {
-
+    for (mask_ptr = grp_mask_list; mask_ptr; mask_ptr = mask_ptr->next) {
 	/* Search the grp_mask (group_prefix) list */
-	if ((group_h & ntohl(grp_mask_ptr->group_mask))
-	    != ntohl(grp_mask_ptr->group_mask & grp_mask_ptr->group_addr))
+	if ((group_h & ntohl(mask_ptr->group_mask))
+	    != ntohl(mask_ptr->group_mask & mask_ptr->group_addr))
 	    continue;
 	
-	for (grp_rp_entry_ptr = grp_mask_ptr->grp_rp_next;
-	     grp_rp_entry_ptr != (rp_grp_entry_t *)NULL;
-	     grp_rp_entry_ptr = grp_rp_entry_ptr->grp_rp_next) {
-	    if (best_priority < grp_rp_entry_ptr->priority)
+	for (entry_ptr = mask_ptr->grp_rp_next; entry_ptr; entry_ptr = entry_ptr->grp_rp_next) {
+	    if (best_priority < entry_ptr->priority)
 		break;
-	    curr_hash_value = RP_HASH_VALUE(group_h, grp_mask_ptr->hash_mask,
-					    curr_address_h);
-	    curr_address_h = ntohl(grp_rp_entry_ptr->rp->rpentry->address);
+
+	    curr_hash_value = RP_HASH_VALUE(group_h, mask_ptr->hash_mask, curr_address_h);
+	    curr_address_h = ntohl(entry_ptr->rp->rpentry->address);
 	    
-	    if (best_priority == grp_rp_entry_ptr->priority) {
+	    if (best_priority == entry_ptr->priority) {
 		/* Compare the hash_value and then the addresses */
 		if (curr_hash_value < best_hash_value)
 		    continue;
-		if (curr_hash_value == best_hash_value)
+
+		if (curr_hash_value == best_hash_value) {
 		    if (curr_address_h < best_address_h)
 			continue;
+		}
 	    }
+
 	    /* The current entry in the loop is preferred */
-	    best_entry = grp_rp_entry_ptr;
+	    best_entry = entry_ptr;
 	    best_priority = best_entry->priority;
 	    best_address_h = curr_address_h;
 	    best_hash_value = curr_hash_value;
 	}
     }
-
     
-    if (best_entry == (rp_grp_entry_t *)NULL)
-	return (rp_grp_entry_t *)NULL;
-
-    return (best_entry);
+    return best_entry;
 }
 
 
-rpentry_t *
-rp_find(rp_address)
-    u_int32 rp_address;
+rpentry_t *rp_find(u_int32 rp_address)
 {
     cand_rp_t *cand_rp_ptr;
     u_int32 address_h = ntohl(rp_address);
 
-    for(cand_rp_ptr = cand_rp_list; cand_rp_ptr != (cand_rp_t *)NULL;
-	cand_rp_ptr = cand_rp_ptr->next) {
+    for(cand_rp_ptr = cand_rp_list; cand_rp_ptr != NULL; cand_rp_ptr = cand_rp_ptr->next) {
 	if (ntohl(cand_rp_ptr->rpentry->address) > address_h)
 	    continue;
+
 	if (cand_rp_ptr->rpentry->address == rp_address)
-	    return (cand_rp_ptr->rpentry);
-	return (rpentry_t *)NULL;
+	    return cand_rp_ptr->rpentry;
+
+	return NULL;
     }
 
-    return (rpentry_t *)NULL;
+    return NULL;
 }
 
 
@@ -932,23 +840,21 @@ rp_find(rp_address)
  * Bootstrap router to multicast the RP-set or by the DR to unicast it to
  * a new neighbor. It DOES NOT change any timers.
  */
-int
-create_pim_bootstrap_message(send_buff)
-    char *send_buff;
+int create_pim_bootstrap_message(char *send_buff)
 {
     u_int8 *data_ptr;
-    grp_mask_t *grp_mask_ptr;
-    rp_grp_entry_t *grp_rp_entry_ptr;
+    grp_mask_t *mask_ptr;
+    rp_grp_entry_t *entry_ptr;
     int datalen;
     u_int8 masklen;
     
     if (curr_bsr_address == INADDR_ANY_N)
-	return (0);
+	return 0;
     
-    data_ptr = (u_int8 *)(send_buff + sizeof(struct ip)
-			  + sizeof(pim_header_t));
+    data_ptr = (u_int8 *)(send_buff + sizeof(struct ip) + sizeof(pim_header_t));
     if (curr_bsr_address == my_bsr_address)
 	curr_bsr_fragment_tag++;
+
     PUT_HOSTSHORT(curr_bsr_fragment_tag, data_ptr);
     MASK_TO_MASKLEN(curr_bsr_hash_mask, masklen);
     PUT_BYTE(masklen, data_ptr);
@@ -956,27 +862,24 @@ create_pim_bootstrap_message(send_buff)
     PUT_EUADDR(curr_bsr_address, data_ptr);
     
     /* TODO: XXX: No fragmentation support (yet) */
-    for (grp_mask_ptr = grp_mask_list; grp_mask_ptr != (grp_mask_t *)NULL;
-	 grp_mask_ptr = grp_mask_ptr->next) {
-	MASK_TO_MASKLEN(grp_mask_ptr->group_mask, masklen);
-	PUT_EGADDR(grp_mask_ptr->group_addr, masklen, 0, data_ptr);
-	PUT_BYTE(grp_mask_ptr->group_rp_number, data_ptr);
-	PUT_BYTE(grp_mask_ptr->group_rp_number, data_ptr); /* TODO: if frag.*/
+    for (mask_ptr = grp_mask_list; mask_ptr; mask_ptr = mask_ptr->next) {
+	MASK_TO_MASKLEN(mask_ptr->group_mask, masklen);
+	PUT_EGADDR(mask_ptr->group_addr, masklen, 0, data_ptr);
+	PUT_BYTE(mask_ptr->group_rp_number, data_ptr);
+	PUT_BYTE(mask_ptr->group_rp_number, data_ptr); /* TODO: if frag.*/
 	PUT_HOSTSHORT(0, data_ptr);
-	for (grp_rp_entry_ptr = grp_mask_ptr->grp_rp_next;
-	     grp_rp_entry_ptr != (rp_grp_entry_t *)NULL;
-	     grp_rp_entry_ptr = grp_rp_entry_ptr->grp_rp_next) {
-	    PUT_EUADDR(grp_rp_entry_ptr->rp->rpentry->address, data_ptr);
-	    PUT_HOSTSHORT(grp_rp_entry_ptr->holdtime, data_ptr);
-	    PUT_BYTE(grp_rp_entry_ptr->priority, data_ptr);
+
+	for (entry_ptr = mask_ptr->grp_rp_next; entry_ptr; entry_ptr = entry_ptr->grp_rp_next) {
+	    PUT_EUADDR(entry_ptr->rp->rpentry->address, data_ptr);
+	    PUT_HOSTSHORT(entry_ptr->holdtime, data_ptr);
+	    PUT_BYTE(entry_ptr->priority, data_ptr);
 	    PUT_BYTE(0, data_ptr);  /* The reserved field */
 	}
     }
     
-    datalen = (data_ptr - (u_int8 *)send_buff) - sizeof(struct ip) -
-	sizeof(pim_header_t);
+    datalen = (data_ptr - (u_int8 *)send_buff) - sizeof(struct ip) - sizeof(pim_header_t);
 
-    return (datalen);
+    return datalen;
 }
 
 
@@ -984,22 +887,24 @@ create_pim_bootstrap_message(send_buff)
  * Check if the rp_addr is the RP for the group corresponding to mrtentry_ptr.
  * Return TRUE or FALSE.
  */
-int check_mrtentry_rp(mrtentry_ptr, rp_addr)
-    mrtentry_t *mrtentry_ptr;
-    u_int32 rp_addr;
+int check_mrtentry_rp(mrtentry_t *mrtentry_ptr, u_int32 rp_addr)
 {
-    rp_grp_entry_t *rp_grp_entry_ptr;
+    rp_grp_entry_t *ptr;
     
-    if (mrtentry_ptr == (mrtentry_t *)NULL)
-	return (FALSE);
+    if (mrtentry_ptr == NULL)
+	return FALSE;
+
     if (rp_addr == INADDR_ANY_N)
-	return (FALSE);
-    rp_grp_entry_ptr = mrtentry_ptr->group->active_rp_grp;
-    if (rp_grp_entry_ptr == (rp_grp_entry_t *)NULL)
-	return (FALSE);
+	return FALSE;
+
+    ptr = mrtentry_ptr->group->active_rp_grp;
+    if (ptr == NULL)
+	return FALSE;
+
     if (mrtentry_ptr->group->rpaddr == rp_addr)
-	return (TRUE);
-    return (FALSE);
+	return TRUE;
+
+    return FALSE;
 }    
 
 /**
