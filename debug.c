@@ -393,7 +393,7 @@ void logit(int severity, int syserr, const char *format, ...)
             log_nmsgs++;
         if (syserr != 0) {
             errno = syserr;
-            syslog(severity, "%s: %m", msg);
+            syslog(severity, "%s: %s", msg, strerror(syserr));
         } else
             syslog(severity, "%s", msg);
     }
