@@ -284,9 +284,12 @@ static void start_all_vifs(void)
 void stop_all_vifs(void)
 {
     vifi_t vifi;
+    struct uvif *v;
 
     for (vifi = 0; vifi < numvifs; vifi++) {
-	stop_vif(vifi);
+	v = &uvifs[vifi];
+	if (!(v->uv_flags & VIFF_DOWN))
+	    stop_vif(vifi);
     }
 }
 
@@ -445,22 +448,25 @@ static int update_reg_vif(vifi_t register_vifi)
 
     /* Find the first useable vif with solid physical background */
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
-	if (v->uv_flags
-	    & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER | VIFF_TUNNEL))
+	if (v->uv_flags & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER | VIFF_TUNNEL))
 	    continue;
+
         /* Found. Stop the bogus Register vif first */
 	stop_vif(register_vifi);
 	uvifs[register_vifi].uv_lcl_addr = uvifs[vifi].uv_lcl_addr;
+
 	start_vif(register_vifi);
 	IF_DEBUG(DEBUG_PIM_REGISTER | DEBUG_IF)
 	    logit(LOG_NOTICE, 0, "%s has come up; vif #%u now in service",
-		uvifs[register_vifi].uv_name, register_vifi);
+		  uvifs[register_vifi].uv_name, register_vifi);
+
 	return 0;
     }
+
     vifs_down = TRUE;
-    logit(LOG_WARNING, 0, "Cannot start Register vif: %s",
-	uvifs[vifi].uv_name);
-    return(-1);
+    logit(LOG_WARNING, 0, "Cannot start Register vif: %s", uvifs[vifi].uv_name);
+
+    return -1;
 }
 
 
@@ -488,75 +494,71 @@ void check_vif_state(void)
 
     vifs_down = FALSE;
     checking_vifs = 1;
+
     /* TODO: Check all potential interfaces!!! */
     /* Check the physical and tunnels only */
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
 	if (v->uv_flags & (VIFF_DISABLED | VIFF_REGISTER))
 	    continue;
 	
-	strlcpy(ifr.ifr_name, v->uv_name, IFNAMSIZ);
 	/* get the interface flags */
+	strlcpy(ifr.ifr_name, v->uv_name, sizeof(ifr.ifr_name));
 	if (ioctl(udp_socket, SIOCGIFFLAGS, (char *)&ifr) < 0) {
            if (errno == ENODEV) {
-              logit(LOG_NOTICE, 0, "%s has gone; vif #%u taken out of service",
-                       v->uv_name, vifi);
+              logit(LOG_NOTICE, 0, "%s has gone; vif #%u taken out of service", v->uv_name, vifi);
               stop_vif(vifi);
               vifs_down = TRUE;
               continue;
            }
            else {
-              logit(LOG_ERR, errno,
-                       "check_vif_state: ioctl SIOCGIFFLAGS for %s", ifr.ifr_name);
+              logit(LOG_ERR, errno, "check_vif_state: ioctl SIOCGIFFLAGS for %s", ifr.ifr_name);
            }
 	}
 
 	if (v->uv_flags & VIFF_DOWN) {
-	    if (ifr.ifr_flags & IFF_UP) {
+	    if (ifr.ifr_flags & IFF_UP)
 		start_vif(vifi);
-	    }
-	    else vifs_down = TRUE;
-	}
-	else {
+	    else
+		vifs_down = TRUE;
+	} else {
 	    if (!(ifr.ifr_flags & IFF_UP)) {
-		logit(LOG_NOTICE, 0,
-		    "%s has gone down; vif #%u taken out of service",
-		    v->uv_name, vifi);
+		logit(LOG_NOTICE, 0, "%s has gone down; vif #%u taken out of service", v->uv_name, vifi);
 		stop_vif(vifi);
 		vifs_down = TRUE;
 	    }
 	}
     }
+
     /* Check the register(s) vif(s) */
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
-	register vifi_t vifi2;
-	register struct uvif *v2;
+	vifi_t vifi2;
+	struct uvif *v2;
 	int found;
 	
 	if (!(v->uv_flags & VIFF_REGISTER))
 	    continue;
-	else {
-	    found = 0;
-	    /* Find a physical vif with the same IP address as the
-	     * Register vif.
-	     */
-	    for (vifi2 = 0, v2 = uvifs; vifi2 < numvifs; ++vifi2, ++v2) {
-		if (v2->uv_flags
-		    & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER | VIFF_TUNNEL))
-		    continue;
-		if (v->uv_lcl_addr != v2->uv_lcl_addr)
-		    continue;
-		else {
-		    found = 1;
-		    break;
-		}
-	    }
-	    if (!found)
-		/* The physical interface with the IP address as the Register
-		 * vif is probably DOWN. Get a replacement.
-		 */
-		update_reg_vif(vifi);
+
+	found = 0;
+
+	/* Find a physical vif with the same IP address as the
+	 * Register vif. */
+	for (vifi2 = 0, v2 = uvifs; vifi2 < numvifs; ++vifi2, ++v2) {
+	    if (v2->uv_flags & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER | VIFF_TUNNEL))
+		continue;
+
+	    if (v->uv_lcl_addr != v2->uv_lcl_addr)
+		continue;
+
+	    found = 1;
+	    break;
 	}
+
+	/* The physical interface with the IP address as the Register
+	 * vif is probably DOWN. Get a replacement. */
+	if (!found)
+	    update_reg_vif(vifi);
     }
+
     checking_vifs = 0;
 }
 

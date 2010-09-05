@@ -14,10 +14,6 @@ that came up at the right moment to be written down.
 
   * The code should use the _PIM_VT handling of the 'struct pim'
 
-  * Check Kame's pim6sd re. appropriate handling of SIGHUG (vif.c):
-    http://www.kame.net/dev/cvsweb.cgi/kame/kame/kame/pim6sd/vif.c
-    (diffs between 1.2 and 1.3)
-
   * Check 2.10 from the spec "Unicast Routing Changes", and verify
     that it is properly implemented
 
