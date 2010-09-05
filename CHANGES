@@ -1,4 +1,14 @@
- * Version 2.1.2, Sat Sep  4 17:00:00 CET 2010
+* Version 2.1.3, Mon Sep  6 17:00:00 CET 2010
+ CHANGES:
+  - Removed GNU:ism %m from syslog() in debug.c, use strerror(errno) instead.
+  - Cleanup and ansification of a couple of files: rp.c, mrt.c, vif.c, route.c
+  - Initialize stack variables to silence overzealous GCC on PowerPC and S/390.
+    Debian bug 595584, this closes pimd issue #3 on GitHub.
+ BUG FIX:
+  - Merge bug fix for static-rp configurations from Kame's pim6sd route.c r1.28
+  - Close TODO item by merging in relevant changes from Kame's pim6sd vif.c r1.3
+
+* Version 2.1.2, Sat Sep  4 17:00:00 CET 2010
  CHANGES:
   - License change on mrouted code from OpenBSD team =>
     pimd fully free under 3-clause BSD!
@@ -23,7 +33,7 @@
   - Kernel include issues on Ubuntu 8.04, Linux <= 2.6.25, by Nikola Knežević
   - Fix build issues on NetBSD
 
- * Version 2.1.1, Sun Jan 17 15:14:17 CET 2010
+* Version 2.1.1, Sun Jan 17 15:14:17 CET 2010
   - Merged all patches from Lintrack.org:
     o 001-debian-6.diff
       Already merged, no-op - only documenting in case anyone wonders about it.
@@ -41,14 +51,14 @@
   - Bumping version again to celebrate the changes and make it easier for
     distributions to handle the upgrade.
 
- * Version 2.1.0-alpha29.19, Fri Jan 14 17:24:28 PST 2005
+* Version 2.1.0-alpha29.19, Fri Jan 14 17:24:28 PST 2005
  BUG FIX:
   - Don't ignore PIM Null Register messages if the IP version of the
     inner header is not valid.
   - Add a missing bracket inside rsrr.c (a bug report and a fix
     by <seyon@oullim.co.kr>)
 
- * Version 2.1.0-alpha29.18, Wed May 21 03:25:36 PDT 2003
+* Version 2.1.0-alpha29.18, Wed May 21 03:25:36 PDT 2003
  CHANGES:
   - Compilation fix for Solaris 8 (though, no guarantee pimd still works
     on that platform).
@@ -56,14 +66,14 @@
   - Update include/netinet/pim.h file with its lastest version
   - Update the copyright message of include/netinet/pim_var.h
 
- * Version 2.1.0, Sat Jan 16, 15:08:44 CET 2010
+* Version 2.1.0, Sat Jan 16, 15:08:44 CET 2010
  CHANGES:
   - Integrated the latest Debian patches from pimd_2.1.0-alpha29.17-9.diff.gz
   - Fixed the new file include/linux/netinet/in-my.h (Debian) so that the
     #else fallback uses the system netinet/in.h, which seems to work now.
   - Bumped version number, this code has been available for a while now.
 
- * Version 2.1.0-alpha29.17, Thu Mar 20 17:50:01 PST 2003
+* Version 2.1.0-alpha29.17, Thu Mar 20 17:50:01 PST 2003
  CHANGES:
   - The mrouted license (LICENSE.mrouted) updated with BSD-like
     license!! Thanks to the OpenBSD folks for the 2 years of hard
@@ -76,12 +86,12 @@
     do NOT send them to the PIM IETF Working Group mailing list!
     Instead, use the contact email address specified in README.
 
- * Version 2.1.0-alpha29.16, Tue Feb 18 10:45:59 PST 2003
+* Version 2.1.0-alpha29.16, Tue Feb 18 10:45:59 PST 2003
  BUG FIX:
   - Compilation bugfix for Linux
     (bug report by Serdar Uezuemcue <serdar@eikon.tum.de>)
 
- * Version 2.1.0-alpha29.15, Wed Feb 12 12:27:22 PST 2003
+* Version 2.1.0-alpha29.15, Wed Feb 12 12:27:22 PST 2003
  BUG FIX:
   - Routing socket descriptor leak
     (bug report and fix by SUZUKI Shinsuke <suz@crl.hitachi.co.jp>;
@@ -105,7 +115,7 @@
     Prunes iif from oiflist when installing it into kernel, instead of
     PIM route calculation time.
 
- * Version 2.1.0-alpha29.14, Mon Feb 10 11:48:07 PST 2003
+* Version 2.1.0-alpha29.14, Mon Feb 10 11:48:07 PST 2003
   BUG FIX:
   - Bugfix in calculating the netmask for POINTOPOINT interface in config.c
     (bug report by "J.W. (Bill) Atwood" <bill@cs.concordia.ca>)
@@ -114,18 +124,18 @@
     (the change is in rp_grp_match() in rp.c).
     (bug report by "Eva Pless" <eva.pless@imk.fraunhofer.de>)
 
- * Version 2.1.0-alpha29.13, Thu Nov  7 10:56:30 PST 2002
+* Version 2.1.0-alpha29.13, Thu Nov  7 10:56:30 PST 2002
   BUG FIX:
   - Bugfix in rp.c bootstrap_initial_delay() in calculating BSR
     election delay.
     (bug fix by SAKAI Hiroaki <sakai.hiroaki@finet.fujitsu.com>)
 
- * Version 2.1.0-alpha29.12, Thu Sep 26 14:17:26 PDT 2002
+* Version 2.1.0-alpha29.12, Thu Sep 26 14:17:26 PDT 2002
   BUG FIX:
   - Increase the size of the sending buffers in the kernel.
     (bug report by Andrea Gambirasio <andrea.gambirasio@softsolutions.it>)
 
- * Version 2.1.0-alpha29.11, Mon Jul  8 10:22:21 PDT 2002
+* Version 2.1.0-alpha29.11, Mon Jul  8 10:22:21 PDT 2002
   BUG FIX:
     Bug reports and fixes by SAKAI Hiroaki <sakai.hiroaki@finet.fujitsu.com>:
   - init_routesock() bugfix: initializing a forgotten variable
@@ -145,7 +155,7 @@
     with an HTTP URL, because the FTP server on catarina.usc.edu
     is not operational anymore.
 
- * Version 2.1.0-alpha29.10, Fri Apr 26 18:08:32 PDT 2002
+* Version 2.1.0-alpha29.10, Fri Apr 26 18:08:32 PDT 2002
   BUG FIX:
   - Widen the space for "Subnet" addresses printed under
     "Virtual Interface Table"
@@ -155,7 +165,7 @@
     one Prune for the same group (thanks to Xiaofeng Liu
     <liu_xiao_feng@yahoo.com>).
 
- * Version 2.1.0-alpha29.9, Tue Nov 13 12:50:21 PST 2001
+* Version 2.1.0-alpha29.9, Tue Nov 13 12:50:21 PST 2001
   BUG FIX:
   - Increase the config line buffer size to 1024
     (Bug fix by Hiroyuki Komatsu <komatsu@taiyaki.org>)
@@ -167,12 +177,12 @@
      Hiroyuki Komatsu <komatsu@taiyaki.org>)
   - New file README.debug (still very short though).
 
- * Version 2.1.0-alpha29.8, Sun Sep 16 17:37:10 PDT 2001
+* Version 2.1.0-alpha29.8, Sun Sep 16 17:37:10 PDT 2001
   NEW FUNCTIONALITIES:
   - Better log messages for point-to-point links in config.c
     (thanks to Hitoshi Asaeda <asaeda@yamato.ibm.com>)
 
- * Version 2.1.0-alpha29.7, Mon Sep 10 13:32:04 PDT 2001
+* Version 2.1.0-alpha29.7, Mon Sep 10 13:32:04 PDT 2001
   BUG FIX:
   - Memory leaks bugs fixed in rp.c
     (Thanks to Sri V <vallepal@yahoo.com>).
@@ -204,12 +214,12 @@
     distribution.
   - RSRR disabled by default in Makefile
 
- * Version 2.1.0-alpha29.6, Fri May  4 08:54:37 PDT 2001
+* Version 2.1.0-alpha29.6, Fri May  4 08:54:37 PDT 2001
   BUG FIX:
    - Bug fixes in processing Join/Prune messages.
      (Thanks to Sri V <vallepal@yahoo.com>)
 
- * Version 2.1.0-alpha29.5, Thu Feb 22 05:05:40 PST 2001
+* Version 2.1.0-alpha29.5, Thu Feb 22 05:05:40 PST 2001
   BUG FIX:
    - When there is a new member, add_leaf() is called by IGMP code
      for any router, not only for a DR. The reason is because
@@ -231,7 +241,7 @@
 
    - Mini-FAQ entries added to README.
 
- * Version 2.1.0-alpha29.4, Fri Dec  1 06:26:32 PST 2000
+* Version 2.1.0-alpha29.4, Fri Dec  1 06:26:32 PST 2000
   BUG FIX:
    - Fix the ordering of 'MRT_PIM' and 'MRT_DONE' in k_stop_pim() in kern.c
      (thanks to Hitoshi Asaeda <asaeda@yamato.ibm.co.jp>).
@@ -255,13 +265,12 @@
    - printf argument cleanup in igmp_proto.c (courtesy KAME)
    - forgotten printf argument in restart() in main.c added (courtesy KAME)
 
- * Version 2.1.0-alpha29.3, Fri Oct 13 05:41:24 PDT 2000
+* Version 2.1.0-alpha29.3, Fri Oct 13 05:41:24 PDT 2000
   BUG FIX:
    - ADVANCE() bug fix in routesock.c (if your system doesn't have SA_LEN)
      (thanks to "Eric S. Johnson" <esj@cs.fiu.edu>)
 
- * Version 2.1.0-alpha29.2, Fri Oct 13 05:41:24 PDT 2000
-
+* Version 2.1.0-alpha29.2, Fri Oct 13 05:41:24 PDT 2000
   NEW FUNCTIONALITIES:
     NOTENOTENOTE: THIS pimd VERSION WON'T WORK WITH OLDER PIM-SM
     KERNEL PATCHES (kernel patches released prior to this version)!!!!
@@ -301,7 +310,7 @@
     clarification, etc)
   - k_stop_pim() added to cleanup() in main.c (courtesy Kame)
 
- * Version 2.1.0-alpha28, Wed Mar 15 21:38:23 PST 2000
+* Version 2.1.0-alpha28, Wed Mar 15 21:38:23 PST 2000
   BUG FIX:
   - Fixes to enable point-to-point interfaces being added correctly
     (thanks to "Venning, Roger" <Roger.Venning@corpmail.telstra.com.au>)
@@ -314,7 +323,7 @@
     together (although all modern C compilers should not create a
     problem).
  
- * Version 2.1.0-alpha27, Fri Jan 21 05:41:42 PST 2000
+* Version 2.1.0-alpha27, Fri Jan 21 05:41:42 PST 2000
   BUG FIX:
   - Bug fix in rp.c add_grp_mask() and delete_grp_mask() : in some
     cases if the RPs are configured with nested multicast prefixes,
@@ -323,7 +332,7 @@
   NB: this release may the the lastest one from 2.1.0. The next release
   will be 2.2.0 and there will be lots of changes inside.
 
- * Version 2.1.0-alpha26, Thu Oct 28 23:29:37 PDT 1999
+* Version 2.1.0-alpha26, Thu Oct 28 23:29:37 PDT 1999
   BUG FIX:
   - Bug fix in receive_pim_register() in pim_proto.c: ntohl() was missing
     inside IN_MULTICAST(). Thanks to Fred Griffoul <griffoul@ccrle.nec.de>
@@ -333,7 +342,7 @@
   - Some VIFF_TUNNEL checks added or deleted in various places.
     Slowly preparing pimd to be able to work with GRE tunnels...
 
- * Version 2.1.0-alpha25, Mon Aug 30 19:56:08 PDT 1999
+* Version 2.1.0-alpha25, Mon Aug 30 19:56:08 PDT 1999
   BUG FIX:
   - Bug reports and fixes by Hitoshi Asaeda <asaeda@yamato.ibm.co.jp>
     inside parse_reg_threshold() and parse_data_threshold() in config.c
@@ -346,7 +355,7 @@
   - include/freebsd defaults for freebsd-3.x include files
     include/freebsd2 contains the freebsd-2.x include files
 
- * Version 2.1.0-alpha24, Mon Aug  9 11:31:23 PDT 1999
+* Version 2.1.0-alpha24, Mon Aug  9 11:31:23 PDT 1999
   CHANGES:
   - PIM_DEFAULT_CAND_RP_ADV_PERIOD definition set to 60, but
     default 'time' value for inter Cand-RP messages is set in
@@ -364,8 +373,7 @@
     the checksum over the whole PIM Register (if there are still
     any left).
     
-
- * Version 2.1.0-alpha23, Mon May 24 16:05:47 PDT 1999
+* Version 2.1.0-alpha23, Mon May 24 16:05:47 PDT 1999
   NEW FUNCTIONALITIES:
   - Finally pimd works under Linux (probably 2.1.126, 2.2.x and 2.3.x)
     However, probably there is need for small "fix" in the kernel:
@@ -409,7 +417,7 @@
   - "Join/Prune" message bug fixed if the message contains several
    groups joined/pruned
 
- * Version 2.1.0-alpha22, Wed Nov 11 16:23:29 PST 1998
+* Version 2.1.0-alpha22, Wed Nov 11 16:23:29 PST 1998
   BUG FIX:
   - Bug fixes to compile under newer Linux kernel (linux-2.1.127)
     To compile for older kernels ( ver < ???), add -Dold_Linux to the
@@ -418,7 +426,7 @@
     added, with few modifications applied.
   (Bug reports by "Jonathan Day" <jd9812@my-dejanews.com>)
 
- * Version 2.1.0-alpha21, Wed Nov  4 10:56:52 PST 1998
+* Version 2.1.0-alpha21, Wed Nov  4 10:56:52 PST 1998
   BUG FIX:
   - bug fixes in join_or_prune() (pim_proto.c) in case of (S,G)
     overlapping with (*,G)
@@ -426,7 +434,7 @@
   - Join/Prune (*,G), (*,*,RP) fire timer optimization/fix in
     change_interfaces() in route.c
 
- * Version 2.1.0-alpha20, Wed Aug 26 13:45:54 PDT 1998
+* Version 2.1.0-alpha20, Wed Aug 26 13:45:54 PDT 1998
   BUG FIX:
   - fix TIMEOUT definitions in difs.h (bug report by Nidhi Bhaskar)
     (originally, if timer value less than 5 seconds, it won't become 0)
@@ -459,14 +467,14 @@
   - pim.h and pim_var.h are in separate common directory
   - added BSDI definition to pim_var.h (thanks to Hitoshi Asaeda)
 
- * Version 2.1.0-alpha19, Wed Jul 29 11:15:28 PDT 1998
+* Version 2.1.0-alpha19, Wed Jul 29 11:15:28 PDT 1998
   BUG FIX:
   - bug fix in find_route() when searching for (*,*,RP)
   - bug fix in move_kernel_cache(): no need to do move_kernel_cache()
     from (*,*,R) to (*,G) first when we call move_kernel_cache() for (S,G)
     (both bug reports by Chirayu Shah (shahzad@torrentnet.com))
 
- * Version 2.1.0-alpha18, Fri May 29 18:50:10 PDT 1998
+* Version 2.1.0-alpha18, Fri May 29 18:50:10 PDT 1998
   CHANGES:
   - Now compiles under Linux (haven't check whether the PIMv2 kernel
    support in linux-2.1.103 works)
@@ -476,7 +484,7 @@
   - allpimrouters deleted from igmp.c (already defined in pim.c)
   - igmpmsg defined for IRIX 
 
- * Version 2.1.0-alpha17, Thu May 21 19:12:14 PDT 1998
+* Version 2.1.0-alpha17, Thu May 21 19:12:14 PDT 1998
   NEW FUNCTIONALITIES:
   - (*,G) MFC kernel support completed and verified
     Compile with KERNEL_MFC_WC_G defined in Makefile, but then must use it
@@ -486,7 +494,7 @@
   BUG FIX:
   - MRTF_MFC_CLONE_SG flag set after delete_single_kernel_cache() is called
  
- * Version 2.1.0-alpha16, Tue May 19 16:37:23 PDT 1998
+* Version 2.1.0-alpha16, Tue May 19 16:37:23 PDT 1998
   NEW FUNCTIONALITIES:
   - PIM registers kernel encapsulation support
     (compile with PIM_REG_KERNEL_ENCAP defined in Makefile)
@@ -498,15 +506,15 @@
   - new function in mrt.c: delete_single_kernel_cache_addr()
     Uses source, group to specify a MFC to be deleted
 
- * Version 2.1.0-alpha15, May 14, 1998
+* Version 2.1.0-alpha15, May 14, 1998
   - few bug fixes related to NetBSD definitions 
     (thanks to Heiko W.Rupp <hwr@pilhuhn.de>)
 
- * Version 2.1.0-alpha14, May 12, 1998
+* Version 2.1.0-alpha14, May 12, 1998
   - few bug fixes related to NetBSD definitions 
     (thanks to Heiko W.Rupp <hwr@pilhuhn.de>)
 
- * Version 2.1.0-alpha13, May 11, 1998
+* Version 2.1.0-alpha13, May 11, 1998
   NEW FUNCTIONALITIES:
   - If the RP changes, the necessary actions are taken to pass the
     new RP address to the kernel. To be used for kernel register encap.
@@ -529,7 +537,7 @@
     is a flag instead of TRUE/FALSE
   - removed unneeded piece of code from process_cache_miss()
 
- * Version 2.1.0-alpha12, May 10, 1998
+* Version 2.1.0-alpha12, May 10, 1998
    NEW FUNCTIONALITIES:
    - added default_source_metric and default_source_preference (1024)
      because the kernel's unicast routing table is not a good source
@@ -551,7 +559,7 @@
    - Remove the no needed anymore pim header definition in pimd.h
    - Don't use anymore MRT_PIM (replaced back with MRT_ASSERT) (in kern.c)
 
- * Version 2.1.0-alpha11, Mar 16, 1998
+* Version 2.1.0-alpha11, Mar 16, 1998
    NEW FUNCTIONALITIES:
 
    BUG FIX:
@@ -585,7 +593,7 @@
      IF_TIMER_SET(), IF_TIMER_NOT_SET()
 
 
- * Version 2.1.0-alpha10, Mar 3, 1998 (temp. non-public release)
+* Version 2.1.0-alpha10, Mar 3, 1998 (temp. non-public release)
    NEW FUNCTIONALITIES:
    - `interval` can be applied for data rate check. 
      The statement in pimd.conf that only the default value will be used is
@@ -617,7 +625,7 @@
      no routing entries created for the LAN scoped addresses
    - DEBUG_DVMRP_DETAIL and DEBUG_PIM_DETAIL added
 
- * Version 2.1.0-alpha9, Feb 18, 1997
+* Version 2.1.0-alpha9, Feb 18, 1997
    - "non-commersial" statement deleted from the copyright message
    - mrinfo support added
    - mtrace support added (not completed and not enough tested)
@@ -635,11 +643,11 @@
    - find_route() debug messages removed
    - #ifdef for HAVE_SA_LEN corrected
 
- * Version 2.1.0-alpha8, Nov 23, 1997
+* Version 2.1.0-alpha8, Nov 23, 1997
    - bug fix in defs.h (BSDI related).
    - small changes in Makefile
 
- * Version 2.1.0-alpha7, Nov 23, 1997
+* Version 2.1.0-alpha7, Nov 23, 1997
    - RSRR support for (*,G) completed
    - BSDI 3.0/3.1 support by Hitoshi Asaeda (asaeda@yamato.ibm.co.jp)
      (the kernel patches will be available soon)
@@ -648,25 +656,25 @@
      of inet_fmts() (thanks to Hitoshi Asaeda)
    - pimd.conf format changed
 
- * Version 2.1.0-alpha6, Nov 20, 1997
+* Version 2.1.0-alpha6, Nov 20, 1997
    - many bug fixes: remove the inherited leaves from (S,G) when a receiver
      drops membership, some parameters when calling change_interface() fixed,
      use send_pim_null_register + take the appropriate action when the
      register suppression timer expires, bug fix related to choosing the
      largest local IP address for little endian machines.
 
- * Version 2.1.0-alpha5
+* Version 2.1.0-alpha5
    - main.c: main() startup message fix
    - timer.c: age_routes(): bug fix in debug code
 
- * Version 2.1.0-alpha4, Oct 31, 1997
+* Version 2.1.0-alpha4, Oct 31, 1997
    - Number of minor things changed, so now it compiles for
 	SunOS 4.1.3 (cc, gcc)
    - pimd.conf: two errors, related to the rate limit fixed 
    - pim_proto.c: bug fix (thanks to SunOS cc warning!) in 
 	send_periodic_pim_join_prune(), but affects only the (*,*,RP) stuff
 
- * Version 2.1.0-alpha3, Oct 13, 1997
+* Version 2.1.0-alpha3, Oct 13, 1997
    - Makefile cleanup
    - defs.h cleanup
    - igmp_proto.c: bug fixes in accept_group_report()
@@ -676,14 +684,14 @@
    - rp.c: bug fixes in init_rp_and_bsr(), add_cand_rp(),
 	   create_pim_bootstrap_message()
 
- * Version 2.1.0-alpha2, Sept 23, 1997
+* Version 2.1.0-alpha2, Sept 23, 1997
    - Makefile: "make diff" code added
    - debug.c: debug output slightly changed
    - defs.h: *TIMEOUT() definitions fixed
    - route.c: bugs fixed in change_interface() and switch_shortest_path()
    - timer.c: number of bugs fixed in age_routes()
 
- * Version 2.1.0-alpha1, Aug 26, 1997
+* Version 2.1.0-alpha1, Aug 26, 1997
    - First alpha version of the "new, up to date" pimd. RSRR support + Solaris
      support added. Many functions rewritten and/or modified.
 
