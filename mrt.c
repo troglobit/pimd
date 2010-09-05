@@ -124,23 +124,24 @@ srcentry_t *find_source(u_int32 source)
 
 mrtentry_t *find_route(u_int32 source, u_int32 group, u_int16 flags, char create)
 {
-    srcentry_t *srcentry_ptr;
-    grpentry_t *grpentry_ptr;
-    mrtentry_t *mrtentry_ptr;
-    mrtentry_t *mrtentry_ptr_wc;
-    mrtentry_t *mrtentry_ptr_pmbr;
-    mrtentry_t *mrtentry_ptr_2;
-    rpentry_t  *rpentry_ptr = NULL;
-    rp_grp_entry_t *rp_grp_entry_ptr;
+    srcentry_t *srcentry_ptr         = NULL;
+    grpentry_t *grpentry_ptr         = NULL;
+    mrtentry_t *mrtentry_ptr         = NULL;
+    mrtentry_t *mrtentry_ptr_wc      = NULL;
+    mrtentry_t *mrtentry_ptr_pmbr    = NULL;
+    mrtentry_t *mrtentry_ptr_2       = NULL;
+    rpentry_t  *rpentry_ptr          = NULL;
+    rp_grp_entry_t *rp_grp_entry_ptr = NULL;
 
     if (flags & (MRTF_SG | MRTF_WC)) {
         if (!IN_MULTICAST(ntohl(group)))
             return NULL;
     }
 
-    if (flags & MRTF_SG)
+    if (flags & MRTF_SG) {
         if (!inet_valid_host(source))
             return NULL;
+    }
 
     if (create == DONT_CREATE) {
         if (flags & (MRTF_SG | MRTF_WC)) {
@@ -151,20 +152,23 @@ mrtentry_t *find_route(u_int32 source, u_int32 group, u_int16 flags, char create
                     if (rpentry_ptr)
                         return rpentry_ptr->mrtlink;
                 }
+
                 return NULL;
             }
+
             /* Search for the source */
             if (flags & MRTF_SG) {
-                if (search_grpmrtlink(grpentry_ptr, source,
-                                      &mrtentry_ptr) == TRUE) {
+                if (search_grpmrtlink(grpentry_ptr, source, &mrtentry_ptr) == TRUE) {
                     /* Exact (S,G) entry found */
                     return mrtentry_ptr;
                 }
             }
+
             /* No (S,G) entry. Return the (*,G) entry (if exist) */
             if ((flags & MRTF_WC) && grpentry_ptr->grp_route)
                 return grpentry_ptr->grp_route;
         }
+
         /* Return the (*,*,RP) entry */
         if (flags & MRTF_PMBR) {
             rpentry_ptr = NULL;
@@ -172,9 +176,11 @@ mrtentry_t *find_route(u_int32 source, u_int32 group, u_int16 flags, char create
                 rpentry_ptr = rp_match(group);
             else if (source != INADDR_ANY_N)
                 rpentry_ptr = rp_find(source);
+
             if (rpentry_ptr)
                 return rpentry_ptr->mrtlink;
         }
+
         return NULL;
     }
 
@@ -183,9 +189,9 @@ mrtentry_t *find_route(u_int32 source, u_int32 group, u_int16 flags, char create
 
     if (flags & (MRTF_SG | MRTF_WC)) {
         grpentry_ptr = create_grpentry(group);
-        if (!grpentry_ptr) {
+        if (!grpentry_ptr)
             return NULL;
-        }
+
         if (!grpentry_ptr->active_rp_grp) {
             rp_grp_entry_ptr = rp_grp_match(group);
             if (!rp_grp_entry_ptr) {
@@ -193,11 +199,14 @@ mrtentry_t *find_route(u_int32 source, u_int32 group, u_int16 flags, char create
                     /* New created grpentry. Delete it. */
                     delete_grpentry(grpentry_ptr);
                 }
+
                 return NULL;
             }
+
             rpentry_ptr = rp_grp_entry_ptr->rp->rpentry;
             grpentry_ptr->active_rp_grp = rp_grp_entry_ptr;
             grpentry_ptr->rpaddr = rpentry_ptr->address;
+
             /* Link to the top of the rp_grp_chain */
             grpentry_ptr->rpnext = rp_grp_entry_ptr->grplink;
             rp_grp_entry_ptr->grplink = grpentry_ptr;
@@ -219,8 +228,10 @@ mrtentry_t *find_route(u_int32 source, u_int32 group, u_int16 flags, char create
                 /* New created grpentry. Delete it. */
                 delete_grpentry(grpentry_ptr);
             }
+
             return NULL;
         }
+
         if (mrtentry_ptr_wc->flags & MRTF_NEW) {
             mrtentry_ptr_pmbr = rpentry_ptr->mrtlink;
             /* Copy the oif list from the (*,*,RP) entry */
@@ -236,6 +247,7 @@ mrtentry_t *find_route(u_int32 source, u_int32 group, u_int16 flags, char create
             rsrr_cache_bring_up(mrtentry_ptr_wc);
 #endif /* RSRR */
         }
+
         if (!(flags & MRTF_SG)) {
             return mrtentry_ptr_wc;
         }
@@ -251,6 +263,7 @@ mrtentry_t *find_route(u_int32 source, u_int32 group, u_int16 flags, char create
                 /* New created grpentry. Delete it. */
                 delete_grpentry(grpentry_ptr);
             }
+
             return NULL;
         }
 
@@ -298,26 +311,29 @@ mrtentry_t *find_route(u_int32 source, u_int32 group, u_int16 flags, char create
             rsrr_cache_bring_up(mrtentry_ptr);
 #endif /* RSRR */
         }
+
         return mrtentry_ptr;
     }
 
     if (flags & MRTF_PMBR) {
         /* Get/return the (*,*,RP) routing entry */
-        if (group != INADDR_ANY_N)
+        if (group != INADDR_ANY_N) {
             rpentry_ptr = rp_match(group);
-        else if (source != INADDR_ANY_N) {
+	} else if (source != INADDR_ANY_N) {
             rpentry_ptr = rp_find(source);
-            if (!rpentry_ptr) {
+            if (!rpentry_ptr)
                 return NULL;
-            }
-        }
-        else
+        } else {
             return NULL; /* source == group == INADDR_ANY */
+	}
+
         if (rpentry_ptr->mrtlink)
             return rpentry_ptr->mrtlink;
+
         mrtentry_ptr = create_mrtentry(rpentry_ptr, NULL, MRTF_PMBR);
         if (!mrtentry_ptr)
             return NULL;
+
         mrtentry_ptr->incoming = rpentry_ptr->incoming;
         mrtentry_ptr->upstream = rpentry_ptr->upstream;
         mrtentry_ptr->metric   = rpentry_ptr->metric;
@@ -348,6 +364,7 @@ void delete_srcentry(srcentry_t *srcentry_ptr)
         if (ptr->flags & MRTF_KERNEL_CACHE)
             /* Delete the kernel cache first */
             delete_mrtentry_all_kernel_cache(ptr);
+
         if (ptr->grpprev) {
             ptr->grpprev->grpnext = ptr->grpnext;
 	} else {
@@ -357,10 +374,13 @@ void delete_srcentry(srcentry_t *srcentry_ptr)
                 delete_grpentry(ptr->group);
             }
         }
+
         if (ptr->grpnext)
             ptr->grpnext->grpprev = ptr->grpprev;
+
         FREE_MRTENTRY(ptr);
     }
+
     free((char *)srcentry_ptr);
 }
 
@@ -385,10 +405,11 @@ void delete_grpentry(grpentry_t *grpentry_ptr)
     }
 
     /* Delete from the rp_grp_entry chain */
-    if (grpentry_ptr->active_rp_grp != (rp_grp_entry_t *)NULL) {
-        if (grpentry_ptr->rpnext != (grpentry_t *)NULL)
+    if (grpentry_ptr->active_rp_grp != NULL) {
+        if (grpentry_ptr->rpnext != NULL)
             grpentry_ptr->rpnext->rpprev = grpentry_ptr->rpprev;
-        if (grpentry_ptr->rpprev != (grpentry_t *)NULL)
+
+        if (grpentry_ptr->rpprev != NULL)
             grpentry_ptr->rpprev->rpnext = grpentry_ptr->rpnext;
         else
             grpentry_ptr->active_rp_grp->grplink = grpentry_ptr->rpnext;
@@ -399,19 +420,23 @@ void delete_grpentry(grpentry_t *grpentry_ptr)
         if (ptr->flags & MRTF_KERNEL_CACHE)
             /* Delete the kernel cache first */
             delete_mrtentry_all_kernel_cache(ptr);
-        if (ptr->srcprev)
+
+        if (ptr->srcprev) {
             ptr->srcprev->srcnext = ptr->srcnext;
-        else {
+        } else {
             ptr->source->mrtlink = ptr->srcnext;
             if (!ptr->srcnext) {
                 /* Delete the srcentry if this was the last routing entry */
                 delete_srcentry(ptr->source);
             }
         }
+
         if (ptr->srcnext)
             ptr->srcnext->srcprev = ptr->srcprev;
+
         FREE_MRTENTRY(ptr);
     }
+
     free((char *)grpentry_ptr);
 }
 
@@ -422,7 +447,7 @@ void delete_mrtentry(mrtentry_t *mrtentry_ptr)
     mrtentry_t *mrtentry_wc;
     mrtentry_t *mrtentry_rp;
 
-    if (mrtentry_ptr == (mrtentry_t *)NULL)
+    if (mrtentry_ptr == NULL)
         return;
 
     /* Delete the kernel cache first */
@@ -436,27 +461,27 @@ void delete_mrtentry(mrtentry_t *mrtentry_ptr)
 
     if (mrtentry_ptr->flags & MRTF_PMBR) {
         /* (*,*,RP) mrtentry */
-        mrtentry_ptr->source->mrtlink = (mrtentry_t *)NULL;
-    }
-    else if (mrtentry_ptr->flags & MRTF_SG) {
+        mrtentry_ptr->source->mrtlink = NULL;
+    } else if (mrtentry_ptr->flags & MRTF_SG) {
         /* (S,G) mrtentry */
+
         /* Delete from the grpentry MRT chain */
-        if (mrtentry_ptr->grpprev != (mrtentry_t *)NULL)
+        if (mrtentry_ptr->grpprev != NULL) {
             mrtentry_ptr->grpprev->grpnext = mrtentry_ptr->grpnext;
-        else {
+	} else {
             mrtentry_ptr->group->mrtlink = mrtentry_ptr->grpnext;
-            if (mrtentry_ptr->grpnext == (mrtentry_t *)NULL) {
+            if (mrtentry_ptr->grpnext == NULL) {
                 /* All (S,G) MRT entries are gone. Allow creating (*,G) MFC
                  * entries.
                  */
-                mrtentry_rp
-                    = mrtentry_ptr->group->active_rp_grp->rp->rpentry->mrtlink;
+                mrtentry_rp = mrtentry_ptr->group->active_rp_grp->rp->rpentry->mrtlink;
                 mrtentry_wc = mrtentry_ptr->group->grp_route;
-                if (mrtentry_rp != (mrtentry_t *)NULL)
+                if (mrtentry_rp != NULL)
                     mrtentry_rp->flags &= ~MRTF_MFC_CLONE_SG;
-                if (mrtentry_wc != (mrtentry_t *)NULL)
+
+                if (mrtentry_wc != NULL) {
                     mrtentry_wc->flags &= ~MRTF_MFC_CLONE_SG;
-                else {
+                } else {
                     /* Delete the group entry if it has no (*,G)
                      * routing entry
                      */
@@ -464,28 +489,28 @@ void delete_mrtentry(mrtentry_t *mrtentry_ptr)
                 }
             }
         }
-        if (mrtentry_ptr->grpnext != (mrtentry_t *)NULL)
+        if (mrtentry_ptr->grpnext != NULL)
             mrtentry_ptr->grpnext->grpprev = mrtentry_ptr->grpprev;
 
         /* Delete from the srcentry MRT chain */
-        if (mrtentry_ptr->srcprev != (mrtentry_t *)NULL)
+        if (mrtentry_ptr->srcprev != NULL) {
             mrtentry_ptr->srcprev->srcnext = mrtentry_ptr->srcnext;
-        else {
+        } else {
             mrtentry_ptr->source->mrtlink = mrtentry_ptr->srcnext;
-            if (mrtentry_ptr->srcnext == (mrtentry_t *)NULL) {
+            if (mrtentry_ptr->srcnext == NULL) {
                 /* Delete the srcentry if this was the last routing entry */
                 delete_srcentry(mrtentry_ptr->source);
             }
         }
-        if (mrtentry_ptr->srcnext != (mrtentry_t *)NULL)
+
+        if (mrtentry_ptr->srcnext != NULL)
             mrtentry_ptr->srcnext->srcprev = mrtentry_ptr->srcprev;
-    }
-    else {
+    } else {
         /* This mrtentry should be (*,G) */
         grpentry_ptr = mrtentry_ptr->group;
-        grpentry_ptr->grp_route = (mrtentry_t *)NULL;
+        grpentry_ptr->grp_route = NULL;
 
-        if (grpentry_ptr->mrtlink == (mrtentry_t *)NULL)
+        if (grpentry_ptr->mrtlink == NULL)
             /* Delete the group entry if it has no (S,G) entries */
             delete_grpentry(grpentry_ptr);
     }
@@ -499,13 +524,13 @@ static int search_srclist(u_int32 source, srcentry_t **sourceEntry)
     srcentry_t *s_prev,*s;
     u_int32 source_h = ntohl(source);
 
-    for (s_prev = srclist, s = s_prev->next; s != (srcentry_t *)NULL;
-         s_prev = s, s = s->next) {
+    for (s_prev = srclist, s = s_prev->next; s != NULL; s_prev = s, s = s->next) {
         /* The srclist is ordered with the smallest addresses first.
          * The first entry is not used.
          */
         if (ntohl(s->address) < source_h)
             continue;
+
         if (s->address == source) {
             *sourceEntry = s;
             return TRUE;
@@ -513,6 +538,7 @@ static int search_srclist(u_int32 source, srcentry_t **sourceEntry)
         break;
     }
     *sourceEntry = s_prev;   /* The insertion point is between s_prev and s */
+
     return FALSE;
 }
 
@@ -522,8 +548,7 @@ static int search_grplist(u_int32 group, grpentry_t **groupEntry)
     grpentry_t *g_prev, *g;
     u_int32 group_h = ntohl(group);
 
-    for (g_prev = grplist, g = g_prev->next; g != (grpentry_t *)NULL;
-         g_prev = g, g = g->next) {
+    for (g_prev = grplist, g = g_prev->next; g != NULL; g_prev = g, g = g->next) {
         /* The grplist is ordered with the smallest address first.
          * The first entry is not used.
          */
@@ -565,6 +590,7 @@ static srcentry_t *create_srcentry(u_int32 source)
         free((char *)srcentry_ptr);
         return NULL;
     }
+
     RESET_TIMER(srcentry_ptr->timer);
     srcentry_ptr->mrtlink = NULL;
     srcentry_ptr->cand_rp = NULL;
@@ -588,6 +614,8 @@ static grpentry_t *create_grpentry(u_int32 group)
     grpentry_t *grpentry_ptr;
     grpentry_t *grpentry_prev;
 
+    /* If already exists, return it.  Otheriwse search_grplist() returns the
+     * insertion point in grpentry_prev. */
     if (search_grplist(group, &grpentry_prev) == TRUE)
         return grpentry_prev;
 
@@ -635,24 +663,28 @@ static grpentry_t *create_grpentry(u_int32 group)
 static int search_srcmrtlink(srcentry_t *srcentry_ptr, u_int32 group, mrtentry_t **mrtPtr)
 {
     mrtentry_t *mrtentry_ptr;
-    mrtentry_t *m_prev = (mrtentry_t *)NULL;
+    mrtentry_t *m_prev = NULL;
     u_int32 group_h = ntohl(group);
 
-    for(mrtentry_ptr = srcentry_ptr->mrtlink;
-        mrtentry_ptr != (mrtentry_t *)NULL;
-        m_prev = mrtentry_ptr, mrtentry_ptr = mrtentry_ptr->srcnext) {
+    for (mrtentry_ptr = srcentry_ptr->mrtlink;
+	 mrtentry_ptr != NULL;
+	 m_prev = mrtentry_ptr, mrtentry_ptr = mrtentry_ptr->srcnext) {
         /* The entries are ordered with the smaller group address first.
          * The addresses are in network order.
          */
         if (ntohl(mrtentry_ptr->group->group) < group_h)
             continue;
+
         if (mrtentry_ptr->group->group == group) {
             *mrtPtr = mrtentry_ptr;
             return TRUE;
         }
+
         break;
     }
+
     *mrtPtr = m_prev;
+
     return FALSE;
 }
 
@@ -665,62 +697,66 @@ static int search_srcmrtlink(srcentry_t *srcentry_ptr, u_int32 group, mrtentry_t
 static int search_grpmrtlink(grpentry_t *grpentry_ptr, u_int32 source, mrtentry_t **mrtPtr)
 {
     mrtentry_t *mrtentry_ptr;
-    mrtentry_t *m_prev = (mrtentry_t *)NULL;
+    mrtentry_t *m_prev = NULL;
     u_int32 source_h = ntohl(source);
 
     for (mrtentry_ptr = grpentry_ptr->mrtlink;
-         mrtentry_ptr != (mrtentry_t *)NULL;
+         mrtentry_ptr != NULL;
          m_prev = mrtentry_ptr, mrtentry_ptr = mrtentry_ptr->grpnext) {
         /* The entries are ordered with the smaller source address first.
          * The addresses are in network order.
          */
         if (ntohl(mrtentry_ptr->source->address) < source_h)
             continue;
+
         if (source == mrtentry_ptr->source->address) {
             *mrtPtr = mrtentry_ptr;
             return TRUE;
         }
+
         break;
     }
+
     *mrtPtr = m_prev;
+
     return FALSE;
 }
 
 
 static void insert_srcmrtlink(mrtentry_t *mrtentry_new, mrtentry_t *mrtentry_prev, srcentry_t *srcentry_ptr)
 {
-    if (mrtentry_prev == (mrtentry_t *)NULL) {
+    if (mrtentry_prev == NULL) {
         /* Has to be insert as the head entry for this source */
         mrtentry_new->srcnext = srcentry_ptr->mrtlink;
-        mrtentry_new->srcprev = (mrtentry_t *)NULL;
+        mrtentry_new->srcprev = NULL;
         srcentry_ptr->mrtlink = mrtentry_new;
-    }
-    else {
+    } else {
         /* Insert right after the mrtentry_prev */
         mrtentry_new->srcnext = mrtentry_prev->srcnext;
         mrtentry_new->srcprev = mrtentry_prev;
         mrtentry_prev->srcnext = mrtentry_new;
     }
-    if (mrtentry_new->srcnext != (mrtentry_t *)NULL)
+
+    if (mrtentry_new->srcnext != NULL)
         mrtentry_new->srcnext->srcprev = mrtentry_new;
 }
 
 
 static void insert_grpmrtlink(mrtentry_t *mrtentry_new, mrtentry_t *mrtentry_prev, grpentry_t *grpentry_ptr)
 {
-    if (mrtentry_prev == (mrtentry_t *)NULL) {
+    if (mrtentry_prev == NULL) {
         /* Has to be insert as the head entry for this group */
         mrtentry_new->grpnext = grpentry_ptr->mrtlink;
-        mrtentry_new->grpprev = (mrtentry_t *)NULL;
+        mrtentry_new->grpprev = NULL;
         grpentry_ptr->mrtlink = mrtentry_new;
-    }
-    else {
+    } else {
         /* Insert right after the mrtentry_prev */
         mrtentry_new->grpnext = mrtentry_prev->grpnext;
         mrtentry_new->grpprev = mrtentry_prev;
         mrtentry_prev->grpnext = mrtentry_new;
     }
-    if (mrtentry_new->grpnext != (mrtentry_t *)NULL)
+
+    if (mrtentry_new->grpnext != NULL)
         mrtentry_new->grpnext->grpprev = mrtentry_new;
 }
 
@@ -732,7 +768,7 @@ static mrtentry_t *alloc_mrtentry(srcentry_t *srcentry_ptr, grpentry_t *grpentry
     u_int8  vif_numbers;
 
     mrtentry_ptr = (mrtentry_t *)malloc(sizeof(mrtentry_t));
-    if (mrtentry_ptr == (mrtentry_t *)NULL) {
+    if (mrtentry_ptr == NULL) {
         logit(LOG_WARNING, 0, "alloc_mrtentry(): out of memory");
         return NULL;
     }
@@ -749,46 +785,44 @@ static mrtentry_t *alloc_mrtentry(srcentry_t *srcentry_ptr, grpentry_t *grpentry
     VIFM_CLRALL(mrtentry_ptr->pruned_oifs);
     VIFM_CLRALL(mrtentry_ptr->asserted_oifs);
     VIFM_CLRALL(mrtentry_ptr->oifs);
-    mrtentry_ptr->upstream = (pim_nbr_entry_t *)NULL;
+    mrtentry_ptr->upstream = NULL;
     mrtentry_ptr->metric = 0;
     mrtentry_ptr->preference = 0;
     mrtentry_ptr->pmbr_addr = INADDR_ANY_N;
 #ifdef RSRR
-    mrtentry_ptr->rsrr_cache = (struct rsrr_cache *)NULL;
+    mrtentry_ptr->rsrr_cache = NULL;
 #endif /* RSRR */
-/*
- * XXX: TODO: if we are short in memory, we can reserve as few as possible
- * space for vif timers (per group and/or routing entry), but then everytime
- * when a new interfaces is configured, the router will be restarted and
- * will delete the whole routing table. The "memory is cheap" solution is
- * to reserve timer space for all potential vifs in advance and then no
- * need to delete the routing table and disturb the forwarding.
- */
+
+    /* XXX: TODO: if we are short in memory, we can reserve as few as possible
+     * space for vif timers (per group and/or routing entry), but then everytime
+     * when a new interfaces is configured, the router will be restarted and
+     * will delete the whole routing table. The "memory is cheap" solution is
+     * to reserve timer space for all potential vifs in advance and then no
+     * need to delete the routing table and disturb the forwarding.
+     */
 #ifdef SAVE_MEMORY
     mrtentry_ptr->vif_timers = (u_int16 *)malloc(sizeof(u_int16) * numvifs);
-    mrtentry_ptr->vif_deletion_delay =
-        (u_int16 *)malloc(sizeof(u_int16) * numvifs);
+    mrtentry_ptr->vif_deletion_delay = (u_int16 *)malloc(sizeof(u_int16) * numvifs);
     vif_numbers = numvifs;
 #else
-    mrtentry_ptr->vif_timers =
-        (u_int16 *)malloc(sizeof(u_int16) * total_interfaces);
-    mrtentry_ptr->vif_deletion_delay =
-        (u_int16 *)malloc(sizeof(u_int16) * total_interfaces);
+    mrtentry_ptr->vif_timers = (u_int16 *)malloc(sizeof(u_int16) * total_interfaces);
+    mrtentry_ptr->vif_deletion_delay = (u_int16 *)malloc(sizeof(u_int16) * total_interfaces);
     vif_numbers = total_interfaces;
 #endif /* SAVE_MEMORY */
-    if ((mrtentry_ptr->vif_timers == (u_int16 *)NULL) ||
-        (mrtentry_ptr->vif_deletion_delay == (u_int16 *)NULL)) {
+    if ((mrtentry_ptr->vif_timers == NULL) ||
+        (mrtentry_ptr->vif_deletion_delay == NULL)) {
         logit(LOG_WARNING, 0, "alloc_mrtentry(): out of memory");
         FREE_MRTENTRY(mrtentry_ptr);
         return NULL;
     }
+
     /* Reset the timers */
-    for (i = 0, i_ptr = mrtentry_ptr->vif_timers; i < vif_numbers;
-         i++, i_ptr++)
+    for (i = 0, i_ptr = mrtentry_ptr->vif_timers; i < vif_numbers; i++, i_ptr++) {
         RESET_TIMER(*i_ptr);
-    for (i = 0, i_ptr = mrtentry_ptr->vif_deletion_delay; i < vif_numbers;
-         i++, i_ptr++)
+    }
+    for (i = 0, i_ptr = mrtentry_ptr->vif_deletion_delay; i < vif_numbers; i++, i_ptr++) {
         RESET_TIMER(*i_ptr);
+    }
 
     mrtentry_ptr->flags = MRTF_NEW;
     RESET_TIMER(mrtentry_ptr->timer);
@@ -796,7 +830,7 @@ static mrtentry_t *alloc_mrtentry(srcentry_t *srcentry_ptr, grpentry_t *grpentry
     RESET_TIMER(mrtentry_ptr->rs_timer);
     RESET_TIMER(mrtentry_ptr->assert_timer);
     RESET_TIMER(mrtentry_ptr->assert_rate_timer);
-    mrtentry_ptr->kernel_cache = (kernel_cache_t *)NULL;
+    mrtentry_ptr->kernel_cache = NULL;
 
     return mrtentry_ptr;
 }
@@ -831,7 +865,7 @@ static mrtentry_t *create_mrtentry(srcentry_t *srcentry_ptr, grpentry_t *grpentr
          * Create and insert in group mrtlink and source mrtlink chains.
          */
         r_new = alloc_mrtentry(srcentry_ptr, grpentry_ptr);
-        if (r_new == (mrtentry_t *)NULL)
+        if (r_new == NULL)
             return NULL;
         /*
          * r_new has to be insert right after r_grp_insert in the
@@ -846,10 +880,10 @@ static mrtentry_t *create_mrtentry(srcentry_t *srcentry_ptr, grpentry_t *grpentr
 
     if (flags & MRTF_WC) {
         /* (*,G) entry */
-        if (grpentry_ptr->grp_route != (mrtentry_t *)NULL)
+        if (grpentry_ptr->grp_route != NULL)
             return grpentry_ptr->grp_route;
         r_new = alloc_mrtentry(srcentry_ptr, grpentry_ptr);
-        if (r_new == (mrtentry_t *)NULL)
+        if (r_new == NULL)
             return NULL;
         grpentry_ptr->grp_route = r_new;
         r_new->flags |= (MRTF_WC | MRTF_RP);
@@ -858,10 +892,10 @@ static mrtentry_t *create_mrtentry(srcentry_t *srcentry_ptr, grpentry_t *grpentr
 
     if (flags & MRTF_PMBR) {
         /* (*,*,RP) entry */
-        if (srcentry_ptr->mrtlink != (mrtentry_t *)NULL)
+        if (srcentry_ptr->mrtlink != NULL)
             return srcentry_ptr->mrtlink;
         r_new = alloc_mrtentry(srcentry_ptr, grpentry_ptr);
-        if (r_new == (mrtentry_t *)NULL)
+        if (r_new == NULL)
             return NULL;
         srcentry_ptr->mrtlink = r_new;
         r_new->flags |= (MRTF_PMBR | MRTF_RP);
@@ -885,15 +919,14 @@ void delete_mrtentry_all_kernel_cache(mrtentry_t *mrtentry_ptr)
     }
 
     /* Free all kernel_cache entries */
-    for (kernel_cache_ptr = mrtentry_ptr->kernel_cache;
-         kernel_cache_ptr != (kernel_cache_t *)NULL; ) {
+    for (kernel_cache_ptr = mrtentry_ptr->kernel_cache; kernel_cache_ptr != NULL; ) {
         kernel_cache_prev        = kernel_cache_ptr;
         kernel_cache_ptr         = kernel_cache_ptr->next;
         k_del_mfc(igmp_socket, kernel_cache_prev->source,
                   kernel_cache_prev->group);
         free((char *)kernel_cache_prev);
     }
-    mrtentry_ptr->kernel_cache = (kernel_cache_t *)NULL;
+    mrtentry_ptr->kernel_cache = NULL;
 
     /* turn off the cache flag(s) */
     mrtentry_ptr->flags &= ~(MRTF_KERNEL_CACHE | MRTF_MFC_CLONE_SG);
@@ -902,21 +935,24 @@ void delete_mrtentry_all_kernel_cache(mrtentry_t *mrtentry_ptr)
 
 void delete_single_kernel_cache(mrtentry_t *mrtentry_ptr, kernel_cache_t *kernel_cache_ptr)
 {
-    if (kernel_cache_ptr->prev == (kernel_cache_t *)NULL) {
+    if (kernel_cache_ptr->prev == NULL) {
         mrtentry_ptr->kernel_cache = kernel_cache_ptr->next;
-        if (mrtentry_ptr->kernel_cache == (kernel_cache_t *)NULL)
+        if (mrtentry_ptr->kernel_cache == NULL)
             mrtentry_ptr->flags &= ~(MRTF_KERNEL_CACHE | MRTF_MFC_CLONE_SG);
-    }
-    else
+    } else {
         kernel_cache_ptr->prev->next = kernel_cache_ptr->next;
-    if (kernel_cache_ptr->next != (kernel_cache_t *)NULL)
+    }
+
+    if (kernel_cache_ptr->next != NULL)
         kernel_cache_ptr->next->prev = kernel_cache_ptr->prev;
-    IF_DEBUG(DEBUG_MFC)
+
+    IF_DEBUG(DEBUG_MFC) {
         logit(LOG_DEBUG, 0, "Deleting MFC entry for source %s and group %s",
 	      inet_fmt(kernel_cache_ptr->source, s1, sizeof(s1)),
 	      inet_fmt(kernel_cache_ptr->group, s2, sizeof(s2)));
-    k_del_mfc(igmp_socket, kernel_cache_ptr->source,
-              kernel_cache_ptr->group);
+    }
+
+    k_del_mfc(igmp_socket, kernel_cache_ptr->source, kernel_cache_ptr->group);
     free((char *)kernel_cache_ptr);
 }
 
@@ -927,7 +963,7 @@ void delete_single_kernel_cache_addr(mrtentry_t *mrtentry_ptr, u_int32 source, u
     u_int32 group_h;
     kernel_cache_t *kernel_cache_ptr;
 
-    if (mrtentry_ptr == (mrtentry_t *)NULL)
+    if (mrtentry_ptr == NULL)
         return;
 
     source_h = ntohl(source);
@@ -935,7 +971,7 @@ void delete_single_kernel_cache_addr(mrtentry_t *mrtentry_ptr, u_int32 source, u
 
     /* Find the exact (S,G) kernel_cache entry */
     for (kernel_cache_ptr = mrtentry_ptr->kernel_cache;
-         kernel_cache_ptr != (kernel_cache_t *)NULL;
+         kernel_cache_ptr != NULL;
          kernel_cache_ptr = kernel_cache_ptr->next) {
         if (ntohl(kernel_cache_ptr->group) < group_h)
             continue;
@@ -945,29 +981,33 @@ void delete_single_kernel_cache_addr(mrtentry_t *mrtentry_ptr, u_int32 source, u
             continue;
         if (ntohl(kernel_cache_ptr->source) > source_h)
             return;	/* Not found */
+
         /* Found exact match */
         break;
     }
 
-    if (kernel_cache_ptr == (kernel_cache_t *)NULL)
+    if (kernel_cache_ptr == NULL)
         return;
 
     /* Found. Delete it */
-    if (kernel_cache_ptr->prev == (kernel_cache_t *)NULL) {
+    if (kernel_cache_ptr->prev == NULL) {
         mrtentry_ptr->kernel_cache = kernel_cache_ptr->next;
-        if (mrtentry_ptr->kernel_cache == (kernel_cache_t *)NULL)
+        if (mrtentry_ptr->kernel_cache == NULL)
             mrtentry_ptr->flags &= ~(MRTF_KERNEL_CACHE | MRTF_MFC_CLONE_SG);
-    }
-    else
+    } else{
         kernel_cache_ptr->prev->next = kernel_cache_ptr->next;
-    if (kernel_cache_ptr->next != (kernel_cache_t *)NULL)
+    }
+
+    if (kernel_cache_ptr->next != NULL)
         kernel_cache_ptr->next->prev = kernel_cache_ptr->prev;
-    IF_DEBUG(DEBUG_MFC)
+
+    IF_DEBUG(DEBUG_MFC) {
         logit(LOG_DEBUG, 0, "Deleting MFC entry for source %s and group %s",
 	      inet_fmt(kernel_cache_ptr->source, s1, sizeof(s1)),
 	      inet_fmt(kernel_cache_ptr->group, s2, sizeof(s2)));
-    k_del_mfc(igmp_socket, kernel_cache_ptr->source,
-              kernel_cache_ptr->group);
+    }
+
+    k_del_mfc(igmp_socket, kernel_cache_ptr->source, kernel_cache_ptr->group);
     free((char *)kernel_cache_ptr);
 }
 
@@ -984,7 +1024,7 @@ void add_kernel_cache(mrtentry_t *mrtentry_ptr, u_int32 source, u_int32 group, u
     kernel_cache_t *kernel_cache_prev;
     kernel_cache_t *kernel_cache_new;
 
-    if (mrtentry_ptr == (mrtentry_t *)NULL)
+    if (mrtentry_ptr == NULL)
         return;
 
     move_kernel_cache(mrtentry_ptr, flags);
@@ -993,9 +1033,10 @@ void add_kernel_cache(mrtentry_t *mrtentry_ptr, u_int32 source, u_int32 group, u
         /* (S,G) */
         if (mrtentry_ptr->flags & MRTF_KERNEL_CACHE)
             return;
+
         kernel_cache_new = (kernel_cache_t *)malloc(sizeof(kernel_cache_t));
-        kernel_cache_new->next = (kernel_cache_t *)NULL;
-        kernel_cache_new->prev = (kernel_cache_t *)NULL;
+        kernel_cache_new->next = NULL;
+        kernel_cache_new->prev = NULL;
         kernel_cache_new->source = source;
         kernel_cache_new->group = group;
         kernel_cache_new->sg_count.pktcnt = 0;
@@ -1003,15 +1044,16 @@ void add_kernel_cache(mrtentry_t *mrtentry_ptr, u_int32 source, u_int32 group, u
         kernel_cache_new->sg_count.wrong_if = 0;
         mrtentry_ptr->kernel_cache = kernel_cache_new;
         mrtentry_ptr->flags |= MRTF_KERNEL_CACHE;
+
         return;
     }
 
     source_h = ntohl(source);
     group_h = ntohl(group);
-    kernel_cache_prev = (kernel_cache_t *)NULL;
+    kernel_cache_prev = NULL;
 
     for (kernel_cache_next = mrtentry_ptr->kernel_cache;
-         kernel_cache_next != (kernel_cache_t *)NULL;
+         kernel_cache_next != NULL;
          kernel_cache_prev = kernel_cache_next,
              kernel_cache_next = kernel_cache_next->next) {
         if (ntohl(kernel_cache_next->group) < group_h)
@@ -1022,6 +1064,7 @@ void add_kernel_cache(mrtentry_t *mrtentry_ptr, u_int32 source, u_int32 group, u
             continue;
         if (ntohl(kernel_cache_next->source) > source_h)
             break;
+
         /* Found exact match. Nothing to change. */
         return;
     }
@@ -1031,12 +1074,14 @@ void add_kernel_cache(mrtentry_t *mrtentry_ptr, u_int32 source, u_int32 group, u
      * kernel_cache_next
      */
     kernel_cache_new = (kernel_cache_t *)malloc(sizeof(kernel_cache_t));
-    if (kernel_cache_prev != (kernel_cache_t *)NULL)
+    if (kernel_cache_prev != NULL)
         kernel_cache_prev->next = kernel_cache_new;
     else
         mrtentry_ptr->kernel_cache = kernel_cache_new;
-    if (kernel_cache_next != (kernel_cache_t *)NULL)
+
+    if (kernel_cache_next != NULL)
         kernel_cache_next->prev = kernel_cache_new;
+
     kernel_cache_new->prev = kernel_cache_prev;
     kernel_cache_new->next = kernel_cache_next;
     kernel_cache_new->source = source;
@@ -1063,7 +1108,7 @@ static void move_kernel_cache(mrtentry_t *mrtentry_ptr, u_int16 flags)
     u_int32 source_h;
     int found;
 
-    if (mrtentry_ptr == (mrtentry_t *)NULL)
+    if (mrtentry_ptr == NULL)
         return;
 
     if (mrtentry_ptr->flags & MRTF_PMBR)
@@ -1074,13 +1119,12 @@ static void move_kernel_cache(mrtentry_t *mrtentry_ptr, u_int16 flags)
         group_h = ntohl(mrtentry_ptr->group->group);
         mrtentry_pmbr =
             mrtentry_ptr->group->active_rp_grp->rp->rpentry->mrtlink;
-        if (mrtentry_pmbr == (mrtentry_t *)NULL)
+        if (mrtentry_pmbr == NULL)
             return;    /* Nothing to move */
 
-        first_kernel_cache_ptr = last_kernel_cache_ptr =
-            (kernel_cache_t *)NULL;
+        first_kernel_cache_ptr = last_kernel_cache_ptr = NULL;
         for (kernel_cache_ptr = mrtentry_pmbr->kernel_cache;
-             kernel_cache_ptr != (kernel_cache_t *)NULL;
+             kernel_cache_ptr != NULL;
              kernel_cache_ptr = kernel_cache_ptr->next) {
             /*
              * The order is: (1) smaller group;
@@ -1088,69 +1132,74 @@ static void move_kernel_cache(mrtentry_t *mrtentry_ptr, u_int16 flags)
              */
             if (ntohl(kernel_cache_ptr->group) < group_h)
                 continue;
+
             if (ntohl(kernel_cache_ptr->group) != group_h)
                 break;
+
             /* Select the kernel_cache entries to move  */
-            if (first_kernel_cache_ptr == (kernel_cache_t *)NULL) {
+            if (first_kernel_cache_ptr == NULL) {
                 first_kernel_cache_ptr = last_kernel_cache_ptr =
                     kernel_cache_ptr;
-            }
-            else
+            } else {
                 last_kernel_cache_ptr = kernel_cache_ptr;
+	    }
         }
 
-        if (first_kernel_cache_ptr != (kernel_cache_t *)NULL) {
+        if (first_kernel_cache_ptr != NULL) {
             /* Fix the old chain */
-            if (first_kernel_cache_ptr->prev != (kernel_cache_t *)NULL) {
+            if (first_kernel_cache_ptr->prev != NULL) {
                 first_kernel_cache_ptr->prev->next =
                     last_kernel_cache_ptr->next;
-            }
-            else
+            } else {
                 mrtentry_pmbr->kernel_cache = last_kernel_cache_ptr->next;
-            if (last_kernel_cache_ptr->next != (kernel_cache_t *)NULL)
-                last_kernel_cache_ptr->next->prev =
-                    first_kernel_cache_ptr->prev;
-            if (mrtentry_pmbr->kernel_cache == (kernel_cache_t *)NULL)
-                mrtentry_pmbr->flags
-                    &= ~(MRTF_KERNEL_CACHE | MRTF_MFC_CLONE_SG);
+	    }
+
+            if (last_kernel_cache_ptr->next != NULL)
+                last_kernel_cache_ptr->next->prev = first_kernel_cache_ptr->prev;
+
+            if (mrtentry_pmbr->kernel_cache == NULL)
+                mrtentry_pmbr->flags &= ~(MRTF_KERNEL_CACHE | MRTF_MFC_CLONE_SG);
 
             /* Insert in the new place */
-            prev_kernel_cache_ptr = (kernel_cache_t *)NULL;
-            last_kernel_cache_ptr->next = (kernel_cache_t *)NULL;
+            prev_kernel_cache_ptr = NULL;
+            last_kernel_cache_ptr->next = NULL;
             mrtentry_ptr->flags |= MRTF_KERNEL_CACHE;
 
             for (kernel_cache_ptr = mrtentry_ptr->kernel_cache;
-                 kernel_cache_ptr != (kernel_cache_t *)NULL; ) {
-                if (first_kernel_cache_ptr == (kernel_cache_t *)NULL)
+                 kernel_cache_ptr != NULL; ) {
+                if (first_kernel_cache_ptr == NULL)
                     break;  /* All entries have been inserted */
+
                 if (ntohl(kernel_cache_ptr->source) >
                     ntohl(first_kernel_cache_ptr->source)) {
                     /* Insert the entry before kernel_cache_ptr */
                     insert_kernel_cache_ptr = first_kernel_cache_ptr;
                     first_kernel_cache_ptr = first_kernel_cache_ptr->next;
-                    if (kernel_cache_ptr->prev != (kernel_cache_t *)NULL)
-                        kernel_cache_ptr->prev->next =
-                            insert_kernel_cache_ptr;
+
+                    if (kernel_cache_ptr->prev != NULL)
+                        kernel_cache_ptr->prev->next = insert_kernel_cache_ptr;
                     else
-                        mrtentry_ptr->kernel_cache =
-                            insert_kernel_cache_ptr;
-                    insert_kernel_cache_ptr->prev =
-                        kernel_cache_ptr->prev;
+                        mrtentry_ptr->kernel_cache = insert_kernel_cache_ptr;
+
+                    insert_kernel_cache_ptr->prev = kernel_cache_ptr->prev;
                     insert_kernel_cache_ptr->next = kernel_cache_ptr;
                     kernel_cache_ptr->prev = insert_kernel_cache_ptr;
                 }
                 prev_kernel_cache_ptr = kernel_cache_ptr;
                 kernel_cache_ptr = kernel_cache_ptr->next;
             }
-            if (first_kernel_cache_ptr != (kernel_cache_t *)NULL) {
+
+            if (first_kernel_cache_ptr != NULL) {
                 /* Place all at the end after prev_kernel_cache_ptr */
-                if (prev_kernel_cache_ptr != (kernel_cache_t *)NULL)
+                if (prev_kernel_cache_ptr != NULL)
                     prev_kernel_cache_ptr->next = first_kernel_cache_ptr;
                 else
                     mrtentry_ptr->kernel_cache = first_kernel_cache_ptr;
+
                 first_kernel_cache_ptr->prev = prev_kernel_cache_ptr;
             }
         }
+
         return;
     }
 
@@ -1162,11 +1211,10 @@ static void move_kernel_cache(mrtentry_t *mrtentry_ptr, u_int16 flags)
          */
         /* TODO: XXX: No need for this? Thinking.... */
 /*	move_kernel_cache(mrtentry_ptr->group->grp_route, flags); */
-        if ((mrtentry_rp = mrtentry_ptr->group->grp_route) ==
-            (mrtentry_t *)NULL)
-            mrtentry_rp =
-                mrtentry_ptr->group->active_rp_grp->rp->rpentry->mrtlink;
-        if (mrtentry_rp == (mrtentry_t *)NULL)
+        if ((mrtentry_rp = mrtentry_ptr->group->grp_route) == NULL)
+            mrtentry_rp = mrtentry_ptr->group->active_rp_grp->rp->rpentry->mrtlink;
+
+        if (mrtentry_rp == NULL)
             return;
 
         if (mrtentry_rp->incoming != mrtentry_ptr->incoming) {
@@ -1188,37 +1236,46 @@ static void move_kernel_cache(mrtentry_t *mrtentry_ptr, u_int16 flags)
         group_h  = ntohl(mrtentry_ptr->group->group);
         found = FALSE;
         for (kernel_cache_ptr = mrtentry_rp->kernel_cache;
-             kernel_cache_ptr != (kernel_cache_t *)NULL;
+             kernel_cache_ptr != NULL;
              kernel_cache_ptr = kernel_cache_ptr->next) {
             if (ntohl(kernel_cache_ptr->group) < group_h)
                 continue;
+
             if (ntohl(kernel_cache_ptr->group) > group_h)
                 break;
+
             if (ntohl(kernel_cache_ptr->source) < source_h)
                 continue;
+
             if (ntohl(kernel_cache_ptr->source) > source_h)
                 break;
+
             /* We found it! */
-            if (kernel_cache_ptr->prev != (kernel_cache_t *)NULL)
+            if (kernel_cache_ptr->prev != NULL){
                 kernel_cache_ptr->prev->next = kernel_cache_ptr->next;
-            else {
+            } else {
                 mrtentry_rp->kernel_cache = kernel_cache_ptr->next;
             }
-            if (kernel_cache_ptr->next != (kernel_cache_t *)NULL)
+
+            if (kernel_cache_ptr->next != NULL)
                 kernel_cache_ptr->next->prev = kernel_cache_ptr->prev;
+
             found = TRUE;
+
             break;
         }
 
         if (found == TRUE) {
-            if (mrtentry_rp->kernel_cache == (kernel_cache_t *)NULL)
+            if (mrtentry_rp->kernel_cache == NULL)
                 mrtentry_rp->flags &= ~(MRTF_KERNEL_CACHE | MRTF_MFC_CLONE_SG);
-            if (mrtentry_ptr->kernel_cache != (kernel_cache_t *)NULL)
+
+            if (mrtentry_ptr->kernel_cache != NULL)
                 free ((char *)mrtentry_ptr->kernel_cache);
+
             mrtentry_ptr->flags |= MRTF_KERNEL_CACHE;
             mrtentry_ptr->kernel_cache = kernel_cache_ptr;
-            kernel_cache_ptr->prev = (kernel_cache_t *)NULL;
-            kernel_cache_ptr->next = (kernel_cache_t *)NULL;
+            kernel_cache_ptr->prev = NULL;
+            kernel_cache_ptr->next = NULL;
         }
     }
 }
