@@ -380,7 +380,8 @@ rp_grp_entry_t *add_rp_grp_entry(cand_rp_t  **used_cand_rp_list,
 	 */
 	entry_next->holdtime = rp_holdtime;
 	entry_next->fragment_tag = fragment_tag;
-	return (entry_next);
+
+	return entry_next;
     }
     
     /* Create and link the new entry */
