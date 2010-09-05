@@ -114,18 +114,21 @@ pim_nbr_entry_t *find_pim_nbr(u_int32 source)
     u_int32 next_hop_router_addr;
 
     if (local_address(source) != NO_VIF)
-        return (pim_nbr_entry_t *)NULL;
+        return NULL;
     k_req_incoming(source, &rpfc);
+
     if ((rpfc.rpfneighbor.s_addr == INADDR_ANY_N)
         || (rpfc.iif == NO_VIF))
-        return (pim_nbr_entry_t *)NULL;
+        return NULL;
+
     next_hop_router_addr = rpfc.rpfneighbor.s_addr;
     for (pim_nbr = uvifs[rpfc.iif].uv_pim_neighbors;
-         pim_nbr != (pim_nbr_entry_t *)NULL;
+         pim_nbr != NULL;
          pim_nbr = pim_nbr->next)
         if (pim_nbr->address == next_hop_router_addr)
             return(pim_nbr);
-    return (pim_nbr_entry_t *)NULL;
+
+    return NULL;
 }
 
 
@@ -161,11 +164,15 @@ int set_incoming(srcentry_t *srcentry_ptr, int srctype)
     srcentry_ptr->metric = 0;
     srcentry_ptr->preference = 0;
 
+    /* The source is a local address */
     if ((srcentry_ptr->incoming = local_address(source)) != NO_VIF) {
-        /* The source is a local address */
+	/* iif of (*,G) at RP has to be register_if */
+	if (srctype == PIM_IIF_RP)
+	    srcentry_ptr->incoming = reg_vif_num;
+
         /* TODO: set the upstream to myself? */
-        srcentry_ptr->upstream = (pim_nbr_entry_t *)NULL;
-        return (TRUE);
+        srcentry_ptr->upstream = NULL;
+        return TRUE;
     }
 
     if ((srcentry_ptr->incoming = find_vif_direct(source)) != NO_VIF) {
@@ -173,7 +180,7 @@ int set_incoming(srcentry_t *srcentry_ptr, int srctype)
          * looking for real source or RP
          */
         if (srctype == PIM_IIF_SOURCE) {
-            srcentry_ptr->upstream = (pim_nbr_entry_t *)NULL;
+            srcentry_ptr->upstream = NULL;
             return (TRUE);
         } else {
             /* PIM_IIF_RP */
@@ -207,6 +214,7 @@ int set_incoming(srcentry_t *srcentry_ptr, int srctype)
     for (n = v->uv_pim_neighbors; n != NULL; n = n->next) {
         if (ntohl(neighbor_addr) < ntohl(n->address))
             continue;
+
         if (neighbor_addr == n->address) {
             /*
              *The upstream router is found in the list of neighbors.
@@ -221,7 +229,8 @@ int set_incoming(srcentry_t *srcentry_ptr, int srctype)
 
             return TRUE;
         }
-        else break;
+
+	break;
     }
 
     /* TODO: control the number of messages! */
@@ -229,7 +238,7 @@ int set_incoming(srcentry_t *srcentry_ptr, int srctype)
           "For src %s, iif is %d, next hop router is %s: NOT A PIM ROUTER",
           inet_fmt(source, s1, sizeof(s1)), srcentry_ptr->incoming,
           inet_fmt(neighbor_addr, s2, sizeof(s2)));
-    srcentry_ptr->upstream = (pim_nbr_entry_t *)NULL;
+    srcentry_ptr->upstream = NULL;
 
     return FALSE;
 }
@@ -272,7 +281,7 @@ void add_leaf(vifi_t vifi, u_int32 source __attribute__((unused)), u_int32 group
     else
         mrtentry_ptr = find_route(INADDR_ANY_N, group, MRTF_WC, DONT_CREATE);
 
-    if (mrtentry_ptr == (mrtentry_t *)NULL)
+    if (mrtentry_ptr == NULL)
         return;
 
     IF_DEBUG(DEBUG_MRT)
@@ -343,7 +352,7 @@ void delete_leaf(vifi_t vifi, u_int32 source __attribute__((unused)), u_int32 gr
     vifbitmap_t new_leaves;
 
     mrtentry_ptr = find_route(INADDR_ANY_N, group, MRTF_WC, DONT_CREATE);
-    if (mrtentry_ptr == (mrtentry_t *)NULL)
+    if (mrtentry_ptr == NULL)
         return;
 
     if (!VIFM_ISSET(vifi, mrtentry_ptr->leaves))
@@ -373,7 +382,7 @@ void delete_leaf(vifi_t vifi, u_int32 source __attribute__((unused)), u_int32 gr
      * was created by source specific IGMP join.
      */
     for (mrtentry_srcs = mrtentry_ptr->group->mrtlink;
-         mrtentry_srcs != (mrtentry_t *)NULL;
+         mrtentry_srcs != NULL;
          mrtentry_srcs = mrtentry_srcs->grpnext) {
         VIFM_COPY(mrtentry_srcs->leaves, new_leaves);
         VIFM_CLR(vifi, new_leaves);
@@ -402,16 +411,15 @@ void calc_oifs(mrtentry_t *mrtentry_ptr, vifbitmap_t *oifs_ptr)
      * than `asserted`. The incoming interface is always deleted from the oifs
      */
 
-    if (mrtentry_ptr == (mrtentry_t *)NULL) {
+    if (mrtentry_ptr == NULL) {
         VIFM_CLRALL(*oifs_ptr);
         return;
     }
+
     VIFM_CLRALL(oifs);
     if (!(mrtentry_ptr->flags & MRTF_PMBR)) {
         /* Either (*,G) or (S,G). Merge with the oifs from the (*,*,RP) */
-        if ((rp_route =
-             mrtentry_ptr->group->active_rp_grp->rp->rpentry->mrtlink)
-            != (mrtentry_t *)NULL) {
+        if ((rp_route = mrtentry_ptr->group->active_rp_grp->rp->rpentry->mrtlink) != NULL) {
             VIFM_MERGE(oifs, rp_route->joined_oifs, oifs);
             VIFM_CLR_MASK(oifs, rp_route->pruned_oifs);
             VIFM_MERGE(oifs, rp_route->leaves, oifs);
@@ -420,8 +428,7 @@ void calc_oifs(mrtentry_t *mrtentry_ptr, vifbitmap_t *oifs_ptr)
     }
     if (mrtentry_ptr->flags & MRTF_SG) {
         /* (S,G) entry. Merge with the oifs from (*,G) */
-        if ((grp_route = mrtentry_ptr->group->grp_route)
-            != (mrtentry_t *)NULL) {
+        if ((grp_route = mrtentry_ptr->group->grp_route) != NULL) {
             VIFM_MERGE(oifs, grp_route->joined_oifs, oifs);
             VIFM_CLR_MASK(oifs, grp_route->pruned_oifs);
             VIFM_MERGE(oifs, grp_route->leaves, oifs);
@@ -477,7 +484,7 @@ int change_interfaces(mrtentry_t *mrtentry_ptr,
     int return_value;
     int fire_timer_flag;
 
-    if (mrtentry_ptr == (mrtentry_t *)NULL)
+    if (mrtentry_ptr == NULL)
         return 0;
 
     VIFM_COPY(new_joined_oifs_, new_joined_oifs);
@@ -515,24 +522,23 @@ int change_interfaces(mrtentry_t *mrtentry_ptr,
         && !(flags & MFC_UPDATE_FORCE))
         return 0;                  /* Nothing to change */
 
-    if ((return_value != 0) || (new_iif != old_iif)
-        || (flags & MFC_UPDATE_FORCE))
+    if ((return_value != 0) || (new_iif != old_iif) || (flags & MFC_UPDATE_FORCE)) {
         FIRE_TIMER(mrtentry_ptr->jp_timer);
-
+    }
     VIFM_COPY(new_real_oifs, mrtentry_ptr->oifs);
 
     if (mrtentry_ptr->flags & MRTF_PMBR) {
         /* (*,*,RP) entry */
         rpentry_ptr = mrtentry_ptr->source;
-        if (rpentry_ptr == (rpentry_t *)NULL)
-            return (0);    /* Shoudn't happen */
+        if (rpentry_ptr == NULL)
+            return 0;    /* Shouldn't happen */
+
         rpentry_ptr->incoming = new_iif;
         cand_rp_ptr = rpentry_ptr->cand_rp;
 
         if (VIFM_ISEMPTY(new_real_oifs)) {
             delete_mrtentry_flag = TRUE;
-        }
-        else {
+        } else {
             delete_mrtentry_flag = FALSE;
 #ifdef RSRR
             rsrr_cache_send(mrtentry_ptr, RSRR_NOTIFICATION_OK);
@@ -541,17 +547,17 @@ int change_interfaces(mrtentry_t *mrtentry_ptr,
 
         if (mrtentry_ptr->flags & MRTF_KERNEL_CACHE) {
             /* Update the kernel MFC entries */
-            if (delete_mrtentry_flag == TRUE)
+            if (delete_mrtentry_flag == TRUE) {
                 /* XXX: no need to send RSRR message. Will do it when
                  * delete the mrtentry.
                  */
                 for (kernel_cache_ptr = mrtentry_ptr->kernel_cache;
-                     kernel_cache_ptr != (kernel_cache_t *)NULL;
+                     kernel_cache_ptr != NULL;
                      kernel_cache_ptr = kernel_cache_ptr->next)
                     delete_mrtentry_all_kernel_cache(mrtentry_ptr);
-            else {
+	    } else {
                 for (kernel_cache_ptr = mrtentry_ptr->kernel_cache;
-                     kernel_cache_ptr != (kernel_cache_t *)NULL;
+                     kernel_cache_ptr != NULL;
                      kernel_cache_ptr = kernel_cache_ptr->next)
                     /* here mrtentry_ptr->source->address is the RP address */
                     k_chg_mfc(igmp_socket, kernel_cache_ptr->source,
@@ -567,12 +573,12 @@ int change_interfaces(mrtentry_t *mrtentry_ptr,
          */
         fire_timer_flag = FALSE;
         for (rp_grp_entry_ptr = cand_rp_ptr->rp_grp_next;
-             rp_grp_entry_ptr != (rp_grp_entry_t *)NULL;
+             rp_grp_entry_ptr != NULL;
              rp_grp_entry_ptr = rp_grp_entry_ptr->rp_grp_next) {
             for (grpentry_ptr = rp_grp_entry_ptr->grplink;
-                 grpentry_ptr != (grpentry_t *)NULL;
+                 grpentry_ptr != NULL;
                  grpentry_ptr = grpentry_ptr->rpnext) {
-                if (grpentry_ptr->grp_route != (mrtentry_t *)NULL) {
+                if (grpentry_ptr->grp_route != NULL) {
                     if (change_interfaces(grpentry_ptr->grp_route, new_iif,
                                           grpentry_ptr->grp_route->joined_oifs,
                                           grpentry_ptr->grp_route->pruned_oifs,
@@ -583,7 +589,7 @@ int change_interfaces(mrtentry_t *mrtentry_ptr,
                 } else {
                     /* Change all (S,G) entries if no (*,G) */
                     for (mrtentry_srcs = grpentry_ptr->mrtlink;
-                         mrtentry_srcs != (mrtentry_t *)NULL;
+                         mrtentry_srcs != NULL;
                          mrtentry_srcs = mrtentry_srcs->grpnext) {
                         if (mrtentry_srcs->flags & MRTF_RP) {
                             if (change_interfaces(mrtentry_srcs, new_iif,
@@ -622,35 +628,35 @@ int change_interfaces(mrtentry_t *mrtentry_ptr,
 
     if (mrtentry_ptr->flags & MRTF_WC) {
         /* (*,G) entry */
-        if (VIFM_ISEMPTY(new_real_oifs))
+        if (VIFM_ISEMPTY(new_real_oifs)) {
             delete_mrtentry_flag = TRUE;
-        else {
+        } else {
             delete_mrtentry_flag = FALSE;
 #ifdef RSRR
             rsrr_cache_send(mrtentry_ptr, RSRR_NOTIFICATION_OK);
 #endif /* RSRR */
         }
+
         if (mrtentry_ptr->flags & MRTF_KERNEL_CACHE) {
-            if (delete_mrtentry_flag == TRUE)
+            if (delete_mrtentry_flag == TRUE) {
                 delete_mrtentry_all_kernel_cache(mrtentry_ptr);
-            else {
+            } else {
                 for (kernel_cache_ptr = mrtentry_ptr->kernel_cache;
-                     kernel_cache_ptr != (kernel_cache_t *)NULL;
+                     kernel_cache_ptr != NULL;
                      kernel_cache_ptr = kernel_cache_ptr->next)
                     k_chg_mfc(igmp_socket, kernel_cache_ptr->source,
                               kernel_cache_ptr->group, new_iif,
                               new_real_oifs, mrtentry_ptr->group->rpaddr);
             }
         }
+
         /* Update all (S,G) entries for this group.
          * For the (S,G)RPbit entries the iif is the iif toward the RP;
          * The particular (S,G) oifs are not changed, but the change in the
          * (*,G) oifs may affect the real oifs.
          */
         fire_timer_flag = FALSE;
-        for (mrtentry_srcs = mrtentry_ptr->group->mrtlink;
-             mrtentry_srcs != (mrtentry_t *)NULL;
-             mrtentry_srcs = mrtentry_srcs->grpnext) {
+        for (mrtentry_srcs = mrtentry_ptr->group->mrtlink; mrtentry_srcs; mrtentry_srcs = mrtentry_srcs->grpnext) {
             if (mrtentry_srcs->flags & MRTF_RP) {
                 if (change_interfaces(mrtentry_srcs, new_iif,
                                       mrtentry_srcs->joined_oifs,
@@ -670,9 +676,11 @@ int change_interfaces(mrtentry_t *mrtentry_ptr,
 
         if (fire_timer_flag == TRUE)
             FIRE_TIMER(mrtentry_ptr->jp_timer);
+
         if (delete_mrtentry_flag == TRUE) {
             /* TODO: XXX: the oifs are NULL. Send a Prune message? */
         }
+
         return return_value;   /* (*,G) */
     }
 
@@ -690,44 +698,50 @@ int change_interfaces(mrtentry_t *mrtentry_ptr,
          * the (S,G). If "yes", then forbid creating (*,G) MFC.
          */
         for (mrtentry_tmp = mrtentry_rp; 1; mrtentry_tmp = mrtentry_wc) {
-            for ( ; 1; ) {
-                if (mrtentry_tmp == (mrtentry_t *)NULL)
+            while (1) {
+                if (mrtentry_tmp == NULL)
                     break;
+
                 if (mrtentry_tmp->flags & MRTF_MFC_CLONE_SG)
                     break;
+
                 if (mrtentry_tmp->incoming != mrtentry_ptr->incoming) {
                     delete_single_kernel_cache_addr(mrtentry_tmp, INADDR_ANY_N,
                                                     mrtentry_ptr->group->group);
                     mrtentry_tmp->flags |= MRTF_MFC_CLONE_SG;
                     break;
                 }
+
                 calc_oifs(mrtentry_tmp, &tmp_oifs);
                 if (!(VIFM_SAME(new_real_oifs, tmp_oifs)))
                     mrtentry_tmp->flags |= MRTF_MFC_CLONE_SG;
+
                 break;
             }
+
             if (mrtentry_tmp == mrtentry_wc)
                 break;
         }
 #endif /* KERNEL_MFC_WC_G */
 
-        if (VIFM_ISEMPTY(new_real_oifs))
+        if (VIFM_ISEMPTY(new_real_oifs)) {
             delete_mrtentry_flag = TRUE;
-        else {
+        } else {
             delete_mrtentry_flag = FALSE;
 #ifdef RSRR
             rsrr_cache_send(mrtentry_ptr, RSRR_NOTIFICATION_OK);
 #endif /* RSRR */
         }
+
         if (mrtentry_ptr->flags & MRTF_KERNEL_CACHE) {
             if (delete_mrtentry_flag == TRUE)
                 delete_mrtentry_all_kernel_cache(mrtentry_ptr);
-            else {
+            else
                 k_chg_mfc(igmp_socket, mrtentry_ptr->source->address,
                           mrtentry_ptr->group->group, new_iif, new_real_oifs,
                           mrtentry_ptr->group->rpaddr);
-            }
         }
+
         if (old_iif != new_iif) {
             if (new_iif == mrtentry_ptr->source->incoming) {
                 /* For example, if this was (S,G)RPbit with iif toward the RP,
@@ -742,10 +756,9 @@ int change_interfaces(mrtentry_t *mrtentry_ptr,
                  mrtentry_ptr->flags |= MRTF_SPT;
                 */
             }
-            if (((mrtentry_wc != (mrtentry_t *)NULL)
-                 && (mrtentry_wc->incoming == new_iif))
-                || ((mrtentry_rp != (mrtentry_t *)NULL)
-                    && (mrtentry_rp->incoming == new_iif))) {
+
+            if (((mrtentry_wc != NULL) && (mrtentry_wc->incoming == new_iif))
+                || ((mrtentry_rp != NULL) && (mrtentry_rp->incoming == new_iif))) {
                 /* If the new iif points toward the RP, reset the SPT flag.
                  * (PIM-SM-spec-10.ps pp. 11, 2.10, last sentence of first
                  * paragraph.
@@ -755,9 +768,9 @@ int change_interfaces(mrtentry_t *mrtentry_ptr,
                 mrtentry_ptr->flags |= MRTF_RP;
             }
         }
+
         /* TODO: XXX: if this is (S,G)RPbit entry and the oifs==(*,G)oifs,
-         * then delete the (S,G) entry?? The same if we have (*,*,RP) ?
-         */
+         * then delete the (S,G) entry?? The same if we have (*,*,RP) ? */
         if (delete_mrtentry_flag == TRUE) {
             /* TODO: XXX: the oifs are NULL. Send a Prune message ? */
         }
@@ -825,13 +838,12 @@ static void process_cache_miss(struct igmpmsg *igmpctl)
     source = mfc_source = igmpctl->im_src.s_addr;
     iif    = igmpctl->im_vif;
 
-    IF_DEBUG(DEBUG_MFC)
+    IF_DEBUG(DEBUG_MFC) {
         logit(LOG_DEBUG, 0, "Cache miss, src %s, dst %s, iif %d",
               inet_fmt(source, s1, sizeof(s1)), inet_fmt(group, s2, sizeof(s2)), iif);
+    }
 
-    /* TODO: XXX: check whether the kernel generates cache miss for the
-     * LAN scoped addresses
-     */
+    /* TODO: XXX: check whether the kernel generates cache miss for the LAN scoped addresses */
     if (ntohl(group) <= INADDR_MAX_LOCAL_GROUP)
         return; /* Don't create routing entries for the LAN scoped addresses */
 
@@ -839,11 +851,11 @@ static void process_cache_miss(struct igmpmsg *igmpctl)
     /* If I am the DR for this source, create (S,G) and add the register_vif
      * to the oifs.
      */
-    if ((uvifs[iif].uv_flags & VIFF_DR)
-        && (find_vif_direct_local(source) == iif)) {
+    if ((uvifs[iif].uv_flags & VIFF_DR) && (find_vif_direct_local(source) == iif)) {
         mrtentry_ptr = find_route(source, group, MRTF_SG, CREATE);
-        if (mrtentry_ptr == (mrtentry_t *)NULL)
+        if (mrtentry_ptr == NULL)
             return;
+
         mrtentry_ptr->flags &= ~MRTF_NEW;
         /* set reg_vif_num as outgoing interface ONLY if I am not the RP */
         if (mrtentry_ptr->group->rpaddr != my_cand_rp_address)
@@ -854,12 +866,9 @@ static void process_cache_miss(struct igmpmsg *igmpctl)
                           mrtentry_ptr->pruned_oifs,
                           mrtentry_ptr->leaves,
                           mrtentry_ptr->asserted_oifs, 0);
-    }
-    else {
-        mrtentry_ptr = find_route(source, group,
-                                  MRTF_SG | MRTF_WC | MRTF_PMBR,
-                                  DONT_CREATE);
-        if (mrtentry_ptr == (mrtentry_t *)NULL)
+    } else {
+        mrtentry_ptr = find_route(source, group, MRTF_SG | MRTF_WC | MRTF_PMBR, DONT_CREATE);
+        if (mrtentry_ptr == NULL)
             return;
     }
 
@@ -876,10 +885,10 @@ static void process_cache_miss(struct igmpmsg *igmpctl)
                 if (mrtentry_ptr->timer < PIM_DATA_TIMEOUT)
                     SET_TIMER(mrtentry_ptr->timer, PIM_DATA_TIMEOUT);
                 if (!(mrtentry_ptr->flags & MRTF_SPT)) {
-                    if ((mrtentry_rp = mrtentry_ptr->group->grp_route) ==
-                        (mrtentry_t *)NULL)
+                    if ((mrtentry_rp = mrtentry_ptr->group->grp_route) == NULL)
                         mrtentry_rp = mrtentry_ptr->group->active_rp_grp->rp->rpentry->mrtlink;
-                    if (mrtentry_rp != (mrtentry_t *)NULL) {
+
+                    if (mrtentry_rp != NULL) {
                         /* Check if the (S,G) iif is different from
                          * the (*,G) or (*,*,RP) iif
                          */
@@ -891,10 +900,12 @@ static void process_cache_miss(struct igmpmsg *igmpctl)
                     }
                 }
             }
+
             if (mrtentry_ptr->flags & MRTF_PMBR)
                 rp_addr = mrtentry_ptr->source->address;
             else
                 rp_addr = mrtentry_ptr->group->rpaddr;
+
             mfc_source = source;
 #ifdef KERNEL_MFC_WC_G
             if (mrtentry_ptr->flags & (MRTF_WC | MRTF_PMBR))
@@ -917,14 +928,14 @@ static void process_cache_miss(struct igmpmsg *igmpctl)
 
     /* The iif doesn't match */
     if (mrtentry_ptr->flags & MRTF_SG) {
+	/* Arrived on wrong interface */
         if (mrtentry_ptr->flags & MRTF_SPT)
-            /* Arrived on wrong interface */
             return;
-        if ((mrtentry_rp = mrtentry_ptr->group->grp_route) ==
-            (mrtentry_t *)NULL)
-            mrtentry_rp =
-                mrtentry_ptr->group->active_rp_grp->rp->rpentry->mrtlink;
-        if (mrtentry_rp != (mrtentry_t *)NULL) {
+
+        if ((mrtentry_rp = mrtentry_ptr->group->grp_route) == NULL)
+            mrtentry_rp = mrtentry_ptr->group->active_rp_grp->rp->rpentry->mrtlink;
+
+        if (mrtentry_rp != NULL) {
             if (mrtentry_rp->incoming == iif) {
                 /* Forward on (*,G) or (*,*,RP) */
 #ifdef KERNEL_MFC_WC_G
@@ -943,8 +954,6 @@ static void process_cache_miss(struct igmpmsg *igmpctl)
 #endif /* RSRR */
             }
         }
-
-        return;
     }
 }
 
@@ -1027,8 +1036,7 @@ mrtentry_t *switch_shortest_path(u_int32 source, u_int32 group)
     mrtentry_t *mrtentry_ptr;
 
     /* TODO: XXX: prepare and send immediately the (S,G) join? */
-    if ((mrtentry_ptr = find_route(source, group, MRTF_SG, CREATE)) !=
-        (mrtentry_t *)NULL) {
+    if ((mrtentry_ptr = find_route(source, group, MRTF_SG, CREATE)) != NULL) {
         if (mrtentry_ptr->flags & MRTF_NEW) {
             mrtentry_ptr->flags &= ~MRTF_NEW;
         }
