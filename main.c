@@ -256,10 +256,10 @@ static int usage(void)
     fputs("  -d, --debug[=LEVEL]  Debug level, see below for valid levels\n", stderr);
     fputs("  -f, --foreground     Run in foreground, do not detach from calling terminal\n", stderr);
     fputs("  -h, --help           Show this help text\n", stderr);
-//    fputs("  -i, --show-cache      Show internal cache tables\n", stderr);
+    /* fputs("  -i, --show-cache      Show internal cache tables\n", stderr); */
     fputs("  -l, --reload-config  Tell a running pimd to reload its configuration\n", stderr);
     fputs("  -N, --disable-vifs   Disable all virtual interfaces (phyint) by default\n", stderr);
-//    fputs("  -p,--show-debug      Show debug dump, only if debug is enabled\n", stderr);
+    /* fputs("  -p,--show-debug      Show debug dump, only if debug is enabled\n", stderr); */
     fputs("  -q, --quit-daemon    Send SIGTERM to a running pimd\n", stderr);
     fputs("  -r, --show-routes    Show state of VIFs and multicast routing tables\n", stderr);
     fprintf(stderr, "  -v, --version        Show %s version\n", __progname);
@@ -303,8 +303,8 @@ int main(int argc, char *argv[])
 	{"quit-daemon", 0, 0, 'q'},
 	{"reload-config", 0, 0, 'l'},
 	{"show-routes", 0, 0, 'r'},
-//	{"show-cache", 0, 0, 'i'},
-//	{"show-debug", 0, 0, 'p'},
+	/* {"show-cache", 0, 0, 'i'}, */
+	/* {"show-debug", 0, 0, 'p'}, */
 	{0, 0, 0, 0}
     };
     
