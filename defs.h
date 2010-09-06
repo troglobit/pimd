@@ -349,8 +349,6 @@ extern char		s4[MAX_INET_BUF_LEN];
 
 #if !((defined(BSD) && (BSD >= 199103)) || (defined(__linux__)))
 extern int		errno;
-extern int		sys_nerr;
-extern char *		sys_errlist[];
 #endif
 
 
