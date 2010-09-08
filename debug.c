@@ -373,7 +373,7 @@ void logit(int severity, int syserr, const char *format, ...)
         if (!debug)
             fprintf(stderr, "%s: ", __progname);
         fprintf(stderr, "%02d:%02d:%02d.%03ld %s", thyme->tm_hour,
-                thyme->tm_min, thyme->tm_sec, now.tv_usec / 1000, msg);
+                thyme->tm_min, thyme->tm_sec, (long int)(now.tv_usec / 1000), msg);
         if (syserr == 0)
             fprintf(stderr, "\n");
 
