@@ -1,4 +1,4 @@
-* Version 2.1.3, Mon Sep  6 17:00:00 CET 2010
+* Version 2.1.3, Wed Sep  8 23:21:55 CET 2010
  CHANGES:
   - Removed GNU:ism %m from syslog() in debug.c, use strerror(errno) instead.
   - Cleanup and ansification of a couple of files: rp.c, mrt.c, vif.c, route.c
@@ -7,6 +7,8 @@
  BUG FIX:
   - Merge bug fix for static-rp configurations from Kame's pim6sd route.c r1.28
   - Close TODO item by merging in relevant changes from Kame's pim6sd vif.c r1.3
+  - Tried fixing debug.c:logit() build failure on Sparc due to mixup in headers
+    for tv_usec type.
 
 * Version 2.1.2, Sat Sep  4 17:00:00 CET 2010
  CHANGES:
