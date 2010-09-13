@@ -95,7 +95,7 @@ int init_routesock(void)
 {
 #if 0
     int on = 0;
-#endif /* 0 */
+#endif
     
     pid = getpid();
 
@@ -105,20 +105,18 @@ int init_routesock(void)
 	return -1;
     }
 
-    if (fcntl(routing_socket, F_SETFL, O_NONBLOCK) == -1){
+    if (fcntl(routing_socket, F_SETFL, O_NONBLOCK) == -1) {
 	logit(LOG_ERR, 0, "\n Routing socket error");
 	return -1;
     }
 
 #if 0
     /* XXX: if it is OFF, no queries will succeed (!?) */
-    if (setsockopt(routing_socket, SOL_SOCKET,
-		   SO_USELOOPBACK, (char *)&on,
-		   sizeof(on)) < 0){
+    if (setsockopt(routing_socket, SOL_SOCKET, SO_USELOOPBACK, (char *)&on, sizeof(on)) < 0) {
 	logit(LOG_ERR, 0 , "\n setsockopt(SO_USELOOPBACK, 0)");
 	return -1;
     }
-#endif /* 0 */	
+#endif
 
     return 0;
 }
@@ -134,14 +132,18 @@ int k_req_incoming(u_int32 source, struct rpfctl *rpfp)
 
 /* TODO: a hack!!!! */
 #ifdef HAVE_SA_LEN
-#define NEXTADDR(w, u) \
-    if (rtm_addrs & (w)) { \
-	l = ROUNDUP(u.sa.sa_len); bcopy((char *)&(u), cp, l); cp += l;\
+#define NEXTADDR(w, u)				\
+    if (rtm_addrs & (w)) {			\
+	l = ROUNDUP(u.sa.sa_len);		\
+	memcpy(u, cp, l);			\
+	cp += l;				\
     }
 #else
-#define NEXTADDR(w, u) \
-    if (rtm_addrs & (w)) { \
-	l = ROUNDUP(sizeof(struct sockaddr)); bcopy((char *)&(u), cp, l); cp += l;\
+#define NEXTADDR(w, u)				\
+    if (rtm_addrs & (w)) {			\
+	l = ROUNDUP(sizeof(struct sockaddr));	\
+	memcpy(u, cp, l);			\
+	cp += l;				\
     }
 #endif /* HAVE_SA_LEN */
 
@@ -166,12 +168,16 @@ int k_req_incoming(u_int32 source, struct rpfctl *rpfp)
     su->sin.sin_len = sizeof(struct sockaddr_in);
 #endif
     su->sin.sin_addr.s_addr = source;
+
     if (inet_lnaof(su->sin.sin_addr) == INADDR_ANY) {
-	IF_DEBUG(DEBUG_RPF)
+	IF_DEBUG(DEBUG_RPF) {
 	    logit(LOG_DEBUG, 0, "k_req_incoming: Invalid source %s",
-		inet_fmt(source, s1, sizeof(s1)));
+		  inet_fmt(source, s1, sizeof(s1)));
+	}
+
 	return FALSE;
     }
+
     so_ifp.sa.sa_family = AF_LINK;
 #ifdef HAVE_SA_LEN
     so_ifp.sa.sa_len = sizeof(struct sockaddr_dl);
@@ -198,8 +204,7 @@ int k_req_incoming(u_int32 source, struct rpfctl *rpfp)
     if ((rlen = write(routing_socket, (char *)&m_rtmsg, l)) < 0) {
 	IF_DEBUG(DEBUG_RPF | DEBUG_KERN) {
 	    if (errno == ESRCH)
-		logit(LOG_DEBUG, 0,
-		    "Writing to routing socket: no such route\n");
+		logit(LOG_DEBUG, 0, "Writing to routing socket: no such route\n");
 	    else
 		logit(LOG_DEBUG, 0, "Error writing to routing socket");
 	}
@@ -211,8 +216,10 @@ int k_req_incoming(u_int32 source, struct rpfctl *rpfp)
     } while (l > 0 && (rtm.rtm_seq != seq || rtm.rtm_pid != pid));
     
     if (l < 0) {
-	IF_DEBUG(DEBUG_RPF | DEBUG_KERN)
+	IF_DEBUG(DEBUG_RPF | DEBUG_KERN) {
 	    logit(LOG_DEBUG, errno, "Read from routing socket failed");
+	}
+
 	return FALSE;
     }
 
@@ -222,6 +229,7 @@ int k_req_incoming(u_int32 source, struct rpfctl *rpfp)
 	rpfp->iif = rpfinfo.iif;
     }
 #undef rtm
+
     return TRUE;
 }
 
@@ -244,8 +252,10 @@ int getmsg(struct rt_msghdr *rtm, int msglen __attribute__((unused)), struct rpf
 	return FALSE;
     
     in = ((struct sockaddr_in *)&so_dst)->sin_addr;
-    IF_DEBUG(DEBUG_RPF)
+    IF_DEBUG(DEBUG_RPF) {
 	logit(LOG_DEBUG, 0, "route to: %s", inet_fmt(in.s_addr, s1, sizeof(s1)));
+    }
+
     cp = ((char *)(rtm + 1));
     if (rtm->rtm_addrs) {
 	for (i = 1; i; i <<= 1) {
@@ -273,25 +283,32 @@ int getmsg(struct rt_msghdr *rtm, int msglen __attribute__((unused)), struct rpf
     }
 
     if (!ifp) {			/* No incoming interface */
-	IF_DEBUG(DEBUG_RPF)
+	IF_DEBUG(DEBUG_RPF) {
 	    logit(LOG_DEBUG, 0,
-		"No incoming interface for destination %s",
-		inet_fmt(in.s_addr, s1, sizeof(s1)));
+		  "No incoming interface for destination %s",
+		  inet_fmt(in.s_addr, s1, sizeof(s1)));
+	}
+
 	return FALSE;
     }
+
     if (dst && mask)
 	mask->sa_family = dst->sa_family;
+
     if (dst) {
 	in = ((struct sockaddr_in *)dst)->sin_addr;
-	IF_DEBUG(DEBUG_RPF)
+	IF_DEBUG(DEBUG_RPF) {
 	    logit(LOG_DEBUG, 0, " destination is: %s",
-		inet_fmt(in.s_addr, s1, sizeof(s1)));
+		  inet_fmt(in.s_addr, s1, sizeof(s1)));
+	}
     }
+
     if (gate && rtm->rtm_flags & RTF_GATEWAY) {
 	in = ((struct sockaddr_in *)gate)->sin_addr;
-	IF_DEBUG(DEBUG_RPF)
+	IF_DEBUG(DEBUG_RPF) {
 	    logit(LOG_DEBUG, 0, " gateway is: %s",
-		inet_fmt(in.s_addr, s1, sizeof(s1)));
+		  inet_fmt(in.s_addr, s1, sizeof(s1)));
+	}
 	rpfinfop->rpfneighbor = in;
     }
     
@@ -302,14 +319,17 @@ int getmsg(struct rt_msghdr *rtm, int msglen __attribute__((unused)), struct rpf
 	    break;
     }
 
-    IF_DEBUG(DEBUG_RPF)
+    IF_DEBUG(DEBUG_RPF) {
 	logit(LOG_DEBUG, 0, " iif is %d", vifi);
-    
+    }
     rpfinfop->iif = vifi;
     
     if (vifi >= numvifs) {
-	IF_DEBUG(DEBUG_RPF)
-	    logit(LOG_DEBUG, 0, "Invalid incoming interface for destination %s, because of invalid virtual interface", inet_fmt(in.s_addr, s1, sizeof(s1)));
+	IF_DEBUG(DEBUG_RPF) {
+	    logit(LOG_DEBUG, 0, "Invalid incoming interface for destination %s, because of invalid virtual interface",
+		  inet_fmt(in.s_addr, s1, sizeof(s1)));
+	}
+
 	return FALSE;		/* invalid iif */
     }
     
