@@ -62,10 +62,10 @@
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
 #include <netinet/igmp.h>
-#ifdef __FreeBSD__      /* sigh */
+#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
 #include <osreldate.h>
 #endif /* __FreeBSD__ */
-#if (defined(__bsdi__)) || (defined(__FreeBSD__) && (__FreeBSD_version >= 220000))
+#if defined(__bsdi__) || defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
 #define rtentry kernel_rtentry
 #include <net/route.h>
 #undef rtentry
@@ -164,7 +164,7 @@ typedef void (*ihfunc_t) (int, fd_set *);
 
 /* Versions of Solaris older than 2.6 don't have routing sockets. */
 /* XXX TODO: check FreeBSD version and add all other platforms */
-#if defined(__linux__) || (defined(SunOS) && SunOS >=56) || defined (__FreeBSD__) || defined (IRIX) || defined (__bsdi__) || defined(NetBSD) || defined(OpenBSD)
+#if defined(__linux__) || (defined(SunOS) && SunOS >=56) || defined (__FreeBSD__) || defined(__FreeBSD_kernel__) || defined (IRIX) || defined (__bsdi__) || defined(NetBSD) || defined(OpenBSD)
 #define HAVE_ROUTING_SOCKETS	1
 #endif
 
