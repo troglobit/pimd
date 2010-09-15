@@ -233,6 +233,40 @@ int k_req_incoming(u_int32 source, struct rpfctl *rpfp)
     return TRUE;
 }
 
+static void find_sockaddrs(struct rt_msghdr *rtm, struct sockaddr **dst, struct sockaddr **gate, struct sockaddr **mask, struct sockaddr_dl **ifp)
+{
+    int i;
+    char *cp = (char *)(rtm + 1);
+    struct sockaddr *sa;
+
+    if (rtm->rtm_addrs) {
+	for (i = 1; i; i <<= 1) {
+	    if (i & rtm->rtm_addrs) {
+		switch (i) {
+		    sa = (struct sockaddr *)cp;
+
+		    case RTA_DST:
+			*dst = sa;
+			break;
+
+		    case RTA_GATEWAY:
+			*gate = sa;
+			break;
+
+		    case RTA_NETMASK:
+			*mask = sa;
+			break;
+
+		    case RTA_IFP:
+			if (sa->sa_family == AF_LINK  && ((struct sockaddr_dl *)sa)->sdl_nlen)
+			    *ifp = (struct sockaddr_dl *)sa;
+			break;
+		}
+		ADVANCE(cp, sa);
+	    }
+	}
+    }
+}
 
 /*
  * Returns TRUE on success, FALSE otherwise. rpfinfo contains the result.
@@ -241,9 +275,6 @@ int getmsg(struct rt_msghdr *rtm, int msglen __attribute__((unused)), struct rpf
 {
     struct sockaddr *dst = NULL, *gate = NULL, *mask = NULL;
     struct sockaddr_dl *ifp = NULL;
-    struct sockaddr *sa;
-    char *cp;
-    int i;
     struct in_addr in;
     vifi_t vifi;
     struct uvif *v;
@@ -256,31 +287,7 @@ int getmsg(struct rt_msghdr *rtm, int msglen __attribute__((unused)), struct rpf
 	logit(LOG_DEBUG, 0, "route to: %s", inet_fmt(in.s_addr, s1, sizeof(s1)));
     }
 
-    cp = ((char *)(rtm + 1));
-    if (rtm->rtm_addrs) {
-	for (i = 1; i; i <<= 1) {
-	    if (i & rtm->rtm_addrs) {
-		sa = (struct sockaddr *)cp;
-		switch (i) {
-		case RTA_DST:
-		    dst = sa;
-		    break;
-		case RTA_GATEWAY:
-		    gate = sa;
-		    break;
-		case RTA_NETMASK:
-		    mask = sa;
-		    break;
-		case RTA_IFP:
-		    if (sa->sa_family == AF_LINK &&
-			((struct sockaddr_dl *)sa)->sdl_nlen)
-			ifp = (struct sockaddr_dl *)sa;
-		    break;
-		}
-		ADVANCE(cp, sa);
-	    }
-	}
-    }
+    find_sockaddrs(rtm, &dst, &gate, &mask, &ifp);
 
     if (!ifp) {			/* No incoming interface */
 	IF_DEBUG(DEBUG_RPF) {
@@ -303,7 +310,7 @@ int getmsg(struct rt_msghdr *rtm, int msglen __attribute__((unused)), struct rpf
 	}
     }
 
-    if (gate && rtm->rtm_flags & RTF_GATEWAY) {
+    if (gate && (rtm->rtm_flags & RTF_GATEWAY)) {
 	in = ((struct sockaddr_in *)gate)->sin_addr;
 	IF_DEBUG(DEBUG_RPF) {
 	    logit(LOG_DEBUG, 0, " gateway is: %s",
@@ -337,7 +344,7 @@ int getmsg(struct rt_msghdr *rtm, int msglen __attribute__((unused)), struct rpf
 }
 
 
-#else	/* HAVE_ROUTING_SOCKETS */
+#else	/* !HAVE_ROUTING_SOCKETS */
 
 
 /*
