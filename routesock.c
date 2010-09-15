@@ -135,14 +135,14 @@ int k_req_incoming(u_int32 source, struct rpfctl *rpfp)
 #define NEXTADDR(w, u)				\
     if (rtm_addrs & (w)) {			\
 	l = ROUNDUP(u.sa.sa_len);		\
-	memcpy(u, cp, l);			\
+	memcpy(&(u), cp, l);			\
 	cp += l;				\
     }
 #else
 #define NEXTADDR(w, u)				\
     if (rtm_addrs & (w)) {			\
 	l = ROUNDUP(sizeof(struct sockaddr));	\
-	memcpy(u, cp, l);			\
+	memcpy(&(u), cp, l);			\
 	cp += l;				\
     }
 #endif /* HAVE_SA_LEN */
