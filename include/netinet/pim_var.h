@@ -62,7 +62,7 @@ extern struct pimstat pimstat;
 
 #if defined(NetBSD) || defined(__OpenBSD__)
 void pim_input(struct mbuf *, ...);
-#elif (defined(__FreeBSD__) && (__FreeBSD_version >= 400000))
+#elif (defined(__FreeBSD__) && (__FreeBSD_version >= 400000)) || defined(__FreeBSD_kernel__)
 void pim_input(struct mbuf *, int, int);
 #else
 void pim_input(struct mbuf *, int);
@@ -82,7 +82,7 @@ void pim_input(struct mbuf *, int);
 }
 #endif /* FreeBSD || NetBSD || OpenBSD || bsdi */
 
-#if (defined(__FreeBSD__) && (__FreeBSD_version >= 400000))
+#if (defined(__FreeBSD__) && (__FreeBSD_version >= 400000)) || defined(__FreeBSD_kernel__)
 #if ((defined(KERNEL)) || (defined(_KERNEL)))
 #if defined(SYSCTL_DECL)
 SYSCTL_DECL(_net_inet_pim);
