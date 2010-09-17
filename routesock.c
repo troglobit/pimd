@@ -242,9 +242,9 @@ static void find_sockaddrs(struct rt_msghdr *rtm, struct sockaddr **dst, struct 
     if (rtm->rtm_addrs) {
 	for (i = 1; i; i <<= 1) {
 	    if (i & rtm->rtm_addrs) {
-		switch (i) {
-		    sa = (struct sockaddr *)cp;
+		sa = (struct sockaddr *)cp;
 
+		switch (i) {
 		    case RTA_DST:
 			*dst = sa;
 			break;
