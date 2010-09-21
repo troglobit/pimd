@@ -1,3 +1,11 @@
+* Version 2.1.4, Fri Sep 24 ??:??:?? CET 2010
+ CHANGES:
+  - Updates for support on Debian GNU/kFreeBSD, FreeBSD kernel with GNU userland.
+
+ BUG FIX:
+  - Lior Dotan <liodot@gmail.com> reports that pimd 2.1.2 and 2.1.3 are severely
+    broken w.r.t. uninformed systematic replace of bcopy() with memcpy() API.
+
 * Version 2.1.3, Wed Sep  8 23:21:55 CET 2010
  CHANGES:
   - Removed GNU:ism %m from syslog() in debug.c, use strerror(errno) instead.

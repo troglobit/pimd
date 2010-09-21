@@ -17,7 +17,7 @@
 #
 
 # VERSION      ?= $(shell git tag -l | tail -1)
-VERSION      ?= 2.1.3
+VERSION      ?= 2.1.4-rc1
 EXEC          = pimd
 CONFIG        = $(EXEC).conf
 PKG           = $(EXEC)-$(VERSION)
