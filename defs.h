@@ -245,7 +245,6 @@ typedef void (*ihfunc_t) (int, fd_set *);
 #endif /* RSRR */
 
 #ifdef SYSV
-#define bcopy(a, b, c)		memcpy((b), (a), (c))
 #define setlinebuf(s)		setvbuf((s), (NULL), (_IOLBF), 0)
 #define RANDOM()                lrand48()
 #else

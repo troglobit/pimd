@@ -46,35 +46,35 @@
 #define MRTF_MFC_CLONE_SG	0x8000  /* clone (S,G) MFC from (*,G) or (*,*,RP) */
 
 /* Macro to duplicate oif info (oif bits, timers) */
-#define VOIF_COPY(from, to)                                                \
-	    do {                                                           \
-                VIFM_COPY((from)->joined_oifs, (to)->joined_oifs);         \
-                VIFM_COPY((from)->oifs, (to)->oifs);                       \
-                VIFM_COPY((from)->leaves, (to)->leaves);                   \
-                VIFM_COPY((from)->pruned_oifs, (to)->pruned_oifs);         \
-                VIFM_COPY((from)->asserted_oifs, (to)->asserted_oifs);     \
-                bcopy((from)->vif_timers, (to)->vif_timers,                \
-		      numvifs*sizeof((from)->vif_timers[0]));              \
-                bcopy((from)->vif_deletion_delay, (to)->vif_deletion_delay,\
-		      numvifs*sizeof((from)->vif_deletion_delay[0]));      \
-	    } while (0)
+#define VOIF_COPY(from, to)                                             \
+    do {								\
+	VIFM_COPY((from)->joined_oifs, (to)->joined_oifs);		\
+	VIFM_COPY((from)->oifs, (to)->oifs);				\
+	VIFM_COPY((from)->leaves, (to)->leaves);			\
+	VIFM_COPY((from)->pruned_oifs, (to)->pruned_oifs);		\
+	VIFM_COPY((from)->asserted_oifs, (to)->asserted_oifs);		\
+	memcpy((to)->vif_timers, (from)->vif_timers,			\
+	       numvifs * sizeof((from)->vif_timers[0]));		\
+	memcpy((to)->vif_deletion_delay, (from)->vif_deletion_delay,	\
+	       numvifs * sizeof((from)->vif_deletion_delay[0]));	\
+    } while (0)
 
-#define FREE_MRTENTRY(mrtentry_ptr)                                        \
-             do {                                                          \
-                  kernel_cache_t *prev;                                    \
-                  kernel_cache_t *next;                                    \
-                                                                           \
-		  free((char *)((mrtentry_ptr)->vif_timers));              \
-                  free((char *)((mrtentry_ptr)->vif_deletion_delay));      \
-                  for (next = (mrtentry_ptr)->kernel_cache;                \
-                       next != (kernel_cache_t *)NULL; ) {                 \
-                       prev = next; next = next->next;                     \
-                       free(prev);                                         \
-                  }                                                        \
-                  free((char *)((mrtentry_ptr)->kernel_cache));            \
-                  free((char *)(mrtentry_ptr));                            \
-	     } while (0)
-			       
+#define FREE_MRTENTRY(mrtentry_ptr)				\
+    do {							\
+	kernel_cache_t *prev;					\
+	kernel_cache_t *next;					\
+								\
+	free((char *)((mrtentry_ptr)->vif_timers));		\
+	free((char *)((mrtentry_ptr)->vif_deletion_delay));	\
+	for (next = (mrtentry_ptr)->kernel_cache;		\
+	     next != (kernel_cache_t *)NULL; ) {		\
+	    prev = next; next = next->next;			\
+	    free(prev);						\
+	}							\
+	free((char *)((mrtentry_ptr)->kernel_cache));		\
+	free((char *)(mrtentry_ptr));				\
+    } while (0)
+
 
 /*
  * The complicated structure used by the more complicated Join/Prune
@@ -255,3 +255,12 @@ typedef struct kernel_cache {
     u_int32     group;
     struct sg_count sg_count; /* The (s,g) data retated counters (see above) */
 } kernel_cache_t;
+
+/**
+ * Local Variables:
+ *  version-control: t
+ *  indent-tabs-mode: t
+ *  c-file-style: "ellemtel"
+ *  c-basic-offset: 4
+ * End:
+ */

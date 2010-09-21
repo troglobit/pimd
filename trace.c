@@ -238,15 +238,14 @@ accept_mtrace(src, dst, group, data, no, datalen)
      * fill in initial response fields
      */
     resp = (struct tr_resp *)p;
-    bzero(resp, sizeof(struct tr_resp));
+    memset(resp, 0, sizeof(struct tr_resp));
     datalen += RLEN;
 
     resp->tr_qarr    = htonl(((tp.tv_sec + JAN_1970) << 16) +
-                             ((tp.tv_usec << 10) / 15625));
-
+			     ((tp.tv_usec << 10) / 15625));
     resp->tr_rproto  = PROTO_PIM;
     resp->tr_outaddr = (vifi == NO_VIF) ? dst : uvifs[vifi].uv_lcl_addr;
-    resp->tr_fttl    = (vifi == NO_VIF) ? 0 : uvifs[vifi].uv_threshold;
+    resp->tr_fttl    = (vifi == NO_VIF) ? 0   : uvifs[vifi].uv_threshold;
     resp->tr_rflags  = errcode;
 
     /*

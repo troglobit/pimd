@@ -129,7 +129,7 @@ void config_vifs_from_kernel(void)
          * SIOCGIFFLAGS stomps over it because the requests
          * are returned in a union.)
          */
-        bcopy(ifrp->ifr_name, ifr.ifr_name, sizeof(ifr.ifr_name));
+        memcpy(ifr.ifr_name, ifrp->ifr_name, sizeof(ifr.ifr_name));
 
         /*
          * Ignore loopback interfaces and interfaces that do not

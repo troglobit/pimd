@@ -534,7 +534,7 @@ int main(int argc, char *argv[])
     gettimeofday(&curtime, NULL);
     lasttime = curtime;
     while (1) {
-	bcopy((char *)&readers, (char *)&rfds, sizeof(rfds));
+	memcpy(&rfds, &readers, sizeof(rfds));
 	secs = timer_nextTimer();
 	if (secs == -1)
 	    timeout = NULL;
@@ -579,7 +579,7 @@ int main(int argc, char *argv[])
 		    if (ihandlers[i].fd >= nfds)
 			nfds = ihandlers[i].fd + 1;
 		}
-		bcopy((char *)&readers, (char *)&rfds, sizeof(rfds));
+		memcpy(&rfds, &readers, sizeof(rfds));
 	    }
 	    if (sighandled & GOT_SIGUSR1) {
 		sighandled &= ~GOT_SIGUSR1;
