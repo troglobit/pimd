@@ -773,7 +773,7 @@ int send_pim_register(char *packet)
         /* Copy the data packet at the back of the register packet */
         /* TODO: check pktlen. ntohs? */
         pktlen = ntohs(ip->ip_len);
-        memcpy(ip, buf, pktlen);
+        memcpy(buf, ip, pktlen);
         pktlen += sizeof(pim_register_t);
         reg_src = uvifs[vifi].uv_lcl_addr;
         reg_dst = mrtentry_ptr->group->rpaddr;
@@ -2293,9 +2293,9 @@ static void pack_jp_message(pim_nbr_entry_t *pim_nbr)
     PUT_EGADDR(bjpm->curr_group, bjpm->curr_group_msklen, 0, data_ptr);
     PUT_HOSTSHORT(bjpm->join_addr_number, data_ptr);
     PUT_HOSTSHORT(bjpm->prune_addr_number, data_ptr);
-    memcpy(bjpm->join_list, data_ptr, bjpm->join_list_size);
+    memcpy(data_ptr, bjpm->join_list, bjpm->join_list_size);
     data_ptr += bjpm->join_list_size;
-    memcpy(bjpm->prune_list, data_ptr, bjpm->prune_list_size);
+    memcpy(data_ptr, bjpm->prune_list, bjpm->prune_list_size);
     data_ptr += bjpm->prune_list_size;
     bjpm->jp_message_size = (data_ptr - bjpm->jp_message);
     bjpm->curr_group = INADDR_ANY_N;
@@ -2313,9 +2313,9 @@ static void pack_jp_message(pim_nbr_entry_t *pim_nbr)
             PUT_EGADDR(htonl(CLASSD_PREFIX), STAR_STAR_RP_MSKLEN, 0, data_ptr);
             PUT_HOSTSHORT(bjpm->rp_list_join_number, data_ptr);
             PUT_HOSTSHORT(bjpm->rp_list_prune_number, data_ptr);
-            memcpy(bjpm->rp_list_join, data_ptr, bjpm->rp_list_join_size);
+            memcpy(data_ptr, bjpm->rp_list_join, bjpm->rp_list_join_size);
             data_ptr += bjpm->rp_list_join_size;
-            memcpy(bjpm->rp_list_prune, data_ptr, bjpm->rp_list_prune_size);
+            memcpy(data_ptr, bjpm->rp_list_prune, bjpm->rp_list_prune_size);
             data_ptr += bjpm->rp_list_prune_size;
             bjpm->jp_message_size = (data_ptr - bjpm->jp_message);
             bjpm->rp_list_join_size = 0;
@@ -2346,9 +2346,9 @@ void pack_and_send_jp_message(pim_nbr_entry_t *pim_nbr)
         PUT_EGADDR(htonl(CLASSD_PREFIX), STAR_STAR_RP_MSKLEN, 0, data_ptr);
         PUT_HOSTSHORT(bjpm->rp_list_join_number, data_ptr);
         PUT_HOSTSHORT(bjpm->rp_list_prune_number, data_ptr);
-        memcpy(bjpm->rp_list_join, data_ptr, bjpm->rp_list_join_size);
+        memcpy(data_ptr, bjpm->rp_list_join, bjpm->rp_list_join_size);
         data_ptr += bjpm->rp_list_join_size;
-        memcpy(bjpm->rp_list_prune, data_ptr, bjpm->rp_list_prune_size);
+        memcpy(data_ptr, bjpm->rp_list_prune, bjpm->rp_list_prune_size);
         data_ptr += bjpm->rp_list_prune_size;
         bjpm->jp_message_size = (data_ptr - bjpm->jp_message);
         bjpm->rp_list_join_size = 0;
@@ -2368,8 +2368,8 @@ static void send_jp_message(pim_nbr_entry_t *pim_nbr)
 
     datalen = pim_nbr->build_jp_message->jp_message_size;
     vifi = pim_nbr->vifi;
-    memcpy(pim_nbr->build_jp_message->jp_message,
-          pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t), datalen);
+    memcpy(pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t), 
+	   pim_nbr->build_jp_message->jp_message, datalen);
     send_pim(pim_send_buf, uvifs[vifi].uv_lcl_addr, allpimrouters_group,
              PIM_JOIN_PRUNE, datalen);
     return_jp_working_buff(pim_nbr);
@@ -2896,7 +2896,7 @@ int receive_pim_bootstrap(u_int32 src, u_int32 dst, char *pim_message, int datal
         if (uvifs[vifi].uv_flags & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER | VIFF_NONBRS))
             continue;
 
-        memcpy(pim_message, (char *)(pim_send_buf + sizeof(struct ip)), datalen);
+        memcpy(pim_send_buf + sizeof(struct ip), pim_message, datalen);
         send_pim(pim_send_buf, uvifs[vifi].uv_lcl_addr, allpimrouters_group,
                  PIM_BOOTSTRAP, datalen - sizeof(pim_header_t));
     }
@@ -3194,7 +3194,7 @@ int send_pim_cand_rp_adv(void)
     }
 
     data_ptr = (u_int8 *)(pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t));
-    memcpy((char *)cand_rp_adv_message.buffer, (char *)data_ptr, cand_rp_adv_message.message_size);
+    memcpy(data_ptr, cand_rp_adv_message.buffer, cand_rp_adv_message.message_size);
     send_pim_unicast(pim_send_buf, my_cand_rp_address, curr_bsr_address,
                      PIM_CAND_RP_ADV, cand_rp_adv_message.message_size);
 
