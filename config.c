@@ -166,8 +166,7 @@ void config_vifs_from_kernel(void)
         if ((!inet_valid_subnet(subnet, mask))
             || (addr == subnet) || addr == (subnet | ~mask)) {
             if (!(inet_valid_host(addr) && (flags & IFF_POINTOPOINT))) {
-                logit(LOG_WARNING, 0,
-                      "ignoring %s, has invalid address (%s) and/or mask (%s)",
+                logit(LOG_WARNING, 0, "ignoring %s, has invalid address (%s) and/or mask (%s)",
                       ifr.ifr_name, inet_fmt(addr, s1, sizeof(s1)), inet_fmt(mask, s2, sizeof(s2)));
                 continue;
             }
@@ -183,8 +182,7 @@ void config_vifs_from_kernel(void)
          */
         for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
             if (strcmp(v->uv_name, ifr.ifr_name) == 0) {
-                logit(LOG_DEBUG, 0,
-                      "skipping %s (%s on subnet %s) (alias for vif#%u?)",
+                logit(LOG_DEBUG, 0, "Skipping %s (%s on subnet %s) (alias for vif#%u?)",
                       v->uv_name, inet_fmt(addr, s1, sizeof(s1)),
                       netname(subnet, mask), vifi);
                 break;
@@ -201,14 +199,14 @@ void config_vifs_from_kernel(void)
              */
             if (((addr & mask ) == v->uv_subnet) &&
                 (v->uv_subnetmask == mask)) {
-                logit(LOG_WARNING, 0, "ignoring %s, same subnet as %s",
+                logit(LOG_WARNING, 0, "Ignoring %s, same subnet as %s",
                       ifr.ifr_name, v->uv_name);
                 break;
             }
 #else
             if ((addr & v->uv_subnetmask) == v->uv_subnet ||
                 (v->uv_subnet & mask) == subnet) {
-                logit(LOG_WARNING, 0, "ignoring %s, same subnet as %s",
+                logit(LOG_WARNING, 0, "Ignoring %s, same subnet as %s",
                       ifr.ifr_name, v->uv_name);
                 break;
             }
@@ -221,7 +219,7 @@ void config_vifs_from_kernel(void)
          * If there is room in the uvifs array, install this interface.
          */
         if (numvifs == MAXVIFS) {
-            logit(LOG_WARNING, 0, "too many vifs, ignoring %s", ifr.ifr_name);
+            logit(LOG_WARNING, 0, "Too many vifs, ignoring %s", ifr.ifr_name);
             continue;
         }
         v = &uvifs[numvifs];
@@ -257,25 +255,21 @@ void config_vifs_from_kernel(void)
             v->uv_ifindex = ifridx.ifr_ifindex;
         }
         if (flags & IFF_POINTOPOINT) {
-            logit(LOG_INFO, 0,
-                  "installing %s (%s -> %s) as vif #%u-%d - rate=%d",
+            logit(LOG_INFO, 0, "Installing %s (%s -> %s) as vif #%u-%d - rate=%d",
                   v->uv_name, inet_fmt(addr, s1, sizeof(s1)), inet_fmt(v->uv_rmt_addr, s2, sizeof(s2)),
                   numvifs, v->uv_ifindex, v->uv_rate_limit);
         } else {
-            logit(LOG_INFO, 0,
-                  "installing %s (%s on subnet %s) as vif #%u-%d - rate=%d",
+            logit(LOG_INFO, 0, "Installing %s (%s on subnet %s) as vif #%u-%d - rate=%d",
                   v->uv_name, inet_fmt(addr, s1, sizeof(s1)), netname(subnet, mask),
                   numvifs, v->uv_ifindex, v->uv_rate_limit);
         }
 #else /* !__linux__ */
         if (flags & IFF_POINTOPOINT) {
-            logit(LOG_INFO, 0,
-                  "installing %s (%s -> %s) as vif #%u - rate=%d",
+            logit(LOG_INFO, 0, "Installing %s (%s -> %s) as vif #%u - rate=%d",
                   v->uv_name, inet_fmt(addr, s1, sizeof(s1)), inet_fmt(v->uv_rmt_addr, s2, sizeof(s2)),
                   numvifs, v->uv_rate_limit);
         } else {
-            logit(LOG_INFO, 0,
-                  "installing %s (%s on subnet %s) as vif #%u - rate=%d",
+            logit(LOG_INFO, 0, "Installing %s (%s on subnet %s) as vif #%u - rate=%d",
                   v->uv_name, inet_fmt(addr, s1, sizeof(s1)), netname(subnet, mask),
                   numvifs, v->uv_rate_limit);
         }
@@ -388,8 +382,7 @@ static int parse_phyint(char *s)
     }
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
         if (vifi == numvifs) {
-            logit(LOG_WARNING, 0,
-                  "phyint %s in %s is not a configured interface",
+            logit(LOG_WARNING, 0, "phyint %s in %s is not a configured interface",
                   inet_fmt(local, s1, sizeof(s1)), configfilename);
             return(FALSE);
         }	/* if vifi == numvifs */
@@ -418,22 +411,18 @@ static int parse_phyint(char *s)
                 if (!altnet_addr) {
                     altnet_addr = inet_parse(w, 4);
                     if (!inet_valid_host(altnet_addr)) {
-                        logit(LOG_WARNING, 0,
-                              "Invalid altnet address '%s' in %s", w,
-                              configfilename);
+                        logit(LOG_WARNING, 0, "Invalid altnet address '%s' in %s", w, configfilename);
                         return(FALSE);
                     } /* invalid address */
                 }
                 if (EQUAL((w = next_word(&s)), "masklen")) {
                     if (EQUAL((w = next_word(&s)), "")) {
-                        logit(LOG_WARNING, 0,
-                              "Missing ALTNET masklen for phyint %s in %s",
+                        logit(LOG_WARNING, 0, "Missing ALTNET masklen for phyint %s in %s",
                               inet_fmt(local, s1, sizeof (s1)), configfilename);
                         continue;
                     }
                     if (sscanf(w, "%u", &altnet_masklen) != 1) {
-                        logit(LOG_WARNING, 0,
-                              "Invalid altnet masklen '%s' for phyint %s in %s",
+                        logit(LOG_WARNING, 0, "Invalid altnet masklen '%s' for phyint %s in %s",
                               w, inet_fmt(local, s1, sizeof(s1)), configfilename);
                         continue;
                     }
@@ -468,22 +457,18 @@ static int parse_phyint(char *s)
                 if (!scoped_addr) {
                     scoped_addr = inet_parse(w, 4);
                     if (!IN_MULTICAST(ntohl(scoped_addr))) {
-                        logit(LOG_WARNING, 0,
-                              "Invalid scoped address '%s' in %s", w,
-                              configfilename);
+                        logit(LOG_WARNING, 0, "Invalid scoped address '%s' in %s", w, configfilename);
                         return(FALSE);
                     } /* invalid address */
                 }
                 if (EQUAL((w = next_word(&s)), "masklen")) {
                     if (EQUAL((w = next_word(&s)), "")) {
-                        logit(LOG_WARNING, 0,
-                              "Missing SCOPED masklen for phyint %s in %s",
+                        logit(LOG_WARNING, 0, "Missing SCOPED masklen for phyint %s in %s",
                               inet_fmt(local, s1, sizeof(s1)), configfilename);
                         continue;
                     }
                     if (sscanf(w, "%u", &scoped_masklen) != 1) {
-                        logit(LOG_WARNING, 0,
-                              "Invalid scoped masklen '%s' for phyint %s in %s",
+                        logit(LOG_WARNING, 0, "Invalid scoped masklen '%s' for phyint %s in %s",
                               w, inet_fmt(local, s1, sizeof(s1)), configfilename);
                         continue;
                     }
@@ -495,25 +480,22 @@ static int parse_phyint(char *s)
                 VAL_TO_MASK(v_acl->acl_mask, scoped_masklen);
                 v_acl->acl_addr = scoped_addr & v_acl->acl_mask;
                 if (scoped_addr & ~v_acl->acl_mask)
-                    logit(LOG_WARNING, 0,
-                          "Boundary spec %s/%d has host bits set",
+                    logit(LOG_WARNING, 0, "Boundary spec %s/%d has host bits set",
                           inet_fmt(scoped_addr, s1, sizeof(s1)),scoped_masklen);
                 v_acl->acl_next = v->uv_acl;
                 v->uv_acl = v_acl;
                 logit(LOG_DEBUG, 0, "SCOPED %s/%x",
-                      inet_fmt(v_acl->acl_addr, s1, sizeof(s1)), v_acl->acl_mask);
+		      inet_fmt(v_acl->acl_addr, s1, sizeof(s1)), v_acl->acl_mask);
             } /* scoped */
 
             if (EQUAL(w, "threshold")) {
                 if (EQUAL((w = next_word(&s)), "")) {
-                    logit(LOG_WARNING, 0,
-                          "Missing threshold for phyint %s in %s",
+                    logit(LOG_WARNING, 0, "Missing threshold for phyint %s in %s",
                           inet_fmt(local, s1, sizeof(s1)), configfilename);
                     continue;
                 }
                 if (sscanf(w, "%u%c", &n, &c) != 1 || n < 1 || n > 255 ) {
-                    logit(LOG_WARNING, 0,
-                          "Invalid threshold '%s' for phyint %s in %s",
+                    logit(LOG_WARNING, 0, "Invalid threshold '%s' for phyint %s in %s",
                           w, inet_fmt(local, s1, sizeof(s1)), configfilename);
                     continue;
                 }
@@ -522,43 +504,38 @@ static int parse_phyint(char *s)
             }		/* threshold	*/
             if (EQUAL(w, "preference")) {
                 if (EQUAL((w = next_word(&s)), "")) {
-                    logit(LOG_WARNING, 0,
-                          "Missing preference for phyint %s in %s",
+                    logit(LOG_WARNING, 0, "Missing preference for phyint %s in %s",
                           inet_fmt(local, s1, sizeof(s1)), configfilename);
                     continue;
                 }
                 if (sscanf(w, "%u%c", &n, &c) != 1 || n < 1 || n > 255 ) {
-                    logit(LOG_WARNING, 0,
-                          "Invalid preference '%s' for phyint %s in %s",
+                    logit(LOG_WARNING, 0, "Invalid preference '%s' for phyint %s in %s",
                           w, inet_fmt(local, s1, sizeof(s1)),
                           configfilename);
                     continue;
                 }
                 IF_DEBUG(DEBUG_ASSERT)
-                    logit(LOG_DEBUG, 0,
-                          "Config setting default local preference on %s to %d.",
+                    logit(LOG_DEBUG, 0, "Config setting default local preference on %s to %d.",
                           inet_fmt(local, s1, sizeof(s1)), n);
                 v->uv_local_pref = n;
                 continue;
             }
             if (EQUAL(w, "metric")) {
                 if (EQUAL((w = next_word(&s)), "")) {
-                    logit(LOG_WARNING, 0,
-                          "Missing metric for phyint %s in %s",
+                    logit(LOG_WARNING, 0, "Missing metric for phyint %s in %s",
                           inet_fmt(local, s1, sizeof(s1)), configfilename);
                     continue;
                 }
                 if (sscanf(w, "%u%c", &n, &c) != 1 || n < 1 || n > 1024 ) {
-                    logit(LOG_WARNING, 0,
-                          "Invalid metric '%s' for phyint %s in %s",
+                    logit(LOG_WARNING, 0, "Invalid metric '%s' for phyint %s in %s",
                           w, inet_fmt(local, s1, sizeof(s1)),
                           configfilename);
                     continue;
                 }
-                IF_DEBUG(DEBUG_ASSERT)
-                    logit(LOG_DEBUG, 0,
-                          "Config setting default local metric on %s to %d.",
+                IF_DEBUG(DEBUG_ASSERT) {
+                    logit(LOG_DEBUG, 0, "Config setting default local metric on %s to %d.",
                           inet_fmt(local, s1, sizeof(s1)), n);
+		}
                 v->uv_local_metric = n;
                 continue;
             }
@@ -589,15 +566,13 @@ int parse_candidateRP(char *s)
     while (!EQUAL((w = next_word(&s)), "")) {
         if (EQUAL(w, "priority")) {
             if (EQUAL((w = next_word(&s)), "")) {
-                logit(LOG_WARNING, 0,
-                      "Missing priority; set to default %u (0 is highest)",
+                logit(LOG_WARNING, 0, "Missing priority; set to default %u (0 is highest)",
                       PIM_DEFAULT_CAND_RP_PRIORITY);
                 priority = PIM_DEFAULT_CAND_RP_PRIORITY;
                 continue;
             }
             if (sscanf(w, "%u", &priority) != 1) {
-                logit(LOG_WARNING, 0,
-                      "invalid priority %s; set to default %u (0 is highest)",
+                logit(LOG_WARNING, 0, "Invalid priority %s; set to default %u (0 is highest)",
                       PIM_DEFAULT_CAND_RP_PRIORITY);
                 priority = PIM_DEFAULT_CAND_RP_PRIORITY;
             }
@@ -605,15 +580,13 @@ int parse_candidateRP(char *s)
         }
         if (EQUAL(w, "time")) {
             if (EQUAL((w = next_word(&s)), "")) {
-                logit(LOG_WARNING, 0,
-                      "Missing cand_rp_adv_period value; set to default %u",
+                logit(LOG_WARNING, 0, "Missing cand_rp_adv_period value; set to default %u",
                       PIM_DEFAULT_CAND_RP_ADV_PERIOD);
                 time = PIM_DEFAULT_CAND_RP_ADV_PERIOD;
                 continue;
             }
             if (sscanf(w, "%u", &time) != 1) {
-                logit(LOG_WARNING, 0,
-                      "Invalid cand_rp_adv_period value; set to default %u",
+                logit(LOG_WARNING, 0, "Invalid cand_rp_adv_period value; set to default %u",
                       PIM_DEFAULT_CAND_RP_ADV_PERIOD);
                 time = PIM_DEFAULT_CAND_RP_ADV_PERIOD;
                 continue;
@@ -634,8 +607,7 @@ int parse_candidateRP(char *s)
         local = inet_parse(w, 4);
         if (!inet_valid_host(local)) {
             local = max_local_address();
-            logit(LOG_WARNING, 0,
-                  "Invalid Cand-RP address provided '%s' in %s. Will use the largest enabled local address.",
+            logit(LOG_WARNING, 0, "Invalid Cand-RP address provided '%s' in %s. Will use the largest enabled local address.",
                   w, configfilename);
         } else if (local_address(local) == NO_VIF) {
             local = max_local_address();
@@ -677,14 +649,13 @@ int parse_group_prefix(char *s)
 
     w = next_word(&s);
     if (EQUAL(w, "")) {
-        logit(LOG_WARNING, 0,
-              "Configuration error for 'group_prefix' in %s: no group_addr. Ignoring...", configfilename);
+        logit(LOG_WARNING, 0, "Configuration error for 'group_prefix' in %s: no group_addr. Ignoring...", configfilename);
         return FALSE;
     }
     group_addr = inet_parse(w, 4);
     if (!IN_MULTICAST(ntohl(group_addr))) {
-        logit(LOG_WARNING, 0,
-              "Config error for 'group_prefix' in %s: %s is not a mcast addr. Ignoring...", configfilename, inet_fmt(group_addr, s1, sizeof(s1)));
+        logit(LOG_WARNING, 0, "Config error for 'group_prefix' in %s: %s is not a mcast addr. Ignoring...",
+	      configfilename, inet_fmt(group_addr, s1, sizeof(s1)));
         return FALSE;
     }
 
@@ -694,8 +665,7 @@ int parse_group_prefix(char *s)
      * I've changed the check to see if we've already read 255 entries, if so the cnt
      * is maximized and we need to tell the user. --Joachim Nilsson 2010-01-16 */
     if (*cand_rp_adv_message.prefix_cnt_ptr == 255) {
-        logit(LOG_WARNING, 0,
-              "Too many group_prefix configured. Truncating...");
+        logit(LOG_WARNING, 0, "Too many group_prefix configured. Truncating...");
         return FALSE;
     }
 
@@ -742,15 +712,13 @@ int parseBSR(char *s)
     while (!EQUAL((w = next_word(&s)), "")) {
         if (EQUAL(w, "priority")) {
             if (EQUAL((w = next_word(&s)), "")) {
-                logit(LOG_WARNING, 0,
-                      "Missing priority; set to default %u (0 is lowest)\n",
+                logit(LOG_WARNING, 0, "Missing priority; set to default %u (0 is lowest)\n",
                       PIM_DEFAULT_BSR_PRIORITY);
                 priority = PIM_DEFAULT_BSR_PRIORITY;
                 continue;
             }
             if (sscanf(w, "%u", &priority) != 1) {
-                logit(LOG_WARNING, 0,
-                      "invalid priority %s; set to default %u (0 is lowest)",
+                logit(LOG_WARNING, 0, "Invalid priority %s; set to default %u (0 is lowest)",
                       PIM_DEFAULT_BSR_PRIORITY);
                 priority = PIM_DEFAULT_BSR_PRIORITY;
                 continue;
@@ -771,8 +739,7 @@ int parseBSR(char *s)
         }
         if (local_address(local) == NO_VIF) {
             local = max_local_address();
-            logit(LOG_WARNING, 0,
-                  "Cand-BSR address is not local '%s' in %s. Will use the largest enabled local address.",
+            logit(LOG_WARNING, 0, "Cand-BSR address is not local '%s' in %s. Will use the largest enabled local address.",
                   w, configfilename);
         }
     }		/* while not empty */
@@ -900,15 +867,13 @@ int parse_reg_threshold(char *s)
         if (EQUAL(w, "rate")) {
             /* rate */
             if (EQUAL((w = next_word(&s)), "")) {
-                logit(LOG_WARNING, 0,
-                      "Missing reg_rate value; set to default %u (bits/s)\n",
+                logit(LOG_WARNING, 0, "Missing reg_rate value; set to default %u (bits/s)\n",
                       PIM_DEFAULT_REG_RATE);
                 rate = PIM_DEFAULT_REG_RATE;
                 continue;
             }
             if (sscanf(w, "%u", &rate) != 1) {
-                logit(LOG_WARNING, 0,
-                      "Invalid reg_rate value %s; set to default %u (bits/s)",
+                logit(LOG_WARNING, 0, "Invalid reg_rate value %s; set to default %u (bits/s)",
                       w, PIM_DEFAULT_REG_RATE);
                 rate = PIM_DEFAULT_REG_RATE;
             }
@@ -916,15 +881,13 @@ int parse_reg_threshold(char *s)
         }	/* if rate */
         if (EQUAL(w, "interval")) {
             if (EQUAL((w = next_word(&s)), "")) {
-                logit(LOG_WARNING, 0,
-                      "Missing reg_rate interval; set to default %u seconds",
+                logit(LOG_WARNING, 0, "Missing reg_rate interval; set to default %u seconds",
                       PIM_DEFAULT_REG_RATE_INTERVAL);
                 interval = PIM_DEFAULT_REG_RATE_INTERVAL;
                 continue;
             }
             if (sscanf(w, "%u", &interval) != 1) {
-                logit(LOG_WARNING, 0,
-                      "Invalid reg_rate interval %s; set to default %u seconds",
+                logit(LOG_WARNING, 0, "Invalid reg_rate interval %s; set to default %u seconds",
                       w, PIM_DEFAULT_REG_RATE_INTERVAL);
                 interval = PIM_DEFAULT_REG_RATE_INTERVAL;
             }
@@ -937,8 +900,7 @@ int parse_reg_threshold(char *s)
     }	/* while not empty */
 
     if (interval < TIMER_INTERVAL) {
-        logit(LOG_WARNING, 0,
-              "reg_rate interval too short; set to default %u seconds",
+        logit(LOG_WARNING, 0, "reg_rate interval too short; set to default %u seconds",
               PIM_DEFAULT_REG_RATE_INTERVAL);
         interval = PIM_DEFAULT_REG_RATE_INTERVAL;
     }
@@ -975,15 +937,13 @@ int parse_data_threshold(char *s)
     while (!EQUAL((w = next_word(&s)), "")) {
         if (EQUAL(w, "rate")) {
             if (EQUAL((w = next_word(&s)), "")) {
-                logit(LOG_WARNING, 0,
-                      "Missing data_rate value; set to default %u (bits/s)\n",
+                logit(LOG_WARNING, 0, "Missing data_rate value; set to default %u (bits/s)\n",
                       PIM_DEFAULT_DATA_RATE);
                 rate = PIM_DEFAULT_DATA_RATE;
                 continue;
             }
             if (sscanf(w, "%u", &rate) != 1) {
-                logit(LOG_WARNING, 0,
-                      "Invalid data_rate value %s; set to default %u (bits/s)",
+                logit(LOG_WARNING, 0, "Invalid data_rate value %s; set to default %u (bits/s)",
                       w, PIM_DEFAULT_DATA_RATE);
                 rate = PIM_DEFAULT_DATA_RATE;
             }
@@ -991,16 +951,14 @@ int parse_data_threshold(char *s)
         }	/* if rate */
         if (EQUAL(w, "interval")) {
             if (EQUAL((w = next_word(&s)), "")) {
-                logit(LOG_WARNING, 0,
-                      "Missing data_rate interval; set to default %u seconds",
+                logit(LOG_WARNING, 0, "Missing data_rate interval; set to default %u seconds",
                       PIM_DEFAULT_DATA_RATE_INTERVAL);
                 interval = PIM_DEFAULT_DATA_RATE_INTERVAL;
                 continue;
             }
             if (sscanf(w, "%u", &interval) != 1) {
-                logit(LOG_WARNING, 0,
-                      "Invalid data_rate interval %s; set to default %u seconds"
-                      , w, PIM_DEFAULT_DATA_RATE_INTERVAL);
+                logit(LOG_WARNING, 0, "Invalid data_rate interval %s; set to default %u seconds",
+		      w, PIM_DEFAULT_DATA_RATE_INTERVAL);
                 interval = PIM_DEFAULT_DATA_RATE_INTERVAL;
             }
             continue;
@@ -1012,8 +970,7 @@ int parse_data_threshold(char *s)
     }	/* while not empty */
 
     if (interval < TIMER_INTERVAL) {
-        logit(LOG_WARNING, 0,
-              "data_rate interval too short; set to default %u seconds",
+        logit(LOG_WARNING, 0, "data_rate interval too short; set to default %u seconds",
               PIM_DEFAULT_DATA_RATE_INTERVAL);
         interval = PIM_DEFAULT_DATA_RATE_INTERVAL;
     }
@@ -1047,12 +1004,10 @@ int parse_default_source_metric(char *s)
 
     value = UCAST_DEFAULT_SOURCE_METRIC;
     if (EQUAL((w = next_word(&s)), "")) {
-        logit(LOG_WARNING, 0,
-              "Missing default source metric; set to default %u",
+        logit(LOG_WARNING, 0, "Missing default source metric; set to default %u",
               UCAST_DEFAULT_SOURCE_METRIC);
     } else if (sscanf(w, "%u", &value) != 1) {
-        logit(LOG_WARNING, 0,
-              "Invalid default source metric; set to default %u",
+        logit(LOG_WARNING, 0, "Invalid default source metric; set to default %u",
               UCAST_DEFAULT_SOURCE_METRIC);
         value = UCAST_DEFAULT_SOURCE_METRIC;
     }
@@ -1086,12 +1041,10 @@ int parse_default_source_preference(char *s)
 
     value = UCAST_DEFAULT_SOURCE_PREFERENCE;
     if (EQUAL((w = next_word(&s)), "")) {
-        logit(LOG_WARNING, 0,
-              "Missing default source preference; set to default %u",
+        logit(LOG_WARNING, 0, "Missing default source preference; set to default %u",
               UCAST_DEFAULT_SOURCE_PREFERENCE);
     } else if (sscanf(w, "%u", &value) != 1) {
-        logit(LOG_WARNING, 0,
-              "Invalid default source preference; set to default %u",
+        logit(LOG_WARNING, 0, "Invalid default source preference; set to default %u",
               UCAST_DEFAULT_SOURCE_PREFERENCE);
         value = UCAST_DEFAULT_SOURCE_PREFERENCE;
     }
@@ -1148,8 +1101,7 @@ void config_vifs_from_file(void)
 
     while (fgets(linebuf, sizeof(linebuf), f) != NULL) {
         if (strlen(linebuf) >= (LINE_BUFSIZ - 1)) {
-            logit(LOG_WARNING, 0,
-                  "line length must be shorter than %d in %s:%d",
+            logit(LOG_WARNING, 0, "line length must be shorter than %d in %s:%d",
                   LINE_BUFSIZ, configfilename, line_num);
             error_flag = TRUE;
         } else {

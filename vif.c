@@ -123,7 +123,7 @@ void init_vifs(void)
     }
 
     if (enabled_vifs < 1) /* XXX: TODO: */
-	logit(LOG_ERR, 0, "can't forward: %s",enabled_vifs == 0 ? "no enabled vifs" : "only one enabled vif");
+	logit(LOG_ERR, 0, "Cannot forward: %s", enabled_vifs == 0 ? "no enabled vifs" : "only one enabled vif");
     
     k_init_pim(igmp_socket);	/* Call to kernel to initialize structures */
 
@@ -189,7 +189,7 @@ static int init_reg_vif(void)
 
     if ((numvifs + 1) == MAXVIFS) {
         /* Exit the program! The PIM router must have a Register vif */
-	logit(LOG_ERR, 0, "cannot install the Register vif: too many interfaces");
+	logit(LOG_ERR, 0, "Cannot install the Register vif: too many interfaces");
 
 	return FALSE;
     }
@@ -249,9 +249,9 @@ static void start_all_vifs(void)
 	    /* Start vif if not DISABLED or DOWN */
 	    if (v->uv_flags & (VIFF_DISABLED | VIFF_DOWN)) {
 		if (v->uv_flags & VIFF_DISABLED)
-		    logit(LOG_INFO, 0, "%s is DISABLED; vif #%u out of service", v->uv_name, vifi);
+		    logit(LOG_INFO, 0, "Interface %s is DISABLED; vif #%u out of service", v->uv_name, vifi);
 		else
-		    logit(LOG_INFO, 0, "%s is DOWN; vif #%u out of service", v->uv_name, vifi);
+		    logit(LOG_INFO, 0, "Interface %s is DOWN; vif #%u out of service", v->uv_name, vifi);
 	    } else {
 		start_vif(vifi);
 	    }
@@ -305,7 +305,7 @@ static void start_vif(vifi_t vifi)
     
     /* Tell kernel to add, i.e. start this vif */
     k_add_vif(igmp_socket, vifi, &uvifs[vifi]);   
-    logit(LOG_INFO, 0, "%s comes up; vif #%u now in service", v->uv_name, vifi);
+    logit(LOG_INFO, 0, "Interface %s comes up; vif #%u now in service", v->uv_name, vifi);
     
     if (!(v->uv_flags & VIFF_REGISTER)) {
 	/*
@@ -413,7 +413,7 @@ static void stop_vif(vifi_t vifi)
     }
 
     vifs_down = TRUE;
-    logit(LOG_INFO, 0, "%s goes down; vif #%u out of service", v->uv_name, vifi);
+    logit(LOG_INFO, 0, "Interface %s goes down; vif #%u out of service", v->uv_name, vifi);
 }		
 
 
@@ -440,7 +440,7 @@ static int update_reg_vif(vifi_t register_vifi)
 
 	start_vif(register_vifi);
 	IF_DEBUG(DEBUG_PIM_REGISTER | DEBUG_IF) {
-	    logit(LOG_NOTICE, 0, "%s has come up; vif #%u now in service",
+	    logit(LOG_NOTICE, 0, "Interface %s has come up; vif #%u now in service",
 		  uvifs[register_vifi].uv_name, register_vifi);
 	}
 
@@ -489,7 +489,7 @@ void check_vif_state(void)
 	strlcpy(ifr.ifr_name, v->uv_name, sizeof(ifr.ifr_name));
 	if (ioctl(udp_socket, SIOCGIFFLAGS, (char *)&ifr) < 0) {
            if (errno == ENODEV) {
-              logit(LOG_NOTICE, 0, "%s has gone; vif #%u taken out of service", v->uv_name, vifi);
+              logit(LOG_NOTICE, 0, "Interface %s has gone; vif #%u taken out of service", v->uv_name, vifi);
               stop_vif(vifi);
               vifs_down = TRUE;
               continue;
@@ -505,7 +505,7 @@ void check_vif_state(void)
 		vifs_down = TRUE;
 	} else {
 	    if (!(ifr.ifr_flags & IFF_UP)) {
-		logit(LOG_NOTICE, 0, "%s has gone down; vif #%u taken out of service", v->uv_name, vifi);
+		logit(LOG_NOTICE, 0, "Interface %s has gone down; vif #%u taken out of service", v->uv_name, vifi);
 		stop_vif(vifi);
 		vifs_down = TRUE;
 	    }
