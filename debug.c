@@ -376,8 +376,8 @@ void logit(int severity, int syserr, const char *format, ...)
                 thyme->tm_min, thyme->tm_sec, (long int)(now.tv_usec / 1000), msg);
         if (syserr == 0)
             fprintf(stderr, "\n");
-
-        fprintf(stderr, ":(error %d): %s\n", syserr, strerror(syserr));
+	else
+	    fprintf(stderr, ":(error %d): %s\n", syserr, strerror(syserr));
     }
 
     /*
@@ -394,8 +394,9 @@ void logit(int severity, int syserr, const char *format, ...)
         if (syserr != 0) {
             errno = syserr;
             syslog(severity, "%s: %s", msg, strerror(syserr));
-        } else
+        } else {
             syslog(severity, "%s", msg);
+	}
     }
 
     if (severity <= LOG_ERR) exit(-1);
