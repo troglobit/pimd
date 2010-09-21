@@ -52,7 +52,7 @@ include snmp.mk
 
 ## Common
 CFLAGS        = $(MCAST_INCLUDE) $(SNMPDEF) $(RSRRDEF) $(INCLUDES) $(DEFS) $(USERCOMPILE)
-CFLAGS       += -O2 -W -Wall -Werror
+CFLAGS       += -O2 -W -Wall -Werror -fno-strict-aliasing
 #CFLAGS       += -O -g
 LDLIBS        = $(SNMPLIBDIR) $(SNMPLIBS) $(EXTRA_LIBS)
 OBJS          = $(IGMP_OBJS) $(ROUTER_OBJS) $(PIM_OBJS) $(DVMRP_OBJS) \
