@@ -59,11 +59,15 @@ void k_init_pim(int socket)
 {
     int v = 1;
 
-    if (setsockopt(socket, IPPROTO_IP, MRT_INIT, (char *)&v, sizeof(int)) < 0)
-        logit(LOG_ERR, errno, "cannot enable multicast routing in kernel");
+    if (setsockopt(socket, IPPROTO_IP, MRT_INIT, (char *)&v, sizeof(int)) < 0) {
+	if (errno == EADDRINUSE)
+	    logit(LOG_ERR, 0, "Another multicast routing application is already running.");
+	else
+	    logit(LOG_ERR, errno, "Cannot enable multicast routing in kernel");
+    }
 
     if (setsockopt(socket, IPPROTO_IP, MRT_PIM, (char *)&v, sizeof(int)) < 0)
-        logit(LOG_ERR, errno, "cannot set PIM flag in kernel");
+        logit(LOG_ERR, errno, "Cannot set PIM flag in kernel");
 }
 
 
@@ -76,10 +80,10 @@ void k_stop_pim(int socket)
     int v = 0;
 
     if (setsockopt(socket, IPPROTO_IP, MRT_PIM, (char *)&v, sizeof(int)) < 0)
-        logit(LOG_ERR, errno, "cannot reset PIM flag in kernel");
+        logit(LOG_ERR, errno, "Cannot reset PIM flag in kernel");
 
     if (setsockopt(socket, IPPROTO_IP, MRT_DONE, (char *)NULL, 0) < 0)
-        logit(LOG_ERR, errno, "cannot disable multicast routing in kernel");
+        logit(LOG_ERR, errno, "Cannot disable multicast routing in kernel");
 }
 
 
@@ -119,9 +123,10 @@ void k_set_sndbuf(int socket, int bufsize, int minsize)
             /*NOTREACHED*/
         }
     }
-    IF_DEBUG(DEBUG_KERN)
+    IF_DEBUG(DEBUG_KERN) {
         logit(LOG_DEBUG, 0, "Got %d byte send buffer size in %d iterations",
               bufsize, iter);
+    }
 }
 
 
@@ -160,9 +165,10 @@ void k_set_rcvbuf(int socket, int bufsize, int minsize)
             /*NOTREACHED*/
         }
     }
-    IF_DEBUG(DEBUG_KERN)
+    IF_DEBUG(DEBUG_KERN) {
         logit(LOG_DEBUG, 0, "Got %d byte recv buffer size in %d iterations",
               bufsize, iter);
+    }
 }
 
 
@@ -255,11 +261,11 @@ void k_join(int socket, u_int32 grp, struct uvif *v)
                    (char *)&mreq, sizeof(mreq)) < 0) {
 #ifdef __linux__
         logit(LOG_WARNING, errno,
-              "cannot join group %s on interface %s (ifindex %d)",
+              "Cannot join group %s on interface %s (ifindex %d)",
               inet_fmt(grp, s1, sizeof(s1)), inet_fmt(v->uv_lcl_addr, s2, sizeof(s2)), v->uv_ifindex);
 #else
         logit(LOG_WARNING, errno,
-              "cannot join group %s on interface %s",
+              "Cannot join group %s on interface %s",
               inet_fmt(grp, s1, sizeof(s1)), inet_fmt(v->uv_lcl_addr, s2, sizeof(s2)));
 #endif /* __linux__ */
     }
@@ -288,11 +294,11 @@ void k_leave(int socket, u_int32 grp, struct uvif *v)
     if (setsockopt(socket, IPPROTO_IP, IP_DROP_MEMBERSHIP, (char *)&mreq, sizeof(mreq)) < 0) {
 #ifdef __linux__
         logit(LOG_WARNING, errno,
-              "cannot leave group %s on interface %s (ifindex %d)",
+              "Cannot leave group %s on interface %s (ifindex %d)",
               inet_fmt(grp, s1, sizeof(s1)), inet_fmt(v->uv_lcl_addr, s2, sizeof(s2)), v->uv_ifindex);
 #else
         logit(LOG_WARNING, errno,
-              "cannot leave group %s on interface %s",
+              "Cannot leave group %s on interface %s",
               inet_fmt(grp, s1, sizeof(s1)), inet_fmt(v->uv_lcl_addr, s2, sizeof(s2)));
 #endif /* __linux__ */
     }
