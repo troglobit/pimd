@@ -1,3 +1,11 @@
+pimd (2.1.4-1) unstable; urgency=low
+
+  * New upstream release 
+  * A serious bcopy()/memcpy() replacement bug in 2.1.3 was fixed.
+  * More updates were made for Debian GNU/kFreeBSD.
+
+ -- Antonin Kral <A.Kral@sh.cvut.cz>  Sat, 25 Sep 2010 19:26:34 +0200
+
 pimd (2.1.3-1) unstable; urgency=low
 
   * New upstream release (Closes: #596117)
