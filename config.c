@@ -84,8 +84,7 @@ void config_vifs_from_kernel(void)
          * is to know that there was enough space for at least one
          * more struct ifreq. ???
          */
-        if ((num_ifreq * sizeof(struct ifreq)) >=
-            ifc.ifc_len + sizeof(struct ifreq))
+        if ((num_ifreq * sizeof(struct ifreq)) >= ifc.ifc_len + sizeof(struct ifreq))
             break;
 
         num_ifreq *= 2;
