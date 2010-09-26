@@ -1,160 +1,158 @@
-  $Id: BUGS.TODO,v 1.20 2001/09/10 20:31:35 pavlin Exp $
+TODO List                                                             -*-org-*-
 
-THIS LIST IS FAR AWAY FROM BEING COMPLETE, so these are the few things 
+THIS LIST IS FAR AWAY FROM BEING COMPLETE, so these are the few things
 that came up at the right moment to be written down.
 
-  * Run the code checker sparse harder on the code: CC=cgcc make
+* Random issues:
+** Run the code checker sparse harder on the code: CC=cgcc make
 
-  * Start work on ironing out a TODO list for RFC 4601 compliancy.
+** Start work on ironing out a TODO list for RFC 4601 compliancy.
 
-  * Look into updates RFC 5059 and RFC 5796
+** Look into updates RFC 5059 and RFC 5796
 
-  * Test again on Debian GNU/kFreeBSD.  Atm it lacks netinet/pim.h, but
-    it should be possible to run the default config on it, probing the
-    __FreeBSD_kernel__ and doing the right thing.
+** Test again on Debian GNU/kFreeBSD.  Atm it lacks netinet/pim.h, but
+  it should be possible to run the default config on it, probing the
+  __FreeBSD_kernel__ and doing the right thing.
 
-  * Check Kame's pim6sd old sources for relevant fixes.
-    http://www.kame.net/dev/cvsweb2.cgi/kame/kame/kame/pim6sd/Attic/
+** Check Kame's pim6sd old sources for relevant fixes.
+   http://www.kame.net/dev/cvsweb2.cgi/kame/kame/kame/pim6sd/Attic/
 
-  * Import Kame's pim6sd cfparse.[yl] config file parser reimplemented
-    in lex & yacc, like mrouted does.
+** Import Kame's pim6sd cfparse.[yl] config file parser reimplemented
+   in lex & yacc, like mrouted does.
 
-  * Install negative cache in kernel for non-frequently requested
-    groups. 
+** DONE When receive PIM_REGISTER, check whether I am the chosen RP
 
-  * The code should use the _PIM_VT handling of the 'struct pim'
 
-  * Check 2.10 from the spec "Unicast Routing Changes", and verify
-    that it is properly implemented
+** Install negative cache in kernel for non-frequently requested groups.
 
-  * <masklen> in pimd.conf should be mandatory, instead of relaying
-    of its default value (16)
+** The code should use the _PIM_VT handling of the 'struct pim'
 
-  * Candidate RP priority configuration in pimd.conf should be per
-    prefix, instead of a single priority for the whole RP.
+** Check 2.10 from the spec "Unicast Routing Changes", and verify
+   that it is properly implemented
 
-  * Check whether Asserts received on the iif are really evaluated
-    by using the metrics of other asserts received on that iif, or
-    the comparison uses the local metric and preference info (it must
-    be the former!).
+** <masklen> in pimd.conf should be mandatory, instead of relaying
+   of its default value (16)
 
-  * Experimental kernel MFC (*,G) related:
-    If the (S,G) iif or oifs are different from the (*,G) or (*,*,RP)
-    iifs/oifs, the resp. (*,G) or (*,*,RP) will delete and disallow
-    creating (*,G) MFC. Only after all MRT (S,G) are deleted, the
-    corresponding (*,G) or (*,*,RP) will create (*,G) MFC.
+** Candidate RP priority configuration in pimd.conf should be per
+   prefix, instead of a single priority for the whole RP.
 
-  * Experimental kernel MFC (*,G) related:
-    Right now when the MFC (*,G) total datarate is above the SPT switch
-    threshold, the (*,G) MFC will be deleted, and any further cache miss
-    will result in (S,G) MFC (the problem is that we must do (S,G)
-    monitoring for eventually high datagate sources). Only after all
-    (S,G) MFCs expire, the daemon's MRT will stop creating (S,G) MFCs
-    (i.e. the next cache miss will result in (*,G) kernel MFC).
-    A better selection should be applied to sort out the higher
-    datarate sources, and at the same time to have (*,G)MFC as well.
-    For example, create few (S,G), and after that create the (*,G). If some
-    of the created (S,G) MFC entries have very low datarate, delete them.
+** Check whether Asserts received on the iif are really evaluated
+   by using the metrics of other asserts received on that iif, or
+   the comparison uses the local metric and preference info (it must
+   be the former!).
 
-  * Use NetBSD's definition for IPADDR (netinet/in.h):
+** Experimental kernel MFC (*,G) related:
+   If the (S,G) iif or oifs are different from the (*,G) or (*,*,RP)
+   iifs/oifs, the resp. (*,G) or (*,*,RP) will delete and disallow
+   creating (*,G) MFC. Only after all MRT (S,G) are deleted, the
+   corresponding (*,G) or (*,*,RP) will create (*,G) MFC.
+
+** Experimental kernel MFC (*,G) related:
+   Right now when the MFC (*,G) total datarate is above the SPT switch
+   threshold, the (*,G) MFC will be deleted, and any further cache miss
+   will result in (S,G) MFC (the problem is that we must do (S,G)
+   monitoring for eventually high datagate sources). Only after all
+   (S,G) MFCs expire, the daemon's MRT will stop creating (S,G) MFCs
+   (i.e. the next cache miss will result in (*,G) kernel MFC).
+   A better selection should be applied to sort out the higher
+   datarate sources, and at the same time to have (*,G)MFC as well.
+   For example, create few (S,G), and after that create the (*,G). If some
+   of the created (S,G) MFC entries have very low datarate, delete them.
+
+** Use NetBSD's definition for IPADDR (netinet/in.h):
 #ifdef _KERNEL
 #define __IPADDR(x)     ((u_int32_t) htonl((u_int32_t)(x)))
 #else
 #define __IPADDR(x)     ((u_int32_t)(x))
 #endif
 
- 
-  * The (S,G)RPbit in the DR for the sender and the (S,G)SPT in the
-    downstream router won't timeout and will refresh each other even
-    if the sender is not active:
 
-    S--DR-----------------R1------------RP
-       (S,G)RPbit        (S,G)
-                       iif toward S
+** The (S,G)RPbit in the DR for the sender and the (S,G)SPT in the
+   downstream router won't timeout and will refresh each other even
+   if the sender is not active:
 
-  * Check whether the kernel code sends CACHE_MISS and WRONG_IIF for
-    the LAN-scoped addresses
+   S--DR-----------------R1------------RP
+      (S,G)RPbit        (S,G)
+                      iif toward S
 
-  * If the RP for a group changes, the DR should cancel any PIM-register-stop
-    timers (XXX: not in the spec, but should be there)
+** Check whether the kernel code sends CACHE_MISS and WRONG_IIF for
+   the LAN-scoped addresses
 
-  * If a new interface is configured, include it automatically
+** If the RP for a group changes, the DR should cancel any PIM-register-stop
+   timers (XXX: not in the spec, but should be there)
 
-  * Don't create routing entries for local link scoped groups
+** If a new interface is configured, include it automatically
 
-  * Implement adm. scoped filters
+** Don't create routing entries for local link scoped groups
 
-  * Do precise check of the timer events to speed up the propagation of the
-  Cand-RP messages + Cand-BSR messages and the election of the BSR.
+** Implement adm. scoped filters
 
-  * Fix the bug for messing up the things when the receiver is on the
-  same host as the RP for the multicast group (probably was fixed with alpha6,
-  because I cannot reproduce it anymore)
+** Do precise check of the timer events to speed up the propagation of the
+Cand-RP messages + Cand-BSR messages and the election of the BSR.
 
-  * Do more precise error check for the received PIM messages. In most cases, 
-  the whole message must be parsed completely before starting processing it.
+** Fix the bug for messing up the things when the receiver is on the
+same host as the RP for the multicast group (probably was fixed with alpha6,
+because I cannot reproduce it anymore)
 
-  * Clean up the debugging messages.
+** Do more precise error check for the received PIM messages. In most cases,
+the whole message must be parsed completely before starting processing it.
 
-  * Use Patricia tree to search the routing table 
-  (There is a nice paper in Sigcomm '97 about fast routing tables
-  implementation, so need to check it as well)
+** Clean up the debugging messages.
 
-  * Do switch back to the Shared Tree by timing out the SPT if the rate
-  is too low (not in the spec, but Ahmed pointed out some complications if
-  this happens)
+** Use Patricia tree to search the routing table
+(There is a nice paper in Sigcomm '97 about fast routing tables
+implementation, so need to check it as well)
 
-  * Change all countdown timers to events timeout (callout.c)
-  (The current implementation is very unefficient if the routing table becomes
-  very large)
+** Do switch back to the Shared Tree by timing out the SPT if the rate
+is too low (not in the spec, but Ahmed pointed out some complications if
+this happens)
 
-  * Send immediately Join/Prune, instead of relying of Join/Prune timer = 0
+** Change all countdown timers to events timeout (callout.c)
+(The current implementation is very unefficient if the routing table becomes
+very large)
 
-  * Fix the code allowing interface UP/DOWN without restarting pimd.
+** Send immediately Join/Prune, instead of relying of Join/Prune timer = 0
 
-  * Do more testings for SPT switch, Join/Prune, asserts, etc...
+** Fix the code allowing interface UP/DOWN without restarting pimd.
 
-  * Test the (*,*,RP) code (need PIM/DVMRP border router to do so)
+** Do more testings for SPT switch, Join/Prune, asserts, etc...
 
-  * Test the RSRR (RSVP support) code
+** Test the (*,*,RP) code (need PIM/DVMRP border router to do so)
 
-  * Send Initial_Reply RSRR message if the interfaces detected by pimd change
+** Test the RSRR (RSVP support) code
 
-  * SNMP support, RFC2934
+** Send Initial_Reply RSRR message if the interfaces detected by pimd change
 
-===TODO by function name===
-igmp_proto.c:
-  * accept_group_report():
-    - add a leaf if DR or forwarder (currently only if DR)???
-  * accept_leave_message():
-    - send immediately PIM prune message if the last member has left
+** SNMP support, RFC2934
 
-main.c
-  * main():
-    - use a combination of time and hostid to initialize the random generator.
-  * restart():
-    - check the implementation
+* Issues by function name:
+** igmp_proto.c:
+   - accept_group_report():
+     * add a leaf if DR or forwarder (currently only if DR)???
+   - accept_leave_message():
+     * send immediately PIM prune message if the last member has left
 
-pim_proto.c
-  * pim_register():
-    - IF THE BORDER BIT IS SET, THEN FORWARD THE WHOLE PACKET FROM USER SPACE
+** main.c
+   - main():
+     * use a combination of time and hostid to initialize the random generator.
+   - restart():
+     * check the implementation
+
+** pim_proto.c
+   - pim_register():
+     * IF THE BORDER BIT IS SET, THEN FORWARD THE WHOLE PACKET FROM USER SPACE
        AND AT THE SAME TIME IGNORE ANY CACHE_MISS SIGNALS FROM THE KERNEL.
-  * register_stop():
-    - REGISTER_STOP rate limiting
+   - register_stop():
+     * REGISTER_STOP rate limiting
 
-route.c
-  * process_cache_miss()
-    - use negative cache.
+** route.c
+   - process_cache_miss()
+     * use negative cache.
 
-rp.c
-  * add_rp_grp_entry():
-    - FIX THE BUG when adding an RP for different prefix requires remapping
-      for some groups!!!
-    (Intentionally left, waiting to come up with an idea how to implement
-     it simple and efficient. If you configure all RPs to advertise the
-     same prefix, the bug won't "show up")
-
-================DONE=====================
-
-  * When receive PIM_REGISTER, check whether I am the chosen RP
+** rp.c
+   - add_rp_grp_entry():
+     * FIX THE BUG when adding an RP for different prefix requires remapping
+       for some groups!!!  (Intentionally left, waiting to come up with an idea
+       how to implement it simple and efficient. If you configure all RPs to
+       advertise the same prefix, the bug won't "show up")
 
