@@ -114,7 +114,10 @@ Tell a running pimd to reload its configuration.  This is done by sending
 a SIGHUP to the PID listed in
 .Pa /var/run/pimd.pid .
 .It Fl N, -disable-vifs
-Disable all virtual interfaces (phyint) by default
+This prevents
+.Nm
+from being activated on all interfaces by default.  Use `phyint enable` to selectively
+activate it.
 .It Fl q, -quit-daemon
 Tell a running pimd to quit.  Similar to --reload-config but this command sends SIGTERM.
 .It Fl r, -show-routes
@@ -181,11 +184,13 @@ significant.  There are eight different types of configuration commands:
 .Op Cm rate Ar <number> Cm interval Ar <number>
 .El
 .Pp
-By default
+By default,
 .Nm
-will be activated on all multicast enabled interfaces.  Use
+will be activated on all multicast capable interfaces.  The
 .Cm phyint
-to disable on interfaces where pimd should not be run.  See more on 
+setting and the
+.Fl N
+command line option control this behaviour.  More on
 .Cm phyint
 below.
 .Pp
@@ -222,6 +227,11 @@ additional settings:
 .Nm disable .
 Do not send PIM-SM traffic through this interface nor listen for PIM-SM traffic
 from this interface.  Default: enable.
+.Nm enable .
+Selectively enable which interfaces to send PIM-SM traffic through.  Useful with
+the
+.Fl N
+command line option.
 .It
 .Nm preference pref .
 This interface's value in an election. It will have the
@@ -239,7 +249,10 @@ Add one
 .Nm phyint
 line per interface on this router.  If you don't do this,
 .Nm pimd
-will simply assume that you want it to utilize all interfaces using default settings.
+will either be completely silent (if you provide the
+.Fl N
+command line option), or simply assume that you want it to utilize all interfaces
+using default settings.
 .Pp
 The
 .Nm cand_rp
@@ -286,7 +299,7 @@ multicast addresses supported in pimd is 255.
 .Pp
 The
 .Nm rp_address
-setting is for static Rendes-voud Point configurations.  The argument can either
+setting is for static Rendez-vous Point configurations.  The argument can either
 be a unicast address or a multicast group.
 .Pp
 The 
