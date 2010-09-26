@@ -167,6 +167,9 @@ significant.  There are eight different types of configuration commands:
 .Op <local-addr>
 .Op Cm priority Ar <number>
 .It
+.Cm rp_address
+.Ar <rp-addr|group-addr>
+.It
 .Cm group_prefix
 .Ar <group-addr>
 .Op Cm masklen Ar <masklen>
@@ -280,6 +283,11 @@ length is 4.
 Max
 .Nm group_prefix
 multicast addresses supported in pimd is 255.
+.Pp
+The
+.Nm rp_address
+setting is for static Rendes-voud Point configurations.  The argument can either
+be a unicast address or a multicast group.
 .Pp
 The 
 .Nm switch_data_threshold
