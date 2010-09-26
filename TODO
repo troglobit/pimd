@@ -120,7 +120,7 @@ that came up at the right moment to be written down.
 
   * Send Initial_Reply RSRR message if the interfaces detected by pimd change
 
-  * SNMP support 
+  * SNMP support, RFC2934
 
 ===TODO by function name===
 igmp_proto.c:
