@@ -389,7 +389,7 @@ static void stop_vif(vifi_t vifi)
     delete_vif_from_mrt(vifi);
     
     /* Delete the interface from the kernel's vif structure. */
-    k_del_vif(igmp_socket, vifi);
+    k_del_vif(igmp_socket, vifi, v);
 
     v->uv_flags = (v->uv_flags & ~VIFF_DR & ~VIFF_QUERIER & ~VIFF_NONBRS) | VIFF_DOWN;
     if (!(v->uv_flags & VIFF_REGISTER)) {
