@@ -117,7 +117,7 @@ distclean:
 dist:
 	@echo "Building bzip2 tarball of $(PKG) in parent dir..."
 	git archive --format=tar --prefix=$(PKG)/ $(VERSION) | bzip2 >../$(ARCHIVE)
-	@(cd ..; md5sum $(ARCHIVE))
+	@(cd ..; md5sum $(ARCHIVE) | tee $(ARCHIVE).md5)
 
 build-deb:
 	@echo "Building .deb if $(PKG)..."
