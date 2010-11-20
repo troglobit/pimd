@@ -406,16 +406,16 @@ extern int		errno;
 
 #define ELSE else           /* To make emacs cc-mode happy */      
 
-#define MASK_TO_VAL(x, i) { \
-			u_int32 _x = ntohl(x); \
-			(i) = 1; \
-			while ((_x) <<= 1) \
-				(i)++; \
-			};
+#define MASK_TO_VAL(x, i) {		   \
+	u_int32 _x = ntohl(x);		   \
+	(i) = 1;			   \
+	while ((_x) <<= 1)		   \
+	    (i)++;			   \
+    };
 
-#define VAL_TO_MASK(x, i) { \
-			x = htonl(~((1 << (32 - (i))) - 1)); \
-			};
+#define VAL_TO_MASK(x, i) {			\
+	x = htonl(~((1 << (32 - (i))) - 1));	\
+    };
 
 /*
  * External function definitions
@@ -638,3 +638,12 @@ int pidfile(const char *basename);
 #endif
 
 #endif /* __PIMD_DEFS_H__ */
+
+/**
+ * Local Variables:
+ *  version-control: t
+ *  indent-tabs-mode: t
+ *  c-file-style: "ellemtel"
+ *  c-basic-offset: 4
+ * End:
+ */
