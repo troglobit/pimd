@@ -61,7 +61,7 @@ SRCS          = $(OBJS:.o=.c)
 DEPS          = $(addprefix .,$(SRCS:.c=.d))
 MANS          = $(addsuffix .8,$(EXEC))
 DISTFILES     = README README.config README.config.jp README.debug \
-		CHANGES INSTALL LICENSE LICENSE.mrouted \
+		ChangeLog INSTALL LICENSE LICENSE.mrouted \
 		TODO CREDITS FAQ AUTHORS
 
 LINT          = splint
