@@ -1,20 +1,20 @@
 #+TITLE:    pimd | Change Log
 #+AUTHOR:    Ahmed Helmy, George Edmond Eddy, Pavlin Ivanov Radoslavov
 
-* Version 2.1.5: November 20, 2010
+* Version 2.1.5: November 21, 2010
 ** Changes & New Features
   - Improved error messages in kern.c
 
   - Renamed CHANGES to ChangeLog
 
 ** Bug Fixes
-  - Import fix from mrouted: on GNU/Linux systems the call to ~kern.c:k_del_vif()~
-    fails with "Invalid argument".  This is due to differences in the Linux and *BSD
-    ~MRT_DEL_VIF~ API.  The Linux kernel expects to receive a ~struct vifctl~
-    associated with the VIF to be deleted, *BSD systems on the other hand expect to
-    receive the index of that VIF.
+  - Import mrouted fix: on GNU/Linux systems (only!) the call to ~kern.c:k_del_vif()~
+    fails with: ="setsockopt MRT_DEL_VIF on vif 3: Invalid argument"=.  This is due
+    to differences in the Linux and *BSD ~MRT_DEL_VIF~ API.  The Linux kernel expects
+    to receive a ~struct vifctl~ associated with the VIF to be deleted, *BSD systems
+    on the other hand expect to receive the index of that VIF.
 
-    Fix reported and fixed on mrouted by Dan Kruchinin <mailto:dkruchinin@acm.org>
+    Bug reported and fixed on mrouted by Dan Kruchinin <mailto:dkruchinin@acm.org>
 
 * Version 2.1.4: September 25, 2010
 ** Changes & New Features
