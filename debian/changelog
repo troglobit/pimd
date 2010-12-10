@@ -1,3 +1,10 @@
+pimd (2.1.5-2) unstable; urgency=low
+
+  * make package a conflict to smcroute
+    https://bugs.launchpad.net/ubuntu/+source/pimd/+bug/362274
+
+ -- Antonin Kral <A.Kral@sh.cvut.cz>  Fri, 10 Dec 2010 13:26:10 +0100
+
 pimd (2.1.5-1) unstable; urgency=low
 
   * New upstream release.
