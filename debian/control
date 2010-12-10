@@ -9,7 +9,7 @@ Package: pimd
 Architecture: any
 Homepage: http://github.com/troglobit/pimd
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Conflicts: mrouted
+Conflicts: mrouted, smcroute
 Description: multicast routing daemon (PIMv2)
  pimd is implementation of Protocol Independent Multicast routing daemon.
  It supports PIMv2-SM on FreeBSD, NetBSD, OpenBSD, Linux. Enabled PIM support
