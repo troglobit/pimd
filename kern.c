@@ -338,7 +338,7 @@ void k_add_vif(int socket, vifi_t vifi, struct uvif *v)
 /*
  * Delete a virtual interface in the kernel.
  */
-void k_del_vif(int socket, vifi_t vifi, struct uvif *v)
+void k_del_vif(int socket, vifi_t vifi, struct uvif *v __attribute__((unused)))
 {
     /*
      * Unfortunately Linux MRT_DEL_VIF API differs a bit from the *BSD one.  It
@@ -350,7 +350,7 @@ void k_del_vif(int socket, vifi_t vifi, struct uvif *v)
     struct vifctl vc;
 
     vc.vifc_vifi = vifi;
-    uvif_to_vifctl(&vc, v);
+    uvif_to_vifctl(&vc, v);	       /* 'v' is used only on Linux systems. */
 
     if (setsockopt(socket, IPPROTO_IP, MRT_DEL_VIF, (char *)&vc, sizeof(vc)) < 0)
 #else /* *BSD et al. */
