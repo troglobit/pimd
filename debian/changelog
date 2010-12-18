@@ -5,7 +5,7 @@ pimd (2.1.5-1) unstable; urgency=low
     when an interface goes down.  Caused by invalid argument to MRT_DEL_VIF
     on Linux kernels.  *BSD systems not affected.
 
- -- Joachim Nilsson <troglobit@vmlinux.org>  Sun, 21 Nov 2010 09:53:57 +0100
+ -- Antonin Kral <A.Kral@sh.cvut.cz>  Sun, 21 Nov 2010 09:53:57 +0100
 
 pimd (2.1.4-1) unstable; urgency=low
 
