@@ -1,3 +1,11 @@
+pimd (2.1.5-3) unstable; urgency=low
+
+  * fix for regression of unused parameter on *bsd, 
+    Closes: Bug#608711 (commit 6eaff4dc495ff67933a4)
+  * add -Werror to debian/rules
+
+ -- Antonin Kral <A.Kral@sh.cvut.cz>  Mon, 03 Jan 2011 09:22:25 +0100
+
 pimd (2.1.5-2) unstable; urgency=low
 
   * make package a conflict to smcroute
