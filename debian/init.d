@@ -25,7 +25,7 @@ case "$1" in
 	;;
   stop)
 	echo -n "Stopping $DESC: "
-	start-stop-daemon --stop --quiet --pidfile /var/run/$NAME.pid \
+	start-stop-daemon --stop --quiet --oknodo --pidfile /var/run/$NAME.pid \
 		--exec $DAEMON
 	echo "$NAME."
 	;;

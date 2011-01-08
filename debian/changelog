@@ -1,3 +1,10 @@
+pimd (2.1.5-4) unstable; urgency=low
+
+  * Added oknodo to s-s-d in init.d script for stop action
+    Closes: Bug#609116
+
+ -- Antonin Kral <A.Kral@sh.cvut.cz>  Sat, 08 Jan 2011 17:56:48 +0100
+
 pimd (2.1.5-3) unstable; urgency=low
 
   * fix for regression of unused parameter on *bsd, 
