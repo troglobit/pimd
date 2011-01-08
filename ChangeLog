@@ -1,6 +1,22 @@
 #+TITLE:    pimd | Change Log
 #+AUTHOR:    Ahmed Helmy, George Edmond Eddy, Pavlin Ivanov Radoslavov
 
+* Version 2.1.6: January 8, 2011
+** Changes & New Features
+  - Debian package now conflicts with smcroute, in addition to mrouted.  It is only
+    possible to run one multicast routing daemon at a time, kernel limitation.
+
+  - The location of the dump file(s) have been moved from /var/tmp to /var/lib/misc
+    due to the insecure nature of /var/tmp.  See more below.
+
+** Bug Fixes
+  - kern.c:k_del_vif(): Fix build error on GNU/kFreeBSD
+
+  - CVE-2011-0007: Insecure file creation in /var/tmp.  "On USR1, pimd will write to
+    /var/tmp/pimd.dump a dump of the multicast route table. Since /var/tmp is
+    writable by any user, a user can create a symlink to any file he wants to destroy
+    with the content of the multicast routing table."
+
 * Version 2.1.5: November 21, 2010
 ** Changes & New Features
   - Improved error messages in kern.c
