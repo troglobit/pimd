@@ -40,13 +40,7 @@
 #define __PIMD_PATHNAMES_H__
 
 #define _PATH_PIMD_CONF         "/etc/pimd.conf"
-
-#if (defined(BSD) && (BSD >= 199103)) || defined(__linux__)
-#define _PATH_PIMD_DUMP         "/var/tmp/pimd.dump"
-#define _PATH_PIMD_CACHE        "/var/tmp/pimd.cache"
-#else  /* Really old system ... */
-#define _PATH_PIMD_DUMP         "/usr/tmp/pimd.dump"
-#define _PATH_PIMD_CACHE        "/usr/tmp/pimd.cache"
-#endif
+#define _PATH_PIMD_DUMP         "/var/lib/misc/pimd.dump"
+#define _PATH_PIMD_CACHE        "/var/lib/misc/pimd.cache"
 
 #endif /* __PIMD_PATHNAMES_H__ */
