@@ -521,7 +521,7 @@ int main(int argc, char *argv[])
 #endif /* SYSV */
     } /* End of child process code */
     
-    if (pidfile (NULL)) {
+    if (pidfile(NULL)) {
 	warn("Cannot create pidfile");
     }
 
