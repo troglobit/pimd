@@ -44,7 +44,8 @@
 #include "defs.h"
 #include <err.h>
 #include <getopt.h>
-#include <paths.h>
+#include <sys/stat.h>
+
 #ifdef SNMP
 #include "snmp.h"
 #endif
@@ -430,6 +431,14 @@ int main(int argc, char *argv[])
 	fprintf(stderr, ")\n");
     }
     
+    /*
+     * Create directory for runtime files
+     */
+    mkdir(_PATH_PIMD_RUNDIR, 0755);
+
+    /*
+     * Setup logging
+     */
 #ifdef LOG_DAEMON
     (void)openlog("pimd", LOG_PID, LOG_DAEMON);
     (void)setlogmask(LOG_UPTO(LOG_NOTICE));

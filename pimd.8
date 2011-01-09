@@ -327,12 +327,12 @@ routers).
 The same as TERM.
 .It USR1
 Dumps the internal state of VIFs and multicast routing tables to
-.Pa /var/lib/misc/pimd.dump .
+.Pa /var/run/pimd/pimd.dump .
 See also the --show-routes option above.
 .\" Not implemented yet, still TODO
 .\" .It USR2
 .\" Dumps the internal cache tables to
-.\" .Pa /var/lib/misc/pimd.cache .
+.\" .Pa /var/run/pimd/pimd.cache .
 .\" Also not implemented yet, TODO
 .\" .It QUIT
 .\" Dumps the internal routing tables to stderr (only if
@@ -346,10 +346,10 @@ writes its process ID to
 .Pa /var/run/pimd.pid
 upon startup.
 .Sh FILES
-.Bl -tag -width /var/lib/misc/pimd.cache -compact
+.Bl -tag -width /var/run/pimd/pimd.cache -compact
 .It Pa /etc/pimd.conf
-.\" .It Pa /var/lib/misc/pimd.cache
-.It Pa /var/lib/misc/pimd.dump
+.\" .It Pa /var/run/pimd/pimd.cache
+.It Pa /var/run/pimd/pimd.dump
 .It Pa /var/run/pimd.pid
 .El
 .Sh SEE ALSO

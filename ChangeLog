@@ -1,6 +1,13 @@
 #+TITLE:    pimd | Change Log
 #+AUTHOR:    Ahmed Helmy, George Edmond Eddy, Pavlin Ivanov Radoslavov
 
+* Version 2.1.7: January 9, 2011
+** Changes & New Features
+  - The previous move of runtime dump files to /var/lib/misc have been changed to
+    /var/run/pimd instead.  This to accomodate *BSD systems that do not have the
+    /var/lib tree, and also recommended in the Filesystem Hierarchy Standard,
+    http://www.pathname.com/fhs/pub/fhs-2.3.html#VARRUNRUNTIMEVARIABLEDATA
+
 * Version 2.1.6: January 8, 2011
 ** Changes & New Features
   - Debian package now conflicts with smcroute, in addition to mrouted.  It is only

@@ -39,8 +39,11 @@
 #ifndef __PIMD_PATHNAMES_H__
 #define __PIMD_PATHNAMES_H__
 
+#include <paths.h>
+
 #define _PATH_PIMD_CONF         "/etc/pimd.conf"
-#define _PATH_PIMD_DUMP         "/var/lib/misc/pimd.dump"
-#define _PATH_PIMD_CACHE        "/var/lib/misc/pimd.cache"
+#define _PATH_PIMD_RUNDIR       _PATH_VARRUN "pimd"
+#define _PATH_PIMD_DUMP         _PATH_PIMD_RUNDIR "/pimd.dump"
+#define _PATH_PIMD_CACHE        _PATH_PIMD_RUNDIR "/pimd.cache"
 
 #endif /* __PIMD_PATHNAMES_H__ */
