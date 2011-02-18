@@ -767,7 +767,7 @@ int parseBSR(char *s)
  * multicast group addresses as well.
  *
  * Format:
- * rp_address <rp-address>
+ * rp_address <rp-address> [<group-addr> [masklen <masklen>] [priority <number>]]
  *
  * Returns:
  * When parsing @s is successful this function returns %TRUE, otherwise %FALSE.
@@ -776,10 +776,12 @@ int parse_rp_address(char *s)
 {
     char *w;
     u_int32 local = 0xffffff;
-    u_int32 group_addr;
-    u_int32 masklen;
+    u_int32 group_addr = htonl(INADDR_UNSPEC_GROUP);
+    u_int32 masklen = PIM_GROUP_PREFIX_DEFAULT_MASKLEN;
+    u_int priority = PIM_DEFAULT_CAND_RP_PRIORITY;
     struct rp_hold * rph;
 
+    /* next is RP addr */
     w = next_word(&s);
     if (EQUAL(w, "")) {
         logit(LOG_WARNING, 0, "'rp_address' in %s: no <rp-addr> - ignoring", configfilename);
@@ -792,6 +794,7 @@ int parse_rp_address(char *s)
         return FALSE;
     }
 
+    /* next is group addr if exist */
     w = next_word(&s);
     if (!EQUAL(w, "")) {
         group_addr = inet_parse(w, 4);
@@ -800,23 +803,46 @@ int parse_rp_address(char *s)
             return FALSE;
         }
 
-        if (EQUAL((w = next_word(&s)), "masklen")) {
-            w = next_word(&s);
-            if (sscanf(w, "%u", &masklen) == 1) {
-                if (masklen > (sizeof(group_addr) * 8))
-                    masklen = (sizeof(group_addr) * 8);
-                else if (masklen < 4)
-                    masklen = 4;
-            }
-            else
-                masklen = PIM_GROUP_PREFIX_DEFAULT_MASKLEN;
-        }
-        else
-            masklen = PIM_GROUP_PREFIX_DEFAULT_MASKLEN;
+	masklen = PIM_GROUP_PREFIX_DEFAULT_MASKLEN;
+	priority = PIM_DEFAULT_CAND_RP_PRIORITY;
+
+	/* next is prefix or priority if exist */
+	while (!EQUAL((w = next_word(&s)), "")) {
+	    if (EQUAL(w, "masklen")) {
+		w = next_word(&s);
+		if (sscanf(w, "%u", &masklen) == 1) {
+		    if (masklen > (sizeof(group_addr) * 8)) {
+			masklen = (sizeof(group_addr) * 8);
+		    }
+		    else if (masklen < PIM_GROUP_PREFIX_MIN_MASKLEN) {
+			logit(LOG_WARNING, 0, "'rp_address' in %s: %s is too small. set to %d.", configfilename, w, PIM_GROUP_PREFIX_MIN_MASKLEN);
+			masklen = PIM_GROUP_PREFIX_MIN_MASKLEN;
+		    }
+		}
+		else {
+		    logit(LOG_WARNING, 0, "'rp_address' in %s: %s is invalid masklen. set to default(%d)", configfilename, w, PIM_GROUP_PREFIX_DEFAULT_MASKLEN);
+		    masklen = PIM_GROUP_PREFIX_DEFAULT_MASKLEN;
+		}
+	    }
+	    else if (EQUAL(w, "priority")) {
+		w = next_word(&s);
+		if (sscanf(w, "%u", &priority) == 1) {
+		    if (priority > PIM_MAX_CAND_RP_PRIORITY) {
+			logit(LOG_WARNING, 0, "'rp_address' in %s: %s is too big. set to %d.", configfilename, w, PIM_MAX_CAND_RP_PRIORITY);
+			priority = PIM_MAX_CAND_RP_PRIORITY;
+		    }
+		}
+		else {
+		    logit(LOG_WARNING, 0, "'rp_address' in %s: %s is invalid priority. set to default(%d)", configfilename, w, PIM_DEFAULT_CAND_RP_PRIORITY);
+		    priority = PIM_DEFAULT_CAND_RP_PRIORITY;
+		}
+	    }
+	}
     }
     else {
-        group_addr = htonl(224 << 24);
-        masklen = 4;
+        group_addr = htonl(INADDR_UNSPEC_GROUP);
+        masklen = PIM_GROUP_PREFIX_MIN_MASKLEN;
+	priority = 1;
     }
 
     /* save */
@@ -828,12 +854,13 @@ int parse_rp_address(char *s)
     rph->address = local;
     rph->group = group_addr;
     VAL_TO_MASK(rph->mask, masklen);
+    rph->priority = priority;
 
     /* attach at the beginning */
     rph->next = g_rp_hold;
     g_rp_hold = rph;
 
-    logit(LOG_INFO, 0, "Added static RP: %s, group %s/%d", inet_fmt(local, s1, sizeof(s1)), inet_fmt(group_addr, s2, sizeof(s2)), masklen);
+    logit(LOG_INFO, 0, "Added static RP: %s, group %s/%d, prioriy %d", inet_fmt(local, s1, sizeof(s1)), inet_fmt(group_addr, s2, sizeof(s2)), masklen, priority);
 
     return TRUE;
 }

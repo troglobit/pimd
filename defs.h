@@ -628,6 +628,7 @@ struct rp_hold {
 	u_int32	address;
 	u_int32	group;
 	u_int32	mask;
+	u_int8	priority;
 };
 
 #ifndef HAVE_STRLCPY

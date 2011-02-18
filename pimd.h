@@ -45,6 +45,9 @@
 #define PIMD_LEVEL (PIM_CONSTANT | PIMD_VERSION | (PIMD_SUBVERSION << 8))
 
 #define INADDR_ALL_PIM_ROUTERS  (u_int32)0xe000000D	     /* 224.0.0.13 */
+#if !defined(INADDR_UNSPEC_GROUP)
+#define INADDR_UNSPEC_GROUP     (u_int32)0xe0000000	     /* 224.0.0.0 */
+#endif /* !defined(INADDR_UNSPEC_GROUP) */
 
 
 /* PIM protocol timers (in seconds) */
@@ -77,6 +80,7 @@
 					     * See the PS version (Mar' 97),
 					     * pp.22 bottom of the spec.
 					     */
+#define PIM_MAX_CAND_RP_PRIORITY        255 /* 255 is the highest. */
 #define PIM_DEFAULT_BSR_PRIORITY          0 /* 0 is the lowest               */
 #define RP_DEFAULT_IPV4_HASHMASKLEN      30 /* the default group msklen used
 					     * by the hash function to 
@@ -92,6 +96,7 @@
 					     * may concentrate all multicast
 					     * traffic in a single RP
 					     */
+#define PIM_GROUP_PREFIX_MIN_MASKLEN	  4 /* group prefix minimum length */
 
 /* Datarate related definitions */
 /* REG_RATE is used by the RP to switch to the shortest path instead of
