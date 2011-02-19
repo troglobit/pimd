@@ -1,6 +1,11 @@
 #+TITLE:    pimd | Change Log
 #+AUTHOR:    Ahmed Helmy, George Edmond Eddy, Pavlin Ivanov Radoslavov
 
+* Version 2.1.8: Feb XX, 2011
+** Changes & New Features
+  - Update documentation of static Rendez-Vous Point, rp_address, configuration in
+    man page and example pimd.conf.
+
 * Version 2.1.7: January 9, 2011
 ** Changes & New Features
   - The previous move of runtime dump files to /var/lib/misc have been changed to
