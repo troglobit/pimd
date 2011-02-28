@@ -426,7 +426,7 @@ static int parse_phyint(char *s)
                         continue;
                     }
                 }
-                ph = (struct phaddr *)malloc(sizeof(struct phaddr));
+                ph = (struct phaddr *)calloc(1, sizeof(struct phaddr));
                 if (ph == NULL)
                     return(FALSE);
                 if (altnet_masklen) {
@@ -473,7 +473,7 @@ static int parse_phyint(char *s)
                     }
                 }
 
-                v_acl = (struct vif_acl *)malloc(sizeof(struct vif_acl));
+                v_acl = (struct vif_acl *)calloc(1, sizeof(struct vif_acl));
                 if (v_acl == NULL)
                     return(FALSE);
                 VAL_TO_MASK(v_acl->acl_mask, scoped_masklen);
@@ -820,7 +820,7 @@ int parse_rp_address(char *s)
     }
 
     /* save */
-    rph = malloc(sizeof(*rph));
+    rph = calloc(1, sizeof(*rph));
     if (!rph) {
 	logit(LOG_WARNING, 0, "Ran out of memory in parse_rp_address()");
 	return FALSE;
@@ -1079,7 +1079,7 @@ void config_vifs_from_file(void)
 
     /* TODO: HARDCODING!!! */
     cand_rp_adv_message.buffer =
-        (u_int8 *)malloc(4 + sizeof(pim_encod_uni_addr_t)
+        (u_int8 *)calloc(1, 4 + sizeof(pim_encod_uni_addr_t)
                            + 255 * sizeof(pim_encod_grp_addr_t));
     if (!cand_rp_adv_message.buffer) {
 	logit(LOG_ERR, errno, "Ran out of memory in config_vifs_from_file()");

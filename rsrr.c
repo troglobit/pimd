@@ -68,8 +68,8 @@ void rsrr_init(void)
     int servlen;
     struct sockaddr_un serv_addr;
 
-    rsrr_recv_buf = (char *)malloc(RSRR_MAX_LEN);
-    rsrr_send_buf = (char *)malloc(RSRR_MAX_LEN);
+    rsrr_recv_buf = (char *)calloc(1, RSRR_MAX_LEN);
+    rsrr_send_buf = (char *)calloc(1, RSRR_MAX_LEN);
     if (!rsrr_recv_buf || !rsrr_send_buf)
 	logit(LOG_ERR, 0, "Ran out of memory in rsrr_init()");
 
@@ -483,7 +483,7 @@ static void rsrr_cache(struct gtable *gt, struct rsrr_rq *route_query)
     /* Cache entry doesn't already exist.  Create one and insert at
      * front of list.
      */
-    rc = (struct rsrr_cache *)malloc(sizeof(struct rsrr_cache));
+    rc = (struct rsrr_cache *)calloc(1, sizeof(struct rsrr_cache));
     if (rc == NULL)
 	logit(LOG_ERR, 0, "Ran out of memory in rsrr_cache()");
 

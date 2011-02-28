@@ -70,8 +70,8 @@ void init_pim(void)
 
     allpimrouters_group = htonl(INADDR_ALL_PIM_ROUTERS);
 
-    pim_recv_buf = malloc(RECV_BUF_SIZE);
-    pim_send_buf = malloc(SEND_BUF_SIZE);
+    pim_recv_buf = calloc(1, RECV_BUF_SIZE);
+    pim_send_buf = calloc(1, SEND_BUF_SIZE);
     if (!pim_recv_buf || !pim_send_buf)
 	logit(LOG_ERR, 0, "Ran out of memory in init_pim()");
 

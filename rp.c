@@ -193,7 +193,7 @@ static cand_rp_t *add_cand_rp(cand_rp_t **used_cand_rp_list, u_int32 address)
     }
     
     /* Create and insert the new entry between prev and next */
-    ptr = (cand_rp_t *)malloc(sizeof(cand_rp_t));
+    ptr = (cand_rp_t *)calloc(1, sizeof(cand_rp_t));
     if (!ptr)
 	logit(LOG_ERR, 0, "Ran out of memory in add_cand_rp()");
     ptr->rp_grp_next = NULL;
@@ -206,7 +206,7 @@ static cand_rp_t *add_cand_rp(cand_rp_t **used_cand_rp_list, u_int32 address)
     else
 	prev->next = ptr;
 
-    entry = (rpentry_t *)malloc(sizeof(rpentry_t));
+    entry = (rpentry_t *)calloc(1, sizeof(rpentry_t));
     if (!entry)
 	logit(LOG_ERR, 0, "Ran out of memory in add_cand_rp()");
     ptr->rpentry = entry;
@@ -259,7 +259,7 @@ static grp_mask_t *add_grp_mask(grp_mask_t **used_grp_mask_list, u_int32 group_a
         }
     }
 
-    ptr = (grp_mask_t *)malloc(sizeof(grp_mask_t));
+    ptr = (grp_mask_t *)calloc(1, sizeof(grp_mask_t));
     if (!ptr)
 	logit(LOG_ERR, 0, "Ran out of memory in add_grp_mask()");
 
@@ -385,7 +385,7 @@ rp_grp_entry_t *add_rp_grp_entry(cand_rp_t  **used_cand_rp_list,
     }
     
     /* Create and link the new entry */
-    entry_new = (rp_grp_entry_t *)malloc(sizeof(rp_grp_entry_t));
+    entry_new = (rp_grp_entry_t *)calloc(1, sizeof(rp_grp_entry_t));
     if (!entry_new)
 	logit(LOG_ERR, 0, "Ran out of memory in add_rp_grp_entry()");
     entry_new->grp_rp_next = entry_next;

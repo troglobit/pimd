@@ -60,7 +60,7 @@ void init_pim_mrt(void)
     /* Initialize the source list */
     /* The first entry has address 'INADDR_ANY' and is not used */
     /* The order is the smallest address first. */
-    srclist             = (srcentry_t *)malloc(sizeof(srcentry_t));
+    srclist             = (srcentry_t *)calloc(1, sizeof(srcentry_t));
     if (!srclist)
 	logit(LOG_ERR, 0, "Ran out of memory in init_pim_mrt()");
     srclist->next       = NULL;
@@ -77,7 +77,7 @@ void init_pim_mrt(void)
     /* Initialize the group list */
     /* The first entry has address 'INADDR_ANY' and is not used */
     /* The order is the smallest address first. */
-    grplist             = (grpentry_t *)malloc(sizeof(grpentry_t));
+    grplist             = (grpentry_t *)calloc(1, sizeof(grpentry_t));
     if (!grplist)
 	logit(LOG_ERR, 0, "Ran out of memory in init_pim_mrt()");
     grplist->next       = NULL;
@@ -574,7 +574,7 @@ static srcentry_t *create_srcentry(u_int32 source)
     if (search_srclist(source, &srcentry_prev) == TRUE)
         return srcentry_prev;
 
-    srcentry_ptr = (srcentry_t *)malloc(sizeof(srcentry_t));
+    srcentry_ptr = (srcentry_t *)calloc(1, sizeof(srcentry_t));
     if (!srcentry_ptr) {
         logit(LOG_WARNING, 0, "Memory allocation error for srcentry %s",
 	      inet_fmt(source, s1, sizeof(s1)));
@@ -619,7 +619,7 @@ static grpentry_t *create_grpentry(u_int32 group)
     if (search_grplist(group, &grpentry_prev) == TRUE)
         return grpentry_prev;
 
-    grpentry_ptr = (grpentry_t *)malloc(sizeof(grpentry_t));
+    grpentry_ptr = (grpentry_t *)calloc(1, sizeof(grpentry_t));
     if (!grpentry_ptr) {
         logit(LOG_WARNING, 0, "Memory allocation error for grpentry %s",
 	      inet_fmt(group, s1, sizeof(s1)));
@@ -767,7 +767,7 @@ static mrtentry_t *alloc_mrtentry(srcentry_t *srcentry_ptr, grpentry_t *grpentry
     u_int16 i, *i_ptr;
     u_int8  vif_numbers;
 
-    mrtentry_ptr = (mrtentry_t *)malloc(sizeof(mrtentry_t));
+    mrtentry_ptr = (mrtentry_t *)calloc(1, sizeof(mrtentry_t));
     if (mrtentry_ptr == NULL) {
         logit(LOG_WARNING, 0, "alloc_mrtentry(): out of memory");
         return NULL;
@@ -801,12 +801,12 @@ static mrtentry_t *alloc_mrtentry(srcentry_t *srcentry_ptr, grpentry_t *grpentry
      * need to delete the routing table and disturb the forwarding.
      */
 #ifdef SAVE_MEMORY
-    mrtentry_ptr->vif_timers = (u_int16 *)malloc(sizeof(u_int16) * numvifs);
-    mrtentry_ptr->vif_deletion_delay = (u_int16 *)malloc(sizeof(u_int16) * numvifs);
+    mrtentry_ptr->vif_timers = (u_int16 *)calloc(1, sizeof(u_int16) * numvifs);
+    mrtentry_ptr->vif_deletion_delay = (u_int16 *)calloc(1, sizeof(u_int16) * numvifs);
     vif_numbers = numvifs;
 #else
-    mrtentry_ptr->vif_timers = (u_int16 *)malloc(sizeof(u_int16) * total_interfaces);
-    mrtentry_ptr->vif_deletion_delay = (u_int16 *)malloc(sizeof(u_int16) * total_interfaces);
+    mrtentry_ptr->vif_timers = (u_int16 *)calloc(1, sizeof(u_int16) * total_interfaces);
+    mrtentry_ptr->vif_deletion_delay = (u_int16 *)calloc(1, sizeof(u_int16) * total_interfaces);
     vif_numbers = total_interfaces;
 #endif /* SAVE_MEMORY */
     if ((mrtentry_ptr->vif_timers == NULL) ||
@@ -1034,7 +1034,7 @@ void add_kernel_cache(mrtentry_t *mrtentry_ptr, u_int32 source, u_int32 group, u
         if (mrtentry_ptr->flags & MRTF_KERNEL_CACHE)
             return;
 
-        kernel_cache_new = (kernel_cache_t *)malloc(sizeof(kernel_cache_t));
+        kernel_cache_new = (kernel_cache_t *)calloc(1, sizeof(kernel_cache_t));
         kernel_cache_new->next = NULL;
         kernel_cache_new->prev = NULL;
         kernel_cache_new->source = source;
@@ -1073,7 +1073,7 @@ void add_kernel_cache(mrtentry_t *mrtentry_ptr, u_int32 source, u_int32 group, u
      * The new entry must be placed between kernel_cache_prev and
      * kernel_cache_next
      */
-    kernel_cache_new = (kernel_cache_t *)malloc(sizeof(kernel_cache_t));
+    kernel_cache_new = (kernel_cache_t *)calloc(1, sizeof(kernel_cache_t));
     if (kernel_cache_prev != NULL)
         kernel_cache_prev->next = kernel_cache_new;
     else

@@ -148,9 +148,9 @@ void accept_membership_query(u_int32 src, u_int32 dst __attribute__((unused)), u
 		      inet_fmt(v->uv_querier->al_addr, s2, sizeof(s2)) :
 		      "me", vifi);
 	    if (!v->uv_querier) {
-		v->uv_querier = (struct listaddr *) malloc(sizeof(struct listaddr));
+		v->uv_querier = (struct listaddr *) calloc(1, sizeof(struct listaddr));
 		if (!v->uv_querier) {
-		    logit(LOG_ERR, 0, "Failed malloc() in accept_membership_query()\n");
+		    logit(LOG_ERR, 0, "Failed calloc() in accept_membership_query()\n");
 		    return;
 		}
 
@@ -264,7 +264,7 @@ void accept_group_report(u_int32 src, u_int32 dst __attribute__((unused)), u_int
      * If not found, add it to the list and update kernel cache.
      */
     if (g == NULL) {
-	g = (struct listaddr *)malloc(sizeof(struct listaddr));
+	g = (struct listaddr *)calloc(1, sizeof(struct listaddr));
 	if (!g) {
 	    logit(LOG_ERR, 0, "Ran out of memory");    /* fatal */
 	    return;
@@ -409,9 +409,9 @@ static int SetTimer(vifi_t vifi, struct listaddr *g)
 {
     cbk_t *cbk;
 
-    cbk = (cbk_t *) malloc(sizeof(cbk_t));
+    cbk = (cbk_t *) calloc(1, sizeof(cbk_t));
     if (!cbk) {
-	logit(LOG_ERR, 0, "Failed malloc() in SetTimer()\n");
+	logit(LOG_ERR, 0, "Failed calloc() in SetTimer()\n");
 	return -1;
     }
 
@@ -458,9 +458,9 @@ static int SetQueryTimer(struct listaddr *g, vifi_t vifi, int to_expire, int q_t
 {
     cbk_t *cbk;
 
-    cbk = (cbk_t *)malloc(sizeof(cbk_t));
+    cbk = (cbk_t *)calloc(1, sizeof(cbk_t));
     if (!cbk) {
-	logit(LOG_ERR, 0, "Failed malloc() in SetQueryTimer()\n");
+	logit(LOG_ERR, 0, "Failed calloc() in SetQueryTimer()\n");
 	return -1;
     }
 

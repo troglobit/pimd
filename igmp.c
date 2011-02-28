@@ -70,8 +70,8 @@ void init_igmp(void)
 {
     struct ip *ip;
     
-    igmp_recv_buf = malloc(RECV_BUF_SIZE);
-    igmp_send_buf = malloc(SEND_BUF_SIZE);
+    igmp_recv_buf = calloc(1, RECV_BUF_SIZE);
+    igmp_send_buf = calloc(1, SEND_BUF_SIZE);
     if (!igmp_recv_buf || !igmp_send_buf)
 	logit(LOG_ERR, 0, "Ran out of memory in init_igmp()");
 
