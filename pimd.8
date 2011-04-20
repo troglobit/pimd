@@ -171,11 +171,12 @@ significant.  There are eight different types of configuration commands:
 .Op Cm priority Ar <number>
 .It
 .Cm rp_address
-.Ar <rp-addr> [<group-addr> [masklen <masklen]]
+.Ar <rp-addr> [<group-addr> [masklen <masklen] [priority <number>]]
 .It
 .Cm group_prefix
 .Ar <group-addr>
 .Op Cm masklen Ar <masklen>
+.Op Cm priority Ar <number>
 .It
 .Cm switch_data_threshold
 .Op Cm rate Ar <number> Cm interval Ar <number>
@@ -300,8 +301,8 @@ multicast addresses supported in pimd is 255.
 The
 .Nm rp_address
 setting is for static Rendez-vous Point configurations.  The argument can either
-be a unicast address or a multicast group, with an optional group address and
-mask length arguments.
+be a unicast address or a multicast group, with an optional group address,
+mask length, and priority arguments.
 .Pp
 The 
 .Nm switch_data_threshold

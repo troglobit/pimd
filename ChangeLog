@@ -6,6 +6,12 @@
   - Update documentation of static Rendez-Vous Point, rp_address, configuration in
     man page and example pimd.conf.
 
+  - Replaced malloc() with calloc() to mitigate risk of accessing junk data and ease
+    debugging.  Thanks to YAMAMOTO Shigeru <shigeru@iij.ad.jp>
+
+  - Extend .conf file 'rp_address' option with 'priority' field.  Code changes and
+    documentation updates by YAMAMOTO Shigeru <shigeru@iij.ad.jp>
+
 * Version 2.1.7: January 9, 2011
 ** Changes & New Features
   - The previous move of runtime dump files to /var/lib/misc have been changed to
