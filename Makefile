@@ -40,7 +40,7 @@ RSRR_OBJS     = rsrr.o
 
 IGMP_OBJS     = igmp.o igmp_proto.o trace.o
 ROUTER_OBJS   = inet.o kern.o main.o config.o debug.o netlink.o routesock.o \
-		vers.o callout.o ${RSRR_OBJS}
+		vers.o callout.o
 PIM_OBJS      = route.o vif.o timer.o mrt.o pim.o pim_proto.o rp.o
 DVMRP_OBJS    = dvmrp_proto.o
 
