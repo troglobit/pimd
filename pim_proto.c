@@ -541,8 +541,8 @@ int receive_pim_register(u_int32 reg_src, u_int32 reg_dst, char *pim_message, si
     }
 
     /* XXX: not in the spec: check if I am the RP for that group */
-    if ((my_cand_rp_address != reg_dst)
-        || (check_mrtentry_rp(mrtentry_ptr, my_cand_rp_address) == FALSE)) {
+    if ((local_address(reg_dst) == NO_VIF) ||
+        (check_mrtentry_rp(mrtentry_ptr, reg_dst) == FALSE)) {
         send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
 
         return TRUE;

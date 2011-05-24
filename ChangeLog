@@ -1,7 +1,7 @@
 #+TITLE:    pimd | Change Log
 #+AUTHOR:    Ahmed Helmy, George Edmond Eddy, Pavlin Ivanov Radoslavov
 
-* Version 2.1.8: Feb XX, 2011
+* Version 2.1.8: May XX, 2011
 ** Changes & New Features
   - Update documentation of static Rendez-Vous Point, rp_address, configuration in
     man page and example pimd.conf.
@@ -11,6 +11,13 @@
 
   - Extend .conf file 'rp_address' option with 'priority' field.  Code changes and
     documentation updates by YAMAMOTO Shigeru <shigeru@iij.ad.jp>
+
+** Bug Fixes
+  - A serious bug in pim_proto.c:receive_pim_register() was found and fixed by
+    Jean-Pascal Billaud.  In essence, the RP check was broken since the code only
+    looked at my_cand_rp_address, which is not set when using the rp_address config.
+    Everything works fine with auto-RP mode though. This issue completely breaks the
+    register path since the JOIN(S,G) is never sent back...
 
 * Version 2.1.7: January 9, 2011
 ** Changes & New Features
