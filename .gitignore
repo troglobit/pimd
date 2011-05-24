@@ -4,3 +4,6 @@ debian/files
 pimd.map
 *.o
 .*.d
+*~
+\#*
+.\#*
