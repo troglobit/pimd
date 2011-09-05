@@ -1,3 +1,9 @@
+pimd (2.1.7-1) unstable; urgency=low
+
+  * New upstream
+
+ -- Antonin Kral <A.Kral@sh.cvut.cz>  Mon, 05 Sep 2011 11:54:53 +0200
+
 pimd (2.1.6-1) unstable; urgency=low
 
   * New upstream version changing location of dump file(s) to
@@ -14,7 +20,7 @@ pimd (2.1.5-4) unstable; urgency=low
 
 pimd (2.1.5-3) unstable; urgency=low
 
-  * fix for regression of unused parameter on *bsd, 
+  * fix for regression of unused parameter on *bsd,
     Closes: Bug#608711 (commit 6eaff4dc495ff67933a4)
   * add -Werror to debian/rules
 
