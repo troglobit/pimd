@@ -70,7 +70,7 @@ void init_vifs(void)
     vifi_t vifi;
     struct uvif *v;
     int enabled_vifs;
-	
+
     numvifs    = 0;
     reg_vif_num = NO_VIF;
     vifs_down = FALSE;
@@ -106,7 +106,7 @@ void init_vifs(void)
      */
     enabled_vifs    = 0;
     phys_vif        = -1;
-	 
+
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
 	/* Initialize the outgoing timeout for each vif.  Currently use a fixed time
 	 * 'PIM_JOIN_PRUNE_HOLDTIME'.  Later, may add a configurable array to feed
@@ -124,10 +124,10 @@ void init_vifs(void)
 
     if (enabled_vifs < 1) /* XXX: TODO: */
 	logit(LOG_ERR, 0, "Cannot forward: %s", enabled_vifs == 0 ? "no enabled vifs" : "only one enabled vif");
-    
+
     k_init_pim(igmp_socket);	/* Call to kernel to initialize structures */
 
-    /* Add a dummy virtual interface to support Registers in the kernel. 
+    /* Add a dummy virtual interface to support Registers in the kernel.
      * In order for this to work, the kernel has to have been modified
      * with the PIM patches to ip_mroute.{c,h} and ip.c
      */
@@ -183,7 +183,7 @@ static int init_reg_vif(void)
 {
     struct uvif *v;
     vifi_t i;
-    
+
     v = &uvifs[numvifs];
     v->uv_flags = 0;
 
@@ -193,20 +193,20 @@ static int init_reg_vif(void)
 
 	return FALSE;
     }
-    
+
     /*
      * So far in PIM we need only one register vif and we save its number in
      * the global reg_vif_num.
      */
     reg_vif_num = numvifs;
-    
+
     /* set the REGISTER flag */
     v->uv_flags = VIFF_REGISTER;
 #ifdef PIM_EXPERIMENTAL
     v->uv_flags |= VIFF_REGISTER_KERNEL_ENCAP;
 #endif
     strlcpy(v->uv_name, "register_vif0", sizeof(v->uv_name));
-    
+
     /* Use the address of the first available physical interface to
      * create the register vif.
      */
@@ -287,12 +287,10 @@ void stop_all_vifs(void)
 static void start_vif(vifi_t vifi)
 {
     struct uvif *v;
-    u_int32    src;
 
     v	= &uvifs[vifi];
-    src = v->uv_lcl_addr;
     /* Initialy no router on any vif */
-    if (v->uv_flags & VIFF_REGISTER) 
+    if (v->uv_flags & VIFF_REGISTER)
 	v->uv_flags = v->uv_flags & ~VIFF_DOWN;
     else {
 	v->uv_flags = (v->uv_flags | VIFF_DR | VIFF_NONBRS) & ~VIFF_DOWN;
@@ -302,24 +300,24 @@ static void start_vif(vifi_t vifi)
 	RESET_TIMER(v->uv_gq_timer);
 	v->uv_pim_neighbors = (pim_nbr_entry_t *)NULL;
     }
-    
+
     /* Tell kernel to add, i.e. start this vif */
-    k_add_vif(igmp_socket, vifi, &uvifs[vifi]);   
+    k_add_vif(igmp_socket, vifi, &uvifs[vifi]);
     logit(LOG_INFO, 0, "Interface %s comes up; vif #%u now in service", v->uv_name, vifi);
-    
+
     if (!(v->uv_flags & VIFF_REGISTER)) {
 	/*
 	 * Join the PIM multicast group on the interface.
 	 */
 	k_join(igmp_socket, allpimrouters_group, v);
-	
+
 	/*
 	 * Join the ALL-ROUTERS multicast group on the interface.
 	 * This allows mtrace requests to loop back if they are run
 	 * on the multicast router.
 	 */
 	k_join(igmp_socket, allrouters_group, v);
-	
+
 	/*
 	 * Until neighbors are discovered, assume responsibility for sending
 	 * periodic group membership queries to the subnet.  Send the first
@@ -327,7 +325,7 @@ static void start_vif(vifi_t vifi)
 	 */
 	v->uv_flags |= VIFF_QUERIER;
 	query_groups(v);
-	
+
 	/*
 	 * Send a probe via the new vif to look for neighbors.
 	 */
@@ -336,7 +334,7 @@ static void start_vif(vifi_t vifi)
 #ifdef __linux__
     else {
 	struct ifreq ifr;
-	
+
 	memset(&ifr, 0, sizeof(struct ifreq));
 	/* strlcpy(ifr.ifr_name,v->uv_name, IFNAMSIZ); */
 	strlcpy(ifr.ifr_name, "pimreg", IFNAMSIZ);
@@ -361,11 +359,11 @@ static void stop_vif(vifi_t vifi)
     struct listaddr *a;
     pim_nbr_entry_t *n, *next;
     struct vif_acl *acl;
-    
+
     /*
-     * TODO: make sure that the kernel viftable is 
+     * TODO: make sure that the kernel viftable is
      * consistent with the daemon table
-     */	
+     */
     v = &uvifs[vifi];
     if (!(v->uv_flags & VIFF_REGISTER)) {
 	k_leave(igmp_socket, allpimrouters_group, v);
@@ -380,14 +378,14 @@ static void stop_vif(vifi_t vifi)
 	    free((char *)a);
 	}
     }
-    
+
     /*
      * TODO: inform (eventually) the neighbors I am going down by sending
      * PIM_HELLO with holdtime=0 so someone else should become a DR.
-     */ 
+     */
     /* TODO: dummy! Implement it!! Any problems if don't use it? */
     delete_vif_from_mrt(vifi);
-    
+
     /* Delete the interface from the kernel's vif structure. */
     k_del_vif(igmp_socket, vifi, v);
 
@@ -414,7 +412,7 @@ static void stop_vif(vifi_t vifi)
 
     vifs_down = TRUE;
     logit(LOG_INFO, 0, "Interface %s goes down; vif #%u out of service", v->uv_name, vifi);
-}		
+}
 
 
 /*
@@ -484,7 +482,7 @@ void check_vif_state(void)
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
 	if (v->uv_flags & (VIFF_DISABLED | VIFF_REGISTER))
 	    continue;
-	
+
 	/* get the interface flags */
 	strlcpy(ifr.ifr_name, v->uv_name, sizeof(ifr.ifr_name));
 	if (ioctl(udp_socket, SIOCGIFFLAGS, (char *)&ifr) < 0) {
@@ -517,7 +515,7 @@ void check_vif_state(void)
 	vifi_t vifi2;
 	struct uvif *v2;
 	int found;
-	
+
 	if (!(v->uv_flags & VIFF_REGISTER))
 	    continue;
 
@@ -557,7 +555,7 @@ vifi_t find_vif_direct(u_int32 src)
     vifi_t vifi;
     struct uvif *v;
     struct phaddr *p;
-	
+
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
 	if (v->uv_flags & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER | VIFF_TUNNEL))
 	    continue;
@@ -565,7 +563,7 @@ vifi_t find_vif_direct(u_int32 src)
 	if (src == v->uv_lcl_addr)
 	    return NO_VIF;	/* src is one of our IP addresses */
 
-	if ((src & v->uv_subnetmask) == v->uv_subnet && 
+	if ((src & v->uv_subnetmask) == v->uv_subnet &&
 	    ((v->uv_subnetmask == 0xffffffff) ||
 	     (src != v->uv_subnetbcast)))
 	    return vifi;
@@ -585,7 +583,7 @@ vifi_t find_vif_direct(u_int32 src)
     }
 
     return NO_VIF;
-} 
+}
 
 
 /*
@@ -596,7 +594,7 @@ vifi_t local_address(u_int32 src)
 {
     vifi_t vifi;
     struct uvif *v;
-    
+
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
 	/* TODO: XXX: what about VIFF_TUNNEL? */
 	if (v->uv_flags & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER))
@@ -604,12 +602,12 @@ vifi_t local_address(u_int32 src)
 
 	if (src != v->uv_lcl_addr)
 	    continue;
-	else 
+	else
 	    return vifi;
     }
 
     /* Returning NO_VIF means not a local address */
-    return NO_VIF;	
+    return NO_VIF;
 }
 
 /*
@@ -623,7 +621,7 @@ vifi_t find_vif_direct_local(u_int32 src)
     vifi_t vifi;
     struct uvif *v;
     struct phaddr *p;
-    
+
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
 	/* TODO: XXX: what about VIFF_TUNNEL? */
 	if (v->uv_flags & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER | VIFF_TUNNEL))
@@ -651,7 +649,7 @@ vifi_t find_vif_direct_local(u_int32 src)
 	    return vifi;
     }
     return NO_VIF;
-} 
+}
 
 /*
  * Returns the highest address of local vif that is UP and ENABLED.
@@ -662,7 +660,7 @@ u_int32 max_local_address(void)
     vifi_t vifi;
     struct uvif *v;
     u_int32 max_address = 0;
-    
+
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
 	/* Count vif if not DISABLED or DOWN */
 	/* TODO: XXX: What about VIFF_TUNNEL? */

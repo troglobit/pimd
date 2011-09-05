@@ -63,7 +63,7 @@ int receive_pim_hello(u_int32 src, u_int32 dst __attribute__((unused)), char *pi
     pim_nbr_entry_t *nbr, *prev_nbr, *new_nbr;
     u_int16 holdtime = 0;
     int     bsr_length;
-    u_int8  *data_ptr;
+    u_int8  *data_ptr __attribute__((unused));
     srcentry_t *srcentry_ptr;
     mrtentry_t *mrtentry_ptr;
 
@@ -225,7 +225,7 @@ void delete_pim_nbr(pim_nbr_entry_t *nbr_delete)
     mrtentry_t *mrtentry_ptr;
     mrtentry_t *mrtentry_srcs;
     grpentry_t *grpentry_ptr;
-    pim_nbr_entry_t *new_nbr;
+    pim_nbr_entry_t *new_nbr __attribute__((unused));
     cand_rp_t *cand_rp_ptr;
     rp_grp_entry_t *rp_grp_entry_ptr;
     rpentry_t  *rpentry_ptr;
@@ -1024,7 +1024,7 @@ int receive_pim_join_prune(u_int32 src, u_int32 dst __attribute__((unused)), cha
     u_int32 s_mask;
     u_int32 g_mask;
     u_int8 s_flags;
-    u_int8 reserved;
+    u_int8 reserved __attribute__((unused));
     rpentry_t *rpentry_ptr;
     mrtentry_t *mrtentry_ptr;
     mrtentry_t *mrtentry_srcs;
@@ -2368,7 +2368,7 @@ static void send_jp_message(pim_nbr_entry_t *pim_nbr)
 
     datalen = pim_nbr->build_jp_message->jp_message_size;
     vifi = pim_nbr->vifi;
-    memcpy(pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t), 
+    memcpy(pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t),
 	   pim_nbr->build_jp_message->jp_message, datalen);
     send_pim(pim_send_buf, uvifs[vifi].uv_lcl_addr, allpimrouters_group,
              PIM_JOIN_PRUNE, datalen);
@@ -2645,7 +2645,7 @@ int send_pim_assert(u_int32 source, u_int32 group, vifi_t vifi, mrtentry_t *mrte
     u_int8 *data_start_ptr;
     u_int32 local_preference;
     u_int32 local_metric;
-    srcentry_t *srcentry_ptr;
+    srcentry_t *srcentry_ptr __attribute__((unused));
 
     /* Don't send assert if the outgoing interface a tunnel or register vif */
     /* TODO: XXX: in the code above asserts are accepted over VIFF_TUNNEL.
@@ -2746,7 +2746,7 @@ int receive_pim_bootstrap(u_int32 src, u_int32 dst, char *pim_message, int datal
     pim_encod_uni_addr_t new_bsr_uni_addr;
     u_int32              new_bsr_address;
     struct rpfctl        rpfc;
-    pim_nbr_entry_t      *n, *rpf_neighbor;
+    pim_nbr_entry_t      *n, *rpf_neighbor __attribute__((unused));
     u_int32              neighbor_addr;
     vifi_t               vifi, incoming = NO_VIF;
     int                  min_datalen;
@@ -2754,10 +2754,10 @@ int receive_pim_bootstrap(u_int32 src, u_int32 dst, char *pim_message, int datal
     pim_encod_uni_addr_t curr_rp_addr;
     u_int8               curr_rp_count;
     u_int8               curr_frag_rp_count;
-    u_int16              reserved_short;
+    u_int16              reserved_short __attribute__((unused));
     u_int16              curr_rp_holdtime;
     u_int8               curr_rp_priority;
-    u_int8               reserved_byte;
+    u_int8               reserved_byte __attribute__((unused));
     u_int32              curr_group_mask;
     u_int32              prefix_h;
     grp_mask_t           *grp_mask_ptr;

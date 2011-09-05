@@ -167,10 +167,10 @@ int register_input_handler(int fd, ihfunc_t func)
 {
     if (nhandlers >= NHANDLERS)
 	return -1;
-    
+
     ihandlers[nhandlers].fd = fd;
     ihandlers[nhandlers++].func = func;
-    
+
     return 0;
 }
 
@@ -238,11 +238,11 @@ static void killshow(int signo, char *file)
 	    remove(file);
 	kill(pid, signo);
 	if (file) {
-	    int result;
-
 	    usleep(200);
 	    snprintf(buf, sizeof(buf), "cat %s", file);
-	    result = system(buf);
+	    if (-1 == system(buf)) {
+		warnx("Failed listing file %s\n", file);
+	    }
 	}
     }
 }
@@ -287,8 +287,8 @@ static int usage(void)
 }
 
 int main(int argc, char *argv[])
-{	
-    int dummy, dummysigalrm, foreground = 0;
+{
+    int dummysigalrm, foreground = 0;
     struct timeval tv, difftime, curtime, lasttime, *timeout;
     fd_set rfds, readers;
     int nfds, n, i, secs, ch;
@@ -308,7 +308,7 @@ int main(int argc, char *argv[])
 	/* {"show-debug", 0, 0, 'p'}, */
 	{0, 0, 0, 0}
     };
-    
+
     snprintf(versionstring, sizeof (versionstring), "pimd version %s", todaysversion);
 
     while ((ch = getopt_long (argc, argv, "c:d::fhlNP::vqr", long_options, NULL)) != EOF) {
@@ -430,7 +430,7 @@ int main(int argc, char *argv[])
 	}
 	fprintf(stderr, ")\n");
     }
-    
+
     /*
      * Create directory for runtime files
      */
@@ -450,7 +450,7 @@ int main(int argc, char *argv[])
 
     do_randomize();
     time(&boottime);
-    
+
     /* Start up the log rate-limiter */
     resetlogging(NULL);
 
@@ -462,20 +462,20 @@ int main(int argc, char *argv[])
 #endif /* HAVE_ROUTING_SOCKETS */
     init_pim_mrt();
     init_timers();
-    
+
     /* TODO: check the kernel DVMRP/MROUTED/PIM support version */
-    
+
 #ifdef SNMP
     if (i = snmp_init())
 	return i;
 #endif /* SNMP */
     init_vifs();
     init_rp_and_bsr();   /* Must be after init_vifs() */
-    
+
 #ifdef RSRR
     rsrr_init();
 #endif /* RSRR */
-    
+
     sa.sa_handler = handler;
     sa.sa_flags = 0;	/* Interrupt system calls */
     sigemptyset(&sa.sa_mask);
@@ -485,7 +485,7 @@ int main(int argc, char *argv[])
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGUSR1, &sa, NULL);
     sigaction(SIGUSR2, &sa, NULL);
-    
+
     FD_ZERO(&readers);
     FD_SET(igmp_socket, &readers);
     nfds = igmp_socket + 1;
@@ -494,15 +494,15 @@ int main(int argc, char *argv[])
 	if (ihandlers[i].fd >= nfds)
 	    nfds = ihandlers[i].fd + 1;
     }
-    
+
     IF_DEBUG(DEBUG_IF)
 	dump_vifs(stderr);
     IF_DEBUG(DEBUG_PIM_MRT)
 	dump_pim_mrt(stderr);
-    
+
     /* schedule first timer interrupt */
     timer_setTimer(TIMER_INTERVAL, timer, NULL);
-    
+
     if (!debug && !foreground) {
 	/* Detach from the terminal */
 	haveterminal = 0;
@@ -516,7 +516,7 @@ int main(int argc, char *argv[])
 	(void)dup2(0, 2);
 #ifdef SYSV
 	(void)setpgrp();
-#else 
+#else
 #ifdef TIOCNOTTY
 	n = open("/dev/tty", 2);
 	if (n >= 0) {
@@ -529,7 +529,7 @@ int main(int argc, char *argv[])
 #endif /* TIOCNOTTY */
 #endif /* SYSV */
     } /* End of child process code */
-    
+
     if (pidfile(NULL)) {
 	warn("Cannot create pidfile");
     }
@@ -537,7 +537,6 @@ int main(int argc, char *argv[])
     /*
      * Main receive loop.
      */
-    dummy = 0;
     dummysigalrm = SIGALRM;
     difftime.tv_usec = 0;
     gettimeofday(&curtime, NULL);
@@ -569,7 +568,7 @@ int main(int argc, char *argv[])
               boottime = 0;
            }
         }
-	
+
 	if (sighandled) {
 	    if (sighandled & GOT_SIGINT) {
 		sighandled &= ~GOT_SIGINT;
@@ -578,7 +577,7 @@ int main(int argc, char *argv[])
 	    if (sighandled & GOT_SIGHUP) {
 		sighandled &= ~GOT_SIGHUP;
 		restart(SIGHUP);
-		
+
 		/* reconstruct readers and nfds */
 		FD_ZERO(&readers);
 		FD_SET(igmp_socket, &readers);
@@ -616,7 +615,7 @@ int main(int argc, char *argv[])
 		}
 	    }
 	}
-    
+
 	/*
 	 * Handle timeout queue.
 	 *
@@ -693,10 +692,10 @@ static void timer(void *i __attribute__((unused)))
     age_vifs();	        /* Timeout neighbors and groups         */
     age_routes();  	/* Timeout routing entries              */
     age_misc();         /* Timeout the rest (Cand-RP list, etc) */
-    
+
     virtual_time += TIMER_INTERVAL;
     timer_setTimer(TIMER_INTERVAL, timer, NULL);
-}	
+}
 
 /*
  * Performs all necessary functions to quit gracefully
@@ -706,23 +705,23 @@ static void cleanup(void)
 {
     vifi_t vifi;
     struct uvif *v;
-    
+
     /* inform all neighbors that I'm going to die */
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
 	if ((v->uv_flags &
 	     (VIFF_DOWN | VIFF_DISABLED | VIFF_REGISTER | VIFF_TUNNEL)) == 0)
 	    send_pim_hello(v, 0);
     }
-    
+
 #ifdef RSRR
     rsrr_clean();
 #endif /* RSRR */
-    
+
     /* TODO: XXX (not in the spec): if I am the BSR, somehow inform the
      * other routers I am going down and need to elect another BSR?
      * (probably by sending a the Cand-RP-set with my_priority=LOWEST?)
      */
-    
+
     k_stop_pim(igmp_socket);
 }
 
@@ -740,15 +739,15 @@ static void handler(int sig)
     case SIGTERM:
 	sighandled |= GOT_SIGINT;
 	break;
-	
+
     case SIGHUP:
 	sighandled |= GOT_SIGHUP;
 	break;
-	
+
     case SIGUSR1:
 	sighandled |= GOT_SIGUSR1;
 	break;
-	
+
     case SIGUSR2:
 	sighandled |= GOT_SIGUSR2;
 	break;
@@ -765,9 +764,9 @@ static void restart(int i __attribute__((unused)))
 #ifdef SNMP
     int s;
 #endif /* SNMP */
-    
+
     logit(LOG_NOTICE, 0, "%s % restart", versionstring);
-    
+
     /*
      * reset all the entries
      */
@@ -791,11 +790,11 @@ static void restart(int i __attribute__((unused)))
 #ifdef HAVE_ROUTING_SOCKETS
     close(routing_socket);
 #endif /* HAVE_ROUTING_SOCKETS */
-    
+
     /*
      * start processing again
      */
-    
+
     init_igmp();
     init_pim();
 #ifdef HAVE_ROUTING_SOCKETS
@@ -817,7 +816,7 @@ static void resetlogging(void *arg)
 {
     int nxttime = 60;
     void *narg = NULL;
-    
+
     if (arg == NULL && log_nmsgs > LOG_MAX_MSGS) {
 	nxttime = LOG_SHUT_UP;
 	narg = (void *)&log_nmsgs;	/* just need some valid void * */
@@ -826,7 +825,7 @@ static void resetlogging(void *arg)
     } else {
 	log_nmsgs = 0;
     }
-    
+
     timer_setTimer(nxttime, resetlogging, narg);
 }
 

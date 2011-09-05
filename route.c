@@ -464,11 +464,11 @@ int change_interfaces(mrtentry_t *mrtentry_ptr,
                       u_int16 flags)
 {
     vifbitmap_t new_joined_oifs;  /* The oifs for that particular mrtentry */
-    vifbitmap_t old_joined_oifs;
-    vifbitmap_t old_pruned_oifs;
-    vifbitmap_t old_leaves;
+    vifbitmap_t old_joined_oifs __attribute__ ((unused));
+    vifbitmap_t old_pruned_oifs __attribute__ ((unused));
+    vifbitmap_t old_leaves __attribute__ ((unused));
     vifbitmap_t new_leaves;
-    vifbitmap_t old_asserted_oifs;
+    vifbitmap_t old_asserted_oifs __attribute__ ((unused));
     vifbitmap_t new_real_oifs;    /* The result oifs */
     vifbitmap_t old_real_oifs;
     vifi_t      old_iif;
