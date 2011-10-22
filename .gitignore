@@ -2,6 +2,7 @@ vers.c
 pimd
 debian/files
 pimd.map
+ChangeLog.*
 *.o
 .*.d
 *~
