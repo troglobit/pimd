@@ -1,3 +1,11 @@
+pimd (2.1.8-1) unstable; urgency=low
+
+  * New upstream
+  * merges fixes addressing existence of several unused variables and
+    handling of CFLAGS, Closes: Bug#634393
+
+ -- Antonin Kral <A.Kral@sh.cvut.cz>  Mon, 24 Oct 2011 08:41:57 +0200
+
 pimd (2.1.7-1) unstable; urgency=low
 
   * New upstream

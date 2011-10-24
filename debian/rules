@@ -22,9 +22,11 @@ configure-stamp:
 	# Add here commands to configure the package.
 	touch configure-stamp
 
-build: build-stamp
+build: build-arch build-indep
+build-arch: build-stamp
+build-indep: build-stamp
 
-build-stamp: configure-stamp 
+build-stamp: configure-stamp
 	dh_testdir
 	# Add here commands to compile the package.
 	$(MAKE)
@@ -50,6 +52,7 @@ install: build
 	rm -f $(CURDIR)/debian/pimd/usr/share/doc/pimd/INSTALL
 	rm -f $(CURDIR)/debian/pimd/usr/share/doc/pimd/LICENSE
 	rm -f $(CURDIR)/debian/pimd/usr/share/doc/pimd/LICENSE.mrouted
+	rm -f $(CURDIR)/debian/pimd/usr/share/doc/pimd/ChangeLog*
 
 
 # Build architecture-independent files here.
@@ -60,12 +63,12 @@ binary-indep: build install
 binary-arch: build install
 	dh_testdir
 	dh_testroot
-	dh_installchangelogs
+	dh_installchangelogs ChangeLog
 	dh_installdocs
 	dh_installexamples
 #	dh_install
 #	dh_installmenu
-#	dh_installdebconf	
+#	dh_installdebconf
 #	dh_installlogrotate
 #	dh_installemacsen
 #	dh_installpam

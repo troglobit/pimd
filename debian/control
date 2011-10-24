@@ -3,7 +3,7 @@ Section: net
 Priority: optional
 Maintainer: Antonin Kral <A.Kral@sh.cvut.cz>
 Build-Depends: debhelper (>= 7)
-Standards-Version: 3.9.1
+Standards-Version: 3.9.2
 
 Package: pimd
 Architecture: any
