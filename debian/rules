@@ -5,13 +5,15 @@
 # Uncomment this to turn on verbose mode.
 export DH_VERBOSE=1
 
-CFLAGS = -Wall -Werror -g
+CFLAGS = `dpkg-buildflags --get CFLAGS`
+CFLAGS += -Wall -Werror
+LDFLAGS = `dpkg-buildflags --get LDFLAGS`
+CPPFLAGS = `dpkg-buildflags --get CPPFLAGS`
 
-ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
-	CFLAGS += -O0
-else
-	CFLAGS += -O2
-endif
+export CFLAGS
+export LDFLAGS
+export CPPFLAGS
+
 ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
 	INSTALL_PROGRAM += -s
 endif

@@ -1,3 +1,10 @@
+pimd (2.1.8-2) unstable; urgency=low
+
+  * use dpkg-buildflags for build flags (CFLAGS, LDFLAGS, CPPFLAGS),
+    patch from Moritz Muehlenh (Closes: Bug#654081)
+
+ -- Antonin Kral <A.Kral@sh.cvut.cz>  Mon, 02 Jan 2012 08:52:37 +0100
+
 pimd (2.1.8-1) unstable; urgency=low
 
   * New upstream
