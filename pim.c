@@ -368,6 +368,7 @@ void send_pim_unicast(char *buf, u_int32 src, u_int32 dst, int type, int datalen
         else
             logit(LOG_WARNING, errno, "sendto from %s to %s",
 		  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
+        return;
     }
 
     IF_DEBUG(DEBUG_PIM_DETAIL) {
