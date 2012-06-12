@@ -3169,9 +3169,9 @@ int send_pim_cand_rp_adv(void)
             add_rp_grp_entry(&cand_rp_list, &grp_mask_list,
                              my_cand_rp_address, my_cand_rp_priority,
                              my_cand_rp_holdtime,
-                             htonl(ALL_MCAST_GROUPS_ADDR),
+                             htonl(ALL_MCAST_GROUPS_ADDR), grp_mask,
                              my_bsr_hash_mask,
-                             grp_mask, curr_bsr_fragment_tag);
+                             curr_bsr_fragment_tag);
             return TRUE;
         }
 
