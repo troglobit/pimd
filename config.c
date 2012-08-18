@@ -43,7 +43,7 @@
 
 #define LINE_BUFSIZ 1024	/* Max. line length of the config file */
 
-#define CONF_UNKNOWN                            -1
+#define CONF_UNKNOWN                           -1
 #define CONF_EMPTY                              1
 #define CONF_PHYINT                             2
 #define CONF_CANDIDATE_RP                       3
@@ -62,11 +62,11 @@
  * Forward declarations.
  */
 static char	*next_word	(char **);
-static int	parse_phyint	(char *s);
-static uint32_t	ifname2addr	(char *s);
+static int	 parse_phyint	(char *s);
+static uint32_t	 ifname2addr	(char *s);
 
-static uint32_t  lineno;
-extern struct   rp_hold *g_rp_hold;
+static uint32_t        lineno;
+extern struct rp_hold *g_rp_hold;
 
 /*
  * Query the kernel to find network interfaces that are multicast-capable
@@ -346,8 +346,10 @@ static void parse_prefix_len (char *token, uint32_t *len)
     {
 	*masklen = 0;
 	masklen++;
-	if (!sscanf(masklen, "%u", len))
+	if (!sscanf(masklen, "%u", len)) {
 	    WARN("Invalid masklen '%s'", masklen);
+	    *len = PIM_GROUP_PREFIX_DEFAULT_MASKLEN;
+	}
     }
 }
 
@@ -669,7 +671,8 @@ int parse_candidateRP(char *s)
  * @s: String token
 
  * Syntax:
- * group_prefix <group-addr> [masklen <masklen>]
+ * group_prefix <group-addr>[/<masklen>]
+ *              <group-addr> [masklen <masklen>]
  *
  * Returns:
  * %TRUE if the parsing was successful, o.w. %FALSE
@@ -796,7 +799,8 @@ int parseBSR(char *s)
  * multicast group addresses as well.
  *
  * Syntax:
- * rp_address <rp-address> [<group-addr> [masklen <masklen>] [priority <number>]]
+ * rp_address <rp-address> [<group-addr>[/masklen>]          [priority <number>]]
+ *                         [<group-addr> [masklen <masklen>] [priority <number>]]
  *
  * Returns:
  * When parsing @s is successful this function returns %TRUE, otherwise %FALSE.
