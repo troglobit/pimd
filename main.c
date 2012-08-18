@@ -55,7 +55,7 @@ int disable_all_by_default = 0;
 int haveterminal = 1;
 struct rp_hold *g_rp_hold = NULL;
 
-char *configfilename = _PATH_PIMD_CONF;
+char *config_file = _PATH_PIMD_CONF;
 
 extern char todaysversion[];
 
@@ -314,7 +314,7 @@ int main(int argc, char *argv[])
     while ((ch = getopt_long (argc, argv, "c:d::fhlNP::vqr", long_options, NULL)) != EOF) {
 	switch (ch) {
 	    case 'c':
-		configfilename = optarg;
+		config_file = optarg;
 		break;
 
 	    case 'd':
@@ -440,10 +440,10 @@ int main(int argc, char *argv[])
      * Setup logging
      */
 #ifdef LOG_DAEMON
-    (void)openlog("pimd", LOG_PID, LOG_DAEMON);
-    (void)setlogmask(LOG_UPTO(LOG_NOTICE));
+    openlog("pimd", LOG_PID, LOG_DAEMON);
+    setlogmask(LOG_UPTO(LOG_NOTICE));
 #else
-    (void)openlog("pimd", LOG_PID);
+    openlog("pimd", LOG_PID);
 #endif /* LOG_DAEMON */
 
     logit(LOG_DEBUG, 0, "%s starting", versionstring);
@@ -508,14 +508,14 @@ int main(int argc, char *argv[])
 	haveterminal = 0;
 	if (fork())
 	    exit(0);
-	(void)close(0);
-	(void)close(1);
-	(void)close(2);
-	(void)open("/", 0);
-	(void)dup2(0, 1);
-	(void)dup2(0, 2);
+	close(0);
+	close(1);
+	close(2);
+	open("/", 0);
+	dup2(0, 1);
+	dup2(0, 2);
 #ifdef SYSV
-	(void)setpgrp();
+	setpgrp();
 #else
 #ifdef TIOCNOTTY
 	n = open("/dev/tty", 2);

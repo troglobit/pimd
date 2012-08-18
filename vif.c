@@ -98,7 +98,7 @@ void init_vifs(void)
        for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v)
           v->uv_flags |= VIFF_DISABLED;
     }
-    logit(LOG_INFO, 0, "Getting vifs from %s", configfilename);
+    logit(LOG_INFO, 0, "Getting vifs from %s", config_file);
     config_vifs_from_file();
 
     /*

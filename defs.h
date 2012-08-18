@@ -279,7 +279,7 @@ extern build_jp_message_t *build_jp_message_pool;
 extern int		build_jp_message_pool_counter;
 
 extern u_long		virtual_time;
-extern char	       *configfilename;
+extern char	       *config_file;
 extern int              haveterminal;
 extern char            *__progname;
 
