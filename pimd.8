@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.Dd $Mdocdate: Aug 22 2010 $
+.Dd $Mdocdate: Aug 18 2012 $
 .\" Please adjust this date whenever revising the manpage.
 .Dt PIMD 8 SMM
 .Os
@@ -132,7 +132,12 @@ version
 The configuration is kept in the file
 .Pa /etc/pimd.conf .
 The file format is free-form: whitespace (including newlines) is not
-significant.  There are eight different types of configuration commands:
+significant.
+.Pp
+All <masklen> arguments to an IPv4 address, group or network can also be
+given in the alternative /CIDR format.  E.g., <group>/<masklen>.
+.Pp
+There are eight different types of configuration commands:
 .Bl -item -offset indent
 .It
 .Cm default_source_preference
@@ -148,13 +153,11 @@ significant.  There are eight different types of configuration commands:
 .Oc
 .br
 .Oo
-.Cm altnet
-.Ar <network> Cm masklen Ar <masklen>
+.Cm altnet Ar <network>[/<masklen> | Cm masklen <masklen>]
 .Oc
 .br
 .Oo
-.Cm scoped
-.Ar <network> Cm masklen Ar <masklen>
+.Cm scoped Ar <network>[/<masklen> | Cm masklen <masklen>]
 .Oc
 .br
 .Op Cm threshold Ar thr
@@ -170,13 +173,9 @@ significant.  There are eight different types of configuration commands:
 .Op <local-addr>
 .Op Cm priority Ar <number>
 .It
-.Cm rp_address
-.Ar <rp-addr> [<group-addr> [masklen <masklen] [priority <number>]]
+.Cm rp_address Ar <rp-addr> [<group-addr>[/<masklen> | masklen <masklen] [priority <number>]]
 .It
-.Cm group_prefix
-.Ar <group-addr>
-.Op Cm masklen Ar <masklen>
-.Op Cm priority Ar <number>
+.Cm group_prefix Ar <group-addr>[/<masklen> | Cm masklen Ar <masklen>]
 .It
 .Cm switch_data_threshold
 .Op Cm rate Ar <number> Cm interval Ar <number>
@@ -285,13 +284,13 @@ statement outlines the set of multicast addresses that the CRP, if it wins an
 election, will advertise to other routers.
 .Bl -bullet -compact
 .It
-.Nm group-addr .
+.Nm group-addr :
 A specific multicast group or network range this router will handle.
 .It
-.Nm masklen len .
-The number of IP address segments taken up by the netmask. Remember that a
-multicast address is a Class D and has a netmask of 240.0.0.0, which means its
-length is 4.
+.Nm masklen :
+Optional number of groups, in prefix length format. Remember that a
+multicast address is a Class D and has a netmask of 240.0.0.0, which
+means its length is 4.
 .El
 .Pp
 Max

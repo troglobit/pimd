@@ -107,7 +107,8 @@ might include here are, listed in order, as follows:
 
     * masklen len.  The number of IP address segments taken up by the netmask.
       Remember that a multicast address is a Class D and has a netmask of
-      255.255.255.255, which means its length is 4.
+      255.255.255.255, which means its length is 4.  The prefix length can
+      also be given as 'groupaddr/len'.
 
 Max group_prefix multicast addresses supported in pimd is 255.
 
