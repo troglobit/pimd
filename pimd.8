@@ -224,25 +224,36 @@ you don't need to put anything else on the line.  However, there are some
 additional settings:
 .Bl -bullet -compact
 .It
-.Nm disable .
+.Nm disable :
 Do not send PIM-SM traffic through this interface nor listen for PIM-SM traffic
 from this interface.  Default: enable.
-.Nm enable .
+.Nm enable :
 Selectively enable which interfaces to send PIM-SM traffic through.  Useful with
 the
 .Fl N
 command line option.
 .It
-.Nm preference pref .
+.Nm preference pref :
 This interface's value in an election. It will have the
 .Nm
 default_source_preference
 if not assigned.
 .It
-.Nm metric cost .
+.Nm metric cost :
 The cost of sending data through this interface. It will have the
 .Nm default_source_metric
 if not assigned.
+.It
+.Nm altnet network/len :
+Alternative host(s)/network(s) to accept as locally attached multicast
+sources on a given interface. If a phyint is attached to multiple IP
+subnets, describe each additional subnet with the altnet keyword.
+.It
+.Nm scoped network/len :
+Optional scoping of multicast groups. This allows interfaces to be
+configured as an administrative boundary for the specified
+group(s). Multicast streams belonging to the scoped groups will not be
+forwarded.
 .El
 .Pp
 Add one
