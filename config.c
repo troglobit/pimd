@@ -184,7 +184,7 @@ void config_vifs_from_kernel(void)
 
         subnet = addr & mask;
         if ((!inet_valid_subnet(subnet, mask)) || (addr == subnet) || addr == (subnet | ~mask)) {
-            if (!(inet_valid_host(addr) && ((mask == 0xfeffffff) || (flags & IFF_POINTOPOINT)))) {
+            if (!(inet_valid_host(addr) && ((mask == htonl(0xfffffffe)) || (flags & IFF_POINTOPOINT)))) {
                 logit(LOG_WARNING, 0, "Ignoring %s, has invalid address %s and/or netmask %s",
                       ifr.ifr_name, inet_fmt(addr, s1, sizeof(s1)), inet_fmt(mask, s2, sizeof(s2)));
                 continue;
@@ -241,7 +241,7 @@ void config_vifs_from_kernel(void)
         v->uv_lcl_addr		= addr;
         v->uv_subnet		= subnet;
         v->uv_subnetmask	= mask;
-	if (mask != 0xfeffffff)
+	if (mask != htonl(0xfffffffe))
 		v->uv_subnetbcast = subnet | ~mask;
 	else
 		v->uv_subnetbcast = 0xffffffff;
@@ -254,13 +254,13 @@ void config_vifs_from_kernel(void)
                 logit(LOG_ERR, errno, "Failed reading point-to-point address for %s", v->uv_name);
             else
                 v->uv_rmt_addr = ((struct sockaddr_in *)(&ifr.ifr_dstaddr))->sin_addr.s_addr;
-        } else if (mask == 0xfeffffff) {
+        } else if (mask == htonl(0xfffffffe)) {
             /*
              * Handle RFC 3021 /31 netmasks as point-to-point links
              */
             v->uv_flags |= (VIFF_REXMIT_PRUNES | VIFF_POINT_TO_POINT);
             if (addr == subnet)
-                v->uv_rmt_addr = addr + (1 << 24);
+                v->uv_rmt_addr = addr + htonl(1);
             else
                 v->uv_rmt_addr = subnet;
         }
