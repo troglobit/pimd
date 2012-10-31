@@ -184,7 +184,7 @@ void config_vifs_from_kernel(void)
 
         subnet = addr & mask;
         if ((!inet_valid_subnet(subnet, mask)) || (addr == subnet) || addr == (subnet | ~mask)) {
-            if (!(inet_valid_host(addr) && (flags & IFF_POINTOPOINT))) {
+            if (!(inet_valid_host(addr) && ((mask == htonl(0xfffffffe)) || (flags & IFF_POINTOPOINT)))) {
                 logit(LOG_WARNING, 0, "Ignoring %s, has invalid address %s and/or netmask %s",
                       ifr.ifr_name, inet_fmt(addr, s1, sizeof(s1)), inet_fmt(mask, s2, sizeof(s2)));
                 continue;
@@ -241,7 +241,11 @@ void config_vifs_from_kernel(void)
         v->uv_lcl_addr		= addr;
         v->uv_subnet		= subnet;
         v->uv_subnetmask	= mask;
-        v->uv_subnetbcast	= subnet | ~mask;
+	if (mask != htonl(0xfffffffe))
+		v->uv_subnetbcast = subnet | ~mask;
+	else
+		v->uv_subnetbcast = 0xffffffff;
+
         strlcpy(v->uv_name, ifr.ifr_name, IFNAMSIZ);
 
         if (flags & IFF_POINTOPOINT) {
@@ -250,6 +254,15 @@ void config_vifs_from_kernel(void)
                 logit(LOG_ERR, errno, "Failed reading point-to-point address for %s", v->uv_name);
             else
                 v->uv_rmt_addr = ((struct sockaddr_in *)(&ifr.ifr_dstaddr))->sin_addr.s_addr;
+        } else if (mask == htonl(0xfffffffe)) {
+            /*
+             * Handle RFC 3021 /31 netmasks as point-to-point links
+             */
+            v->uv_flags |= (VIFF_REXMIT_PRUNES | VIFF_POINT_TO_POINT);
+            if (addr == subnet)
+                v->uv_rmt_addr = addr + htonl(1);
+            else
+                v->uv_rmt_addr = subnet;
         }
 #ifdef __linux__
         {
@@ -261,7 +274,7 @@ void config_vifs_from_kernel(void)
                 logit(LOG_ERR, errno, "Failed reading interface index for %s", ifridx.ifr_name);
             v->uv_ifindex = ifridx.ifr_ifindex;
         }
-        if (flags & IFF_POINTOPOINT) {
+        if (v->uv_flags & VIFF_POINT_TO_POINT) {
             logit(LOG_INFO, 0, "Installing %s (%s -> %s) as vif #%u-%d - rate %d",
                   v->uv_name, inet_fmt(addr, s1, sizeof(s1)), inet_fmt(v->uv_rmt_addr, s2, sizeof(s2)),
                   numvifs, v->uv_ifindex, v->uv_rate_limit);
@@ -271,7 +284,7 @@ void config_vifs_from_kernel(void)
                   numvifs, v->uv_ifindex, v->uv_rate_limit);
         }
 #else /* !__linux__ */
-        if (flags & IFF_POINTOPOINT) {
+        if (v->uv_flags & VIFF_POINT_TO_POINT) {
             logit(LOG_INFO, 0, "Installing %s (%s -> %s) as vif #%u - rate=%d",
                   v->uv_name, inet_fmt(addr, s1, sizeof(s1)), inet_fmt(v->uv_rmt_addr, s2, sizeof(s2)),
                   numvifs, v->uv_rate_limit);
