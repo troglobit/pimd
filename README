@@ -136,7 +136,7 @@ don't use them for actual testing purposes):
    phyint 199.60.103.92 preference 1024
    cand_rp 199.60.103.91
    cand_bootstrap_router 199.60.103.92
-   group_prefix 199.60.103.0 masklen 4
+   group_prefix 224.0.0.0 masklen 4
    switch_data_threshold rate 60000 interval 10
    switch_register_threshold rate 60000 interval 10
 
