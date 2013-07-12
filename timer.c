@@ -96,8 +96,7 @@ rpentry_t  rpentry_save;
 /*
  * Init some timers
  */
-void
-init_timers()
+void init_timers(void)
 {
     unicast_routing_check_interval = UCAST_ROUTING_CHECK_INTERVAL;
     SET_TIMER(unicast_routing_timer, unicast_routing_check_interval);
@@ -135,7 +134,6 @@ init_timers()
     rpentry_save.preference = ~0;
     RESET_TIMER(rpentry_save.timer);
     rpentry_save.cand_rp    = (cand_rp_t *)NULL;
-
 }
 
 
@@ -143,12 +141,11 @@ init_timers()
  * On every timer interrupt, advance (i.e. decrease) the timer for each
  * neighbor and group entry for each vif.
  */
-void
-age_vifs()
+void age_vifs(void)
 {
     vifi_t vifi;
-    register struct uvif *v;
-    register pim_nbr_entry_t *next_nbr, *curr_nbr;
+    struct uvif *v;
+    pim_nbr_entry_t *next_nbr, *curr_nbr;
 
 /* XXX: TODO: currently, sending to qe* interface which is DOWN
  * doesn't return error (ENETDOWN) on my Solaris machine,
@@ -260,8 +257,7 @@ age_vifs()
  * ==================================================
  *
  */
-void
-age_routes()
+void age_routes(void)
 {
     cand_rp_t  *cand_rp_ptr;
     grpentry_t *grpentry_ptr;
@@ -970,8 +966,7 @@ age_routes()
  * TODO: timeout the RP-group mapping entries during the scan of the
  * whole routing table?
  */
-void
-age_misc()
+void age_misc(void)
 {
     rp_grp_entry_t *rp_grp_entry_ptr;
     rp_grp_entry_t *rp_grp_entry_next;

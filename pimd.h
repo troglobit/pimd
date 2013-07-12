@@ -301,8 +301,8 @@ typedef struct pim_jp_encod_grp_ {
 
 #define MASK_TO_MASKLEN(mask, masklen)                           \
     do {                                                         \
-        register u_int32 tmp_mask = ntohl((mask));               \
-        register u_int8  tmp_masklen = sizeof((mask)) << 3;      \
+        u_int32 tmp_mask = ntohl((mask));                        \
+        u_int8  tmp_masklen = sizeof((mask)) << 3;               \
         for ( ; tmp_masklen > 0; tmp_masklen--, tmp_mask >>= 1)  \
             if (tmp_mask & 0x1)                                  \
                 break;                                           \
@@ -351,7 +351,7 @@ do {                                                                         \
 
 #define GET_HOSTSHORT(val, cp)                  \
         do {                                    \
-                register u_int16 Xv;            \
+                u_int16 Xv;                     \
                 Xv = (*(cp)++) << 8;            \
                 Xv |= *(cp)++;                  \
                 (val) = Xv;                     \
@@ -359,7 +359,7 @@ do {                                                                         \
 
 #define PUT_HOSTSHORT(val, cp)                  \
         do {                                    \
-                register u_int16 Xv;            \
+                u_int16 Xv;                     \
                 Xv = (u_int16)(val);            \
                 *(cp)++ = (u_int8)(Xv >> 8);    \
                 *(cp)++ = (u_int8)Xv;           \
@@ -368,14 +368,14 @@ do {                                                                         \
 #if defined(BYTE_ORDER) && (BYTE_ORDER == LITTLE_ENDIAN)
 #define GET_NETSHORT(val, cp)                   \
         do {                                    \
-                register u_int16 Xv;            \
+                u_int16 Xv;                     \
                 Xv = *(cp)++;                   \
                 Xv |= (*(cp)++) << 8;           \
                 (val) = Xv;                     \
         } while (0)
 #define PUT_NETSHORT(val, cp)                   \
         do {                                    \
-                register u_int16 Xv;            \
+                u_int16 Xv;                     \
                 Xv = (u_int16)(val);            \
                 *(cp)++ = (u_int8)Xv;           \
                 *(cp)++ = (u_int8)(Xv >> 8);    \
@@ -387,7 +387,7 @@ do {                                                                         \
 
 #define GET_HOSTLONG(val, cp)                   \
         do {                                    \
-                register u_long Xv;             \
+                u_long Xv;                      \
                 Xv  = (*(cp)++) << 24;          \
                 Xv |= (*(cp)++) << 16;          \
                 Xv |= (*(cp)++) <<  8;          \
@@ -397,7 +397,7 @@ do {                                                                         \
 
 #define PUT_HOSTLONG(val, cp)                   \
         do {                                    \
-                register u_int32 Xv;            \
+                u_int32 Xv;                     \
                 Xv = (u_int32)(val);            \
                 *(cp)++ = (u_int8)(Xv >> 24);   \
                 *(cp)++ = (u_int8)(Xv >> 16);   \
@@ -408,7 +408,7 @@ do {                                                                         \
 #if defined(BYTE_ORDER) && (BYTE_ORDER == LITTLE_ENDIAN)
 #define GET_NETLONG(val, cp)                    \
         do {                                    \
-                register u_long Xv;             \
+                u_long Xv;                      \
                 Xv  = *(cp)++;                  \
                 Xv |= (*(cp)++) <<  8;          \
                 Xv |= (*(cp)++) << 16;          \
@@ -418,7 +418,7 @@ do {                                                                         \
 
 #define PUT_NETLONG(val, cp)                    \
         do {                                    \
-                register u_int32 Xv;            \
+                u_int32 Xv;                     \
                 Xv = (u_int32)(val);            \
                 *(cp)++ = (u_int8)Xv;           \
                 *(cp)++ = (u_int8)(Xv >>  8);   \

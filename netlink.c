@@ -101,8 +101,7 @@ int init_routesock(void)
 /* get the rpf neighbor info */
 int k_req_incoming(u_int32 source, struct rpfctl *rpf)
 {
-    int rlen;
-    register int l;
+    int l, rlen;
     char buf[512];
     struct nlmsghdr *n = (struct nlmsghdr *) buf;
     struct rtmsg *r = NLMSG_DATA(n);

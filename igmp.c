@@ -134,7 +134,7 @@ static void igmp_read(int i __attribute__((unused)), fd_set *rfd __attribute__((
  */
 static void accept_igmp(ssize_t recvlen)
 {
-    register u_int32 src, dst, group;
+    u_int32 src, dst, group;
     struct ip *ip;
     struct igmp *igmp;
     int ipdatalen, iphdrlen, igmpdatalen;

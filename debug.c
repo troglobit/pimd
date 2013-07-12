@@ -287,7 +287,7 @@ void cdump(int i __attribute__((unused)))
 void dump_vifs(FILE *fp)
 {
     vifi_t vifi;
-    register struct uvif *v;
+    struct uvif *v;
     pim_nbr_entry_t *n;
     int width;
     int i;
@@ -406,8 +406,8 @@ void logit(int severity, int syserr, const char *format, ...)
 void dump_pim_mrt(FILE *fp)
 {
     grpentry_t *g;
-    register mrtentry_t *r;
-    register vifi_t vifi;
+    mrtentry_t *r;
+    vifi_t vifi;
     u_int number_of_cache_mirrors = 0;
     u_int number_of_groups = 0;
     char oifs[(sizeof(vifbitmap_t)<<3)+1];

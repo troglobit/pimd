@@ -50,14 +50,7 @@
  * Traceroute function which returns traceroute replies to the requesting
  * router. Also forwards the request to downstream routers.
  */
-void
-accept_mtrace(src, dst, group, data, no, datalen)
-    u_int32 src;
-    u_int32 dst;
-    u_int32 group;
-    char *data;
-    u_int no;   /* promoted u_char */
-    int datalen;
+void accept_mtrace(u_int32 src, u_int32 dst, u_int32 group, char *data, u_int no, int datalen)
 {
     u_char type;
     mrtentry_t *mrt;
@@ -486,8 +479,9 @@ void accept_neighbor_request2(u_int32 src, u_int32 dst __attribute__((unused)))
     datalen = 0;
 
     for (vifi = 0, v = uvifs; vifi < numvifs; vifi++, v++) {
-	register u_int32 vflags = v->uv_flags;
-	register u_char rflags = 0;
+	u_int32 vflags = v->uv_flags;
+	u_char rflags = 0;
+
 	if (vflags & VIFF_TUNNEL)
 	    rflags |= DVMRP_NF_TUNNEL;
 	if (vflags & VIFF_SRCRT)
@@ -502,6 +496,7 @@ void accept_neighbor_request2(u_int32 src, u_int32 dst __attribute__((unused)))
 	    rflags |= DVMRP_NF_QUERIER;
 	if (vflags & VIFF_LEAF)
 	    rflags |= DVMRP_NF_LEAF;
+
 	ncount = 0;
 	pim_nbr = v->uv_pim_neighbors;
 	if (pim_nbr == (pim_nbr_entry_t *)NULL) {
@@ -511,12 +506,14 @@ void accept_neighbor_request2(u_int32 src, u_int32 dst __attribute__((unused)))
 	     */
 	    if (rflags & DVMRP_NF_TUNNEL)
 		rflags |= DVMRP_NF_DOWN;
+
 	    if (datalen > MAX_DVMRP_DATA_LEN - 12) {
 		send_igmp(igmp_send_buf, INADDR_ANY, them, IGMP_DVMRP,
 			  DVMRP_NEIGHBORS2, htonl(PIMD_LEVEL), datalen);
 		p = (u_char *) (igmp_send_buf + MIN_IP_HEADER_LEN + IGMP_MINLEN);
 		datalen = 0;
 	    }
+
 	    *(u_int*)p = v->uv_lcl_addr;
 	    p += 4;
 	    *p++ = v->uv_metric;
@@ -536,6 +533,7 @@ void accept_neighbor_request2(u_int32 src, u_int32 dst __attribute__((unused)))
 		    datalen = 0;
 		    ncount = 0;
 		}
+
 		/* Put out the header for this neighbor list... */
 		if (ncount == 0) {
 		    *(u_int*)p = v->uv_lcl_addr;
@@ -547,6 +545,7 @@ void accept_neighbor_request2(u_int32 src, u_int32 dst __attribute__((unused)))
 		    *p++ = 0;
 		    datalen += 4 + 4;
 		}
+
 		*(u_int*)p = pim_nbr->address;
 		p += 4;
 		datalen += 4;
@@ -554,6 +553,7 @@ void accept_neighbor_request2(u_int32 src, u_int32 dst __attribute__((unused)))
 	    }
 	}
     }
+
     if (datalen != 0)
 	send_igmp(igmp_send_buf, INADDR_ANY, them, IGMP_DVMRP,
 		  DVMRP_NEIGHBORS2, htonl(PIMD_LEVEL), datalen);

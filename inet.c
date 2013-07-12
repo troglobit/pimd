@@ -34,9 +34,9 @@ int inet_valid_host(u_int32 naddr)
 
     addr = ntohl(naddr);
 
-    return (!(IN_MULTICAST(addr) ||
-              IN_BADCLASS (addr) ||
-              (addr & 0xff000000) == 0));
+    return !(IN_MULTICAST(addr) ||
+	     IN_BADCLASS (addr) ||
+	     (addr & 0xff000000) == 0);
 }
 
 /*
@@ -44,16 +44,14 @@ int inet_valid_host(u_int32 naddr)
  * make sure that it is a series of 1's followed by
  * a series of 0's with no discontiguous 1's.
  */
-int
-inet_valid_mask(mask)
-    u_int32 mask;
+int inet_valid_mask(u_int32 mask)
 {
     if (~(((mask & -mask) - 1) | mask) != 0) {
         /* Mask is not contiguous */
-        return (FALSE);
+        return FALSE;
     }
 
-    return (TRUE);
+    return TRUE;
 }
 
 /*
@@ -65,40 +63,39 @@ inet_valid_mask(mask)
  * within the [ABC] range and that the host bits of the subnet
  * are all 0.
  */
-int
-inet_valid_subnet(nsubnet, nmask)
-    u_int32 nsubnet, nmask;
+int inet_valid_subnet(u_int32 nsubnet, u_int32 nmask)
 {
-    register u_int32 subnet, mask;
+    u_int32 subnet, mask;
 
     subnet = ntohl(nsubnet);
     mask   = ntohl(nmask);
 
     if ((subnet & mask) != subnet)
-        return (FALSE);
+        return FALSE;
 
     if (subnet == 0)
-        return (mask == 0);
+        return mask == 0;
 
     if (IN_CLASSA(subnet)) {
         if (mask < 0xff000000 ||
             (subnet & 0xff000000) == 0x7f000000 ||
-            (subnet & 0xff000000) == 0x00000000) return (FALSE);
+            (subnet & 0xff000000) == 0x00000000)
+	    return FALSE;
     }
     else if (IN_CLASSD(subnet) || IN_BADCLASS(subnet)) {
         /* Above Class C address space */
-        return (FALSE);
+        return FALSE;
     }
     if (subnet & ~mask) {
         /* Host bits are set in the subnet */
-        return (FALSE);
+        return FALSE;
     }
     if (!inet_valid_mask(mask)) {
         /* Netmask is not contiguous */
-        return (FALSE);
+        return FALSE;
     }
 
-    return (TRUE);
+    return TRUE;
 }
 
 
@@ -122,10 +119,7 @@ char *inet_fmt(u_int32 addr, char *s, size_t len)
  * with "255.255.255.255".)
  * The return value is in network order.
  */
-u_int32
-inet_parse(s, n)
-    char *s;
-    int n;
+u_int32 inet_parse(char *s, int n)
 {
     u_int32 a = 0;
     u_int a0 = 0, a1 = 0, a2 = 0, a3 = 0;
@@ -134,14 +128,14 @@ inet_parse(s, n)
 
     i = sscanf(s, "%u.%u.%u.%u%c", &a0, &a1, &a2, &a3, &c);
     if (i < n || i > 4 || a0 > 255 || a1 > 255 || a2 > 255 || a3 > 255)
-        return (0xffffffff);
+        return 0xffffffff;
 
     ((u_char *)&a)[0] = a0;
     ((u_char *)&a)[1] = a1;
     ((u_char *)&a)[2] = a2;
     ((u_char *)&a)[3] = a3;
 
-    return (a);
+    return a;
 }
 
 
@@ -163,15 +157,12 @@ inet_parse(s, n)
  * Checksum routine for Internet Protocol family headers (C Version)
  *
  */
-int
-inet_cksum(addr, len)
-        u_int16 *addr;
-        u_int len;
+int inet_cksum(u_int16 *addr, u_int len)
 {
-        register int nleft = (int)len;
-        register u_int16 *w = addr;
+        int sum = 0;
+        int nleft = (int)len;
+        u_int16 *w = addr;
         u_int16 answer = 0;
-        register int sum = 0;
 
         /*
          *  Our algorithm is simple, using a 32 bit accumulator (sum),
@@ -196,15 +187,14 @@ inet_cksum(addr, len)
         sum = (sum >> 16) + (sum & 0xffff);	/* add hi 16 to low 16 */
         sum += (sum >> 16);			/* add carry */
         answer = ~sum;				/* truncate to 16 bits */
-        return (answer);
+
+        return answer;
 }
 
 /*
  * Called by following netname() to create a mask specified network address.
  */
-void
-trimdomain(cp)
-    char *cp;
+void trimdomain(char *cp)
 {
     static char domain[MAXHOSTNAMELEN + 1];
     static int first = 1;
@@ -222,18 +212,15 @@ trimdomain(cp)
     if (domain[0]) {
         while ((cp = strchr(cp, '.'))) {
             if (!strcasecmp(cp + 1, domain)) {
-                *cp = 0;        /* hit it */
+                *cp = 0;
                 break;
-            } else {
-                cp++;
             }
+	    cp++;
         }
     }
 }
 
-static u_long
-forgemask(a)
-    u_long a;
+static u_long forgemask(u_long a)
 {
     u_long m;
 
@@ -243,6 +230,7 @@ forgemask(a)
         m = IN_CLASSB_NET;
     else
         m = IN_CLASSC_NET;
+
     return (m);
 }
 
@@ -254,19 +242,23 @@ static void domask(char *dst, size_t len, u_long addr, u_long mask)
         *dst = '\0';
         return;
     }
+
     i = 0;
-    for (b = 0; b < 32; b++)
+    for (b = 0; b < 32; b++) {
         if (mask & (1 << b)) {
             int bb;
 
             i = b;
-            for (bb = b+1; bb < 32; bb++)
+            for (bb = b+1; bb < 32; bb++) {
                 if (!(mask & (1 << bb))) {
                     i = -1; /* noncontig */
                     break;
                 }
+	    }
             break;
         }
+    }
+
     if (i == -1)
         snprintf(dst, len, "&0x%lx", mask);
     else
