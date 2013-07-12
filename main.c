@@ -46,10 +46,6 @@
 #include <getopt.h>
 #include <sys/stat.h>
 
-#ifdef SNMP
-#include "snmp.h"
-#endif
-
 char versionstring[100];
 int disable_all_by_default = 0;
 int haveterminal = 1;
@@ -66,13 +62,7 @@ static int sighandled = 0;
 #define GOT_SIGUSR2     0x08
 #define GOT_SIGALRM     0x10
 
-
-#ifdef SNMP
-#define NHANDLERS       34
-#else
 #define NHANDLERS       3
-#endif
-
 static struct ihandler {
     int fd;			/* File descriptor               */
     ihfunc_t func;		/* Function to call with &fd_set */
@@ -311,7 +301,7 @@ int main(int argc, char *argv[])
 
     snprintf(versionstring, sizeof (versionstring), "pimd version %s", todaysversion);
 
-    while ((ch = getopt_long (argc, argv, "c:d::fhlNP::vqr", long_options, NULL)) != EOF) {
+    while ((ch = getopt_long (argc, argv, "c:d::fhlNvqr", long_options, NULL)) != EOF) {
 	switch (ch) {
 	    case 'c':
 		config_file = optarg;
@@ -358,22 +348,6 @@ int main(int argc, char *argv[])
 
 	    case 'N':
 		disable_all_by_default = 1;
-		break;
-
-	    case 'P':
-#ifdef SNMP
-		if (!optarg)
-		    dest_port = DEFAULT_PORT;
-		else {
-		    dest_port = strtonum(optarg, 1, 65535, &errstr);
-		    if (errstr) {
-			warnx("destination port %s", errstr);
-			dest_port = DEFAULT_PORT;
-		    }
-		}
-#else
-		warnx("SNMP support missing, please feel free to submit a patch.");
-#endif
 		break;
 
 	    case 'v':
@@ -465,10 +439,6 @@ int main(int argc, char *argv[])
 
     /* TODO: check the kernel DVMRP/MROUTED/PIM support version */
 
-#ifdef SNMP
-    if (i = snmp_init())
-	return i;
-#endif /* SNMP */
     init_vifs();
     init_rp_and_bsr();   /* Must be after init_vifs() */
 
@@ -761,10 +731,6 @@ static void handler(int sig)
  */
 static void restart(int i __attribute__((unused)))
 {
-#ifdef SNMP
-    int s;
-#endif /* SNMP */
-
     logit(LOG_NOTICE, 0, "%s % restart", versionstring);
 
     /*
@@ -772,7 +738,7 @@ static void restart(int i __attribute__((unused)))
      */
     /* TODO: delete?
        free_all_routes();
-       */
+    */
     free_all_callouts();
     stop_all_vifs();
     k_stop_pim(igmp_socket);
@@ -801,10 +767,6 @@ static void restart(int i __attribute__((unused)))
     init_routesock();
 #endif /* HAVE_ROUTING_SOCKETS */
     init_pim_mrt();
-#ifdef SNMP
-    if ( s = snmp_init())
-	exit(s);
-#endif /* SNMP */
     init_vifs();
 
     /* schedule timer interrupts */

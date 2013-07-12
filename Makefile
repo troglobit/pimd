@@ -47,16 +47,14 @@ DVMRP_OBJS    = dvmrp_proto.o
 # This magic trick looks like a comment, but works on BSD PMake
 #include <config.mk>
 include config.mk
-#include <snmp.mk>
-include snmp.mk
 
 ## Common
-CFLAGS       += $(MCAST_INCLUDE) $(SNMPDEF) $(RSRRDEF) $(INCLUDES) $(DEFS) $(USERCOMPILE)
+CFLAGS       += $(MCAST_INCLUDE) $(RSRRDEF) $(INCLUDES) $(DEFS) $(USERCOMPILE)
 CFLAGS       += -O2 -W -Wall -Werror -fno-strict-aliasing
 #CFLAGS       += -O -g
-LDLIBS        = $(SNMPLIBDIR) $(SNMPLIBS) $(EXTRA_LIBS)
+LDLIBS        = $(EXTRA_LIBS)
 OBJS          = $(IGMP_OBJS) $(ROUTER_OBJS) $(PIM_OBJS) $(DVMRP_OBJS) \
-		$(SNMP_OBJS) $(RSRR_OBJS) $(EXTRA_OBJS)
+		$(RSRR_OBJS) $(EXTRA_OBJS)
 SRCS          = $(OBJS:.o=.c)
 DEPS          = $(addprefix .,$(SRCS:.c=.d))
 MANS          = $(addsuffix .8,$(EXEC))
@@ -104,11 +102,14 @@ uninstall:
 	-@$(RM) $(DESTDIR)$(prefix)/sbin/$(EXEC)
 	-@$(RM) $(DESTDIR)$(sysconfdir)/$(CONFIG)
 	-@$(RM) -r $(DESTDIR)$(datadir)
+	@for file in $(DISTFILES); do \
+		$(RM) $(DESTDIR)$(datadir)/$$file; \
+	done
 	-@for file in $(MANS); do \
 		$(RM) $(DESTDIR)$(mandir)/$$file; \
 	done
 
-clean: $(SNMPCLEAN)
+clean:
 	-@$(RM) $(OBJS) $(EXEC)
 
 distclean:
@@ -144,13 +145,3 @@ rcflow2:
 TAGS:
 	@etags $(SRCS)
 
-snmpd/libsnmpd.a:
-	@make -C snmpd
-
-snmplib/libsnmp.a:
-	@make -C snmplib
-
-snmpclean:
-	@for dir in snmpd snmplib; do \
-		make -C $$dir clean;  \
-	done
