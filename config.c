@@ -549,7 +549,7 @@ static int parse_phyint(char *s)
                     continue;
                 }
 
-                if (sscanf(w, "%u%c", &n, &c) != 1 || n < 1 || n > 255 ) {
+                if (sscanf(w, "%u%c", &n, &c) != 1 || n < 1 || n > 1024 ) {
                     WARN("Invalid preference '%s' for phyint %s", w, inet_fmt(local, s1, sizeof(s1)));
                     continue;
                 }

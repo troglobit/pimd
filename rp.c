@@ -194,8 +194,10 @@ static cand_rp_t *add_cand_rp(cand_rp_t **used_cand_rp_list, u_int32 address)
     
     /* Create and insert the new entry between prev and next */
     ptr = (cand_rp_t *)calloc(1, sizeof(cand_rp_t));
-    if (!ptr)
+    if (!ptr) {
 	logit(LOG_ERR, 0, "Ran out of memory in add_cand_rp()");
+	return NULL;
+    }
     ptr->rp_grp_next = NULL;
     ptr->next = next;
     ptr->prev = prev;
