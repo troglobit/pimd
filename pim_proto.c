@@ -63,9 +63,9 @@ int receive_pim_hello(u_int32 src, u_int32 dst __attribute__((unused)), char *pi
     pim_nbr_entry_t *nbr, *prev_nbr, *new_nbr;
     u_int16 holdtime = 0;
     int     bsr_length;
-    u_int8  *data_ptr __attribute__((unused));
-    srcentry_t *srcentry_ptr;
-    mrtentry_t *mrtentry_ptr;
+    u_int8  *data __attribute__((unused));
+    srcentry_t *srcentry;
+    mrtentry_t *mrtentry;
 
     /* Checksum */
     if (inet_cksum((u_int16 *)pim_message, datalen))
@@ -85,7 +85,7 @@ int receive_pim_hello(u_int32 src, u_int32 dst __attribute__((unused)), char *pi
     if (v->uv_flags & (VIFF_DOWN | VIFF_DISABLED | VIFF_REGISTER))
 	return FALSE;    /* Shoudn't come on this interface */
 
-    data_ptr = (u_int8 *)(pim_message + sizeof(pim_header_t));
+    data = (u_int8 *)(pim_message + sizeof(pim_header_t));
 
     /* Get the Holdtime (in seconds) from the message. Return if error. */
     if (parse_pim_hello(pim_message, datalen, src, &holdtime) == FALSE)
@@ -96,9 +96,7 @@ int receive_pim_hello(u_int32 src, u_int32 dst __attribute__((unused)), char *pi
 	      inet_fmt(src, s1, sizeof(s1)), holdtime);
     }
 
-    for (prev_nbr = (pim_nbr_entry_t *)NULL, nbr = v->uv_pim_neighbors;
-	 nbr != (pim_nbr_entry_t *)NULL;
-	 prev_nbr = nbr, nbr = nbr->next) {
+    for (prev_nbr = NULL, nbr = v->uv_pim_neighbors; nbr; prev_nbr = nbr, nbr = nbr->next) {
 	/* The PIM neighbors are sorted in decreasing order of the
 	 * network addresses (note that to be able to compare them
 	 * correctly we must translate the addresses in host order.
@@ -122,12 +120,9 @@ int receive_pim_hello(u_int32 src, u_int32 dst __attribute__((unused)), char *pi
 	    SET_TIMER(nbr->timer, holdtime);
 
 	    return TRUE;
-	}
-	else {
-	    /*
-	     * No entry for this neighbor. Exit the loop and create an
-	     * entry for it.
-	     */
+	} else {
+	    /* No entry for this neighbor. Exit the loop and create an
+	     * entry for it. */
 	    break;
 	}
     }
@@ -136,21 +131,23 @@ int receive_pim_hello(u_int32 src, u_int32 dst __attribute__((unused)), char *pi
      * This is a new neighbor. Create a new entry for it.
      * It must be added right after `prev_nbr`
      */
-    new_nbr = (pim_nbr_entry_t *)calloc(1, sizeof(pim_nbr_entry_t));
+    new_nbr = calloc(1, sizeof(pim_nbr_entry_t));
     if (!new_nbr)
 	logit(LOG_ERR, 0, "Ran out of memory in receive_pim_hello()");
+
     new_nbr->address          = src;
     new_nbr->vifi             = vifi;
     SET_TIMER(new_nbr->timer, holdtime);
-    new_nbr->build_jp_message = (build_jp_message_t *)NULL;
+    new_nbr->build_jp_message = NULL;
     new_nbr->next             = nbr;
     new_nbr->prev             = prev_nbr;
 
-    if (prev_nbr != (pim_nbr_entry_t *)NULL)
+    if (prev_nbr)
 	prev_nbr->next  = new_nbr;
     else
 	v->uv_pim_neighbors = new_nbr;
-    if (new_nbr->next != (pim_nbr_entry_t *)NULL)
+
+    if (new_nbr->next)
 	new_nbr->next->prev = new_nbr;
 
     v->uv_flags &= ~VIFF_NONBRS;
@@ -176,30 +173,25 @@ int receive_pim_hello(u_int32 src, u_int32 dst __attribute__((unused)), char *pi
 	     * oif list for all directly connected sources (for vifi).
 	     */
 	    /* TODO: XXX: first entry is not used! */
-	    for (srcentry_ptr = srclist->next;
-		 srcentry_ptr != (srcentry_t *)NULL;
-		 srcentry_ptr = srcentry_ptr->next) {
+	    for (srcentry = srclist->next; srcentry; srcentry = srcentry->next) {
 
 		/* If not directly connected source for vifi */
-		if ((srcentry_ptr->incoming != vifi)
-		    || (srcentry_ptr->upstream != (pim_nbr_entry_t *)NULL))
+		if ((srcentry->incoming != vifi) || srcentry->upstream)
 		    continue;
 
-		for (mrtentry_ptr = srcentry_ptr->mrtlink;
-		     mrtentry_ptr != (mrtentry_t *)NULL;
-		     mrtentry_ptr = mrtentry_ptr->srcnext) {
+		for (mrtentry = srcentry->mrtlink; mrtentry; mrtentry = mrtentry->srcnext) {
 
-		    if (!(mrtentry_ptr->flags & MRTF_SG))
+		    if (!(mrtentry->flags & MRTF_SG))
 			continue;  /* This is not (S,G) entry */
 
 		    /* Remove the register oif */
-		    VIFM_CLR(reg_vif_num, mrtentry_ptr->joined_oifs);
-		    change_interfaces(mrtentry_ptr,
-				      mrtentry_ptr->incoming,
-				      mrtentry_ptr->joined_oifs,
-				      mrtentry_ptr->pruned_oifs,
-				      mrtentry_ptr->leaves,
-				      mrtentry_ptr->asserted_oifs, 0);
+		    VIFM_CLR(reg_vif_num, mrtentry->joined_oifs);
+		    change_interfaces(mrtentry,
+				      mrtentry->incoming,
+				      mrtentry->joined_oifs,
+				      mrtentry->pruned_oifs,
+				      mrtentry->leaves,
+				      mrtentry->asserted_oifs, 0);
 		}
 	    }
 	    v->uv_flags &= ~VIFF_DR;
@@ -220,37 +212,35 @@ int receive_pim_hello(u_int32 src, u_int32 dst __attribute__((unused)), char *pi
 
 void delete_pim_nbr(pim_nbr_entry_t *nbr_delete)
 {
-    srcentry_t *srcentry_ptr;
-    srcentry_t *srcentry_ptr_next;
-    mrtentry_t *mrtentry_ptr;
-    mrtentry_t *mrtentry_srcs;
-    grpentry_t *grpentry_ptr;
-    pim_nbr_entry_t *new_nbr __attribute__((unused));
-    cand_rp_t *cand_rp_ptr;
-    rp_grp_entry_t *rp_grp_entry_ptr;
-    rpentry_t  *rpentry_ptr;
+    srcentry_t *src;
+    srcentry_t *src_next;
+    mrtentry_t *mrt;
+    mrtentry_t *mrt_srcs;
+    grpentry_t *grp;
+    cand_rp_t *cand_rp;
+    rp_grp_entry_t *rp_grp;
+    rpentry_t  *rp;
     struct uvif *v;
 
     v = &uvifs[nbr_delete->vifi];
 
     /* Delete the entry from the pim_nbrs chain */
-    if (nbr_delete->prev != (pim_nbr_entry_t *)NULL)
+    if (nbr_delete->prev)
 	nbr_delete->prev->next = nbr_delete->next;
     else
 	v->uv_pim_neighbors = nbr_delete->next;
-    if (nbr_delete->next != (pim_nbr_entry_t *)NULL)
+
+    if (nbr_delete->next)
 	nbr_delete->next->prev = nbr_delete->prev;
 
     return_jp_working_buff(nbr_delete);
 
-    if (v->uv_pim_neighbors == (pim_nbr_entry_t *)NULL) {
+    if (!v->uv_pim_neighbors) {
 	/* This was our last neighbor. */
 	v->uv_flags &= ~VIFF_PIM_NBR;
 	v->uv_flags |= (VIFF_NONBRS | VIFF_DR);
-    }
-    else {
-	if (ntohl(v->uv_lcl_addr) >
-	    ntohl(v->uv_pim_neighbors->address))
+    } else {
+	if (ntohl(v->uv_lcl_addr) > ntohl(v->uv_pim_neighbors->address))
 	    /* The first address is the new potential remote
 	     * DR address, but the local address is the winner.
 	     */
@@ -258,112 +248,106 @@ void delete_pim_nbr(pim_nbr_entry_t *nbr_delete)
     }
 
     /* Update the source entries */
-    for (srcentry_ptr = srclist; srcentry_ptr != (srcentry_t *)NULL;
-	 srcentry_ptr = srcentry_ptr_next) {
-	srcentry_ptr_next = srcentry_ptr->next;
+    for (src = srclist; src; src = src_next) {
+	src_next = src->next;
 
-	if (srcentry_ptr->upstream != nbr_delete)
+	if (src->upstream != nbr_delete)
 	    continue;
 
 	/* Reset the next hop (PIM) router */
-	if (set_incoming(srcentry_ptr, PIM_IIF_SOURCE) == FALSE) {
+	if (set_incoming(src, PIM_IIF_SOURCE) == FALSE) {
 	    /* Coudn't reset it. Sorry, the hext hop router toward that
 	     * source is probably not a PIM router, or cannot find route
 	     * at all, hence I cannot handle this source and have to
 	     * delete it.
 	     */
-	    delete_srcentry(srcentry_ptr);
-	}
-	else if (srcentry_ptr->upstream != (pim_nbr_entry_t *)NULL) {
+	    delete_srcentry(src);
+	} else if (src->upstream) {
 	    /* Ignore the local or directly connected sources */
 	    /* Browse all MRT entries for this source and reset the
 	     * upstream router. Note that the upstream router is not always
 	     * toward the source: it could be toward the RP for example.
 	     */
-	    new_nbr = srcentry_ptr->upstream;
-	    for (mrtentry_ptr = srcentry_ptr->mrtlink;
-		 mrtentry_ptr != (mrtentry_t *)NULL;
-		 mrtentry_ptr = mrtentry_ptr->srcnext) {
-		if (!(mrtentry_ptr->flags & MRTF_RP)) {
-		    mrtentry_ptr->upstream   = srcentry_ptr->upstream;
-		    mrtentry_ptr->metric     = srcentry_ptr->metric;
-		    mrtentry_ptr->preference = srcentry_ptr->preference;
-		    change_interfaces(mrtentry_ptr, srcentry_ptr->incoming,
-				      mrtentry_ptr->joined_oifs,
-				      mrtentry_ptr->pruned_oifs,
-				      mrtentry_ptr->leaves,
-				      mrtentry_ptr->asserted_oifs, 0);
+	    for (mrt = src->mrtlink; mrt; mrt = mrt->srcnext) {
+		if (!(mrt->flags & MRTF_RP)) {
+		    mrt->upstream   = src->upstream;
+		    mrt->metric     = src->metric;
+		    mrt->preference = src->preference;
+		    change_interfaces(mrt, src->incoming,
+				      mrt->joined_oifs,
+				      mrt->pruned_oifs,
+				      mrt->leaves,
+				      mrt->asserted_oifs, 0);
 		}
 	    }
 	}
     }
 
     /* Update the RP entries */
-    for (cand_rp_ptr = cand_rp_list; cand_rp_ptr != (cand_rp_t *)NULL;
-	 cand_rp_ptr = cand_rp_ptr->next) {
-	if (cand_rp_ptr->rpentry->upstream != nbr_delete)
+    for (cand_rp = cand_rp_list; cand_rp; cand_rp = cand_rp->next) {
+	if (cand_rp->rpentry->upstream != nbr_delete)
 	    continue;
-	rpentry_ptr = cand_rp_ptr->rpentry;
-	/* Reset the RP entry iif */
-	/* TODO: check if error setting the iif! */
-	if (local_address(rpentry_ptr->address) == NO_VIF)
-	    set_incoming(rpentry_ptr, PIM_IIF_RP);
-	else {
-	    rpentry_ptr->incoming = reg_vif_num;
-	    rpentry_ptr->upstream = (pim_nbr_entry_t *)NULL;
+
+	rp = cand_rp->rpentry;
+
+	/* Reset the RP entry iif
+	 * TODO: check if error setting the iif! */
+	if (local_address(rp->address) == NO_VIF) {
+	    set_incoming(rp, PIM_IIF_RP);
+	} else {
+	    rp->incoming = reg_vif_num;
+	    rp->upstream = NULL;
 	}
-	mrtentry_ptr = rpentry_ptr->mrtlink;
-	if (mrtentry_ptr != (mrtentry_t *)NULL) {
-	    mrtentry_ptr->upstream   = rpentry_ptr->upstream;
-	    mrtentry_ptr->metric     = rpentry_ptr->metric;
-	    mrtentry_ptr->preference = rpentry_ptr->preference;
-	    change_interfaces(mrtentry_ptr,
-			      rpentry_ptr->incoming,
-			      mrtentry_ptr->joined_oifs,
-			      mrtentry_ptr->pruned_oifs,
-			      mrtentry_ptr->leaves,
-			      mrtentry_ptr->asserted_oifs, 0);
+
+	mrt = rp->mrtlink;
+	if (mrt) {
+	    mrt->upstream   = rp->upstream;
+	    mrt->metric     = rp->metric;
+	    mrt->preference = rp->preference;
+	    change_interfaces(mrt,
+			      rp->incoming,
+			      mrt->joined_oifs,
+			      mrt->pruned_oifs,
+			      mrt->leaves,
+			      mrt->asserted_oifs, 0);
 	}
+
 	/* Update the group entries for this RP */
-	for (rp_grp_entry_ptr = cand_rp_ptr->rp_grp_next;
-	     rp_grp_entry_ptr != (rp_grp_entry_t *)NULL;
-	     rp_grp_entry_ptr = rp_grp_entry_ptr->rp_grp_next) {
-	    for (grpentry_ptr = rp_grp_entry_ptr->grplink;
-		 grpentry_ptr != (grpentry_t *)NULL;
-		 grpentry_ptr = grpentry_ptr->rpnext) {
-		mrtentry_ptr = grpentry_ptr->grp_route;
-		if (mrtentry_ptr != (mrtentry_t *)NULL) {
-		    mrtentry_ptr->upstream = rpentry_ptr->upstream;
-		    mrtentry_ptr->metric     = rpentry_ptr->metric;
-		    mrtentry_ptr->preference = rpentry_ptr->preference;
-		    change_interfaces(mrtentry_ptr,
-				      rpentry_ptr->incoming,
-				      mrtentry_ptr->joined_oifs,
-				      mrtentry_ptr->pruned_oifs,
-				      mrtentry_ptr->leaves,
-				      mrtentry_ptr->asserted_oifs, 0);
+	for (rp_grp = cand_rp->rp_grp_next; rp_grp; rp_grp = rp_grp->rp_grp_next) {
+	    for (grp = rp_grp->grplink; grp; grp = grp->rpnext) {
+
+		mrt = grp->grp_route;
+		if (mrt) {
+		    mrt->upstream = rp->upstream;
+		    mrt->metric     = rp->metric;
+		    mrt->preference = rp->preference;
+		    change_interfaces(mrt,
+				      rp->incoming,
+				      mrt->joined_oifs,
+				      mrt->pruned_oifs,
+				      mrt->leaves,
+				      mrt->asserted_oifs, 0);
 		}
+
 		/* Update only the (S,G)RPbit entries for this group */
-		for (mrtentry_srcs = grpentry_ptr->mrtlink;
-		     mrtentry_srcs != (mrtentry_t *)NULL;
-		     mrtentry_srcs = mrtentry_srcs->grpnext) {
-		    if (mrtentry_srcs->flags & MRTF_RP) {
-			mrtentry_ptr->upstream = rpentry_ptr->upstream;
-			mrtentry_ptr->metric = rpentry_ptr->metric;
-			mrtentry_ptr->preference = rpentry_ptr->preference;
-			change_interfaces(mrtentry_srcs,
-					  rpentry_ptr->incoming,
-					  mrtentry_srcs->joined_oifs,
-					  mrtentry_srcs->pruned_oifs,
-					  mrtentry_srcs->leaves,
-					  mrtentry_srcs->asserted_oifs, 0);
+		for (mrt_srcs = grp->mrtlink; mrt_srcs; mrt_srcs = mrt_srcs->grpnext) {
+		    if (mrt_srcs->flags & MRTF_RP) {
+			mrt->upstream = rp->upstream;
+			mrt->metric = rp->metric;
+			mrt->preference = rp->preference;
+			change_interfaces(mrt_srcs,
+					  rp->incoming,
+					  mrt_srcs->joined_oifs,
+					  mrt_srcs->pruned_oifs,
+					  mrt_srcs->leaves,
+					  mrt_srcs->asserted_oifs, 0);
 		    }
 		}
 	    }
 	}
     }
 
-    free((char *)nbr_delete);
+    free(nbr_delete);
 }
 
 
@@ -371,7 +355,7 @@ void delete_pim_nbr(pim_nbr_entry_t *nbr_delete)
 static int parse_pim_hello(char *pim_message, size_t datalen, u_int32 src, u_int16 *holdtime)
 {
     u_int8 *pim_hello_message;
-    u_int8 *data_ptr;
+    u_int8 *data;
     u_int16 option_type;
     u_int16 option_length;
     int holdtime_received_ok = FALSE;
@@ -381,9 +365,9 @@ static int parse_pim_hello(char *pim_message, size_t datalen, u_int32 src, u_int
     datalen -= sizeof(pim_header_t);
     for ( ; datalen >= sizeof(pim_hello_t); ) {
 	/* Ignore any data if shorter than (pim_hello header) */
-	data_ptr = pim_hello_message;
-	GET_HOSTSHORT(option_type, data_ptr);
-	GET_HOSTSHORT(option_length, data_ptr);
+	data = pim_hello_message;
+	GET_HOSTSHORT(option_type, data);
+	GET_HOSTSHORT(option_length, data);
 
 	if (option_type == PIM_MESSAGE_HELLO_HOLDTIME) {
 	    if (PIM_MESSAGE_HELLO_HOLDTIME_LENGTH != option_length) {
@@ -394,7 +378,7 @@ static int parse_pim_hello(char *pim_message, size_t datalen, u_int32 src, u_int
 		return FALSE;
 	    }
 
-	    GET_HOSTSHORT(*holdtime, data_ptr);
+	    GET_HOSTSHORT(*holdtime, data);
 	    holdtime_received_ok = TRUE;
 	} else {
 	    /* Ignore any unknown options */
@@ -423,16 +407,16 @@ static int parse_pim_hello(char *pim_message, size_t datalen, u_int32 src, u_int
 int send_pim_hello(struct uvif *v, u_int16 holdtime)
 {
     char   *buf;
-    u_int8 *data_ptr;
+    u_int8 *data;
     int     datalen;
 
     buf = pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t);
-    data_ptr = (u_int8 *)buf;
-    PUT_HOSTSHORT(PIM_MESSAGE_HELLO_HOLDTIME, data_ptr);
-    PUT_HOSTSHORT(PIM_MESSAGE_HELLO_HOLDTIME_LENGTH, data_ptr);
-    PUT_HOSTSHORT(holdtime, data_ptr);
+    data = (u_int8 *)buf;
+    PUT_HOSTSHORT(PIM_MESSAGE_HELLO_HOLDTIME, data);
+    PUT_HOSTSHORT(PIM_MESSAGE_HELLO_HOLDTIME_LENGTH, data);
+    PUT_HOSTSHORT(holdtime, data);
 
-    datalen = data_ptr - (u_int8 *)buf;
+    datalen = data - (u_int8 *)buf;
     send_pim(pim_send_buf, v->uv_lcl_addr, allpimrouters_group, PIM_HELLO, datalen);
     SET_TIMER(v->uv_pim_hello_timer, PIM_TIMER_HELLO_PERIOD);
 
@@ -454,8 +438,8 @@ int receive_pim_register(u_int32 reg_src, u_int32 reg_dst, char *pim_message, si
     pim_register_t *register_p;
     struct ip *ip;
     u_int32 borderBit, nullRegisterBit;
-    mrtentry_t *mrtentry_ptr;
-    mrtentry_t *mrtentry_ptr2;
+    mrtentry_t *mrtentry;
+    mrtentry_t *mrtentry2;
     vifbitmap_t oifs;
 
     /*
@@ -527,8 +511,8 @@ int receive_pim_register(u_int32 reg_src, u_int32 reg_dst, char *pim_message, si
 	return FALSE;
     }
 
-    mrtentry_ptr = find_route(inner_src, inner_grp, MRTF_SG | MRTF_WC | MRTF_PMBR, DONT_CREATE);
-    if (!mrtentry_ptr) {
+    mrtentry = find_route(inner_src, inner_grp, MRTF_SG | MRTF_WC | MRTF_PMBR, DONT_CREATE);
+    if (!mrtentry) {
 	/* No routing entry. Send REGISTER_STOP and return. */
 	IF_DEBUG(DEBUG_PIM_REGISTER) {
 	    logit(LOG_DEBUG, 0, "No routing entry for source %s and/or group %s" ,
@@ -542,20 +526,20 @@ int receive_pim_register(u_int32 reg_src, u_int32 reg_dst, char *pim_message, si
 
     /* XXX: not in the spec: check if I am the RP for that group */
     if ((local_address(reg_dst) == NO_VIF) ||
-	(check_mrtentry_rp(mrtentry_ptr, reg_dst) == FALSE)) {
+	(check_mrtentry_rp(mrtentry, reg_dst) == FALSE)) {
 	send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
 
 	return TRUE;
     }
 
-    if (mrtentry_ptr->flags & MRTF_SG) {
+    if (mrtentry->flags & MRTF_SG) {
 	/* (S,G) found */
 	/* TODO: check the timer again */
-	SET_TIMER(mrtentry_ptr->timer, PIM_DATA_TIMEOUT); /* restart timer */
-	if (!(mrtentry_ptr->flags & MRTF_SPT)) { /* The SPT bit is not set */
+	SET_TIMER(mrtentry->timer, PIM_DATA_TIMEOUT); /* restart timer */
+	if (!(mrtentry->flags & MRTF_SPT)) { /* The SPT bit is not set */
 	    if (!nullRegisterBit) {
-		calc_oifs(mrtentry_ptr, &oifs);
-		if (VIFM_ISEMPTY(oifs) && (mrtentry_ptr->incoming == reg_vif_num)) {
+		calc_oifs(mrtentry, &oifs);
+		if (VIFM_ISEMPTY(oifs) && (mrtentry->incoming == reg_vif_num)) {
 		    send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
 		    return TRUE;
 		}
@@ -572,7 +556,7 @@ int receive_pim_register(u_int32 reg_src, u_int32 reg_dst, char *pim_message, si
 		 * register_vif.
 		 */
 		if (borderBit) {
-		    if (mrtentry_ptr->pmbr_addr != reg_src) {
+		    if (mrtentry->pmbr_addr != reg_src) {
 			send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
 
 			return TRUE;
@@ -591,30 +575,30 @@ int receive_pim_register(u_int32 reg_src, u_int32 reg_dst, char *pim_message, si
 	    return TRUE;
 	}
     }
-    if (mrtentry_ptr->flags & (MRTF_WC | MRTF_PMBR)) {
+    if (mrtentry->flags & (MRTF_WC | MRTF_PMBR)) {
 	if (borderBit) {
 	    /* Create (S,G) state. The oifs will be the copied from the
 	     * existing (*,G) or (*,*,RP) entry. */
-	    mrtentry_ptr2 = find_route(inner_src, inner_grp, MRTF_SG, CREATE);
-	    if (mrtentry_ptr2) {
-		mrtentry_ptr2->pmbr_addr = reg_src;
+	    mrtentry2 = find_route(inner_src, inner_grp, MRTF_SG, CREATE);
+	    if (mrtentry2) {
+		mrtentry2->pmbr_addr = reg_src;
 		/* Clear the SPT flag */
-		mrtentry_ptr2->flags &= ~(MRTF_SPT | MRTF_NEW);
-		SET_TIMER(mrtentry_ptr2->timer, PIM_DATA_TIMEOUT);
+		mrtentry2->flags &= ~(MRTF_SPT | MRTF_NEW);
+		SET_TIMER(mrtentry2->timer, PIM_DATA_TIMEOUT);
 		/* TODO: explicitly call the Join/Prune send function? */
-		FIRE_TIMER(mrtentry_ptr2->jp_timer); /* Send the Join immediately */
+		FIRE_TIMER(mrtentry2->jp_timer); /* Send the Join immediately */
 		/* TODO: explicitly call this function?
-		   send_pim_join_prune(mrtentry_ptr2->upstream->vifi,
-		   mrtentry_ptr2->upstream,
+		   send_pim_join_prune(mrtentry2->upstream->vifi,
+		   mrtentry2->upstream,
 		   PIM_JOIN_PRUNE_HOLDTIME);
 		*/
 	    }
 	}
     }
 
-    if (mrtentry_ptr->flags & MRTF_WC) {
+    if (mrtentry->flags & MRTF_WC) {
 	/* (*,G) entry */
-	calc_oifs(mrtentry_ptr, &oifs);
+	calc_oifs(mrtentry, &oifs);
 	if (VIFM_ISEMPTY(oifs)) {
 	    send_pim_register_stop(reg_dst, reg_src, inner_grp, INADDR_ANY_N);
 
@@ -630,13 +614,13 @@ int receive_pim_register(u_int32 reg_src, u_int32 reg_dst, char *pim_message, si
 		 */
 		u_int32 mfc_source = inner_src;
 #ifdef KERNEL_MFC_WC_G
-		if (!(mrtentry_ptr->flags & MRTF_MFC_CLONE_SG))
+		if (!(mrtentry->flags & MRTF_MFC_CLONE_SG))
 		    mfc_source = INADDR_ANY_N;
 #endif /* KERNEL_MFC_WC_G */
-		add_kernel_cache(mrtentry_ptr, mfc_source, inner_grp, 0);
+		add_kernel_cache(mrtentry, mfc_source, inner_grp, 0);
 		k_chg_mfc(igmp_socket, mfc_source, inner_grp,
-			  mrtentry_ptr->incoming, mrtentry_ptr->oifs,
-			  mrtentry_ptr->group->rpaddr);
+			  mrtentry->incoming, mrtentry->oifs,
+			  mrtentry->group->rpaddr);
 
 		return TRUE;
 	    }
@@ -645,31 +629,31 @@ int receive_pim_register(u_int32 reg_src, u_int32 reg_dst, char *pim_message, si
 	return TRUE;
     }
 
-    if (mrtentry_ptr->flags & MRTF_PMBR) {
+    if (mrtentry->flags & MRTF_PMBR) {
 	/* (*,*,RP) entry */
 	if (!nullRegisterBit) {
 	    u_int32 mfc_source = inner_src;
 	    /* XXX: have to create either (S,G) or (*,G).
 	     * The choice below is (*,G)
 	     */
-	    mrtentry_ptr2 = find_route(INADDR_ANY_N, inner_grp, MRTF_WC, CREATE);
-	    if (!mrtentry_ptr2)
+	    mrtentry2 = find_route(INADDR_ANY_N, inner_grp, MRTF_WC, CREATE);
+	    if (!mrtentry2)
 		return FALSE;
-	    if (mrtentry_ptr2->flags & MRTF_NEW) {
+	    if (mrtentry2->flags & MRTF_NEW) {
 		/* TODO: something else? Have the feeling sth is missing */
-		mrtentry_ptr2->flags &= ~MRTF_NEW;
+		mrtentry2->flags &= ~MRTF_NEW;
 		/* TODO: XXX: copy the timer from the (*,*,RP) entry? */
-		COPY_TIMER(mrtentry_ptr->timer, mrtentry_ptr2->timer);
+		COPY_TIMER(mrtentry->timer, mrtentry2->timer);
 	    }
 	    /* Install cache entry in the kernel */
 #ifdef KERNEL_MFC_WC_G
-	    if (!(mrtentry_ptr->flags & MRTF_MFC_CLONE_SG))
+	    if (!(mrtentry->flags & MRTF_MFC_CLONE_SG))
 		mfc_source = INADDR_ANY_N;
 #endif /* KERNEL_MFC_WC_G */
-	    add_kernel_cache(mrtentry_ptr, mfc_source, inner_grp, 0);
+	    add_kernel_cache(mrtentry, mfc_source, inner_grp, 0);
 	    k_chg_mfc(igmp_socket, mfc_source, inner_grp,
-		      mrtentry_ptr->incoming, mrtentry_ptr->oifs,
-		      mrtentry_ptr2->group->rpaddr);
+		      mrtentry->incoming, mrtentry->oifs,
+		      mrtentry2->group->rpaddr);
 
 	    return TRUE;
 	}
@@ -688,9 +672,9 @@ int send_pim_register(char *packet)
     struct ip  *ip;
     u_int32     source, group;
     vifi_t	vifi;
-    rpentry_t  *rpentry_ptr;
-    mrtentry_t *mrtentry_ptr;
-    mrtentry_t *mrtentry_ptr2;
+    rpentry_t  *rpentry;
+    mrtentry_t *mrtentry;
+    mrtentry_t *mrtentry2;
     u_int32     reg_src, reg_dst;
     int         pktlen = 0;
     char       *buf;
@@ -705,39 +689,39 @@ int send_pim_register(char *packet)
     if (!(uvifs[vifi].uv_flags & VIFF_DR))
 	return FALSE;		/* I am not the DR for that subnet */
 
-    rpentry_ptr = rp_match(group);
-    if (!rpentry_ptr)
+    rpentry = rp_match(group);
+    if (!rpentry)
 	return FALSE;		/* No RP for this group */
 
-    if (local_address(rpentry_ptr->address) != NO_VIF) {
+    if (local_address(rpentry->address) != NO_VIF) {
 	/* TODO: XXX: not sure it is working! */
 	return FALSE;		/* I am the RP for this group */
     }
 
-    mrtentry_ptr = find_route(source, group, MRTF_SG, CREATE);
-    if (!mrtentry_ptr)
+    mrtentry = find_route(source, group, MRTF_SG, CREATE);
+    if (!mrtentry)
 	return FALSE;		/* Cannot create (S,G) state */
 
-    if (mrtentry_ptr->flags & MRTF_NEW) {
+    if (mrtentry->flags & MRTF_NEW) {
 	/* A new entry */
-	mrtentry_ptr->flags &= ~MRTF_NEW;
-	RESET_TIMER(mrtentry_ptr->rs_timer); /* Reset the Register-Suppression timer */
-	mrtentry_ptr2 = mrtentry_ptr->group->grp_route;
-	if (!mrtentry_ptr2)
-	    mrtentry_ptr2 = mrtentry_ptr->group->active_rp_grp->rp->rpentry->mrtlink;
-	if (mrtentry_ptr2) {
-	    FIRE_TIMER(mrtentry_ptr2->jp_timer); /* Timeout the Join/Prune timer */
+	mrtentry->flags &= ~MRTF_NEW;
+	RESET_TIMER(mrtentry->rs_timer); /* Reset the Register-Suppression timer */
+	mrtentry2 = mrtentry->group->grp_route;
+	if (!mrtentry2)
+	    mrtentry2 = mrtentry->group->active_rp_grp->rp->rpentry->mrtlink;
+	if (mrtentry2) {
+	    FIRE_TIMER(mrtentry2->jp_timer); /* Timeout the Join/Prune timer */
 	    /* TODO: explicitly call this function?
-	       send_pim_join_prune(mrtentry_ptr2->upstream->vifi,
-	       mrtentry_ptr2->upstream,
+	       send_pim_join_prune(mrtentry2->upstream->vifi,
+	       mrtentry2->upstream,
 	       PIM_JOIN_PRUNE_HOLDTIME);
 	    */
 	}
     }
     /* Restart the (S,G) Entry-timer */
-    SET_TIMER(mrtentry_ptr->timer, PIM_DATA_TIMEOUT);
+    SET_TIMER(mrtentry->timer, PIM_DATA_TIMEOUT);
 
-    IF_TIMER_NOT_SET(mrtentry_ptr->rs_timer) {
+    IF_TIMER_NOT_SET(mrtentry->rs_timer) {
 	/* The Register-Suppression Timer is not running.
 	 * Encapsulate the data and send to the RP.
 	 */
@@ -776,7 +760,7 @@ int send_pim_register(char *packet)
 	memcpy(buf, ip, pktlen);
 	pktlen += sizeof(pim_register_t);
 	reg_src = uvifs[vifi].uv_lcl_addr;
-	reg_dst = mrtentry_ptr->group->rpaddr;
+	reg_dst = mrtentry->group->rpaddr;
 	send_pim_unicast(pim_send_buf, reg_src, reg_dst,
 			 PIM_REGISTER, pktlen);
 
@@ -787,7 +771,7 @@ int send_pim_register(char *packet)
 }
 
 
-int send_pim_null_register(mrtentry_t *mrtentry_ptr)
+int send_pim_null_register(mrtentry_t *mrtentry)
 {
     struct ip *ip;
     pim_register_t *pim_register;
@@ -796,7 +780,7 @@ int send_pim_null_register(mrtentry_t *mrtentry_ptr)
     u_int32 reg_source, dest;
 
     /* No directly connected source; no local address */
-    if ((vifi = find_vif_direct_local(mrtentry_ptr->source->address))== NO_VIF)
+    if ((vifi = find_vif_direct_local(mrtentry->source->address))== NO_VIF)
 	return FALSE;
 
     pim_register = (pim_register_t *)(pim_send_buf + sizeof(struct ip) +
@@ -815,8 +799,8 @@ int send_pim_null_register(mrtentry_t *mrtentry_ptr)
     ip->ip_p     = IPPROTO_UDP;			/* XXX: bogus */
     ip->ip_len   = htons(sizeof(struct ip));
     ip->ip_ttl   = MINTTL; /* TODO: XXX: check whether need to setup the ttl */
-    ip->ip_src.s_addr = mrtentry_ptr->source->address;
-    ip->ip_dst.s_addr = mrtentry_ptr->group->group;
+    ip->ip_src.s_addr = mrtentry->source->address;
+    ip->ip_dst.s_addr = mrtentry->group->group;
 #ifdef old_Linux
     ip->ip_csum   = 0;
     ip->ip_csum   = inet_cksum((u_int16 *)ip, sizeof(struct ip));
@@ -828,7 +812,7 @@ int send_pim_null_register(mrtentry_t *mrtentry_ptr)
     /* include the dummy ip header */
     pktlen = sizeof(pim_register_t) + sizeof(struct ip);
 
-    dest = mrtentry_ptr->group->rpaddr;
+    dest = mrtentry->group->rpaddr;
     reg_source = uvifs[vifi].uv_lcl_addr;
 
     send_pim_unicast(pim_send_buf, reg_source, dest, PIM_REGISTER, pktlen);
@@ -843,10 +827,10 @@ int send_pim_null_register(mrtentry_t *mrtentry_ptr)
 int receive_pim_register_stop(u_int32 reg_src, u_int32 reg_dst, char *pim_message, size_t datalen)
 {
     pim_register_stop_t *pim_regstop_p;
-    pim_encod_grp_addr_t encod_grp;
-    pim_encod_uni_addr_t encod_unisrc;
-    u_int8 *data_ptr;
-    mrtentry_t *mrtentry_ptr;
+    pim_encod_grp_addr_t egaddr;
+    pim_encod_uni_addr_t eusaddr;
+    u_int8 *data;
+    mrtentry_t *mrtentry;
     vifbitmap_t pruned_oifs;
 
     /* Checksum */
@@ -855,38 +839,38 @@ int receive_pim_register_stop(u_int32 reg_src, u_int32 reg_dst, char *pim_messag
 
     pim_regstop_p = (pim_register_stop_t *)(pim_message +
 					    sizeof(pim_header_t));
-    data_ptr = (u_int8 *)&pim_regstop_p->encod_grp;
-    GET_EGADDR(&encod_grp, data_ptr);
-    GET_EUADDR(&encod_unisrc, data_ptr);
+    data = (u_int8 *)&pim_regstop_p->encod_grp;
+    GET_EGADDR(&egaddr, data);
+    GET_EUADDR(&eusaddr, data);
 
     IF_DEBUG(DEBUG_PIM_REGISTER) {
 	logit(LOG_DEBUG, 0, "Received PIM_REGISTER_STOP from RP %s to %s for src = %s and group = %s", inet_fmt(reg_src, s1, sizeof(s1)), inet_fmt(reg_dst, s2, sizeof(s2)),
-	      inet_fmt(encod_unisrc.unicast_addr, s3, sizeof(s3)),
-	      inet_fmt(encod_grp.mcast_addr, s4, sizeof(s4)));
+	      inet_fmt(eusaddr.unicast_addr, s3, sizeof(s3)),
+	      inet_fmt(egaddr.mcast_addr, s4, sizeof(s4)));
     }
 
     /* TODO: apply the group mask and do register_stop for all grp addresses */
     /* TODO: check for SourceAddress == 0 */
-    mrtentry_ptr = find_route(encod_unisrc.unicast_addr, encod_grp.mcast_addr, MRTF_SG, DONT_CREATE);
-    if (!mrtentry_ptr)
+    mrtentry = find_route(eusaddr.unicast_addr, egaddr.mcast_addr, MRTF_SG, DONT_CREATE);
+    if (!mrtentry)
 	return FALSE;
 
     /* XXX: not in the spec: check if the PIM_REGISTER_STOP originator is
      * really the RP
      */
-    if (check_mrtentry_rp(mrtentry_ptr, reg_src) == FALSE)
+    if (check_mrtentry_rp(mrtentry, reg_src) == FALSE)
 	return FALSE;
 
     /* restart the Register-Suppression timer */
-    SET_TIMER(mrtentry_ptr->rs_timer, (0.5 * PIM_REGISTER_SUPPRESSION_TIMEOUT)
+    SET_TIMER(mrtentry->rs_timer, (0.5 * PIM_REGISTER_SUPPRESSION_TIMEOUT)
 	      + (RANDOM() % (PIM_REGISTER_SUPPRESSION_TIMEOUT + 1)));
     /* Prune the register_vif from the outgoing list */
-    VIFM_COPY(mrtentry_ptr->pruned_oifs, pruned_oifs);
+    VIFM_COPY(mrtentry->pruned_oifs, pruned_oifs);
     VIFM_SET(reg_vif_num, pruned_oifs);
-    change_interfaces(mrtentry_ptr, mrtentry_ptr->incoming,
-		      mrtentry_ptr->joined_oifs, pruned_oifs,
-		      mrtentry_ptr->leaves,
-		      mrtentry_ptr->asserted_oifs, 0);
+    change_interfaces(mrtentry, mrtentry->incoming,
+		      mrtentry->joined_oifs, pruned_oifs,
+		      mrtentry->leaves,
+		      mrtentry->asserted_oifs, 0);
 
     return TRUE;
 }
@@ -898,13 +882,13 @@ static int
 send_pim_register_stop(u_int32 reg_src, u_int32 reg_dst, u_int32 inner_grp, u_int32 inner_src)
 {
     char   *buf;
-    u_int8 *data_ptr;
+    u_int8 *data;
 
-    buf      = pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t);
-    data_ptr = (u_int8 *)buf;
-    PUT_EGADDR(inner_grp, SINGLE_GRP_MSKLEN, 0, data_ptr);
-    PUT_EUADDR(inner_src, data_ptr);
-    send_pim_unicast(pim_send_buf, reg_src, reg_dst, PIM_REGISTER_STOP, data_ptr - (u_int8 *)buf);
+    buf  = pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t);
+    data = (u_int8 *)buf;
+    PUT_EGADDR(inner_grp, SINGLE_GRP_MSKLEN, 0, data);
+    PUT_EUADDR(inner_src, data);
+    send_pim_unicast(pim_send_buf, reg_src, reg_dst, PIM_REGISTER_STOP, data - (u_int8 *)buf);
 
     return TRUE;
 }
@@ -913,30 +897,30 @@ send_pim_register_stop(u_int32 reg_src, u_int32 reg_dst, u_int32 inner_grp, u_in
 /************************************************************************
  *                        PIM_JOIN_PRUNE
  ************************************************************************/
-int join_or_prune(mrtentry_t *mrtentry_ptr, pim_nbr_entry_t *upstream_router)
+int join_or_prune(mrtentry_t *mrtentry, pim_nbr_entry_t *upstream_router)
 {
     vifbitmap_t entry_oifs;
     mrtentry_t *mrtentry_grp;
 
-    if (!mrtentry_ptr || !upstream_router)
+    if (!mrtentry || !upstream_router)
 	return PIM_ACTION_NOTHING;
 
-    calc_oifs(mrtentry_ptr, &entry_oifs);
-    if (mrtentry_ptr->flags & (MRTF_PMBR | MRTF_WC)) {
+    calc_oifs(mrtentry, &entry_oifs);
+    if (mrtentry->flags & (MRTF_PMBR | MRTF_WC)) {
 	/* (*,*,RP) or (*,G) entry */
 	/* The (*,*,RP) or (*,G) J/P messages are sent only toward the RP */
-	if (upstream_router != mrtentry_ptr->upstream)
+	if (upstream_router != mrtentry->upstream)
 	    return PIM_ACTION_NOTHING;
 
 	/* TODO: XXX: Can we have (*,*,RP) prune? */
 	if (VIFM_ISEMPTY(entry_oifs)) {
 	    /* NULL oifs */
 
-	    if (!(uvifs[mrtentry_ptr->incoming].uv_flags & VIFF_DR))
+	    if (!(uvifs[mrtentry->incoming].uv_flags & VIFF_DR))
 		/* I am not the DR for that subnet. */
 		return PIM_ACTION_PRUNE;
 
-	    if (VIFM_ISSET(mrtentry_ptr->incoming, mrtentry_ptr->leaves))
+	    if (VIFM_ISSET(mrtentry->incoming, mrtentry->leaves))
 		/* I am the DR and have local leaves */
 		return PIM_ACTION_JOIN;
 
@@ -947,15 +931,15 @@ int join_or_prune(mrtentry_t *mrtentry_ptr, pim_nbr_entry_t *upstream_router)
 	return PIM_ACTION_JOIN;
     }
 
-    if (mrtentry_ptr->flags & MRTF_SG) {
+    if (mrtentry->flags & MRTF_SG) {
 	/* (S,G) entry */
 	/* TODO: check again */
-	if (mrtentry_ptr->upstream == upstream_router) {
-	    if (!(mrtentry_ptr->flags & MRTF_RP)) {
+	if (mrtentry->upstream == upstream_router) {
+	    if (!(mrtentry->flags & MRTF_RP)) {
 		/* Upstream router toward S */
 		if (VIFM_ISEMPTY(entry_oifs)) {
-		    if (mrtentry_ptr->group->active_rp_grp &&
-			mrtentry_ptr->group->rpaddr == my_cand_rp_address) {
+		    if (mrtentry->group->active_rp_grp &&
+			mrtentry->group->rpaddr == my_cand_rp_address) {
 			/* (S,G) at the RP. Don't send Join/Prune
 			 * (see the end of Section 3.3.2)
 			 */
@@ -978,12 +962,12 @@ int join_or_prune(mrtentry_t *mrtentry_ptr, pim_nbr_entry_t *upstream_router)
 	/* Looks like the case when the upstream router toward S is
 	 * different from the upstream router toward RP
 	 */
-	if (!mrtentry_ptr->group->active_rp_grp)
+	if (!mrtentry->group->active_rp_grp)
 	    return PIM_ACTION_NOTHING;
 
-	mrtentry_grp = mrtentry_ptr->group->grp_route;
+	mrtentry_grp = mrtentry->group->grp_route;
 	if (!mrtentry_grp) {
-	    mrtentry_grp = mrtentry_ptr->group->active_rp_grp->rp->rpentry->mrtlink;
+	    mrtentry_grp = mrtentry->group->active_rp_grp->rp->rpentry->mrtlink;
 	    if (!mrtentry_grp)
 		return PIM_ACTION_NOTHING;
 	}
@@ -991,7 +975,7 @@ int join_or_prune(mrtentry_t *mrtentry_ptr, pim_nbr_entry_t *upstream_router)
 	if (mrtentry_grp->upstream != upstream_router)
 	    return PIM_ACTION_NOTHING; /* XXX: shoudn't happen */
 
-	if (!(mrtentry_ptr->flags & MRTF_RP) && (mrtentry_ptr->flags & MRTF_SPT))
+	if (!(mrtentry->flags & MRTF_RP) && (mrtentry->flags & MRTF_SPT))
 	    return PIM_ACTION_PRUNE;
     }
 
@@ -1006,12 +990,12 @@ int receive_pim_join_prune(u_int32 src, u_int32 dst __attribute__((unused)), cha
 {
     vifi_t vifi;
     struct uvif *v;
-    pim_encod_uni_addr_t uni_target_addr;
-    pim_encod_grp_addr_t encod_group;
-    pim_encod_src_addr_t encod_src;
-    u_int8 *data_ptr;
-    u_int8 *data_ptr_start;
-    u_int8 *data_ptr_group_end;
+    pim_encod_uni_addr_t eutaddr;
+    pim_encod_grp_addr_t egaddr;
+    pim_encod_src_addr_t esaddr;
+    u_int8 *data;
+    u_int8 *data_start;
+    u_int8 *data_group_end;
     u_int8 num_groups;
     u_int8 num_groups_tmp;
     int star_star_rp_found;
@@ -1025,18 +1009,18 @@ int receive_pim_join_prune(u_int32 src, u_int32 dst __attribute__((unused)), cha
     u_int32 g_mask;
     u_int8 s_flags;
     u_int8 reserved __attribute__((unused));
-    rpentry_t *rpentry_ptr;
-    mrtentry_t *mrtentry_ptr;
-    mrtentry_t *mrtentry_srcs;
-    mrtentry_t *mrtentry_rp;
-    grpentry_t *grpentry_ptr;
+    rpentry_t *rpentry;
+    mrtentry_t *mrt;
+    mrtentry_t *mrt_srcs;
+    mrtentry_t *mrt_rp;
+    grpentry_t *grp;
     u_int16 jp_value;
     pim_nbr_entry_t *upstream_router;
     int my_action;
     int ignore_group;
-    rp_grp_entry_t *rp_grp_entry_ptr;
-    u_int8 *data_ptr_group_j_start;
-    u_int8 *data_ptr_group_p_start;
+    rp_grp_entry_t *rp_grp;
+    u_int8 *data_group_j_start;
+    u_int8 *data_group_p_start;
 
     if ((vifi = find_vif_direct(src)) == NO_VIF) {
 	/* Either a local vif or somehow received PIM_JOIN_PRUNE from
@@ -1071,16 +1055,16 @@ int receive_pim_join_prune(u_int32 src, u_int32 dst __attribute__((unused)), cha
      * (see Kame's pim6sd).
      */
 
-    data_ptr = (u_int8 *)(pim_message + sizeof(pim_header_t));
+    data = (u_int8 *)(pim_message + sizeof(pim_header_t));
     /* Get the target address */
-    GET_EUADDR(&uni_target_addr, data_ptr);
-    GET_BYTE(reserved, data_ptr);
-    GET_BYTE(num_groups, data_ptr);
+    GET_EUADDR(&eutaddr, data);
+    GET_BYTE(reserved, data);
+    GET_BYTE(num_groups, data);
     if (num_groups == 0)
 	return FALSE;    /* No indication for groups in the message */
-    GET_HOSTSHORT(holdtime, data_ptr);
+    GET_HOSTSHORT(holdtime, data);
 
-    if (uni_target_addr.unicast_addr != v->uv_lcl_addr) {
+    if (eutaddr.unicast_addr != v->uv_lcl_addr) {
 	/* if I am not the targer of the join message */
 	/* Join/Prune suppression code. This either modifies the J/P timers
 	 * or triggers an overriding Join.
@@ -1089,49 +1073,49 @@ int receive_pim_join_prune(u_int32 src, u_int32 dst __attribute__((unused)), cha
 	 * them in the same message. We don't bother to modify both timers
 	 * here. The Join/Prune sending function will take care of that.
 	 */
-	upstream_router = find_pim_nbr(uni_target_addr.unicast_addr);
+	upstream_router = find_pim_nbr(eutaddr.unicast_addr);
 	if (!upstream_router)
 	    return FALSE;   /* I have no such neighbor */
 
 	while (num_groups--) {
-	    GET_EGADDR(&encod_group, data_ptr);
-	    GET_HOSTSHORT(num_j_srcs, data_ptr);
-	    GET_HOSTSHORT(num_p_srcs, data_ptr);
-	    MASKLEN_TO_MASK(encod_group.masklen, g_mask);
-	    group = encod_group.mcast_addr;
+	    GET_EGADDR(&egaddr, data);
+	    GET_HOSTSHORT(num_j_srcs, data);
+	    GET_HOSTSHORT(num_p_srcs, data);
+	    MASKLEN_TO_MASK(egaddr.masklen, g_mask);
+	    group = egaddr.mcast_addr;
 	    if (!IN_MULTICAST(ntohl(group))) {
-		data_ptr += (num_j_srcs + num_p_srcs) * sizeof(pim_encod_src_addr_t);
+		data += (num_j_srcs + num_p_srcs) * sizeof(pim_encod_src_addr_t);
 		continue; /* Ignore this group and jump to the next */
 	    }
 
-	    if ((ntohl(group) == CLASSD_PREFIX) && (encod_group.masklen == STAR_STAR_RP_MSKLEN)) {
+	    if ((ntohl(group) == CLASSD_PREFIX) && (egaddr.masklen == STAR_STAR_RP_MSKLEN)) {
 		/* (*,*,RP) Join suppression */
 
-		while(num_j_srcs--) {
-		    GET_ESADDR(&encod_src, data_ptr);
-		    source = encod_src.src_addr;
+		while (num_j_srcs--) {
+		    GET_ESADDR(&esaddr, data);
+		    source = esaddr.src_addr;
 		    if (!inet_valid_host(source))
 			continue;
 
-		    s_flags = encod_src.flags;
-		    MASKLEN_TO_MASK(encod_src.masklen, s_mask);
+		    s_flags = esaddr.flags;
+		    MASKLEN_TO_MASK(esaddr.masklen, s_mask);
 		    if ((s_flags & USADDR_RP_BIT) && (s_flags & USADDR_WC_BIT)) {
 			/* This is the RP address. */
-			rpentry_ptr = rp_find(source);
-			if (!rpentry_ptr)
+			rpentry = rp_find(source);
+			if (!rpentry)
 			    continue; /* Don't have such RP. Ignore */
 
-			mrtentry_rp = rpentry_ptr->mrtlink;
-			my_action = join_or_prune(mrtentry_rp, upstream_router);
+			mrt_rp = rpentry->mrtlink;
+			my_action = join_or_prune(mrt_rp, upstream_router);
 			if (my_action != PIM_ACTION_JOIN)
 			    continue;
 
 			/* Check the holdtime */
 			/* TODO: XXX: TIMER implem. dependency! */
-			if (mrtentry_rp->jp_timer > holdtime)
+			if (mrt_rp->jp_timer > holdtime)
 			    continue;
 
-			if ((mrtentry_rp->jp_timer == holdtime) && (ntohl(src) > ntohl(v->uv_lcl_addr)))
+			if ((mrt_rp->jp_timer == holdtime) && (ntohl(src) > ntohl(v->uv_lcl_addr)))
 			    continue;
 
 			/* Set the Join/Prune suppression timer for this
@@ -1140,8 +1124,8 @@ int receive_pim_join_prune(u_int32 src, u_int32 dst __attribute__((unused)), cha
 			 */
 			jp_value = PIM_JOIN_PRUNE_PERIOD + 0.5 * (RANDOM() % PIM_JOIN_PRUNE_PERIOD);
 			/* TODO: XXX: TIMER implem. dependency! */
-			if (mrtentry_rp->jp_timer < jp_value)
-			    SET_TIMER(mrtentry_rp->jp_timer, jp_value);
+			if (mrt_rp->jp_timer < jp_value)
+			    SET_TIMER(mrt_rp->jp_timer, jp_value);
 		    }
 		} /* num_j_srcs */
 
@@ -1152,61 +1136,57 @@ int receive_pim_join_prune(u_int32 src, u_int32 dst __attribute__((unused)), cha
 		     * the local (*,*,RP) prunes or override the prunes by
 		     * sending (*,*,RP) and/or (*,G) and/or (S,G) Join.
 		     */
-		    GET_ESADDR(&encod_src, data_ptr);
-		    source = encod_src.src_addr;
+		    GET_ESADDR(&esaddr, data);
+		    source = esaddr.src_addr;
 		    if (!inet_valid_host(source))
 			continue;
-		    s_flags = encod_src.flags;
-		    MASKLEN_TO_MASK(encod_src.masklen, s_mask);
+		    s_flags = esaddr.flags;
+		    MASKLEN_TO_MASK(esaddr.masklen, s_mask);
 		    if ((s_flags & USADDR_RP_BIT) && (s_flags & USADDR_WC_BIT)) {
 			/* This is the RP address. */
-			rpentry_ptr = rp_find(source);
-			if (!rpentry_ptr)
+			rpentry = rp_find(source);
+			if (!rpentry)
 			    continue; /* Don't have such RP. Ignore */
 
-			mrtentry_rp = rpentry_ptr->mrtlink;
-			my_action = join_or_prune(mrtentry_rp, upstream_router);
+			mrt_rp = rpentry->mrtlink;
+			my_action = join_or_prune(mrt_rp, upstream_router);
 			if (my_action == PIM_ACTION_PRUNE) {
 			    /* TODO: XXX: TIMER implem. dependency! */
-			    if ((mrtentry_rp->jp_timer < holdtime)
-				|| ((mrtentry_rp->jp_timer == holdtime) &&
+			    if ((mrt_rp->jp_timer < holdtime)
+				|| ((mrt_rp->jp_timer == holdtime) &&
 				    (ntohl(src) > ntohl(v->uv_lcl_addr)))) {
 				/* Suppress the Prune */
 				jp_value = PIM_JOIN_PRUNE_PERIOD + 0.5 * (RANDOM() % PIM_JOIN_PRUNE_PERIOD);
-				if (mrtentry_rp->jp_timer < jp_value)
-				    SET_TIMER(mrtentry_rp->jp_timer, jp_value);
+				if (mrt_rp->jp_timer < jp_value)
+				    SET_TIMER(mrt_rp->jp_timer, jp_value);
 			    }
 			} else if (my_action == PIM_ACTION_JOIN) {
 			    /* Override the Prune by scheduling a Join */
 			    jp_value = (RANDOM() % (int)(10 * PIM_RANDOM_DELAY_JOIN_TIMEOUT)) / 10;
 			    /* TODO: XXX: TIMER implem. dependency! */
-			    if (mrtentry_rp->jp_timer > jp_value)
-				SET_TIMER(mrtentry_rp->jp_timer, jp_value);
+			    if (mrt_rp->jp_timer > jp_value)
+				SET_TIMER(mrt_rp->jp_timer, jp_value);
 			}
 
 			/* Check all (*,G) and (S,G) matching to this RP.
 			 * If my_action == JOIN, then send a Join and override
 			 * the (*,*,RP) Prune.
 			 */
-			for (grpentry_ptr = rpentry_ptr->cand_rp->rp_grp_next->grplink;
-			     grpentry_ptr != (grpentry_t *)NULL;
-			     grpentry_ptr = grpentry_ptr->rpnext) {
-			    my_action = join_or_prune(grpentry_ptr->grp_route, upstream_router);
+			for (grp = rpentry->cand_rp->rp_grp_next->grplink; grp; grp = grp->rpnext) {
+			    my_action = join_or_prune(grp->grp_route, upstream_router);
 			    if (my_action == PIM_ACTION_JOIN) {
 				jp_value = (RANDOM() % (int)(10 * PIM_RANDOM_DELAY_JOIN_TIMEOUT)) / 10;
 				/* TODO: XXX: TIMER implem. dependency! */
-				if (grpentry_ptr->grp_route->jp_timer > jp_value)
-				    SET_TIMER(grpentry_ptr->grp_route->jp_timer, jp_value);
+				if (grp->grp_route->jp_timer > jp_value)
+				    SET_TIMER(grp->grp_route->jp_timer, jp_value);
 			    }
-			    for (mrtentry_srcs = grpentry_ptr->mrtlink;
-				 mrtentry_srcs != (mrtentry_t *)NULL;
-				 mrtentry_srcs = mrtentry_srcs->grpnext) {
-				my_action = join_or_prune(mrtentry_srcs, upstream_router);
+			    for (mrt_srcs = grp->mrtlink; mrt_srcs; mrt_srcs = mrt_srcs->grpnext) {
+				my_action = join_or_prune(mrt_srcs, upstream_router);
 				if (my_action == PIM_ACTION_JOIN) {
 				    jp_value = (RANDOM() % (int)(10 * PIM_RANDOM_DELAY_JOIN_TIMEOUT)) / 10;
 				    /* TODO: XXX: TIMER implem. dependency! */
-				    if (mrtentry_srcs->jp_timer > jp_value)
-					SET_TIMER(mrtentry_srcs->jp_timer, jp_value);
+				    if (mrt_srcs->jp_timer > jp_value)
+					SET_TIMER(mrt_srcs->jp_timer, jp_value);
 				}
 			    } /* For all (S,G) */
 			} /* For all (*,G) */
@@ -1217,150 +1197,148 @@ int receive_pim_join_prune(u_int32 src, u_int32 dst __attribute__((unused)), cha
 
 	    /* (*,G) or (S,G) suppression */
 	    /* TODO: XXX: currently, accumulated groups
-	     * (i.e. group_masklen < group_address_lengt) are not
+	     * (i.e. group_masklen < egaddress_lengt) are not
 	     * implemented. Just need to create a loop and apply the
 	     * procedure below for all groups matching the prefix.
 	     */
 	    while (num_j_srcs--) {
-		GET_ESADDR(&encod_src, data_ptr);
-		source = encod_src.src_addr;
+		GET_ESADDR(&esaddr, data);
+		source = esaddr.src_addr;
 		if (!inet_valid_host(source))
 		    continue;
 
-		s_flags = encod_src.flags;
-		MASKLEN_TO_MASK(encod_src.masklen, s_mask);
+		s_flags = esaddr.flags;
+		MASKLEN_TO_MASK(esaddr.masklen, s_mask);
 
 		if ((s_flags & USADDR_RP_BIT) && (s_flags & USADDR_WC_BIT)) {
 		    /* (*,G) JOIN_REQUEST (toward the RP) */
-		    mrtentry_ptr = find_route(INADDR_ANY_N, group, MRTF_WC, DONT_CREATE);
-		    if (!mrtentry_ptr)
+		    mrt = find_route(INADDR_ANY_N, group, MRTF_WC, DONT_CREATE);
+		    if (!mrt)
 			continue;
 
-		    my_action = join_or_prune(mrtentry_ptr, upstream_router);
+		    my_action = join_or_prune(mrt, upstream_router);
 		    if (my_action != PIM_ACTION_JOIN)
 			continue;
 
 		    /* (*,G) Join suppresion */
-		    if (source != mrtentry_ptr->group->active_rp_grp->rp->rpentry->address)
+		    if (source != mrt->group->active_rp_grp->rp->rpentry->address)
 			continue;  /* The RP address doesn't match. Ignore. */
 
 		    /* Check the holdtime */
 		    /* TODO: XXX: TIMER implem. dependency! */
-		    if (mrtentry_ptr->jp_timer > holdtime)
+		    if (mrt->jp_timer > holdtime)
 			continue;
 
-		    if ((mrtentry_ptr->jp_timer == holdtime) && (ntohl(src) > ntohl(v->uv_lcl_addr)))
+		    if ((mrt->jp_timer == holdtime) && (ntohl(src) > ntohl(v->uv_lcl_addr)))
 			continue;
 
 		    jp_value = PIM_JOIN_PRUNE_PERIOD + 0.5 * (RANDOM() % PIM_JOIN_PRUNE_PERIOD);
-		    if (mrtentry_ptr->jp_timer < jp_value)
-			SET_TIMER(mrtentry_ptr->jp_timer, jp_value);
+		    if (mrt->jp_timer < jp_value)
+			SET_TIMER(mrt->jp_timer, jp_value);
 		    continue;
 		} /* End of (*,G) Join suppression */
 
 		/* (S,G) Join suppresion */
-		mrtentry_ptr = find_route(source, group, MRTF_SG, DONT_CREATE);
-		if (!mrtentry_ptr)
+		mrt = find_route(source, group, MRTF_SG, DONT_CREATE);
+		if (!mrt)
 		    continue;
 
-		my_action = join_or_prune(mrtentry_ptr, upstream_router);
+		my_action = join_or_prune(mrt, upstream_router);
 		if (my_action != PIM_ACTION_JOIN)
 		    continue;
 
 		/* Check the holdtime */
 		/* TODO: XXX: TIMER implem. dependency! */
-		if (mrtentry_ptr->jp_timer > holdtime)
+		if (mrt->jp_timer > holdtime)
 		    continue;
 
-		if ((mrtentry_ptr->jp_timer == holdtime) && (ntohl(src) > ntohl(v->uv_lcl_addr)))
+		if ((mrt->jp_timer == holdtime) && (ntohl(src) > ntohl(v->uv_lcl_addr)))
 		    continue;
 
 		jp_value = PIM_JOIN_PRUNE_PERIOD + 0.5 * (RANDOM() % PIM_JOIN_PRUNE_PERIOD);
-		if (mrtentry_ptr->jp_timer < jp_value)
-		    SET_TIMER(mrtentry_ptr->jp_timer, jp_value);
+		if (mrt->jp_timer < jp_value)
+		    SET_TIMER(mrt->jp_timer, jp_value);
 		continue;
 	    }
 
 	    /* Prunes suppression */
 	    while (num_p_srcs--) {
-		GET_ESADDR(&encod_src, data_ptr);
-		source = encod_src.src_addr;
+		GET_ESADDR(&esaddr, data);
+		source = esaddr.src_addr;
 		if (!inet_valid_host(source))
 		    continue;
 
-		s_flags = encod_src.flags;
-		MASKLEN_TO_MASK(encod_src.masklen, s_mask);
+		s_flags = esaddr.flags;
+		MASKLEN_TO_MASK(esaddr.masklen, s_mask);
 		if ((s_flags & USADDR_RP_BIT) && (s_flags & USADDR_WC_BIT)) {
 		    /* (*,G) prune suppression */
-		    rpentry_ptr = rp_match(group);
-		    if (!rpentry_ptr || (rpentry_ptr->address != source))
+		    rpentry = rp_match(group);
+		    if (!rpentry || (rpentry->address != source))
 			continue;  /* No such RP or it is different. Ignore */
 
-		    mrtentry_ptr = find_route(INADDR_ANY_N, group, MRTF_WC, DONT_CREATE);
-		    if (!mrtentry_ptr)
+		    mrt = find_route(INADDR_ANY_N, group, MRTF_WC, DONT_CREATE);
+		    if (!mrt)
 			continue;
 
-		    my_action = join_or_prune(mrtentry_ptr, upstream_router);
+		    my_action = join_or_prune(mrt, upstream_router);
 		    if (my_action == PIM_ACTION_PRUNE) {
 			/* TODO: XXX: TIMER implem. dependency! */
-			if ((mrtentry_ptr->jp_timer < holdtime)
-			    || ((mrtentry_ptr->jp_timer == holdtime)
+			if ((mrt->jp_timer < holdtime)
+			    || ((mrt->jp_timer == holdtime)
 				&& (ntohl(src) > ntohl(v->uv_lcl_addr)))) {
 			    /* Suppress the Prune */
 			    jp_value = PIM_JOIN_PRUNE_PERIOD + 0.5 * (RANDOM() % PIM_JOIN_PRUNE_PERIOD);
-			    if (mrtentry_ptr->jp_timer < jp_value)
-				SET_TIMER(mrtentry_ptr->jp_timer, jp_value);
+			    if (mrt->jp_timer < jp_value)
+				SET_TIMER(mrt->jp_timer, jp_value);
 			}
 		    }
 		    else if (my_action == PIM_ACTION_JOIN) {
 			/* Override the Prune by scheduling a Join */
 			jp_value = (RANDOM() % (int)(10 * PIM_RANDOM_DELAY_JOIN_TIMEOUT)) / 10;
 			/* TODO: XXX: TIMER implem. dependency! */
-			if (mrtentry_ptr->jp_timer > jp_value)
-			    SET_TIMER(mrtentry_ptr->jp_timer, jp_value);
+			if (mrt->jp_timer > jp_value)
+			    SET_TIMER(mrt->jp_timer, jp_value);
 		    }
 
 		    /* Check all (S,G) entries for this group.
 		     * If my_action == JOIN, then send the Join and override
 		     * the (*,G) Prune.
 		     */
-		    for (mrtentry_srcs = mrtentry_ptr->group->mrtlink;
-			 mrtentry_srcs != (mrtentry_t *)NULL;
-			 mrtentry_srcs = mrtentry_srcs->grpnext) {
-			my_action = join_or_prune(mrtentry_srcs, upstream_router);
+		    for (mrt_srcs = mrt->group->mrtlink; mrt_srcs; mrt_srcs = mrt_srcs->grpnext) {
+			my_action = join_or_prune(mrt_srcs, upstream_router);
 			if (my_action == PIM_ACTION_JOIN) {
 			    jp_value = (RANDOM() % (int)(10 * PIM_RANDOM_DELAY_JOIN_TIMEOUT)) / 10;
 			    /* TODO: XXX: TIMER implem. dependency! */
-			    if (mrtentry_ptr->jp_timer > jp_value)
-				SET_TIMER(mrtentry_ptr->jp_timer, jp_value);
+			    if (mrt->jp_timer > jp_value)
+				SET_TIMER(mrt->jp_timer, jp_value);
 			}
 		    } /* For all (S,G) */
 		    continue;  /* End of (*,G) prune suppression */
 		}
 
 		/* (S,G) prune suppression */
-		mrtentry_ptr = find_route(source, group, MRTF_SG, DONT_CREATE);
-		if (mrtentry_ptr == NULL)
+		mrt = find_route(source, group, MRTF_SG, DONT_CREATE);
+		if (!mrt)
 		    continue;
 
-		my_action = join_or_prune(mrtentry_ptr, upstream_router);
+		my_action = join_or_prune(mrt, upstream_router);
 		if (my_action == PIM_ACTION_PRUNE) {
 		    /* Suppress the (S,G) Prune */
 		    /* TODO: XXX: TIMER implem. dependency! */
-		    if ((mrtentry_ptr->jp_timer < holdtime)
-			|| ((mrtentry_ptr->jp_timer == holdtime)
+		    if ((mrt->jp_timer < holdtime)
+			|| ((mrt->jp_timer == holdtime)
 			    && (ntohl(src) > ntohl(v->uv_lcl_addr)))) {
 			jp_value = PIM_JOIN_PRUNE_PERIOD + 0.5 * (RANDOM() % PIM_JOIN_PRUNE_PERIOD);
-			if (mrtentry_ptr->jp_timer < jp_value)
-			    SET_TIMER(mrtentry_ptr->jp_timer, jp_value);
+			if (mrt->jp_timer < jp_value)
+			    SET_TIMER(mrt->jp_timer, jp_value);
 		    }
 		}
 		else if (my_action == PIM_ACTION_JOIN) {
 		    /* Override the Prune by scheduling a Join */
 		    jp_value = (RANDOM() % (int)(10 * PIM_RANDOM_DELAY_JOIN_TIMEOUT)) / 10;
 		    /* TODO: XXX: TIMER implem. dependency! */
-		    if (mrtentry_ptr->jp_timer > jp_value)
-			SET_TIMER(mrtentry_ptr->jp_timer, jp_value);
+		    if (mrt->jp_timer > jp_value)
+			SET_TIMER(mrt->jp_timer, jp_value);
 		}
 	    }  /* while (num_p_srcs--) */
 	}  /* while (num_groups--) */
@@ -1402,17 +1380,17 @@ int receive_pim_join_prune(u_int32 src, u_int32 dst __attribute__((unused)), cha
      *   Hopefully, in the future will find a better way to implement it.
      */
     num_groups_tmp = num_groups;
-    data_ptr_start = data_ptr;
+    data_start = data;
     star_star_rp_found = FALSE; /* Indicating whether we have (*,*,RP) join */
     while (num_groups_tmp--) {
 	/* Search for (*,*,RP) Join */
-	GET_EGADDR(&encod_group, data_ptr);
-	GET_HOSTSHORT(num_j_srcs, data_ptr);
-	GET_HOSTSHORT(num_p_srcs, data_ptr);
-	group = encod_group.mcast_addr;
-	if ((ntohl(group) != CLASSD_PREFIX) || (encod_group.masklen != STAR_STAR_RP_MSKLEN)) {
+	GET_EGADDR(&egaddr, data);
+	GET_HOSTSHORT(num_j_srcs, data);
+	GET_HOSTSHORT(num_p_srcs, data);
+	group = egaddr.mcast_addr;
+	if ((ntohl(group) != CLASSD_PREFIX) || (egaddr.masklen != STAR_STAR_RP_MSKLEN)) {
 	    /* This is not (*,*,RP). Jump to the next group. */
-	    data_ptr += (num_j_srcs + num_p_srcs) * sizeof(pim_encod_src_addr_t);
+	    data += (num_j_srcs + num_p_srcs) * sizeof(pim_encod_src_addr_t);
 	    continue;
 	}
 
@@ -1421,60 +1399,55 @@ int receive_pim_join_prune(u_int32 src, u_int32 dst __attribute__((unused)), cha
 	 */
 	star_star_rp_found = TRUE;
 	while (num_j_srcs--) {
-	    GET_ESADDR(&encod_src, data_ptr);
-	    rpentry_ptr = rp_find(encod_src.src_addr);
-	    if (rpentry_ptr == (rpentry_t *)NULL)
+	    GET_ESADDR(&esaddr, data);
+	    rpentry = rp_find(esaddr.src_addr);
+	    if (!rpentry)
 		continue;
-	    for (rp_grp_entry_ptr = rpentry_ptr->cand_rp->rp_grp_next;
-		 rp_grp_entry_ptr != (rp_grp_entry_t *)NULL;
-		 rp_grp_entry_ptr = rp_grp_entry_ptr->rp_grp_next) {
-		for (grpentry_ptr = rp_grp_entry_ptr->grplink;
-		     grpentry_ptr != (grpentry_t *)NULL;
-		     grpentry_ptr = grpentry_ptr->rpnext) {
-		    if (grpentry_ptr->grp_route != (mrtentry_t *)NULL)
-			VIFM_CLR(vifi, grpentry_ptr->grp_route->pruned_oifs);
-		    for (mrtentry_ptr = grpentry_ptr->mrtlink;
-			 mrtentry_ptr != (mrtentry_t *)NULL;
-			 mrtentry_ptr = mrtentry_ptr->grpnext)
-			VIFM_CLR(vifi, mrtentry_ptr->pruned_oifs);
+
+	    for (rp_grp = rpentry->cand_rp->rp_grp_next; rp_grp; rp_grp = rp_grp->rp_grp_next) {
+		for (grp = rp_grp->grplink; grp; grp = grp->rpnext) {
+		    if (grp->grp_route)
+			VIFM_CLR(vifi, grp->grp_route->pruned_oifs);
+		    for (mrt = grp->mrtlink; mrt; mrt = mrt->grpnext)
+			VIFM_CLR(vifi, mrt->pruned_oifs);
 		}
 	    }
 	}
-	data_ptr += (num_p_srcs) * sizeof(pim_encod_src_addr_t);
+	data += (num_p_srcs) * sizeof(pim_encod_src_addr_t);
     }
 
     /*
      * Start processing the groups. If this is (*,*,RP), skip it, but process
      * it at the end.
      */
-    data_ptr = data_ptr_start;
+    data = data_start;
     num_groups_tmp = num_groups;
     while (num_groups_tmp--) {
-	GET_EGADDR(&encod_group, data_ptr);
-	GET_HOSTSHORT(num_j_srcs, data_ptr);
-	GET_HOSTSHORT(num_p_srcs, data_ptr);
-	group = encod_group.mcast_addr;
+	GET_EGADDR(&egaddr, data);
+	GET_HOSTSHORT(num_j_srcs, data);
+	GET_HOSTSHORT(num_p_srcs, data);
+	group = egaddr.mcast_addr;
 	if (!IN_MULTICAST(ntohl(group))) {
-	    data_ptr += (num_j_srcs + num_p_srcs) * sizeof(pim_encod_src_addr_t);
+	    data += (num_j_srcs + num_p_srcs) * sizeof(pim_encod_src_addr_t);
 	    continue;		/* Ignore this group and jump to the next one */
 	}
 
 	if ((ntohl(group) == CLASSD_PREFIX)
-	    && (encod_group.masklen == STAR_STAR_RP_MSKLEN)) {
+	    && (egaddr.masklen == STAR_STAR_RP_MSKLEN)) {
 	    /* This is (*,*,RP). Jump to the next group. */
-	    data_ptr += (num_j_srcs + num_p_srcs) * sizeof(pim_encod_src_addr_t);
+	    data += (num_j_srcs + num_p_srcs) * sizeof(pim_encod_src_addr_t);
 	    continue;
 	}
 
-	rpentry_ptr = rp_match(group);
-	if (rpentry_ptr == (rpentry_t *)NULL) {
-	    data_ptr += (num_j_srcs + num_p_srcs) * sizeof(pim_encod_src_addr_t);
+	rpentry = rp_match(group);
+	if (!rpentry) {
+	    data += (num_j_srcs + num_p_srcs) * sizeof(pim_encod_src_addr_t);
 	    continue;
 	}
 
-	data_ptr_group_j_start = data_ptr;
-	data_ptr_group_p_start = data_ptr + num_j_srcs * sizeof(pim_encod_src_addr_t);
-	data_ptr_group_end = data_ptr + (num_j_srcs + num_p_srcs) * sizeof(pim_encod_src_addr_t);
+	data_group_j_start = data;
+	data_group_p_start = data + num_j_srcs * sizeof(pim_encod_src_addr_t);
+	data_group_end = data + (num_j_srcs + num_p_srcs) * sizeof(pim_encod_src_addr_t);
 
 	/* Scan the Join part for (*,G) Join and then clear the
 	 * particular interface from pruned_oifs for all (S,G).
@@ -1484,46 +1457,46 @@ int receive_pim_join_prune(u_int32 src, u_int32 dst __attribute__((unused)), cha
 	num_j_srcs_tmp = num_j_srcs;
 	ignore_group = FALSE;
 	while (num_j_srcs_tmp--) {
-	    GET_ESADDR(&encod_src, data_ptr);
-	    if ((encod_src.flags & USADDR_RP_BIT) && (encod_src.flags & USADDR_WC_BIT)) {
+	    GET_ESADDR(&esaddr, data);
+	    if ((esaddr.flags & USADDR_RP_BIT) && (esaddr.flags & USADDR_WC_BIT)) {
 		/* This is the RP address, i.e. (*,G) Join.
 		 * Check if the RP-mapping is consistent and if "yes",
 		 * then Reset the pruned_oifs for all (S,G) entries.
 		 */
-		if (rpentry_ptr->address != encod_src.src_addr) {
+		if (rpentry->address != esaddr.src_addr) {
 		    ignore_group = TRUE;
 		    break;
 		}
 
-		mrtentry_ptr = find_route(INADDR_ANY_N, group, MRTF_WC, DONT_CREATE);
-		if (mrtentry_ptr) {
-		    for (mrtentry_srcs = mrtentry_ptr->group->mrtlink;
-			 mrtentry_srcs != (mrtentry_t *)NULL;
-			 mrtentry_srcs = mrtentry_srcs->grpnext)
-			VIFM_CLR(vifi, mrtentry_srcs->pruned_oifs);
+		mrt = find_route(INADDR_ANY_N, group, MRTF_WC, DONT_CREATE);
+		if (mrt) {
+		    for (mrt_srcs = mrt->group->mrtlink;
+			 mrt_srcs;
+			 mrt_srcs = mrt_srcs->grpnext)
+			VIFM_CLR(vifi, mrt_srcs->pruned_oifs);
 		}
 		break;
 	    }
 	}
 
 	if (ignore_group == TRUE) {
-	    data_ptr += (num_j_srcs_tmp + num_p_srcs) * sizeof(pim_encod_src_addr_t);
+	    data += (num_j_srcs_tmp + num_p_srcs) * sizeof(pim_encod_src_addr_t);
 	    continue;
 	}
 
-	data_ptr = data_ptr_group_p_start;
+	data = data_group_p_start;
 	/* Process the Prune part first */
 	while (num_p_srcs--) {
-	    GET_ESADDR(&encod_src, data_ptr);
-	    source = encod_src.src_addr;
+	    GET_ESADDR(&esaddr, data);
+	    source = esaddr.src_addr;
 	    if (!inet_valid_host(source))
 		continue;
 
-	    s_flags = encod_src.flags;
+	    s_flags = esaddr.flags;
 	    if (!(s_flags & (USADDR_WC_BIT | USADDR_RP_BIT))) {
 		/* (S,G) prune sent toward S */
-		mrtentry_ptr = find_route(source, group, MRTF_SG, DONT_CREATE);
-		if (!mrtentry_ptr)
+		mrt = find_route(source, group, MRTF_SG, DONT_CREATE);
+		if (!mrt)
 		    continue;   /* I don't have (S,G) to prune. Ignore. */
 
 		/* If the link is point-to-point, timeout the oif
@@ -1532,191 +1505,189 @@ int receive_pim_join_prune(u_int32 src, u_int32 dst __attribute__((unused)), cha
 		 */
 		/* TODO: XXX: increase the entry timer? */
 		if (v->uv_flags & VIFF_POINT_TO_POINT) {
-		    FIRE_TIMER(mrtentry_ptr->vif_timers[vifi]);
+		    FIRE_TIMER(mrt->vif_timers[vifi]);
 		} else {
 		    /* TODO: XXX: TIMER implem. dependency! */
-		    if (mrtentry_ptr->vif_timers[vifi] > mrtentry_ptr->vif_deletion_delay[vifi])
-			SET_TIMER(mrtentry_ptr->vif_timers[vifi],
-				  mrtentry_ptr->vif_deletion_delay[vifi]);
+		    if (mrt->vif_timers[vifi] > mrt->vif_deletion_delay[vifi])
+			SET_TIMER(mrt->vif_timers[vifi],
+				  mrt->vif_deletion_delay[vifi]);
 		}
-		IF_TIMER_NOT_SET(mrtentry_ptr->vif_timers[vifi]) {
-		    VIFM_CLR(vifi, mrtentry_ptr->joined_oifs);
-		    VIFM_SET(vifi, mrtentry_ptr->pruned_oifs);
-		    change_interfaces(mrtentry_ptr,
-				      mrtentry_ptr->incoming,
-				      mrtentry_ptr->joined_oifs,
-				      mrtentry_ptr->pruned_oifs,
-				      mrtentry_ptr->leaves,
-				      mrtentry_ptr->asserted_oifs, 0);
+		IF_TIMER_NOT_SET(mrt->vif_timers[vifi]) {
+		    VIFM_CLR(vifi, mrt->joined_oifs);
+		    VIFM_SET(vifi, mrt->pruned_oifs);
+		    change_interfaces(mrt,
+				      mrt->incoming,
+				      mrt->joined_oifs,
+				      mrt->pruned_oifs,
+				      mrt->leaves,
+				      mrt->asserted_oifs, 0);
 		}
 		continue;
 	    }
 
 	    if ((s_flags & USADDR_RP_BIT) && (!(s_flags & USADDR_WC_BIT))) {
 		/* ~(S,G)RPbit prune sent toward the RP */
-		mrtentry_ptr = find_route(source, group, MRTF_SG, DONT_CREATE);
-		if (mrtentry_ptr) {
-		    SET_TIMER(mrtentry_ptr->timer, holdtime);
+		mrt = find_route(source, group, MRTF_SG, DONT_CREATE);
+		if (mrt) {
+		    SET_TIMER(mrt->timer, holdtime);
 		    if (v->uv_flags & VIFF_POINT_TO_POINT) {
-			FIRE_TIMER(mrtentry_ptr->vif_timers[vifi]);
+			FIRE_TIMER(mrt->vif_timers[vifi]);
 		    } else {
 			/* TODO: XXX: TIMER implem. dependency! */
-			if (mrtentry_ptr->vif_timers[vifi] > mrtentry_ptr->vif_deletion_delay[vifi])
-			    SET_TIMER(mrtentry_ptr->vif_timers[vifi],
-				      mrtentry_ptr->vif_deletion_delay[vifi]);
+			if (mrt->vif_timers[vifi] > mrt->vif_deletion_delay[vifi])
+			    SET_TIMER(mrt->vif_timers[vifi],
+				      mrt->vif_deletion_delay[vifi]);
 		    }
-		    IF_TIMER_NOT_SET(mrtentry_ptr->vif_timers[vifi]) {
-			VIFM_CLR(vifi, mrtentry_ptr->joined_oifs);
-			VIFM_SET(vifi, mrtentry_ptr->pruned_oifs);
-			change_interfaces(mrtentry_ptr,
-					  mrtentry_ptr->incoming,
-					  mrtentry_ptr->joined_oifs,
-					  mrtentry_ptr->pruned_oifs,
-					  mrtentry_ptr->leaves,
-					  mrtentry_ptr->asserted_oifs, 0);
+		    IF_TIMER_NOT_SET(mrt->vif_timers[vifi]) {
+			VIFM_CLR(vifi, mrt->joined_oifs);
+			VIFM_SET(vifi, mrt->pruned_oifs);
+			change_interfaces(mrt,
+					  mrt->incoming,
+					  mrt->joined_oifs,
+					  mrt->pruned_oifs,
+					  mrt->leaves,
+					  mrt->asserted_oifs, 0);
 		    }
 		    continue;
 		}
 
 		/* There is no (S,G) entry. Check for (*,G) or (*,*,RP) */
-		mrtentry_ptr = find_route(INADDR_ANY_N, group, MRTF_WC | MRTF_PMBR, DONT_CREATE);
-		if (mrtentry_ptr) {
-		    mrtentry_ptr = find_route(source, group, MRTF_SG | MRTF_RP, CREATE);
-		    if (!mrtentry_ptr)
+		mrt = find_route(INADDR_ANY_N, group, MRTF_WC | MRTF_PMBR, DONT_CREATE);
+		if (mrt) {
+		    mrt = find_route(source, group, MRTF_SG | MRTF_RP, CREATE);
+		    if (!mrt)
 			continue;
 
-		    mrtentry_ptr->flags &= ~MRTF_NEW;
-		    RESET_TIMER(mrtentry_ptr->vif_timers[vifi]);
+		    mrt->flags &= ~MRTF_NEW;
+		    RESET_TIMER(mrt->vif_timers[vifi]);
 		    /* TODO: XXX: The spec doens't say what value to use for
 		     * the entry time. Use the J/P holdtime.
 		     */
-		    SET_TIMER(mrtentry_ptr->timer, holdtime);
+		    SET_TIMER(mrt->timer, holdtime);
 		    /* TODO: XXX: The spec says to delete the oif. However,
 		     * its timer only should be lowered, so the prune can be
 		     * overwritten on multiaccess LAN. Spec BUG.
 		     */
-		    VIFM_CLR(vifi, mrtentry_ptr->joined_oifs);
-		    VIFM_SET(vifi, mrtentry_ptr->pruned_oifs);
-		    change_interfaces(mrtentry_ptr,
-				      mrtentry_ptr->incoming,
-				      mrtentry_ptr->joined_oifs,
-				      mrtentry_ptr->pruned_oifs,
-				      mrtentry_ptr->leaves,
-				      mrtentry_ptr->asserted_oifs, 0);
+		    VIFM_CLR(vifi, mrt->joined_oifs);
+		    VIFM_SET(vifi, mrt->pruned_oifs);
+		    change_interfaces(mrt,
+				      mrt->incoming,
+				      mrt->joined_oifs,
+				      mrt->pruned_oifs,
+				      mrt->leaves,
+				      mrt->asserted_oifs, 0);
 		}
 		continue;
 	    }
 
 	    if ((s_flags & USADDR_RP_BIT) && (s_flags & USADDR_WC_BIT)) {
 		/* (*,G) Prune */
-		mrtentry_ptr = find_route(INADDR_ANY_N, group, MRTF_WC | MRTF_PMBR, DONT_CREATE);
-		if (mrtentry_ptr) {
-		    if (mrtentry_ptr->flags & MRTF_WC) {
+		mrt = find_route(INADDR_ANY_N, group, MRTF_WC | MRTF_PMBR, DONT_CREATE);
+		if (mrt) {
+		    if (mrt->flags & MRTF_WC) {
 			/* TODO: XXX: Should check the whole Prune list in
 			 * advance for (*,G) prune and if the RP address
 			 * does not match the local RP-map, then ignore the
 			 * whole group, not only this particular (*,G) prune.
 			 */
-			if (mrtentry_ptr->group->active_rp_grp->rp->rpentry->address != source)
+			if (mrt->group->active_rp_grp->rp->rpentry->address != source)
 			    continue; /* The RP address doesn't match. */
 
 			if (v->uv_flags & VIFF_POINT_TO_POINT) {
-			    FIRE_TIMER(mrtentry_ptr->vif_timers[vifi]);
+			    FIRE_TIMER(mrt->vif_timers[vifi]);
 			} else {
 			    /* TODO: XXX: TIMER implem. dependency! */
-			    if (mrtentry_ptr->vif_timers[vifi] > mrtentry_ptr->vif_deletion_delay[vifi])
-				SET_TIMER(mrtentry_ptr->vif_timers[vifi],
-					  mrtentry_ptr->vif_deletion_delay[vifi]);
+			    if (mrt->vif_timers[vifi] > mrt->vif_deletion_delay[vifi])
+				SET_TIMER(mrt->vif_timers[vifi],
+					  mrt->vif_deletion_delay[vifi]);
 			}
-			IF_TIMER_NOT_SET(mrtentry_ptr->vif_timers[vifi]) {
-			    VIFM_CLR(vifi, mrtentry_ptr->joined_oifs);
-			    VIFM_SET(vifi, mrtentry_ptr->pruned_oifs);
-			    change_interfaces(mrtentry_ptr,
-					      mrtentry_ptr->incoming,
-mrtentry_ptr->joined_oifs,
-					      mrtentry_ptr->pruned_oifs,
-					      mrtentry_ptr->leaves,
-					      mrtentry_ptr->asserted_oifs, 0);
+			IF_TIMER_NOT_SET(mrt->vif_timers[vifi]) {
+			    VIFM_CLR(vifi, mrt->joined_oifs);
+			    VIFM_SET(vifi, mrt->pruned_oifs);
+			    change_interfaces(mrt,
+					      mrt->incoming,
+					      mrt->joined_oifs,
+					      mrt->pruned_oifs,
+					      mrt->leaves,
+					      mrt->asserted_oifs, 0);
 			}
 			continue;
 		    }
 
 		    /* No (*,G) entry, but found (*,*,RP). Create (*,G) */
-		    if (mrtentry_ptr->source->address != source)
+		    if (mrt->source->address != source)
 			continue; /* The RP address doesn't match. */
 
-		    mrtentry_ptr = find_route(INADDR_ANY_N, group, MRTF_WC, CREATE);
-		    if (!mrtentry_ptr)
+		    mrt = find_route(INADDR_ANY_N, group, MRTF_WC, CREATE);
+		    if (!mrt)
 			continue;
 
-		    mrtentry_ptr->flags &= ~MRTF_NEW;
-		    RESET_TIMER(mrtentry_ptr->vif_timers[vifi]);
+		    mrt->flags &= ~MRTF_NEW;
+		    RESET_TIMER(mrt->vif_timers[vifi]);
 		    /* TODO: XXX: should only lower the oif timer, so it can
 		     * be overwritten on multiaccess LAN. Spec bug.
 		     */
-		    VIFM_CLR(vifi, mrtentry_ptr->joined_oifs);
-		    VIFM_SET(vifi, mrtentry_ptr->pruned_oifs);
-		    change_interfaces(mrtentry_ptr,
-				      mrtentry_ptr->incoming,
-				      mrtentry_ptr->joined_oifs,
-				      mrtentry_ptr->pruned_oifs,
-				      mrtentry_ptr->leaves,
-				      mrtentry_ptr->asserted_oifs, 0);
+		    VIFM_CLR(vifi, mrt->joined_oifs);
+		    VIFM_SET(vifi, mrt->pruned_oifs);
+		    change_interfaces(mrt,
+				      mrt->incoming,
+				      mrt->joined_oifs,
+				      mrt->pruned_oifs,
+				      mrt->leaves,
+				      mrt->asserted_oifs, 0);
 		} /* (*,G) or (*,*,RP) found */
 	    } /* (*,G) prune */
-	} /* while(num_p_srcs--) */
+	} /* while (num_p_srcs--) */
 	/* End of (S,G) and (*,G) Prune handling */
 
 	/* Jump back to the Join part and process it */
-	data_ptr = data_ptr_group_j_start;
+	data = data_group_j_start;
 	while (num_j_srcs--) {
-	    GET_ESADDR(&encod_src, data_ptr);
-	    source = encod_src.src_addr;
+	    GET_ESADDR(&esaddr, data);
+	    source = esaddr.src_addr;
 	    if (!inet_valid_host(source))
 		continue;
 
-	    s_flags = encod_src.flags;
-	    MASKLEN_TO_MASK(encod_src.masklen, s_mask);
+	    s_flags = esaddr.flags;
+	    MASKLEN_TO_MASK(esaddr.masklen, s_mask);
 	    if ((s_flags & USADDR_WC_BIT) && (s_flags & USADDR_RP_BIT)) {
 		/* (*,G) Join toward RP */
 		/* It has been checked already that this RP address is
 		 * the same as the local RP-maping.
 		 */
-		mrtentry_ptr = find_route(INADDR_ANY_N, group, MRTF_WC, CREATE);
-		if (!mrtentry_ptr)
+		mrt = find_route(INADDR_ANY_N, group, MRTF_WC, CREATE);
+		if (!mrt)
 		    continue;
 
-		VIFM_SET(vifi, mrtentry_ptr->joined_oifs);
-		VIFM_CLR(vifi, mrtentry_ptr->pruned_oifs);
-		VIFM_CLR(vifi, mrtentry_ptr->asserted_oifs);
+		VIFM_SET(vifi, mrt->joined_oifs);
+		VIFM_CLR(vifi, mrt->pruned_oifs);
+		VIFM_CLR(vifi, mrt->asserted_oifs);
 		/* TODO: XXX: TIMER implem. dependency! */
-		if (mrtentry_ptr->vif_timers[vifi] < holdtime) {
-		    SET_TIMER(mrtentry_ptr->vif_timers[vifi], holdtime);
-		    mrtentry_ptr->vif_deletion_delay[vifi] = holdtime/3;
+		if (mrt->vif_timers[vifi] < holdtime) {
+		    SET_TIMER(mrt->vif_timers[vifi], holdtime);
+		    mrt->vif_deletion_delay[vifi] = holdtime/3;
 		}
-		if (mrtentry_ptr->timer < holdtime)
-		    SET_TIMER(mrtentry_ptr->timer, holdtime);
-		mrtentry_ptr->flags &= ~MRTF_NEW;
-		change_interfaces(mrtentry_ptr,
-				  mrtentry_ptr->incoming,
-				  mrtentry_ptr->joined_oifs,
-				  mrtentry_ptr->pruned_oifs,
-				  mrtentry_ptr->leaves,
-				  mrtentry_ptr->asserted_oifs, 0);
+		if (mrt->timer < holdtime)
+		    SET_TIMER(mrt->timer, holdtime);
+		mrt->flags &= ~MRTF_NEW;
+		change_interfaces(mrt,
+				  mrt->incoming,
+				  mrt->joined_oifs,
+				  mrt->pruned_oifs,
+				  mrt->leaves,
+				  mrt->asserted_oifs, 0);
 		/* Need to update the (S,G) entries, because of the previous
 		 * cleaning of the pruned_oifs. The reason is that if the
 		 * oifs for (*,G) weren't changed, the (S,G) entries won't
 		 * be updated by change_interfaces()
 		 */
-		for (mrtentry_srcs = mrtentry_ptr->group->mrtlink;
-		     mrtentry_srcs != (mrtentry_t *)NULL;
-		     mrtentry_srcs = mrtentry_srcs->grpnext)
-		    change_interfaces(mrtentry_srcs,
-				      mrtentry_srcs->incoming,
-				      mrtentry_srcs->joined_oifs,
-				      mrtentry_srcs->pruned_oifs,
-				      mrtentry_srcs->leaves,
-				      mrtentry_srcs->asserted_oifs, 0);
+		for (mrt_srcs = mrt->group->mrtlink; mrt_srcs; mrt_srcs = mrt_srcs->grpnext)
+		    change_interfaces(mrt_srcs,
+				      mrt_srcs->incoming,
+				      mrt_srcs->joined_oifs,
+				      mrt_srcs->pruned_oifs,
+				      mrt_srcs->leaves,
+				      mrt_srcs->asserted_oifs, 0);
 		continue;
 	    }
 
@@ -1725,124 +1696,118 @@ mrtentry_ptr->joined_oifs,
 		if (vifi == get_iif(source))
 		    continue;  /* Ignore this (S,G) Join */
 
-		mrtentry_ptr = find_route(source, group, MRTF_SG, CREATE);
-		if (!mrtentry_ptr)
+		mrt = find_route(source, group, MRTF_SG, CREATE);
+		if (!mrt)
 		    continue;
 
-		VIFM_SET(vifi, mrtentry_ptr->joined_oifs);
-		VIFM_CLR(vifi, mrtentry_ptr->pruned_oifs);
-		VIFM_CLR(vifi, mrtentry_ptr->asserted_oifs);
+		VIFM_SET(vifi, mrt->joined_oifs);
+		VIFM_CLR(vifi, mrt->pruned_oifs);
+		VIFM_CLR(vifi, mrt->asserted_oifs);
 		/* TODO: XXX: TIMER implem. dependency! */
-		if (mrtentry_ptr->vif_timers[vifi] < holdtime) {
-		    SET_TIMER(mrtentry_ptr->vif_timers[vifi], holdtime);
-		    mrtentry_ptr->vif_deletion_delay[vifi] = holdtime/3;
+		if (mrt->vif_timers[vifi] < holdtime) {
+		    SET_TIMER(mrt->vif_timers[vifi], holdtime);
+		    mrt->vif_deletion_delay[vifi] = holdtime/3;
 		}
-		if (mrtentry_ptr->timer < holdtime)
-		    SET_TIMER(mrtentry_ptr->timer, holdtime);
+		if (mrt->timer < holdtime)
+		    SET_TIMER(mrt->timer, holdtime);
 		/* TODO: if this is a new entry, send immediately the
 		 * Join message toward S. The Join/Prune timer for new
 		 * entries is 0, but it does not means the message will
 		 * be sent immediately.
 		 */
-		mrtentry_ptr->flags &= ~MRTF_NEW;
+		mrt->flags &= ~MRTF_NEW;
 		/* Note that we must create (S,G) without the RPbit set.
 		 * If we already had such entry, change_interfaces() will
 		 * reset the RPbit propertly.
 		 */
-		change_interfaces(mrtentry_ptr,
-				  mrtentry_ptr->source->incoming,
-				  mrtentry_ptr->joined_oifs,
-				  mrtentry_ptr->pruned_oifs,
-				  mrtentry_ptr->leaves,
-				  mrtentry_ptr->asserted_oifs, 0);
+		change_interfaces(mrt,
+				  mrt->source->incoming,
+				  mrt->joined_oifs,
+				  mrt->pruned_oifs,
+				  mrt->leaves,
+				  mrt->asserted_oifs, 0);
 		continue;
 	    }
-	} /* while(num_j_srcs--) */
-	data_ptr = data_ptr_group_end;
+	} /* while (num_j_srcs--) */
+	data = data_group_end;
     } /* for all groups */
 
     /* Now process the (*,*,RP) Join/Prune */
     if (star_star_rp_found != TRUE)
 	return TRUE;
 
-    data_ptr = data_ptr_start;
+    data = data_start;
     while (num_groups--) {
 	/* The conservative approach is to scan again the whole message,
 	 * just in case if we have more than one (*,*,RP) requests.
 	 */
-	GET_EGADDR(&encod_group, data_ptr);
-	GET_HOSTSHORT(num_j_srcs, data_ptr);
-	GET_HOSTSHORT(num_p_srcs, data_ptr);
-	group = encod_group.mcast_addr;
+	GET_EGADDR(&egaddr, data);
+	GET_HOSTSHORT(num_j_srcs, data);
+	GET_HOSTSHORT(num_p_srcs, data);
+	group = egaddr.mcast_addr;
 	if ((ntohl(group) != CLASSD_PREFIX)
-	    || (encod_group.masklen != STAR_STAR_RP_MSKLEN)) {
+	    || (egaddr.masklen != STAR_STAR_RP_MSKLEN)) {
 	    /* This is not (*,*,RP). Jump to the next group. */
-	    data_ptr +=
+	    data +=
 		(num_j_srcs + num_p_srcs) * sizeof(pim_encod_src_addr_t);
 	    continue;
 	}
 	/* (*,*,RP) found */
 	while (num_j_srcs--) {
 	    /* TODO: XXX: check that the iif is different from the Join oifs */
-	    GET_ESADDR(&encod_src, data_ptr);
-	    source = encod_src.src_addr;
+	    GET_ESADDR(&esaddr, data);
+	    source = esaddr.src_addr;
 	    if (!inet_valid_host(source))
 		continue;
 
-	    s_flags = encod_src.flags;
-	    MASKLEN_TO_MASK(encod_src.masklen, s_mask);
-	    mrtentry_ptr = find_route(source, INADDR_ANY_N, MRTF_PMBR, CREATE);
-	    if (mrtentry_ptr == (mrtentry_t *)NULL)
+	    s_flags = esaddr.flags;
+	    MASKLEN_TO_MASK(esaddr.masklen, s_mask);
+	    mrt = find_route(source, INADDR_ANY_N, MRTF_PMBR, CREATE);
+	    if (!mrt)
 		continue;
 
-	    VIFM_SET(vifi, mrtentry_ptr->joined_oifs);
-	    VIFM_CLR(vifi, mrtentry_ptr->pruned_oifs);
-	    VIFM_CLR(vifi, mrtentry_ptr->asserted_oifs);
+	    VIFM_SET(vifi, mrt->joined_oifs);
+	    VIFM_CLR(vifi, mrt->pruned_oifs);
+	    VIFM_CLR(vifi, mrt->asserted_oifs);
 	    /* TODO: XXX: TIMER implem. dependency! */
-	    if (mrtentry_ptr->vif_timers[vifi] < holdtime) {
-		SET_TIMER(mrtentry_ptr->vif_timers[vifi], holdtime);
-		mrtentry_ptr->vif_deletion_delay[vifi] = holdtime/3;
+	    if (mrt->vif_timers[vifi] < holdtime) {
+		SET_TIMER(mrt->vif_timers[vifi], holdtime);
+		mrt->vif_deletion_delay[vifi] = holdtime/3;
 	    }
-	    if (mrtentry_ptr->timer < holdtime)
-		SET_TIMER(mrtentry_ptr->timer, holdtime);
-	    mrtentry_ptr->flags &= ~MRTF_NEW;
-	    change_interfaces(mrtentry_ptr,
-			      mrtentry_ptr->incoming,
-			      mrtentry_ptr->joined_oifs,
-			      mrtentry_ptr->pruned_oifs,
-			      mrtentry_ptr->leaves,
-			      mrtentry_ptr->asserted_oifs, 0);
+	    if (mrt->timer < holdtime)
+		SET_TIMER(mrt->timer, holdtime);
+	    mrt->flags &= ~MRTF_NEW;
+	    change_interfaces(mrt,
+			      mrt->incoming,
+			      mrt->joined_oifs,
+			      mrt->pruned_oifs,
+			      mrt->leaves,
+			      mrt->asserted_oifs, 0);
 
 	    /* Need to update the (S,G) and (*,G) entries, because of
 	     * the previous cleaning of the pruned_oifs. The reason is
 	     * that if the oifs for (*,*,RP) weren't changed, the
 	     * (*,G) and (S,G) entries won't be updated by change_interfaces()
 	     */
-	    for (rp_grp_entry_ptr = mrtentry_ptr->source->cand_rp->rp_grp_next;
-		 rp_grp_entry_ptr != (rp_grp_entry_t *)NULL;
-		 rp_grp_entry_ptr = rp_grp_entry_ptr->rp_grp_next) {
-		for (grpentry_ptr = rp_grp_entry_ptr->grplink;
-		     grpentry_ptr != (grpentry_t *)NULL;
-		     grpentry_ptr = grpentry_ptr->rpnext) {
+	    for (rp_grp = mrt->source->cand_rp->rp_grp_next; rp_grp; rp_grp = rp_grp->rp_grp_next) {
+		for (grp = rp_grp->grplink; grp; grp = grp->rpnext) {
 		    /* Update the (*,G) entry */
-		    if (grpentry_ptr->grp_route != NULL) {
-			change_interfaces(grpentry_ptr->grp_route,
-					  grpentry_ptr->grp_route->incoming,
-					  grpentry_ptr->grp_route->joined_oifs,
-					  grpentry_ptr->grp_route->pruned_oifs,
-					  grpentry_ptr->grp_route->leaves,
-					  grpentry_ptr->grp_route->asserted_oifs, 0);
+		    if (grp->grp_route) {
+			change_interfaces(grp->grp_route,
+					  grp->grp_route->incoming,
+					  grp->grp_route->joined_oifs,
+					  grp->grp_route->pruned_oifs,
+					  grp->grp_route->leaves,
+					  grp->grp_route->asserted_oifs, 0);
 		    }
 		    /* Update the (S,G) entries */
-		    for (mrtentry_srcs = grpentry_ptr->mrtlink;
-			 mrtentry_srcs != (mrtentry_t *)NULL;
-			 mrtentry_srcs = mrtentry_srcs->grpnext)
-			change_interfaces(mrtentry_srcs,
-					  mrtentry_srcs->incoming,
-					  mrtentry_srcs->joined_oifs,
-					  mrtentry_srcs->pruned_oifs,
-					  mrtentry_srcs->leaves,
-					  mrtentry_srcs->asserted_oifs, 0);
+		    for (mrt_srcs = grp->mrtlink; mrt_srcs; mrt_srcs = mrt_srcs->grpnext)
+			change_interfaces(mrt_srcs,
+					  mrt_srcs->incoming,
+					  mrt_srcs->joined_oifs,
+					  mrt_srcs->pruned_oifs,
+					  mrt_srcs->leaves,
+					  mrt_srcs->asserted_oifs, 0);
 		}
 	    }
 	    continue;
@@ -1850,15 +1815,15 @@ mrtentry_ptr->joined_oifs,
 
 	while (num_p_srcs--) {
 	    /* TODO: XXX: can we have (*,*,RP) Prune? */
-	    GET_ESADDR(&encod_src, data_ptr);
-	    source = encod_src.src_addr;
+	    GET_ESADDR(&esaddr, data);
+	    source = esaddr.src_addr;
 	    if (!inet_valid_host(source))
 		continue;
 
-	    s_flags = encod_src.flags;
-	    MASKLEN_TO_MASK(encod_src.masklen, s_mask);
-	    mrtentry_ptr = find_route(source, INADDR_ANY_N, MRTF_PMBR, DONT_CREATE);
-	    if (mrtentry_ptr == (mrtentry_t *)NULL)
+	    s_flags = esaddr.flags;
+	    MASKLEN_TO_MASK(esaddr.masklen, s_mask);
+	    mrt = find_route(source, INADDR_ANY_N, MRTF_PMBR, DONT_CREATE);
+	    if (!mrt)
 		continue;
 
 	    /* If the link is point-to-point, timeout the oif
@@ -1867,23 +1832,23 @@ mrtentry_ptr->joined_oifs,
 	     */
 	    /* TODO: XXX: increase the entry timer? */
 	    if (v->uv_flags & VIFF_POINT_TO_POINT) {
-		FIRE_TIMER(mrtentry_ptr->vif_timers[vifi]);
+		FIRE_TIMER(mrt->vif_timers[vifi]);
 	    } else {
 		/* TODO: XXX: TIMER implem. dependency! */
-		if (mrtentry_ptr->vif_timers[vifi] > mrtentry_ptr->vif_deletion_delay[vifi])
-		    SET_TIMER(mrtentry_ptr->vif_timers[vifi],
-			      mrtentry_ptr->vif_deletion_delay[vifi]);
+		if (mrt->vif_timers[vifi] > mrt->vif_deletion_delay[vifi])
+		    SET_TIMER(mrt->vif_timers[vifi],
+			      mrt->vif_deletion_delay[vifi]);
 	    }
-	    IF_TIMER_NOT_SET(mrtentry_ptr->vif_timers[vifi]) {
-		VIFM_CLR(vifi, mrtentry_ptr->joined_oifs);
-		VIFM_SET(vifi, mrtentry_ptr->pruned_oifs);
-		VIFM_SET(vifi, mrtentry_ptr->asserted_oifs);
-		change_interfaces(mrtentry_ptr,
-				  mrtentry_ptr->incoming,
-				  mrtentry_ptr->joined_oifs,
-				  mrtentry_ptr->pruned_oifs,
-				  mrtentry_ptr->leaves,
-				  mrtentry_ptr->asserted_oifs, 0);
+	    IF_TIMER_NOT_SET(mrt->vif_timers[vifi]) {
+		VIFM_CLR(vifi, mrt->joined_oifs);
+		VIFM_SET(vifi, mrt->pruned_oifs);
+		VIFM_SET(vifi, mrt->asserted_oifs);
+		change_interfaces(mrt,
+				  mrt->incoming,
+				  mrt->joined_oifs,
+				  mrt->pruned_oifs,
+				  mrt->leaves,
+				  mrt->asserted_oifs, 0);
 	    }
 
 	}
@@ -1913,13 +1878,13 @@ mrtentry_ptr->joined_oifs,
  */
 int send_periodic_pim_join_prune(vifi_t vifi, pim_nbr_entry_t *pim_nbr, u_int16 holdtime)
 {
-    grpentry_t *grpentry_ptr;
-    mrtentry_t *mrtentry_ptr;
-    rpentry_t  *rpentry_ptr;
-    u_int32 src_addr;
-    struct uvif *v;
-    pim_nbr_entry_t *pim_nbr_ptr;
-    cand_rp_t *cand_rp_ptr;
+    grpentry_t      *grp;
+    mrtentry_t      *mrt;
+    rpentry_t       *rp;
+    u_int32          addr;
+    struct uvif     *v;
+    pim_nbr_entry_t *nbr;
+    cand_rp_t       *cand_rp;
 
     /* Walk through all routing entries. The iif must match to include the
      * entry. Check first the (*,G) entry and then all associated (S,G).
@@ -1932,87 +1897,85 @@ int send_periodic_pim_join_prune(vifi_t vifi, pim_nbr_entry_t *pim_nbr, u_int16 
     v = &uvifs[vifi];
 
     /* Check the (*,G) and (S,G) entries */
-    for(grpentry_ptr = grplist; grpentry_ptr; grpentry_ptr = grpentry_ptr->next) {
-	mrtentry_ptr = grpentry_ptr->grp_route;
+    for (grp = grplist; grp; grp = grp->next) {
+	mrt = grp->grp_route;
 	/* TODO: XXX: TIMER implem. dependency! */
-	if (mrtentry_ptr
-	    && (mrtentry_ptr->incoming == vifi)
-	    && (mrtentry_ptr->jp_timer <= TIMER_INTERVAL)) {
+	if (mrt && (mrt->incoming == vifi) && (mrt->jp_timer <= TIMER_INTERVAL)) {
 
 	    /* If join/prune to a particular neighbor only was specified */
-	    if (pim_nbr && mrtentry_ptr->upstream != pim_nbr)
+	    if (pim_nbr && mrt->upstream != pim_nbr)
 		continue;
 
 	    /* TODO: XXX: The J/P suppression timer is not in the spec! */
-	    if (!VIFM_ISEMPTY(mrtentry_ptr->joined_oifs) || (v->uv_flags & VIFF_DR)) {
-		add_jp_entry(mrtentry_ptr->upstream, holdtime,
-			     grpentry_ptr->group,
+	    if (!VIFM_ISEMPTY(mrt->joined_oifs) || (v->uv_flags & VIFF_DR)) {
+		add_jp_entry(mrt->upstream, holdtime,
+			     grp->group,
 			     SINGLE_GRP_MSKLEN,
-			     grpentry_ptr->rpaddr,
+			     grp->rpaddr,
 			     SINGLE_SRC_MSKLEN, 0, PIM_ACTION_JOIN);
 	    }
 	    /* TODO: XXX: TIMER implem. dependency! */
-	    if (VIFM_ISEMPTY(mrtentry_ptr->joined_oifs)
+	    if (VIFM_ISEMPTY(mrt->joined_oifs)
 		&& (!(v->uv_flags & VIFF_DR))
-		&& (mrtentry_ptr->jp_timer <= TIMER_INTERVAL)) {
-		add_jp_entry(mrtentry_ptr->upstream, holdtime,
-			     grpentry_ptr->group, SINGLE_GRP_MSKLEN,
-			     grpentry_ptr->rpaddr,
+		&& (mrt->jp_timer <= TIMER_INTERVAL)) {
+		add_jp_entry(mrt->upstream, holdtime,
+			     grp->group, SINGLE_GRP_MSKLEN,
+			     grp->rpaddr,
 			     SINGLE_SRC_MSKLEN, 0, PIM_ACTION_PRUNE);
 	    }
 	}
 
 	/* Check the (S,G) entries */
-	for (mrtentry_ptr = grpentry_ptr->mrtlink; mrtentry_ptr; mrtentry_ptr = mrtentry_ptr->grpnext) {
+	for (mrt = grp->mrtlink; mrt; mrt = mrt->grpnext) {
 	    /* If join/prune to a particular neighbor only was specified */
-	    if (pim_nbr && mrtentry_ptr->upstream != pim_nbr)
+	    if (pim_nbr && mrt->upstream != pim_nbr)
 		continue;
 
-	    if (mrtentry_ptr->flags & MRTF_RP) {
+	    if (mrt->flags & MRTF_RP) {
 		/* RPbit set */
-		src_addr = mrtentry_ptr->source->address;
-		if (VIFM_ISEMPTY(mrtentry_ptr->joined_oifs)
-		    || ((find_vif_direct_local(src_addr) != NO_VIF)
-			&& grpentry_ptr->grp_route))
+		addr = mrt->source->address;
+		if (VIFM_ISEMPTY(mrt->joined_oifs)
+		    || ((find_vif_direct_local(addr) != NO_VIF)
+			&& grp->grp_route))
 		    /* TODO: XXX: TIMER implem. dependency! */
-		    if ((grpentry_ptr->grp_route->incoming == vifi)
-			&& (grpentry_ptr->grp_route->jp_timer <= TIMER_INTERVAL))
+		    if ((grp->grp_route->incoming == vifi)
+			&& (grp->grp_route->jp_timer <= TIMER_INTERVAL))
 			/* S is directly connected. Send toward RP */
-			add_jp_entry(grpentry_ptr->grp_route->upstream,
+			add_jp_entry(grp->grp_route->upstream,
 				     holdtime,
-				     grpentry_ptr->group, SINGLE_GRP_MSKLEN,
-				     src_addr, SINGLE_SRC_MSKLEN,
+				     grp->group, SINGLE_GRP_MSKLEN,
+				     addr, SINGLE_SRC_MSKLEN,
 				     MRTF_RP, PIM_ACTION_PRUNE);
 	    }
 	    else {
 		/* RPbit cleared */
-		if (VIFM_ISEMPTY(mrtentry_ptr->joined_oifs)) {
+		if (VIFM_ISEMPTY(mrt->joined_oifs)) {
 		    /* TODO: XXX: TIMER implem. dependency! */
-		    if ((mrtentry_ptr->incoming == vifi)
-			&& (mrtentry_ptr->jp_timer <= TIMER_INTERVAL))
-			add_jp_entry(mrtentry_ptr->upstream, holdtime,
-				     grpentry_ptr->group, SINGLE_GRP_MSKLEN,
-				     mrtentry_ptr->source->address,
+		    if ((mrt->incoming == vifi)
+			&& (mrt->jp_timer <= TIMER_INTERVAL))
+			add_jp_entry(mrt->upstream, holdtime,
+				     grp->group, SINGLE_GRP_MSKLEN,
+				     mrt->source->address,
 				     SINGLE_SRC_MSKLEN, 0, PIM_ACTION_PRUNE);
 		}
 		else {
 		    /* TODO: XXX: TIMER implem. dependency! */
-		    if ((mrtentry_ptr->incoming == vifi)
-			&& (mrtentry_ptr->jp_timer <= TIMER_INTERVAL))
-			add_jp_entry(mrtentry_ptr->upstream, holdtime,
-				     grpentry_ptr->group, SINGLE_GRP_MSKLEN,
-				     mrtentry_ptr->source->address,
+		    if ((mrt->incoming == vifi)
+			&& (mrt->jp_timer <= TIMER_INTERVAL))
+			add_jp_entry(mrt->upstream, holdtime,
+				     grp->group, SINGLE_GRP_MSKLEN,
+				     mrt->source->address,
 				     SINGLE_SRC_MSKLEN, 0, PIM_ACTION_JOIN);
 		}
 		/* TODO: XXX: TIMER implem. dependency! */
-		if ((mrtentry_ptr->flags & MRTF_SPT)
-		    && grpentry_ptr->grp_route
-		    && (mrtentry_ptr->incoming != grpentry_ptr->grp_route->incoming)
-		    && (grpentry_ptr->grp_route->incoming == vifi)
-		    && (grpentry_ptr->grp_route->jp_timer <= TIMER_INTERVAL))
-		    add_jp_entry(grpentry_ptr->grp_route->upstream, holdtime,
-				 grpentry_ptr->group, SINGLE_GRP_MSKLEN,
-				 mrtentry_ptr->source->address,
+		if ((mrt->flags & MRTF_SPT)
+		    && grp->grp_route
+		    && (mrt->incoming != grp->grp_route->incoming)
+		    && (grp->grp_route->incoming == vifi)
+		    && (grp->grp_route->jp_timer <= TIMER_INTERVAL))
+		    add_jp_entry(grp->grp_route->upstream, holdtime,
+				 grp->group, SINGLE_GRP_MSKLEN,
+				 mrt->source->address,
 				 SINGLE_SRC_MSKLEN, MRTF_RP,
 				 PIM_ACTION_PRUNE);
 	    }
@@ -2020,29 +1983,29 @@ int send_periodic_pim_join_prune(vifi_t vifi, pim_nbr_entry_t *pim_nbr, u_int16 
     }
 
     /* Check the (*,*,RP) entries */
-    for (cand_rp_ptr = cand_rp_list; cand_rp_ptr; cand_rp_ptr = cand_rp_ptr->next) {
-	rpentry_ptr = cand_rp_ptr->rpentry;
+    for (cand_rp = cand_rp_list; cand_rp; cand_rp = cand_rp->next) {
+	rp = cand_rp->rpentry;
 
 	/* If join/prune to a particular neighbor only was specified */
-	if (pim_nbr && rpentry_ptr->upstream != pim_nbr)
+	if (pim_nbr && rp->upstream != pim_nbr)
 	    continue;
 
 	/* TODO: XXX: TIMER implem. dependency! */
-	if (rpentry_ptr->mrtlink
-	    && (rpentry_ptr->incoming == vifi)
-	    && (rpentry_ptr->mrtlink->jp_timer <= TIMER_INTERVAL)) {
-	    add_jp_entry(rpentry_ptr->upstream, holdtime, htonl(CLASSD_PREFIX), STAR_STAR_RP_MSKLEN,
-			 rpentry_ptr->address, SINGLE_SRC_MSKLEN, MRTF_RP | MRTF_WC, PIM_ACTION_JOIN);
+	if (rp->mrtlink
+	    && (rp->incoming == vifi)
+	    && (rp->mrtlink->jp_timer <= TIMER_INTERVAL)) {
+	    add_jp_entry(rp->upstream, holdtime, htonl(CLASSD_PREFIX), STAR_STAR_RP_MSKLEN,
+			 rp->address, SINGLE_SRC_MSKLEN, MRTF_RP | MRTF_WC, PIM_ACTION_JOIN);
 	}
     }
 
     /* Send all pending Join/Prune messages */
-    for (pim_nbr_ptr = v->uv_pim_neighbors; pim_nbr_ptr; pim_nbr_ptr = pim_nbr->next) {
+    for (nbr = v->uv_pim_neighbors; nbr; nbr = pim_nbr->next) {
 	/* If join/prune to a particular neighbor only was specified */
-	if (pim_nbr && (pim_nbr_ptr != pim_nbr))
+	if (pim_nbr && (nbr != pim_nbr))
 	    continue;
 
-	pack_and_send_jp_message(pim_nbr_ptr);
+	pack_and_send_jp_message(nbr);
     }
 
     return TRUE;
@@ -2054,7 +2017,7 @@ int add_jp_entry(pim_nbr_entry_t *pim_nbr, u_int16 holdtime, u_int32 group,
 		 u_int16 addr_flags, u_int8 join_prune)
 {
     build_jp_message_t *bjpm;
-    u_int8 *data_ptr;
+    u_int8 *data;
     u_int8 flags = 0;
     int rp_flag;
 
@@ -2091,14 +2054,14 @@ int add_jp_entry(pim_nbr_entry_t *pim_nbr, u_int16 holdtime, u_int32 group,
 	}
 
 	pim_nbr->build_jp_message = bjpm;
-	data_ptr = bjpm->jp_message;
-	PUT_EUADDR(pim_nbr->address, data_ptr);
-	PUT_BYTE(0, data_ptr);			/* Reserved */
-	bjpm->num_groups_ptr = data_ptr++;	/* The pointer for numgroups */
+	data = bjpm->jp_message;
+	PUT_EUADDR(pim_nbr->address, data);
+	PUT_BYTE(0, data);			/* Reserved */
+	bjpm->num_groups_ptr = data++;	/* The pointer for numgroups */
 	*(bjpm->num_groups_ptr) = 0;		/* Zero groups */
-	PUT_HOSTSHORT(holdtime, data_ptr);
+	PUT_HOSTSHORT(holdtime, data);
 	bjpm->holdtime = holdtime;
-	bjpm->jp_message_size = data_ptr - bjpm->jp_message;
+	bjpm->jp_message_size = data - bjpm->jp_message;
     }
 
     /* TODO: move somewhere else, only when it is a new group */
@@ -2113,16 +2076,16 @@ int add_jp_entry(pim_nbr_entry_t *pim_nbr, u_int16 holdtime, u_int32 group,
     switch (join_prune) {
 	case PIM_ACTION_JOIN:
 	    if (rp_flag == TRUE)
-		data_ptr = bjpm->rp_list_join + bjpm->rp_list_join_size;
+		data = bjpm->rp_list_join + bjpm->rp_list_join_size;
 	    else
-		data_ptr = bjpm->join_list + bjpm->join_list_size;
+		data = bjpm->join_list + bjpm->join_list_size;
 	    break;
 
 	case PIM_ACTION_PRUNE:
 	    if (rp_flag == TRUE)
-		data_ptr = bjpm->rp_list_prune + bjpm->rp_list_prune_size;
+		data = bjpm->rp_list_prune + bjpm->rp_list_prune_size;
 	    else
-		data_ptr = bjpm->prune_list + bjpm->prune_list_size;
+		data = bjpm->prune_list + bjpm->prune_list_size;
 	    break;
 
 	default:
@@ -2134,25 +2097,25 @@ int add_jp_entry(pim_nbr_entry_t *pim_nbr, u_int16 holdtime, u_int32 group,
 	flags |= USADDR_RP_BIT;
     if (addr_flags & MRTF_WC)
 	flags |= USADDR_WC_BIT;
-    PUT_ESADDR(source, src_msklen, flags, data_ptr);
+    PUT_ESADDR(source, src_msklen, flags, data);
 
     switch (join_prune) {
 	case PIM_ACTION_JOIN:
 	    if (rp_flag == TRUE) {
-		bjpm->rp_list_join_size = data_ptr - bjpm->rp_list_join;
+		bjpm->rp_list_join_size = data - bjpm->rp_list_join;
 		bjpm->rp_list_join_number++;
 	    } else {
-		bjpm->join_list_size = data_ptr - bjpm->join_list;
+		bjpm->join_list_size = data - bjpm->join_list;
 		bjpm->join_addr_number++;
 	    }
 	    break;
 
 	case PIM_ACTION_PRUNE:
 	    if (rp_flag == TRUE) {
-		bjpm->rp_list_prune_size = data_ptr - bjpm->rp_list_prune;
+		bjpm->rp_list_prune_size = data - bjpm->rp_list_prune;
 		bjpm->rp_list_prune_number++;
 	    } else {
-		bjpm->prune_list_size = data_ptr - bjpm->prune_list;
+		bjpm->prune_list_size = data - bjpm->prune_list;
 		bjpm->prune_addr_number++;
 	    }
 	    break;
@@ -2168,109 +2131,106 @@ int add_jp_entry(pim_nbr_entry_t *pim_nbr, u_int16 holdtime, u_int32 group,
 /* TODO: check again the size of the buffers */
 static build_jp_message_t *get_jp_working_buff(void)
 {
-    build_jp_message_t *bjpm_ptr;
+    build_jp_message_t *bjpm;
 
     if (build_jp_message_pool_counter == 0) {
-	bjpm_ptr = (build_jp_message_t *)calloc(1, sizeof(build_jp_message_t));
-	if (!bjpm_ptr)
+	bjpm = calloc(1, sizeof(build_jp_message_t));
+	if (!bjpm)
 	    return NULL;
 
-	bjpm_ptr->next = (build_jp_message_t *)NULL;
-	bjpm_ptr->jp_message = (u_int8 *)calloc(1, MAX_JP_MESSAGE_SIZE +
-						sizeof(pim_jp_encod_grp_t) +
-						2 * sizeof(pim_encod_src_addr_t));
-	if (!bjpm_ptr->jp_message) {
-	    free(bjpm_ptr);
+	bjpm->next = NULL;
+	bjpm->jp_message = calloc(1, MAX_JP_MESSAGE_SIZE +
+				  sizeof(pim_jp_encod_grp_t) +
+				  2 * sizeof(pim_encod_src_addr_t));
+	if (!bjpm->jp_message) {
+	    free(bjpm);
 	    return NULL;
 	}
 
-	bjpm_ptr->jp_message_size = 0;
-	bjpm_ptr->join_list_size = 0;
-	bjpm_ptr->join_addr_number = 0;
-	bjpm_ptr->join_list = (u_int8 *)calloc(1, MAX_JOIN_LIST_SIZE +
-					       sizeof(pim_encod_src_addr_t));
-	if (!bjpm_ptr->join_list) {
-	    free(bjpm_ptr->jp_message);
-	    free(bjpm_ptr);
+	bjpm->jp_message_size = 0;
+	bjpm->join_list_size = 0;
+	bjpm->join_addr_number = 0;
+	bjpm->join_list = calloc(1, MAX_JOIN_LIST_SIZE + sizeof(pim_encod_src_addr_t));
+	if (!bjpm->join_list) {
+	    free(bjpm->jp_message);
+	    free(bjpm);
 	    return NULL;
 	}
-	bjpm_ptr->prune_list_size = 0;
-	bjpm_ptr->prune_addr_number = 0;
-	bjpm_ptr->prune_list = (u_int8 *)calloc(1, MAX_PRUNE_LIST_SIZE +
-						sizeof(pim_encod_src_addr_t));
-	if (!bjpm_ptr->prune_list) {
-	    free(bjpm_ptr->join_list);
-	    free(bjpm_ptr->jp_message);
-	    free(bjpm_ptr);
+	bjpm->prune_list_size = 0;
+	bjpm->prune_addr_number = 0;
+	bjpm->prune_list = calloc(1, MAX_PRUNE_LIST_SIZE + sizeof(pim_encod_src_addr_t));
+	if (!bjpm->prune_list) {
+	    free(bjpm->join_list);
+	    free(bjpm->jp_message);
+	    free(bjpm);
 	    return NULL;
 	}
-	bjpm_ptr->rp_list_join_size = 0;
-	bjpm_ptr->rp_list_join_number = 0;
-	bjpm_ptr->rp_list_join = (u_int8 *)calloc(1, MAX_JOIN_LIST_SIZE +
-						  sizeof(pim_encod_src_addr_t));
-	if (!bjpm_ptr->rp_list_join) {
-	    free(bjpm_ptr->prune_list);
-	    free(bjpm_ptr->join_list);
-	    free(bjpm_ptr->jp_message);
-	    free(bjpm_ptr);
+	bjpm->rp_list_join_size = 0;
+	bjpm->rp_list_join_number = 0;
+	bjpm->rp_list_join = calloc(1, MAX_JOIN_LIST_SIZE + sizeof(pim_encod_src_addr_t));
+	if (!bjpm->rp_list_join) {
+	    free(bjpm->prune_list);
+	    free(bjpm->join_list);
+	    free(bjpm->jp_message);
+	    free(bjpm);
 	    return NULL;
 	}
-	bjpm_ptr->rp_list_prune_size = 0;
-	bjpm_ptr->rp_list_prune_number = 0;
-	bjpm_ptr->rp_list_prune = (u_int8 *)calloc(1, MAX_PRUNE_LIST_SIZE +
-						   sizeof(pim_encod_src_addr_t));
-	if (!bjpm_ptr->rp_list_prune) {
-	    free(bjpm_ptr->rp_list_join);
-	    free(bjpm_ptr->prune_list);
-	    free(bjpm_ptr->join_list);
-	    free(bjpm_ptr->jp_message);
-	    free(bjpm_ptr);
+	bjpm->rp_list_prune_size = 0;
+	bjpm->rp_list_prune_number = 0;
+	bjpm->rp_list_prune = calloc(1, MAX_PRUNE_LIST_SIZE + sizeof(pim_encod_src_addr_t));
+	if (!bjpm->rp_list_prune) {
+	    free(bjpm->rp_list_join);
+	    free(bjpm->prune_list);
+	    free(bjpm->join_list);
+	    free(bjpm->jp_message);
+	    free(bjpm);
 	    return NULL;
 	}
-	bjpm_ptr->curr_group = INADDR_ANY_N;
-	bjpm_ptr->curr_group_msklen = 0;
-	bjpm_ptr->holdtime = 0;
+	bjpm->curr_group = INADDR_ANY_N;
+	bjpm->curr_group_msklen = 0;
+	bjpm->holdtime = 0;
 
-	return bjpm_ptr;
+	return bjpm;
     }
 
-    bjpm_ptr = build_jp_message_pool;
+    bjpm = build_jp_message_pool;
     build_jp_message_pool = build_jp_message_pool->next;
     build_jp_message_pool_counter--;
-    bjpm_ptr->jp_message_size   = 0;
-    bjpm_ptr->join_list_size    = 0;
-    bjpm_ptr->join_addr_number  = 0;
-    bjpm_ptr->prune_list_size   = 0;
-    bjpm_ptr->prune_addr_number = 0;
-    bjpm_ptr->curr_group        = INADDR_ANY_N;
-    bjpm_ptr->curr_group_msklen = 0;
+    bjpm->jp_message_size   = 0;
+    bjpm->join_list_size    = 0;
+    bjpm->join_addr_number  = 0;
+    bjpm->prune_list_size   = 0;
+    bjpm->prune_addr_number = 0;
+    bjpm->curr_group        = INADDR_ANY_N;
+    bjpm->curr_group_msklen = 0;
 
-    return bjpm_ptr;
+    return bjpm;
 }
 
 
 static void return_jp_working_buff(pim_nbr_entry_t *pim_nbr)
 {
-    build_jp_message_t *bjpm_ptr = pim_nbr->build_jp_message;
+    build_jp_message_t *bjpm = pim_nbr->build_jp_message;
 
-    if (!bjpm_ptr)
+    if (!bjpm)
 	return;
 
     /* Don't waste memory by keeping too many free buffers */
     /* TODO: check/modify the definitions for POOL_NUMBER and size */
     if (build_jp_message_pool_counter >= MAX_JP_MESSAGE_POOL_NUMBER) {
-	free((void *)bjpm_ptr->jp_message);
-	free((void *)bjpm_ptr->join_list);
-	free((void *)bjpm_ptr->prune_list);
-	free((void *)bjpm_ptr->rp_list_join);
-	free((void *)bjpm_ptr->rp_list_prune);
-	free((void *)bjpm_ptr);
+	free(bjpm->jp_message);
+	free(bjpm->join_list);
+	free(bjpm->prune_list);
+	free(bjpm->rp_list_join);
+	free(bjpm->rp_list_prune);
+	free(bjpm);
     } else {
-	bjpm_ptr->next = build_jp_message_pool;
-	build_jp_message_pool = bjpm_ptr;
+	bjpm->next = build_jp_message_pool;
+	build_jp_message_pool = bjpm;
 	build_jp_message_pool_counter++;
     }
-    pim_nbr->build_jp_message = (build_jp_message_t *)NULL;
+
+    pim_nbr->build_jp_message = NULL;
 }
 
 
@@ -2283,21 +2243,21 @@ static void return_jp_working_buff(pim_nbr_entry_t *pim_nbr)
 static void pack_jp_message(pim_nbr_entry_t *pim_nbr)
 {
     build_jp_message_t *bjpm;
-    u_int8 *data_ptr;
+    u_int8 *data;
 
     bjpm = pim_nbr->build_jp_message;
     if (!bjpm || (bjpm->curr_group == INADDR_ANY_N))
 	return;
 
-    data_ptr = bjpm->jp_message + bjpm->jp_message_size;
-    PUT_EGADDR(bjpm->curr_group, bjpm->curr_group_msklen, 0, data_ptr);
-    PUT_HOSTSHORT(bjpm->join_addr_number, data_ptr);
-    PUT_HOSTSHORT(bjpm->prune_addr_number, data_ptr);
-    memcpy(data_ptr, bjpm->join_list, bjpm->join_list_size);
-    data_ptr += bjpm->join_list_size;
-    memcpy(data_ptr, bjpm->prune_list, bjpm->prune_list_size);
-    data_ptr += bjpm->prune_list_size;
-    bjpm->jp_message_size = (data_ptr - bjpm->jp_message);
+    data = bjpm->jp_message + bjpm->jp_message_size;
+    PUT_EGADDR(bjpm->curr_group, bjpm->curr_group_msklen, 0, data);
+    PUT_HOSTSHORT(bjpm->join_addr_number, data);
+    PUT_HOSTSHORT(bjpm->prune_addr_number, data);
+    memcpy(data, bjpm->join_list, bjpm->join_list_size);
+    data += bjpm->join_list_size;
+    memcpy(data, bjpm->prune_list, bjpm->prune_list_size);
+    data += bjpm->prune_list_size;
+    bjpm->jp_message_size = (data - bjpm->jp_message);
     bjpm->curr_group = INADDR_ANY_N;
     bjpm->curr_group_msklen = 0;
     bjpm->join_list_size = 0;
@@ -2309,15 +2269,15 @@ static void pack_jp_message(pim_nbr_entry_t *pim_nbr)
     if (*bjpm->num_groups_ptr == ((u_int8)~0 - 1)) {
 	if (bjpm->rp_list_join_number + bjpm->rp_list_prune_number) {
 	    /* Add the (*,*,RP) at the end */
-	    data_ptr = bjpm->jp_message + bjpm->jp_message_size;
-	    PUT_EGADDR(htonl(CLASSD_PREFIX), STAR_STAR_RP_MSKLEN, 0, data_ptr);
-	    PUT_HOSTSHORT(bjpm->rp_list_join_number, data_ptr);
-	    PUT_HOSTSHORT(bjpm->rp_list_prune_number, data_ptr);
-	    memcpy(data_ptr, bjpm->rp_list_join, bjpm->rp_list_join_size);
-	    data_ptr += bjpm->rp_list_join_size;
-	    memcpy(data_ptr, bjpm->rp_list_prune, bjpm->rp_list_prune_size);
-	    data_ptr += bjpm->rp_list_prune_size;
-	    bjpm->jp_message_size = (data_ptr - bjpm->jp_message);
+	    data = bjpm->jp_message + bjpm->jp_message_size;
+	    PUT_EGADDR(htonl(CLASSD_PREFIX), STAR_STAR_RP_MSKLEN, 0, data);
+	    PUT_HOSTSHORT(bjpm->rp_list_join_number, data);
+	    PUT_HOSTSHORT(bjpm->rp_list_prune_number, data);
+	    memcpy(data, bjpm->rp_list_join, bjpm->rp_list_join_size);
+	    data += bjpm->rp_list_join_size;
+	    memcpy(data, bjpm->rp_list_prune, bjpm->rp_list_prune_size);
+	    data += bjpm->rp_list_prune_size;
+	    bjpm->jp_message_size = (data - bjpm->jp_message);
 	    bjpm->rp_list_join_size = 0;
 	    bjpm->rp_list_join_number = 0;
 	    bjpm->rp_list_prune_size = 0;
@@ -2331,7 +2291,7 @@ static void pack_jp_message(pim_nbr_entry_t *pim_nbr)
 
 void pack_and_send_jp_message(pim_nbr_entry_t *pim_nbr)
 {
-    u_int8 *data_ptr;
+    u_int8 *data;
     build_jp_message_t *bjpm;
 
     if (!pim_nbr || !pim_nbr->build_jp_message)
@@ -2342,15 +2302,15 @@ void pack_and_send_jp_message(pim_nbr_entry_t *pim_nbr)
     bjpm = pim_nbr->build_jp_message;
     if (bjpm->rp_list_join_number + bjpm->rp_list_prune_number) {
 	/* Add the (*,*,RP) at the end */
-	data_ptr = bjpm->jp_message + bjpm->jp_message_size;
-	PUT_EGADDR(htonl(CLASSD_PREFIX), STAR_STAR_RP_MSKLEN, 0, data_ptr);
-	PUT_HOSTSHORT(bjpm->rp_list_join_number, data_ptr);
-	PUT_HOSTSHORT(bjpm->rp_list_prune_number, data_ptr);
-	memcpy(data_ptr, bjpm->rp_list_join, bjpm->rp_list_join_size);
-	data_ptr += bjpm->rp_list_join_size;
-	memcpy(data_ptr, bjpm->rp_list_prune, bjpm->rp_list_prune_size);
-	data_ptr += bjpm->rp_list_prune_size;
-	bjpm->jp_message_size = (data_ptr - bjpm->jp_message);
+	data = bjpm->jp_message + bjpm->jp_message_size;
+	PUT_EGADDR(htonl(CLASSD_PREFIX), STAR_STAR_RP_MSKLEN, 0, data);
+	PUT_HOSTSHORT(bjpm->rp_list_join_number, data);
+	PUT_HOSTSHORT(bjpm->rp_list_prune_number, data);
+	memcpy(data, bjpm->rp_list_join, bjpm->rp_list_join_size);
+	data += bjpm->rp_list_join_size;
+	memcpy(data, bjpm->rp_list_prune, bjpm->rp_list_prune_size);
+	data += bjpm->rp_list_prune_size;
+	bjpm->jp_message_size = (data - bjpm->jp_message);
 	bjpm->rp_list_join_size = 0;
 	bjpm->rp_list_join_number = 0;
 	bjpm->rp_list_prune_size = 0;
@@ -2385,8 +2345,8 @@ int receive_pim_assert(u_int32 src, u_int32 dst __attribute__((unused)), char *p
     pim_encod_uni_addr_t eusaddr;
     pim_encod_grp_addr_t egaddr;
     u_int32 source, group;
-    mrtentry_t *mrtentry_ptr, *mrtentry_ptr2;
-    u_int8 *data_ptr;
+    mrtentry_t *mrt, *mrt2;
+    u_int8 *data;
     struct uvif *v;
     u_int32 assert_preference;
     u_int32 assert_metric;
@@ -2417,83 +2377,81 @@ int receive_pim_assert(u_int32 src, u_int32 dst __attribute__((unused)), char *p
     if (uvifs[vifi].uv_flags & (VIFF_DOWN | VIFF_DISABLED | VIFF_NONBRS | VIFF_REGISTER))
 	return FALSE;    /* Shoudn't come on this interface */
 
-    data_ptr = (u_int8 *)(pim_message + sizeof(pim_header_t));
+    data = (u_int8 *)(pim_message + sizeof(pim_header_t));
 
     /* Get the group and source addresses */
-    GET_EGADDR(&egaddr, data_ptr);
-    GET_EUADDR(&eusaddr, data_ptr);
+    GET_EGADDR(&egaddr, data);
+    GET_EUADDR(&eusaddr, data);
 
     /* Get the metric related info */
-    GET_HOSTLONG(assert_preference, data_ptr);
-    GET_HOSTLONG(assert_metric, data_ptr);
+    GET_HOSTLONG(assert_preference, data);
+    GET_HOSTLONG(assert_metric, data);
     assert_rptbit = assert_preference & PIM_ASSERT_RPT_BIT;
 
     source = eusaddr.unicast_addr;
     group = egaddr.mcast_addr;
     /* Find the longest "active" entry, i.e. the one with a kernel mirror */
     if (assert_rptbit) {
-	mrtentry_ptr = find_route(INADDR_ANY_N, group, MRTF_WC | MRTF_PMBR, DONT_CREATE);
-	if (mrtentry_ptr)
-	    if (!(mrtentry_ptr->flags & MRTF_KERNEL_CACHE))
-		if (mrtentry_ptr->flags & MRTF_WC) {
-		    mrtentry_ptr = mrtentry_ptr->group->active_rp_grp->rp->rpentry->mrtlink;
-		}
+	mrt = find_route(INADDR_ANY_N, group, MRTF_WC | MRTF_PMBR, DONT_CREATE);
+	if (mrt && !(mrt->flags & MRTF_KERNEL_CACHE)) {
+	    if (mrt->flags & MRTF_WC)
+		mrt = mrt->group->active_rp_grp->rp->rpentry->mrtlink;
+	}
     } else {
-	mrtentry_ptr = find_route(source, group, MRTF_SG | MRTF_WC | MRTF_PMBR, DONT_CREATE);
-	if (mrtentry_ptr)
-	    if (!(mrtentry_ptr->flags & MRTF_KERNEL_CACHE)) {
-		if (mrtentry_ptr->flags & MRTF_SG) {
-		    mrtentry_ptr2 = mrtentry_ptr->group->grp_route;
-		    if (mrtentry_ptr2 && (mrtentry_ptr2->flags & MRTF_KERNEL_CACHE))
-			mrtentry_ptr = mrtentry_ptr2;
-		    else
-			mrtentry_ptr = mrtentry_ptr->group->active_rp_grp->rp->rpentry->mrtlink;
-		} else {
-		    if (mrtentry_ptr->flags & MRTF_WC)
-			mrtentry_ptr = mrtentry_ptr->group->active_rp_grp->rp->rpentry->mrtlink;
-		}
+	mrt = find_route(source, group, MRTF_SG | MRTF_WC | MRTF_PMBR, DONT_CREATE);
+	if (mrt && !(mrt->flags & MRTF_KERNEL_CACHE)) {
+	    if (mrt->flags & MRTF_SG) {
+		mrt2 = mrt->group->grp_route;
+		if (mrt2 && (mrt2->flags & MRTF_KERNEL_CACHE))
+		    mrt = mrt2;
+		else
+		    mrt = mrt->group->active_rp_grp->rp->rpentry->mrtlink;
+	    } else {
+		if (mrt->flags & MRTF_WC)
+		    mrt = mrt->group->active_rp_grp->rp->rpentry->mrtlink;
 	    }
+	}
     }
 
-    if (!mrtentry_ptr || !(mrtentry_ptr->flags & MRTF_KERNEL_CACHE)) {
+    if (!mrt || !(mrt->flags & MRTF_KERNEL_CACHE)) {
 	/* No routing entry or not "active" entry. Ignore the assert */
 	return FALSE;
     }
 
     /* Prepare the local preference and metric */
-    if ((mrtentry_ptr->flags & MRTF_PMBR)
-	|| ((mrtentry_ptr->flags & MRTF_SG)
-	    && !(mrtentry_ptr->flags & MRTF_RP))) {
+    if ((mrt->flags & MRTF_PMBR)
+	|| ((mrt->flags & MRTF_SG)
+	    && !(mrt->flags & MRTF_RP))) {
 	/* Either (S,G) (toward S) or (*,*,RP). */
-	/* TODO: XXX: get the info from mrtentry, or source or from kernel ? */
+	/* TODO: XXX: get the info from mrt, or source or from kernel ? */
 	/*
-	  local_metric = mrtentry_ptr->source->metric;
-	  local_preference = mrtentry_ptr->source->preference;
+	  local_metric = mrt->source->metric;
+	  local_preference = mrt->source->preference;
 	*/
-	local_metric = mrtentry_ptr->metric;
-	local_preference = mrtentry_ptr->preference;
+	local_metric = mrt->metric;
+	local_preference = mrt->preference;
     } else {
 	/* Should be (*,G) or (S,G)RPbit entry.
 	 * Get what we need from the RP info.
 	 */
-	/* TODO: get the info from mrtentry, RP-entry or kernel? */
+	/* TODO: get the info from mrt, RP-entry or kernel? */
 	/*
 	  local_metric =
-	  mrtentry_ptr->group->active_rp_grp->rp->rpentry->metric;
+	  mrt->group->active_rp_grp->rp->rpentry->metric;
 	  local_preference =
-	  mrtentry_ptr->group->active_rp_grp->rp->rpentry->preference;
+	  mrt->group->active_rp_grp->rp->rpentry->preference;
 	*/
-	local_metric = mrtentry_ptr->metric;
-	local_preference = mrtentry_ptr->preference;
+	local_metric = mrt->metric;
+	local_preference = mrt->preference;
     }
 
-    local_rptbit = (mrtentry_ptr->flags & MRTF_RP);
+    local_rptbit = (mrt->flags & MRTF_RP);
     if (local_rptbit) {
 	/* Make the RPT bit the most significant one */
 	local_preference |= PIM_ASSERT_RPT_BIT;
     }
 
-    if (VIFM_ISSET(vifi, mrtentry_ptr->oifs)) {
+    if (VIFM_ISSET(vifi, mrt->oifs)) {
 	/* The ASSERT has arrived on oif */
 
 	/* TODO: XXX: here the processing order is different from the spec.
@@ -2512,51 +2470,51 @@ int receive_pim_assert(u_int32 src, u_int32 dst __attribute__((unused)), char *p
 
 	if (local_wins == TRUE) {
 	    /* TODO: verify the parameters */
-	    send_pim_assert(source, group, vifi, mrtentry_ptr);
+	    send_pim_assert(source, group, vifi, mrt);
 	    return TRUE;
 	}
 
 	/* Create a "better" routing entry and try again */
-	if (assert_rptbit && (mrtentry_ptr->flags & MRTF_PMBR)) {
+	if (assert_rptbit && (mrt->flags & MRTF_PMBR)) {
 	    /* The matching entry was (*,*,RP). Create (*,G) */
-	    mrtentry_ptr2 = find_route(INADDR_ANY_N, group, MRTF_WC, CREATE);
-	} else if (!assert_rptbit && (mrtentry_ptr->flags & (MRTF_WC | MRTF_PMBR))) {
+	    mrt2 = find_route(INADDR_ANY_N, group, MRTF_WC, CREATE);
+	} else if (!assert_rptbit && (mrt->flags & (MRTF_WC | MRTF_PMBR))) {
 	    /* create (S,G) */
-	    mrtentry_ptr2 = find_route(source, group, MRTF_SG, CREATE);
+	    mrt2 = find_route(source, group, MRTF_SG, CREATE);
 	} else {
 	    /* We have no chance to win. Give up and prune the oif */
-	    mrtentry_ptr2 = (mrtentry_t *)NULL;
+	    mrt2 = NULL;
 	}
 
-	if (mrtentry_ptr2) {
-	    mrtentry_ptr2->flags &= ~MRTF_NEW;
+	if (mrt2) {
+	    mrt2->flags &= ~MRTF_NEW;
 	    /* TODO: XXX: The spec doesn't say what entry timer value
 	     * to use when the routing entry is created because of asserts.
 	     */
-	    SET_TIMER(mrtentry_ptr2->timer, PIM_DATA_TIMEOUT);
-	    if (mrtentry_ptr2->flags & MRTF_RP) {
+	    SET_TIMER(mrt2->timer, PIM_DATA_TIMEOUT);
+	    if (mrt2->flags & MRTF_RP) {
 		/* Either (*,G) or (S,G)RPbit entry.
 		 * Get what we need from the RP info.
 		 */
 		/* TODO: where to get the metric+preference from? */
 		/*
 		  local_metric =
-		  mrtentry_ptr->group->active_rp_grp->rp->rpentry->metric;
+		  mrt->group->active_rp_grp->rp->rpentry->metric;
 		  local_preference =
-		  mrtentry_ptr->group->active_rp_grp->rp->rpentry->preference;
+		  mrt->group->active_rp_grp->rp->rpentry->preference;
 		*/
-		local_metric = mrtentry_ptr->metric;
-		local_preference = mrtentry_ptr->preference;
+		local_metric = mrt->metric;
+		local_preference = mrt->preference;
 		local_preference |= PIM_ASSERT_RPT_BIT;
 	    } else {
 		/* (S,G) toward the source */
 		/* TODO: where to get the metric from ? */
 		/*
-		  local_metric = mrtentry_ptr->source->metric;
-		  local_preference = mrtentry_ptr->source->preference;
+		  local_metric = mrt->source->metric;
+		  local_preference = mrt->source->preference;
 		*/
-		local_metric = mrtentry_ptr->metric;
-		local_preference = mrtentry_ptr->preference;
+		local_metric = mrt->metric;
+		local_preference = mrt->preference;
 	    }
 
 	    local_wins = compare_metrics(local_preference, local_metric,
@@ -2564,74 +2522,76 @@ int receive_pim_assert(u_int32 src, u_int32 dst __attribute__((unused)), char *p
 					 assert_metric, src);
 	    if (local_wins == TRUE) {
 		/* TODO: verify the parameters */
-		send_pim_assert(source, group, vifi, mrtentry_ptr);
+		send_pim_assert(source, group, vifi, mrt);
 		return TRUE;
 	    }
 	    /* We lost, but have created the entry which has to be pruned */
-	    mrtentry_ptr = mrtentry_ptr2;
+	    mrt = mrt2;
 	}
 
-	/* Have to remove that outgoing vifi from mrtentry_ptr */
-	VIFM_SET(vifi, mrtentry_ptr->asserted_oifs);
+	/* Have to remove that outgoing vifi from mrt */
+	VIFM_SET(vifi, mrt->asserted_oifs);
 	/* TODO: XXX: TIMER implem. dependency! */
-	if (mrtentry_ptr->timer < PIM_ASSERT_TIMEOUT)
-	    SET_TIMER(mrtentry_ptr->timer, PIM_ASSERT_TIMEOUT);
+	if (mrt->timer < PIM_ASSERT_TIMEOUT)
+	    SET_TIMER(mrt->timer, PIM_ASSERT_TIMEOUT);
 	/* TODO: XXX: check that the timer of all affected routing entries
 	 * has been restarted.
 	 */
-	change_interfaces(mrtentry_ptr,
-			  mrtentry_ptr->incoming,
-			  mrtentry_ptr->joined_oifs,
-			  mrtentry_ptr->pruned_oifs,
-			  mrtentry_ptr->leaves,
-			  mrtentry_ptr->asserted_oifs, 0);
+	change_interfaces(mrt,
+			  mrt->incoming,
+			  mrt->joined_oifs,
+			  mrt->pruned_oifs,
+			  mrt->leaves,
+			  mrt->asserted_oifs, 0);
 
 	return FALSE;  /* Doesn't matter the return value */
     } /* End of assert received on oif */
 
 
-    if (mrtentry_ptr->incoming == vifi) {
+    if (mrt->incoming == vifi) {
 	/* Assert received on iif */
 	if (assert_rptbit) {
-	    if (!(mrtentry_ptr->flags & MRTF_RP))
+	    if (!(mrt->flags & MRTF_RP))
 		return TRUE;       /* The locally used upstream router will
 				     * win the assert, so don't change it.
 				     */
 	}
 
 	/* TODO: where to get the local metric and preference from?
-	 * system call or mrtentry is fine?
+	 * system call or mrt is fine?
 	 */
-	local_metric = mrtentry_ptr->metric;
-	local_preference = mrtentry_ptr->preference;
-	if (mrtentry_ptr->flags & MRTF_RP)
+	local_metric = mrt->metric;
+	local_preference = mrt->preference;
+	if (mrt->flags & MRTF_RP)
 	    local_preference |= PIM_ASSERT_RPT_BIT;
 
 	local_wins = compare_metrics(local_preference, local_metric,
-				     mrtentry_ptr->upstream->address,
+				     mrt->upstream->address,
 				     assert_preference, assert_metric, src);
 
 	if (local_wins == TRUE)
 	    return TRUE; /* return whatever */
 
 	/* The upstream must be changed to the winner */
-	mrtentry_ptr->preference = assert_preference;
-	mrtentry_ptr->metric = assert_metric;
-	mrtentry_ptr->upstream = find_pim_nbr(src);
+	mrt->preference = assert_preference;
+	mrt->metric = assert_metric;
+	mrt->upstream = find_pim_nbr(src);
 
 	/* Check if the upstream router is different from the original one */
-	if (mrtentry_ptr->flags & MRTF_PMBR)
-	    original_upstream_router = mrtentry_ptr->source->upstream;
-	else
-	    if (mrtentry_ptr->flags & MRTF_RP)
-		original_upstream_router = mrtentry_ptr->group->active_rp_grp->rp->rpentry->upstream;
-	    else
-		original_upstream_router = mrtentry_ptr->source->upstream;
-	if (mrtentry_ptr->upstream != original_upstream_router) {
-	    mrtentry_ptr->flags |= MRTF_ASSERTED;
-	    SET_TIMER(mrtentry_ptr->assert_timer, PIM_ASSERT_TIMEOUT);
+	if (mrt->flags & MRTF_PMBR) {
+	    original_upstream_router = mrt->source->upstream;
 	} else {
-	    mrtentry_ptr->flags &= ~MRTF_ASSERTED;
+	    if (mrt->flags & MRTF_RP)
+		original_upstream_router = mrt->group->active_rp_grp->rp->rpentry->upstream;
+	    else
+		original_upstream_router = mrt->source->upstream;
+	}
+
+	if (mrt->upstream != original_upstream_router) {
+	    mrt->flags |= MRTF_ASSERTED;
+	    SET_TIMER(mrt->assert_timer, PIM_ASSERT_TIMEOUT);
+	} else {
+	    mrt->flags &= ~MRTF_ASSERTED;
 	}
     }
 
@@ -2639,13 +2599,13 @@ int receive_pim_assert(u_int32 src, u_int32 dst __attribute__((unused)), char *p
 }
 
 
-int send_pim_assert(u_int32 source, u_int32 group, vifi_t vifi, mrtentry_t *mrtentry_ptr)
+int send_pim_assert(u_int32 source, u_int32 group, vifi_t vifi, mrtentry_t *mrt)
 {
-    u_int8 *data_ptr;
-    u_int8 *data_start_ptr;
+    u_int8 *data;
+    u_int8 *data_start;
     u_int32 local_preference;
     u_int32 local_metric;
-    srcentry_t *srcentry_ptr __attribute__((unused));
+    srcentry_t *srcentry __attribute__((unused));
 
     /* Don't send assert if the outgoing interface a tunnel or register vif */
     /* TODO: XXX: in the code above asserts are accepted over VIFF_TUNNEL.
@@ -2655,47 +2615,47 @@ int send_pim_assert(u_int32 source, u_int32 group, vifi_t vifi, mrtentry_t *mrte
     if (uvifs[vifi].uv_flags & (VIFF_REGISTER | VIFF_TUNNEL))
 	return FALSE;
 
-    data_ptr = (u_int8 *)(pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t));
-    data_start_ptr = data_ptr;
-    PUT_EGADDR(group, SINGLE_GRP_MSKLEN, 0, data_ptr);
-    PUT_EUADDR(source, data_ptr);
+    data = (u_int8 *)(pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t));
+    data_start = data;
+    PUT_EGADDR(group, SINGLE_GRP_MSKLEN, 0, data);
+    PUT_EUADDR(source, data);
 
-    /* TODO: XXX: where to get the metric from: srcentry_ptr or mrtentry_ptr
+    /* TODO: XXX: where to get the metric from: srcentry or mrt
      * or from the kernel?
      */
-    if (mrtentry_ptr->flags & MRTF_PMBR) {
+    if (mrt->flags & MRTF_PMBR) {
 	/* (*,*,RP) */
-	srcentry_ptr = mrtentry_ptr->source;
+	srcentry = mrt->source;
 	/* TODO:
-	   set_incoming(srcentry_ptr, PIM_IIF_RP);
+	   set_incoming(srcentry, PIM_IIF_RP);
 	*/
-    } else if (mrtentry_ptr->flags & MRTF_RP) {
+    } else if (mrt->flags & MRTF_RP) {
 	/* (*,G) or (S,G)RPbit (iif toward RP) */
-	srcentry_ptr = mrtentry_ptr->group->active_rp_grp->rp->rpentry;
+	srcentry = mrt->group->active_rp_grp->rp->rpentry;
 	/* TODO:
-	   set_incoming(srcentry_ptr, PIM_IIF_RP);
+	   set_incoming(srcentry, PIM_IIF_RP);
 	*/
     } else {
 	/* (S,G) toward S */
-	srcentry_ptr = mrtentry_ptr->source;
+	srcentry = mrt->source;
 	/* TODO:
-	   set_incoming(srcentry_ptr, PIM_IIF_SOURCE);
+	   set_incoming(srcentry, PIM_IIF_SOURCE);
 	*/
     }
 
     /* TODO: check again!
-       local_metric = srcentry_ptr->metric;
-       local_preference = srcentry_ptr->preference;
+       local_metric = srcentry->metric;
+       local_preference = srcentry->preference;
     */
-    local_metric = mrtentry_ptr->metric;
-    local_preference = mrtentry_ptr->preference;
+    local_metric = mrt->metric;
+    local_preference = mrt->preference;
 
-    if (mrtentry_ptr->flags & MRTF_RP)
+    if (mrt->flags & MRTF_RP)
 	local_preference |= PIM_ASSERT_RPT_BIT;
-    PUT_HOSTLONG(local_preference, data_ptr);
-    PUT_HOSTLONG(local_metric, data_ptr);
+    PUT_HOSTLONG(local_preference, data);
+    PUT_HOSTLONG(local_metric, data);
     send_pim(pim_send_buf, uvifs[vifi].uv_lcl_addr, allpimrouters_group,
-	     PIM_ASSERT, data_ptr - data_start_ptr);
+	     PIM_ASSERT, data - data_start);
 
     return TRUE;
 }
@@ -2738,8 +2698,8 @@ static int compare_metrics(u_int32 local_preference, u_int32 local_metric, u_int
 #define PIM_BOOTSTRAP_MINLEN (PIM_MINLEN + PIM_ENCODE_UNI_ADDR_LEN)
 int receive_pim_bootstrap(u_int32 src, u_int32 dst, char *pim_message, int datalen)
 {
-    u_int8               *data_ptr;
-    u_int8               *max_data_ptr;
+    u_int8               *data;
+    u_int8               *max_data;
     u_int16              new_bsr_fragment_tag;
     u_int8               new_bsr_hash_masklen;
     u_int8               new_bsr_priority;
@@ -2760,10 +2720,10 @@ int receive_pim_bootstrap(u_int32 src, u_int32 dst, char *pim_message, int datal
     u_int8               reserved_byte __attribute__((unused));
     u_int32              curr_group_mask;
     u_int32              prefix_h;
-    grp_mask_t           *grp_mask_ptr;
+    grp_mask_t           *grp_mask;
     grp_mask_t           *grp_mask_next;
-    rp_grp_entry_t       *grp_rp_entry_ptr;
-    rp_grp_entry_t       *grp_rp_entry_next;
+    rp_grp_entry_t       *grp_rp;
+    rp_grp_entry_t       *grp_rp_next;
 
     /* Checksum */
     if (inet_cksum((u_int16 *)pim_message, datalen))
@@ -2788,13 +2748,13 @@ int receive_pim_bootstrap(u_int32 src, u_int32 dst, char *pim_message, int datal
 	return FALSE;
     }
 
-    data_ptr = (u_int8 *)(pim_message + sizeof(pim_header_t));
+    data = (u_int8 *)(pim_message + sizeof(pim_header_t));
 
     /* Parse the PIM_BOOTSTRAP message */
-    GET_HOSTSHORT(new_bsr_fragment_tag, data_ptr);
-    GET_BYTE(new_bsr_hash_masklen, data_ptr);
-    GET_BYTE(new_bsr_priority, data_ptr);
-    GET_EUADDR(&new_bsr_uni_addr, data_ptr);
+    GET_HOSTSHORT(new_bsr_fragment_tag, data);
+    GET_BYTE(new_bsr_hash_masklen, data);
+    GET_BYTE(new_bsr_priority, data);
+    GET_EUADDR(&new_bsr_uni_addr, data);
     new_bsr_address = new_bsr_uni_addr.unicast_addr;
 
     if (local_address(new_bsr_address) != NO_VIF)
@@ -2829,7 +2789,7 @@ int receive_pim_bootstrap(u_int32 src, u_int32 dst, char *pim_message, int datal
 	    return FALSE;	/* Shoudn't arrive on that interface */
 
 	/* Find the upstream router */
-	for (n = uvifs[incoming].uv_pim_neighbors; n != NULL; n = n->next) {
+	for (n = uvifs[incoming].uv_pim_neighbors; n; n = n->next) {
 	    if (ntohl(neighbor_addr) < ntohl(n->address))
 		continue;
 
@@ -2853,7 +2813,7 @@ int receive_pim_bootstrap(u_int32 src, u_int32 dst, char *pim_message, int datal
 	}
 
 	/* Probably unicasted from the current DR */
-	if (cand_rp_list != (cand_rp_t *)NULL) {
+	if (cand_rp_list) {
 	    /* Hmmm, I do have a Cand-RP-list, but some neighbor has a
 	     * different opinion and is unicasting it to me. Ignore this guy.
 	     */
@@ -2901,7 +2861,7 @@ int receive_pim_bootstrap(u_int32 src, u_int32 dst, char *pim_message, int datal
 		 PIM_BOOTSTRAP, datalen - sizeof(pim_header_t));
     }
 
-    max_data_ptr = (u_int8 *)pim_message + datalen;
+    max_data = (u_int8 *)pim_message + datalen;
     /* TODO: XXX: this 22 is HARDCODING!!! Do a bunch of definitions
      * and make it stylish!
      */
@@ -2918,11 +2878,11 @@ int receive_pim_bootstrap(u_int32 src, u_int32 dst, char *pim_message, int datal
     MASKLEN_TO_MASK(new_bsr_hash_masklen, curr_bsr_hash_mask);
     SET_TIMER(pim_bootstrap_timer, PIM_BOOTSTRAP_TIMEOUT);
 
-    while (data_ptr + min_datalen <= max_data_ptr) {
-	GET_EGADDR(&curr_group_addr, data_ptr);
-	GET_BYTE(curr_rp_count, data_ptr);
-	GET_BYTE(curr_frag_rp_count, data_ptr);
-	GET_HOSTSHORT(reserved_short, data_ptr);
+    while (data + min_datalen <= max_data) {
+	GET_EGADDR(&curr_group_addr, data);
+	GET_BYTE(curr_rp_count, data);
+	GET_BYTE(curr_frag_rp_count, data);
+	GET_HOSTSHORT(reserved_short, data);
 	MASKLEN_TO_MASK(curr_group_addr.masklen, curr_group_mask);
 	if (curr_rp_count == 0) {
 	    delete_grp_mask(&cand_rp_list, &grp_mask_list,
@@ -2932,11 +2892,11 @@ int receive_pim_bootstrap(u_int32 src, u_int32 dst, char *pim_message, int datal
 
 	if (curr_rp_count == curr_frag_rp_count) {
 	    /* Add all RPs */
-	    while(curr_frag_rp_count--) {
-		GET_EUADDR(&curr_rp_addr, data_ptr);
-		GET_HOSTSHORT(curr_rp_holdtime, data_ptr);
-		GET_BYTE(curr_rp_priority, data_ptr);
-		GET_BYTE(reserved_byte, data_ptr);
+	    while (curr_frag_rp_count--) {
+		GET_EUADDR(&curr_rp_addr, data);
+		GET_HOSTSHORT(curr_rp_holdtime, data);
+		GET_BYTE(curr_rp_priority, data);
+		GET_BYTE(reserved_byte, data);
 		MASKLEN_TO_MASK(curr_group_addr.masklen, curr_group_mask);
 		add_rp_grp_entry(&cand_rp_list, &grp_mask_list,
 				 curr_rp_addr.unicast_addr, curr_rp_priority,
@@ -2953,26 +2913,23 @@ int receive_pim_bootstrap(u_int32 src, u_int32 dst, char *pim_message, int datal
 	 * Save until all segments arrive.
 	 */
 	prefix_h = ntohl(curr_group_addr.mcast_addr & curr_group_mask);
-	for (grp_mask_ptr = segmented_grp_mask_list;
-	     grp_mask_ptr != (grp_mask_t *)NULL;
-	     grp_mask_ptr = grp_mask_ptr->next) {
-	    if (ntohl(grp_mask_ptr->group_addr
-		      & grp_mask_ptr->group_mask) > prefix_h)
+	for (grp_mask = segmented_grp_mask_list; grp_mask; grp_mask = grp_mask->next) {
+	    if (ntohl(grp_mask->group_addr & grp_mask->group_mask) > prefix_h)
 		continue;
-	    else
-		break;
+
+	    break;
 	}
 
-	if ((grp_mask_ptr != (grp_mask_t *)NULL)
-	    && (grp_mask_ptr->group_addr == curr_group_addr.mcast_addr)
-	    && (grp_mask_ptr->group_mask == curr_group_mask)
-	    && (grp_mask_ptr->group_rp_number + curr_frag_rp_count == curr_rp_count)) {
+	if (grp_mask
+	    && (grp_mask->group_addr == curr_group_addr.mcast_addr)
+	    && (grp_mask->group_mask == curr_group_mask)
+	    && (grp_mask->group_rp_number + curr_frag_rp_count == curr_rp_count)) {
 	    /* All missing PRs have arrived. Add all RP entries */
-	    while(curr_frag_rp_count--) {
-		GET_EUADDR(&curr_rp_addr, data_ptr);
-		GET_HOSTSHORT(curr_rp_holdtime, data_ptr);
-		GET_BYTE(curr_rp_priority, data_ptr);
-		GET_BYTE(reserved_byte, data_ptr);
+	    while (curr_frag_rp_count--) {
+		GET_EUADDR(&curr_rp_addr, data);
+		GET_HOSTSHORT(curr_rp_holdtime, data);
+		GET_BYTE(curr_rp_priority, data);
+		GET_BYTE(reserved_byte, data);
 		MASKLEN_TO_MASK(curr_group_addr.masklen, curr_group_mask);
 		add_rp_grp_entry(&cand_rp_list,
 				 &grp_mask_list,
@@ -2986,14 +2943,12 @@ int receive_pim_bootstrap(u_int32 src, u_int32 dst, char *pim_message, int datal
 	    }
 
 	    /* Add the rest from the previously saved segments */
-	    for(grp_rp_entry_ptr = grp_mask_ptr->grp_rp_next;
-		grp_rp_entry_ptr != (rp_grp_entry_t *)NULL;
-		grp_rp_entry_ptr = grp_rp_entry_ptr->grp_rp_next) {
+	    for (grp_rp = grp_mask->grp_rp_next; grp_rp; grp_rp = grp_rp->grp_rp_next) {
 		add_rp_grp_entry(&cand_rp_list,
 				 &grp_mask_list,
-				 grp_rp_entry_ptr->rp->rpentry->address,
-				 grp_rp_entry_ptr->priority,
-				 grp_rp_entry_ptr->holdtime,
+				 grp_rp->rp->rpentry->address,
+				 grp_rp->priority,
+				 grp_rp->holdtime,
 				 curr_group_addr.mcast_addr,
 				 curr_group_mask,
 				 curr_bsr_hash_mask,
@@ -3004,12 +2959,12 @@ int receive_pim_bootstrap(u_int32 src, u_int32 dst, char *pim_message, int datal
 			    curr_group_addr.mcast_addr,
 			    curr_group_mask);
 	} else {
-	    /*Add the partially received RP-list to the group of pending RPs*/
-	    while(curr_frag_rp_count--) {
-		GET_EUADDR(&curr_rp_addr, data_ptr);
-		GET_HOSTSHORT(curr_rp_holdtime, data_ptr);
-		GET_BYTE(curr_rp_priority, data_ptr);
-		GET_BYTE(reserved_byte, data_ptr);
+	    /* Add the partially received RP-list to the group of pending RPs*/
+	    while (curr_frag_rp_count--) {
+		GET_EUADDR(&curr_rp_addr, data);
+		GET_HOSTSHORT(curr_rp_holdtime, data);
+		GET_BYTE(curr_rp_priority, data);
+		GET_BYTE(reserved_byte, data);
 		MASKLEN_TO_MASK(curr_group_addr.masklen, curr_group_mask);
 		add_rp_grp_entry(&segmented_cand_rp_list,
 				 &segmented_grp_mask_list,
@@ -3029,35 +2984,29 @@ int receive_pim_bootstrap(u_int32 src, u_int32 dst, char *pim_message, int datal
      * then remove all RPs for this group_prefix which have different
      * fragment tag.
      */
-    for (grp_mask_ptr = grp_mask_list;
-	 grp_mask_ptr != (grp_mask_t *)NULL;
-	 grp_mask_ptr = grp_mask_next) {
-	grp_mask_next = grp_mask_ptr->next;
-	if (grp_mask_ptr->fragment_tag == curr_bsr_fragment_tag) {
-	    for (grp_rp_entry_ptr = grp_mask_ptr->grp_rp_next;
-		 grp_rp_entry_ptr != (rp_grp_entry_t *)NULL;
-		 grp_rp_entry_ptr = grp_rp_entry_next) {
-		grp_rp_entry_next = grp_rp_entry_ptr->grp_rp_next;
-		if (grp_rp_entry_ptr->fragment_tag != curr_bsr_fragment_tag)
-		    delete_rp_grp_entry(&cand_rp_list, &grp_mask_list, grp_rp_entry_ptr);
+    for (grp_mask = grp_mask_list; grp_mask; grp_mask = grp_mask_next) {
+	grp_mask_next = grp_mask->next;
+
+	if (grp_mask->fragment_tag == curr_bsr_fragment_tag) {
+	    for (grp_rp = grp_mask->grp_rp_next; grp_rp; grp_rp = grp_rp_next) {
+		grp_rp_next = grp_rp->grp_rp_next;
+
+		if (grp_rp->fragment_tag != curr_bsr_fragment_tag)
+		    delete_rp_grp_entry(&cand_rp_list, &grp_mask_list, grp_rp);
 	    }
 	}
     }
 
     /* Cleanup also the list used by incompleted segments */
-    for (grp_mask_ptr = segmented_grp_mask_list;
-	 grp_mask_ptr != (grp_mask_t *)NULL;
-	 grp_mask_ptr = grp_mask_next) {
-	grp_mask_next = grp_mask_ptr->next;
-	if (grp_mask_ptr->fragment_tag == curr_bsr_fragment_tag) {
-	    for (grp_rp_entry_ptr = grp_mask_ptr->grp_rp_next;
-		 grp_rp_entry_ptr != (rp_grp_entry_t *)NULL;
-		 grp_rp_entry_ptr = grp_rp_entry_next) {
-		grp_rp_entry_next = grp_rp_entry_ptr->grp_rp_next;
-		if (grp_rp_entry_ptr->fragment_tag != curr_bsr_fragment_tag)
-		    delete_rp_grp_entry(&segmented_cand_rp_list,
-					&segmented_grp_mask_list,
-					grp_rp_entry_ptr);
+    for (grp_mask = segmented_grp_mask_list; grp_mask; grp_mask = grp_mask_next) {
+	grp_mask_next = grp_mask->next;
+
+	if (grp_mask->fragment_tag == curr_bsr_fragment_tag) {
+	    for (grp_rp = grp_mask->grp_rp_next; grp_rp; grp_rp = grp_rp_next) {
+		grp_rp_next = grp_rp->grp_rp_next;
+
+		if (grp_rp->fragment_tag != curr_bsr_fragment_tag)
+		    delete_rp_grp_entry(&segmented_cand_rp_list, &segmented_grp_mask_list, grp_rp);
 	    }
 	}
     }
@@ -3095,8 +3044,8 @@ int receive_pim_cand_rp_adv(u_int32 src, u_int32 dst __attribute__((unused)), ch
     u_int8 prefix_cnt;
     u_int8 priority;
     u_int16 holdtime;
-    pim_encod_uni_addr_t cand_rp_addr;
-    pim_encod_grp_addr_t encod_grp_addr;
+    pim_encod_uni_addr_t euaddr;
+    pim_encod_grp_addr_t egaddr;
     u_int8 *data_ptr;
     u_int32 grp_mask;
 
@@ -3122,12 +3071,12 @@ int receive_pim_cand_rp_adv(u_int32 src, u_int32 dst __attribute__((unused)), ch
     GET_BYTE(prefix_cnt, data_ptr);
     GET_BYTE(priority, data_ptr);
     GET_HOSTSHORT(holdtime, data_ptr);
-    GET_EUADDR(&cand_rp_addr, data_ptr);
+    GET_EUADDR(&euaddr, data_ptr);
     if (prefix_cnt == 0) {
 	/* The default 224.0.0.0 and masklen of 4 */
 	MASKLEN_TO_MASK(ALL_MCAST_GROUPS_LENGTH, grp_mask);
 	add_rp_grp_entry(&cand_rp_list, &grp_mask_list,
-			 cand_rp_addr.unicast_addr, priority, holdtime,
+			 euaddr.unicast_addr, priority, holdtime,
 			 htonl(ALL_MCAST_GROUPS_ADDR), grp_mask,
 			 my_bsr_hash_mask,
 			 curr_bsr_fragment_tag);
@@ -3136,11 +3085,11 @@ int receive_pim_cand_rp_adv(u_int32 src, u_int32 dst __attribute__((unused)), ch
     }
 
     while (prefix_cnt--) {
-	GET_EGADDR(&encod_grp_addr, data_ptr);
-	MASKLEN_TO_MASK(encod_grp_addr.masklen, grp_mask);
+	GET_EGADDR(&egaddr, data_ptr);
+	MASKLEN_TO_MASK(egaddr.masklen, grp_mask);
 	add_rp_grp_entry(&cand_rp_list, &grp_mask_list,
-			 cand_rp_addr.unicast_addr, priority, holdtime,
-			 encod_grp_addr.mcast_addr, grp_mask,
+			 euaddr.unicast_addr, priority, holdtime,
+			 egaddr.mcast_addr, grp_mask,
 			 my_bsr_hash_mask,
 			 curr_bsr_fragment_tag);
 	/* TODO: Check for datalen */
@@ -3153,9 +3102,9 @@ int receive_pim_cand_rp_adv(u_int32 src, u_int32 dst __attribute__((unused)), ch
 int send_pim_cand_rp_adv(void)
 {
     u_int8 prefix_cnt;
-    u_int32 grp_mask;
-    pim_encod_grp_addr_t encod_grp_addr;
-    u_int8 *data_ptr;
+    u_int32 mask;
+    pim_encod_grp_addr_t addr;
+    u_int8 *data;
 
     if (!inet_valid_host(curr_bsr_address))
 	return FALSE;  /* No BSR yet */
@@ -3165,26 +3114,26 @@ int send_pim_cand_rp_adv(void)
 	prefix_cnt = *cand_rp_adv_message.prefix_cnt_ptr;
 	if (prefix_cnt == 0) {
 	    /* The default 224.0.0.0 and masklen of 4 */
-	    MASKLEN_TO_MASK(ALL_MCAST_GROUPS_LENGTH, grp_mask);
+	    MASKLEN_TO_MASK(ALL_MCAST_GROUPS_LENGTH, mask);
 	    add_rp_grp_entry(&cand_rp_list, &grp_mask_list,
 			     my_cand_rp_address, my_cand_rp_priority,
 			     my_cand_rp_holdtime,
-			     htonl(ALL_MCAST_GROUPS_ADDR), grp_mask,
+			     htonl(ALL_MCAST_GROUPS_ADDR), mask,
 			     my_bsr_hash_mask,
 			     curr_bsr_fragment_tag);
 	    return TRUE;
 	}
 
 	/* TODO: hardcoding!! */
-	data_ptr = cand_rp_adv_message.buffer + (4 + 6);
+	data = cand_rp_adv_message.buffer + (4 + 6);
 	while (prefix_cnt--) {
-	    GET_EGADDR(&encod_grp_addr, data_ptr);
-	    MASKLEN_TO_MASK(encod_grp_addr.masklen, grp_mask);
+	    GET_EGADDR(&addr, data);
+	    MASKLEN_TO_MASK(addr.masklen, mask);
 	    add_rp_grp_entry(&cand_rp_list,
 			     &grp_mask_list,
 			     my_cand_rp_address, my_cand_rp_priority,
 			     my_cand_rp_holdtime,
-			     encod_grp_addr.mcast_addr, grp_mask,
+			     addr.mcast_addr, mask,
 			     my_bsr_hash_mask,
 			     curr_bsr_fragment_tag);
 	    /* TODO: Check for datalen */
@@ -3193,8 +3142,8 @@ int send_pim_cand_rp_adv(void)
 	return TRUE;
     }
 
-    data_ptr = (u_int8 *)(pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t));
-    memcpy(data_ptr, cand_rp_adv_message.buffer, cand_rp_adv_message.message_size);
+    data = (u_int8 *)(pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t));
+    memcpy(data, cand_rp_adv_message.buffer, cand_rp_adv_message.message_size);
     send_pim_unicast(pim_send_buf, my_cand_rp_address, curr_bsr_address,
 		     PIM_CAND_RP_ADV, cand_rp_adv_message.message_size);
 
