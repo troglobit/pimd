@@ -44,10 +44,10 @@
  * `whatever_bytes` is the maximum number of bytes within the test interval.
  */
 u_int32 pim_reg_rate_bytes     =
-                (PIM_DEFAULT_REG_RATE * PIM_DEFAULT_REG_RATE_INTERVAL) / 10;
+		(PIM_DEFAULT_REG_RATE * PIM_DEFAULT_REG_RATE_INTERVAL) / 10;
 u_int32 pim_reg_rate_check_interval  = PIM_DEFAULT_REG_RATE_INTERVAL;
 u_int32 pim_data_rate_bytes    =
-                (PIM_DEFAULT_DATA_RATE * PIM_DEFAULT_DATA_RATE_INTERVAL) / 10;
+		(PIM_DEFAULT_DATA_RATE * PIM_DEFAULT_DATA_RATE_INTERVAL) / 10;
 u_int32 pim_data_rate_check_interval = PIM_DEFAULT_DATA_RATE_INTERVAL;
 
 
@@ -106,10 +106,10 @@ void init_timers(void)
     /* XXX: for simplicity, both the intervals are the same */
     if (pim_data_rate_check_interval < pim_reg_rate_check_interval)
 	pim_reg_rate_check_interval = pim_data_rate_check_interval;
-    
+
     SET_TIMER(pim_data_rate_timer, 3*pim_data_rate_check_interval/2);
     SET_TIMER(pim_reg_rate_timer, 3*pim_reg_rate_check_interval/2);
-    
+
     /* Initialize the srcentry and rpentry used to save the old routes
      * during unicast routing change discovery process.
      */
@@ -149,7 +149,7 @@ void age_vifs(void)
 
 /* XXX: TODO: currently, sending to qe* interface which is DOWN
  * doesn't return error (ENETDOWN) on my Solaris machine,
- * so have to check periodically the 
+ * so have to check periodically the
  * interfaces status. If this is fixed, just remove the defs around
  * the "if (vifs_down)" line.
  */
@@ -180,7 +180,7 @@ void age_vifs(void)
 
 	    delete_pim_nbr(curr_nbr);
 	}
-	
+
 	/* PIM_HELLO periodic */
 	IF_TIMEOUT(v->uv_pim_hello_timer)
 	    send_pim_hello(v, PIM_TIMER_HELLO_HOLDTIME);
@@ -224,7 +224,7 @@ void age_vifs(void)
  *  number of bytes forwarded after the lastest timeout. If bigger than
  *  a given threshold, then switch to the shortest path.
  *  If `number_of_bytes == 0`, then delete the kernel cache entry.
- * 
+ *
  * Only the entries which have the Join/Prune timer expired are sent.
  * In the special case when we have ~(S,G)RPbit Prune entry, we must
  * include any (*,G) or (*,*,RP) XXX: ???? what and why?
@@ -310,11 +310,11 @@ void age_routes(void)
     }
 
     rate_flag = pim_data_rate_flag | pim_reg_rate_flag;
-    
+
     /* Scan the (*,*,RP) entries */
     for (cand_rp_ptr = cand_rp_list; cand_rp_ptr != (cand_rp_t *)NULL;
 	 cand_rp_ptr = cand_rp_ptr->next) {
-	
+
 	rpentry_ptr = cand_rp_ptr->rpentry;
 	/* Need to save only `incoming` and `upstream` to discover
 	 * unicast route changes. `metric` and `preference` are not
@@ -348,7 +348,7 @@ void age_routes(void)
 		}
 	    }
 	}
-	
+
 	rp_action = PIM_ACTION_NOTHING;
 	mrtentry_rp = cand_rp_ptr->rpentry->mrtlink;
 	if (mrtentry_rp != (mrtentry_t *)NULL) {
@@ -374,7 +374,7 @@ void age_routes(void)
 
 	    if (rate_flag == TRUE) {
 		/* Check the activity for this entry */
-		
+
 		/* XXX: the spec says to start monitoring first the
 		 * total traffic for all senders for particular (*,*,RP)
 		 * or (*,G) and if the total traffic exceeds some
@@ -396,7 +396,7 @@ void age_routes(void)
 		 * shared tree, hence after a switch to the source-specific
 		 * tree occurs, a source with low datarate, but
 		 * periodically sending will keep the (S,G) states.
-		 * 
+		 *
 		 * If a source with kernel cache entry has been idle
 		 * after the last time a check of the datarate for the
 		 * whole routing table, then delete its kernel cache
@@ -416,7 +416,7 @@ void age_routes(void)
 			 * routing entry or that particular (s,g) was
 			 * idle. Delete the routing entry from the kernel.
 			 */
-			delete_single_kernel_cache(mrtentry_rp, 
+			delete_single_kernel_cache(mrtentry_rp,
 						   kernel_cache_ptr);
 			continue;
 		    }
@@ -431,7 +431,7 @@ void age_routes(void)
 						mrtentry_rp->oifs)) {
 #ifdef KERNEL_MFC_WC_G
 			    if (kernel_cache_ptr->source == INADDR_ANY_N) {
-				delete_single_kernel_cache(mrtentry_rp, 
+				delete_single_kernel_cache(mrtentry_rp,
 							   kernel_cache_ptr);
 				mrtentry_rp->flags |= MRTF_MFC_CLONE_SG;
 				continue;
@@ -449,7 +449,7 @@ void age_routes(void)
 			if (mrtentry_rp->incoming == reg_vif_num) {
 #ifdef KERNEL_MFC_WC_G
 			    if (kernel_cache_ptr->source == INADDR_ANY_N) {
-				delete_single_kernel_cache(mrtentry_rp, 
+				delete_single_kernel_cache(mrtentry_rp,
 							   kernel_cache_ptr);
 				mrtentry_rp->flags |= MRTF_MFC_CLONE_SG;
 				continue;
@@ -476,7 +476,7 @@ void age_routes(void)
 				 rp_action);
 		SET_TIMER(mrtentry_rp->jp_timer, PIM_JOIN_PRUNE_PERIOD);
 	    }
-	    
+
 	    /* Assert timer */
 	    if (mrtentry_rp->flags & MRTF_ASSERTED) {
 		IF_TIMEOUT(mrtentry_rp->assert_timer) {
@@ -502,7 +502,7 @@ void age_routes(void)
 
 	/* Just in case if that (*,*,RP) was deleted */
 	mrtentry_rp = cand_rp_ptr->rpentry->mrtlink;
-	
+
 	/* Check the (*,G) and (S,G) entries */
 	for (rp_grp_entry_ptr = cand_rp_ptr->rp_grp_next;
 	     rp_grp_entry_ptr != (rp_grp_entry_t *)NULL;
@@ -513,7 +513,7 @@ void age_routes(void)
 		grpentry_ptr_next = grpentry_ptr->rpnext;
 		mrtentry_grp = grpentry_ptr->grp_route;
 		mrtentry_srcs = grpentry_ptr->mrtlink;
-		
+
 		grp_action = PIM_ACTION_NOTHING;
 		if (mrtentry_grp != (mrtentry_t *)NULL) {
 		    /* The (*,G) entry */
@@ -522,11 +522,11 @@ void age_routes(void)
 		    for (vifi = 0; vifi < numvifs; vifi++) {
 			if (VIFM_ISSET(vifi, mrtentry_grp->joined_oifs))
 			    IF_TIMEOUT(mrtentry_grp->vif_timers[vifi]) {
-                               VIFM_CLR(vifi, mrtentry_grp->joined_oifs);
-                               change_flag = TRUE;
-                            }
+			       VIFM_CLR(vifi, mrtentry_grp->joined_oifs);
+			       change_flag = TRUE;
+			    }
 		    }
-		    
+
 		    if ((change_flag == TRUE) || (update_rp_iif == TRUE)) {
 			change_interfaces(mrtentry_grp,
 					  rpentry_ptr->incoming,
@@ -536,7 +536,7 @@ void age_routes(void)
 					  mrtentry_grp->asserted_oifs, 0);
 			mrtentry_grp->upstream = rpentry_ptr->upstream;
 		    }
-		    
+
 		    /* Check the sources activity */
 		    if (rate_flag == TRUE) {
 			for (kernel_cache_ptr = mrtentry_grp->kernel_cache;
@@ -603,7 +603,7 @@ void age_routes(void)
 			    }
 			}
 		    }
-		    
+
 		    dont_calc_action = FALSE;
 		    if (rp_action != PIM_ACTION_NOTHING) {
 			grp_action = join_or_prune(mrtentry_grp,
@@ -631,7 +631,7 @@ void age_routes(void)
 					 grp_action);
 			SET_TIMER(mrtentry_grp->jp_timer, PIM_JOIN_PRUNE_PERIOD);
 		    }
-		    
+
 		    /* Assert timer */
 		    if (mrtentry_grp->flags & MRTF_ASSERTED) {
 			IF_TIMEOUT(mrtentry_grp->assert_timer) {
@@ -655,7 +655,7 @@ void age_routes(void)
 			delete_mrtentry(mrtentry_grp);
 		    }
 		} /* if (mrtentry_grp != NULL) */
-		
+
 
 		/* For all (S,G) for this group */
 		/* XXX: mrtentry_srcs was set before */
@@ -663,7 +663,7 @@ void age_routes(void)
 		      mrtentry_srcs = mrtentry_srcs_next) {
 		    /* routing entry */
 		    mrtentry_srcs_next = mrtentry_srcs->grpnext;
-		    
+
 		    /* outgoing interfaces timers */
 		    change_flag = FALSE;
 		    for (vifi = 0; vifi < numvifs; vifi++) {
@@ -678,7 +678,7 @@ void age_routes(void)
 			    }
 			}
 		    }
-		    
+
 		    update_src_iif = FALSE;
 		    if (ucast_flag == TRUE) {
 			if (!(mrtentry_srcs->flags & MRTF_RP)) {
@@ -727,7 +727,7 @@ void age_routes(void)
 			    }
 			}
 		    }
-		    
+
 		    if ((change_flag == TRUE) || (update_src_iif == TRUE))
 			/* Flush the changes */
 			change_interfaces(mrtentry_srcs,
@@ -736,7 +736,7 @@ void age_routes(void)
 					  mrtentry_srcs->pruned_oifs,
 					  mrtentry_srcs->leaves,
 					  mrtentry_srcs->asserted_oifs, 0);
-			
+
 		    if (rate_flag == TRUE) {
 			for (kernel_cache_ptr = mrtentry_srcs->kernel_cache;
 			     kernel_cache_ptr != (kernel_cache_t *)NULL;
@@ -763,7 +763,7 @@ void age_routes(void)
 			     * only when we have (S,G)RPbit in the forwarder
 			     * or the RP itself.
 			     */
-#if 0			
+#if 0
 			    /* XXX: A bug report I've received report
 			     * says that we don't need this. I think
 			     * it is correct, but want this around
@@ -800,7 +800,7 @@ void age_routes(void)
 				if (mrtentry_srcs->incoming == reg_vif_num)
 				    switch_shortest_path(kernel_cache_ptr->source, kernel_cache_ptr->group);
 			    }
-				
+
 			    /* XXX: currentry the spec doesn't say to switch
 			     * back to the shared tree if low datarate,
 			     * but if needed to implement, the check must be
@@ -831,7 +831,7 @@ void age_routes(void)
 				FIRE_TIMER(mrtentry_srcs->jp_timer);
 			}
 		    }
-			
+
 		    /* Join/Prune timer */
 		    IF_TIMEOUT(mrtentry_srcs->jp_timer) {
 			if ((dont_calc_action != TRUE) || (rpentry_ptr->upstream != mrtentry_srcs->upstream))
@@ -917,7 +917,7 @@ void age_routes(void)
 			    }
 			}
 		    }
-		    
+
 		    /* routing entry */
 		    if (TIMEOUT(mrtentry_srcs->timer)) {
 			if (VIFM_ISEMPTY(mrtentry_srcs->leaves)) {
@@ -955,12 +955,12 @@ void age_routes(void)
 	    pack_and_send_jp_message(pim_nbr_ptr);
 	}
     }
-    
+
     IF_DEBUG(DEBUG_PIM_MRT)
 	dump_pim_mrt(stderr);
     return;
 }
-    
+
 
 /*
  * TODO: timeout the RP-group mapping entries during the scan of the
@@ -980,7 +980,7 @@ void age_misc(void)
 	/* If we timeout an entry, the grp_mask_ptr entry might be
 	 * removed.
 	 */
-	grp_mask_next = grp_mask_ptr->next; 
+	grp_mask_next = grp_mask_ptr->next;
 	for (rp_grp_entry_ptr = grp_mask_ptr->grp_rp_next;
 	     rp_grp_entry_ptr != (rp_grp_entry_t *)NULL;
 	     rp_grp_entry_ptr = rp_grp_entry_next) {
@@ -1000,7 +1000,7 @@ void age_misc(void)
 	    SET_TIMER(pim_cand_rp_adv_timer, my_cand_rp_adv_period);
 	}
     }
-    
+
     /* bootstrap-timer */
     IF_TIMEOUT(pim_bootstrap_timer) {
 	if (cand_bsr_flag == FALSE) {
@@ -1020,7 +1020,7 @@ void age_misc(void)
 	    /* I am Cand-BSR, so set the current BSR to me */
 	    if (curr_bsr_address == my_bsr_address) {
 		SET_TIMER(pim_bootstrap_timer, PIM_BOOTSTRAP_PERIOD);
-	        send_pim_bootstrap();
+		send_pim_bootstrap();
 	    }
 	    else {
 		/* Short delay before becoming the BSR and start
@@ -1035,8 +1035,8 @@ void age_misc(void)
 	    }
 	}
     }
-    
-   
+
+
     IF_DEBUG(DEBUG_PIM_BOOTSTRAP | DEBUG_PIM_CAND_RP)
 	dump_rp_set(stderr);
     /* TODO: XXX: anything else to timeout */
