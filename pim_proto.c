@@ -318,7 +318,7 @@ void delete_pim_nbr(pim_nbr_entry_t *nbr_delete)
 
 		mrt = grp->grp_route;
 		if (mrt) {
-		    mrt->upstream = rp->upstream;
+		    mrt->upstream   = rp->upstream;
 		    mrt->metric     = rp->metric;
 		    mrt->preference = rp->preference;
 		    change_interfaces(mrt,
@@ -332,9 +332,9 @@ void delete_pim_nbr(pim_nbr_entry_t *nbr_delete)
 		/* Update only the (S,G)RPbit entries for this group */
 		for (mrt_srcs = grp->mrtlink; mrt_srcs; mrt_srcs = mrt_srcs->grpnext) {
 		    if (mrt_srcs->flags & MRTF_RP) {
-			mrt->upstream = rp->upstream;
-			mrt->metric = rp->metric;
-			mrt->preference = rp->preference;
+			mrt_srcs->upstream   = rp->upstream;
+			mrt_srcs->metric     = rp->metric;
+			mrt_srcs->preference = rp->preference;
 			change_interfaces(mrt_srcs,
 					  rp->incoming,
 					  mrt_srcs->joined_oifs,
