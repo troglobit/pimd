@@ -50,13 +50,6 @@ u_int32 pim_data_rate_bytes    =
 		(PIM_DEFAULT_DATA_RATE * PIM_DEFAULT_DATA_RATE_INTERVAL) / 10;
 u_int32 pim_data_rate_check_interval = PIM_DEFAULT_DATA_RATE_INTERVAL;
 
-
-
-/*
- * Local functions definitions.
- */
-
-
 /*
  * Local variables
  */
@@ -113,29 +106,28 @@ void init_timers(void)
     /* Initialize the srcentry and rpentry used to save the old routes
      * during unicast routing change discovery process.
      */
-    srcentry_save.prev       = (srcentry_t *)NULL;
-    srcentry_save.next       = (srcentry_t *)NULL;
+    srcentry_save.prev       = NULL;
+    srcentry_save.next       = NULL;
     srcentry_save.address    = INADDR_ANY_N;
-    srcentry_save.mrtlink    = (mrtentry_t *)NULL;
+    srcentry_save.mrtlink    = NULL;
     srcentry_save.incoming   = NO_VIF;
-    srcentry_save.upstream   = (pim_nbr_entry_t *)NULL;
+    srcentry_save.upstream   = NULL;
     srcentry_save.metric     = ~0;
     srcentry_save.preference = ~0;
     RESET_TIMER(srcentry_save.timer);
-    srcentry_save.cand_rp    = (cand_rp_t *)NULL;
+    srcentry_save.cand_rp    = NULL;
 
-    rpentry_save.prev       = (rpentry_t *)NULL;
-    rpentry_save.next       = (rpentry_t *)NULL;
+    rpentry_save.prev       = NULL;
+    rpentry_save.next       = NULL;
     rpentry_save.address    = INADDR_ANY_N;
-    rpentry_save.mrtlink    = (mrtentry_t *)NULL;
+    rpentry_save.mrtlink    = NULL;
     rpentry_save.incoming   = NO_VIF;
-    rpentry_save.upstream   = (pim_nbr_entry_t *)NULL;
+    rpentry_save.upstream   = NULL;
     rpentry_save.metric     = ~0;
     rpentry_save.preference = ~0;
     RESET_TIMER(rpentry_save.timer);
-    rpentry_save.cand_rp    = (cand_rp_t *)NULL;
+    rpentry_save.cand_rp    = NULL;
 }
-
 
 /*
  * On every timer interrupt, advance (i.e. decrease) the timer for each
@@ -143,16 +135,16 @@ void init_timers(void)
  */
 void age_vifs(void)
 {
-    vifi_t vifi;
-    struct uvif *v;
-    pim_nbr_entry_t *next_nbr, *curr_nbr;
+    vifi_t           vifi;
+    struct uvif     *v;
+    pim_nbr_entry_t *next, *curr;
 
-/* XXX: TODO: currently, sending to qe* interface which is DOWN
- * doesn't return error (ENETDOWN) on my Solaris machine,
- * so have to check periodically the
- * interfaces status. If this is fixed, just remove the defs around
- * the "if (vifs_down)" line.
- */
+    /* XXX: TODO: currently, sending to qe* interface which is DOWN
+     * doesn't return error (ENETDOWN) on my Solaris machine,
+     * so have to check periodically the
+     * interfaces status. If this is fixed, just remove the defs around
+     * the "if (vifs_down)" line.
+     */
 
 #if (!((defined SunOS) && (SunOS >= 50)))
     if (vifs_down)
@@ -163,22 +155,22 @@ void age_vifs(void)
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
 	if (v->uv_flags & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER))
 	    continue;
+
 	/* Timeout neighbors */
-	for (curr_nbr = v->uv_pim_neighbors; curr_nbr != NULL;
-	     curr_nbr = next_nbr) {
-	    next_nbr = curr_nbr->next;
-	    /*
-	     * Never timeout neighbors with holdtime = 0xffff.
+	for (curr = v->uv_pim_neighbors; curr; curr = next) {
+	    next = curr->next;
+
+	    /* Never timeout neighbors with holdtime = 0xffff.
 	     * This may be used with ISDN lines to avoid keeping the
 	     * link up with periodic Hello messages.
 	     */
 	    /* TODO: XXX: TIMER implem. dependency! */
-	    if (PIM_MESSAGE_HELLO_HOLDTIME_FOREVER == curr_nbr->timer)
+	    if (PIM_MESSAGE_HELLO_HOLDTIME_FOREVER == curr->timer)
 		continue;
-	    IF_NOT_TIMEOUT(curr_nbr->timer)
+	    IF_NOT_TIMEOUT(curr->timer)
 		continue;
 
-	    delete_pim_nbr(curr_nbr);
+	    delete_pim_nbr(curr);
 	}
 
 	/* PIM_HELLO periodic */
@@ -193,8 +185,7 @@ void age_vifs(void)
 	     * because different entries have different Join/Prune timer.
 	     * Probably don't need the Join/Prune timer per vif.
 	     */
-	    send_pim_join_prune(vifi, (pim_nbr_entry_t *)NULL,
-				PIM_JOIN_PRUNE_HOLDTIME);
+	    send_pim_join_prune(vifi, NULL, PIM_JOIN_PRUNE_HOLDTIME);
 	else
 	    /* TODO: XXX: TIMER implem. dependency! */
 	    v->uv_jp_timer -= TIMER_INTERVAL;
@@ -259,26 +250,26 @@ void age_vifs(void)
  */
 void age_routes(void)
 {
-    cand_rp_t  *cand_rp_ptr;
-    grpentry_t *grpentry_ptr;
-    grpentry_t *grpentry_ptr_next;
-    mrtentry_t *mrtentry_grp;
-    mrtentry_t *mrtentry_rp;
-    mrtentry_t *mrtentry_wide;
-    mrtentry_t *mrtentry_srcs;
-    mrtentry_t *mrtentry_srcs_next;
+    cand_rp_t  *cand_rp;
+    grpentry_t *grp;
+    grpentry_t *grp_next;
+    mrtentry_t *mrt_grp;
+    mrtentry_t *mrt_rp;
+    mrtentry_t *mrt_wide;
+    mrtentry_t *mrt_srcs;
+    mrtentry_t *mrt_srcs_next;
+    rp_grp_entry_t *rp_grp;
     struct uvif *v;
     vifi_t  vifi;
-    pim_nbr_entry_t *pim_nbr_ptr;
+    pim_nbr_entry_t *nbr;
     int change_flag;
     int rp_action, grp_action, src_action = PIM_ACTION_NOTHING, src_action_rp = PIM_ACTION_NOTHING;
     int dont_calc_action;
     int did_switch_flag;
-    rp_grp_entry_t *rp_grp_entry_ptr;
-    kernel_cache_t *kernel_cache_ptr;
-    kernel_cache_t *kernel_cache_next;
+    kernel_cache_t *kc;
+    kernel_cache_t *kc_next;
     u_long curr_bytecnt;
-    rpentry_t *rpentry_ptr;
+    rpentry_t *rp;
     int update_rp_iif;
     int update_src_iif;
     vifbitmap_t new_pruned_oifs;
@@ -294,6 +285,7 @@ void age_routes(void)
     ELSE {
 	ucast_flag = FALSE;
     }
+
     IF_TIMEOUT(pim_data_rate_timer) {
 	pim_data_rate_flag = TRUE;
 	SET_TIMER(pim_data_rate_timer, pim_data_rate_check_interval);
@@ -301,6 +293,7 @@ void age_routes(void)
     ELSE {
 	pim_data_rate_flag = FALSE;
     }
+
     IF_TIMEOUT(pim_reg_rate_timer) {
 	pim_reg_rate_flag = TRUE;
 	SET_TIMER(pim_reg_rate_timer, pim_reg_rate_check_interval);
@@ -312,64 +305,58 @@ void age_routes(void)
     rate_flag = pim_data_rate_flag | pim_reg_rate_flag;
 
     /* Scan the (*,*,RP) entries */
-    for (cand_rp_ptr = cand_rp_list; cand_rp_ptr != (cand_rp_t *)NULL;
-	 cand_rp_ptr = cand_rp_ptr->next) {
+    for (cand_rp = cand_rp_list; cand_rp; cand_rp = cand_rp->next) {
+	rp = cand_rp->rpentry;
 
-	rpentry_ptr = cand_rp_ptr->rpentry;
 	/* Need to save only `incoming` and `upstream` to discover
 	 * unicast route changes. `metric` and `preference` are not
 	 * interesting for us.
 	 */
-	rpentry_save.incoming = rpentry_ptr->incoming;
-	rpentry_save.upstream = rpentry_ptr->upstream;
+	rpentry_save.incoming = rp->incoming;
+	rpentry_save.upstream = rp->upstream;
 
 	update_rp_iif = FALSE;
-	if ((ucast_flag == TRUE) &&
-	    (rpentry_ptr->address != my_cand_rp_address)) {
+	if ((ucast_flag == TRUE) && (rp->address != my_cand_rp_address)) {
 	    /* I am not the RP. If I was the RP, then the iif is
-	     * register_vif and no need to reset it.
-	     */
-	    if (set_incoming(rpentry_ptr, PIM_IIF_RP) != TRUE) {
+	     * register_vif and no need to reset it. */
+	    if (set_incoming(rp, PIM_IIF_RP) != TRUE) {
 		/* TODO: XXX: no route to that RP. Panic? There is a high
 		 * probability the network is partitioning so immediately
 		 * remapping to other RP is not a good idea. Better wait
 		 * the Bootstrap mechanism to take care of it and provide
-		 * me with correct Cand-RP-Set.
-		 */
-		;
+		 * me with correct Cand-RP-Set. */
 	    }
 	    else {
-		if ((rpentry_save.upstream != rpentry_ptr->upstream)
-		    || (rpentry_save.incoming != rpentry_ptr->incoming)) {
+		if ((rpentry_save.upstream != rp->upstream) ||
+		    (rpentry_save.incoming != rp->incoming)) {
 		    /* Routing change has occur. Update all (*,G)
-		     * and (S,G)RPbit iifs mapping to that RP
-		     */
+		     * and (S,G)RPbit iifs mapping to that RP */
 		    update_rp_iif = TRUE;
 		}
 	    }
 	}
 
 	rp_action = PIM_ACTION_NOTHING;
-	mrtentry_rp = cand_rp_ptr->rpentry->mrtlink;
-	if (mrtentry_rp != (mrtentry_t *)NULL) {
+	mrt_rp = cand_rp->rpentry->mrtlink;
+	if (mrt_rp) {
 	    /* outgoing interfaces timers */
 	    change_flag = FALSE;
 	    for (vifi = 0; vifi < numvifs; vifi++) {
-		if (VIFM_ISSET(vifi, mrtentry_rp->joined_oifs)) {
-		    IF_TIMEOUT(mrtentry_rp->vif_timers[vifi]) {
-			VIFM_CLR(vifi, mrtentry_rp->joined_oifs);
+		if (VIFM_ISSET(vifi, mrt_rp->joined_oifs)) {
+		    IF_TIMEOUT(mrt_rp->vif_timers[vifi]) {
+			VIFM_CLR(vifi, mrt_rp->joined_oifs);
 			change_flag = TRUE;
 		    }
 		}
 	    }
 	    if ((change_flag == TRUE) || (update_rp_iif == TRUE)) {
-		change_interfaces(mrtentry_rp,
-				  rpentry_ptr->incoming,
-				  mrtentry_rp->joined_oifs,
-				  mrtentry_rp->pruned_oifs,
-				  mrtentry_rp->leaves,
-				  mrtentry_rp->asserted_oifs, 0);
-		mrtentry_rp->upstream = rpentry_ptr->upstream;
+		change_interfaces(mrt_rp,
+				  rp->incoming,
+				  mrt_rp->joined_oifs,
+				  mrt_rp->pruned_oifs,
+				  mrt_rp->leaves,
+				  mrt_rp->asserted_oifs, 0);
+		mrt_rp->upstream = rp->upstream;
 	    }
 
 	    if (rate_flag == TRUE) {
@@ -402,88 +389,81 @@ void age_routes(void)
 		 * whole routing table, then delete its kernel cache
 		 * entry.
 		 */
-		for (kernel_cache_ptr = mrtentry_rp->kernel_cache;
-		     kernel_cache_ptr != (kernel_cache_t *)NULL;
-		     kernel_cache_ptr = kernel_cache_next) {
-		    kernel_cache_next = kernel_cache_ptr->next;
-		    curr_bytecnt = kernel_cache_ptr->sg_count.bytecnt;
-		    if (k_get_sg_cnt(udp_socket, kernel_cache_ptr->source,
-				     kernel_cache_ptr->group,
-				     &kernel_cache_ptr->sg_count)
-			|| (curr_bytecnt ==
-			    kernel_cache_ptr->sg_count.bytecnt)) {
+		for (kc = mrt_rp->kernel_cache; kc; kc = kc_next) {
+		    kc_next = kc->next;
+
+		    curr_bytecnt = kc->sg_count.bytecnt;
+		    if (k_get_sg_cnt(udp_socket, kc->source, kc->group, &kc->sg_count)
+			|| (curr_bytecnt == kc->sg_count.bytecnt)) {
 			/* Either for some reason there is no such
 			 * routing entry or that particular (s,g) was
 			 * idle. Delete the routing entry from the kernel.
 			 */
-			delete_single_kernel_cache(mrtentry_rp,
-						   kernel_cache_ptr);
+			delete_single_kernel_cache(mrt_rp, kc);
 			continue;
 		    }
+
 		    /* Check if the datarate was high enough to switch
-		     * to source specific tree.
-		     */
+		     * to source specific tree. */
+
 		    /* Forwarder initiated switch */
 		    did_switch_flag = FALSE;
-		    if (curr_bytecnt + pim_data_rate_bytes
-			< kernel_cache_ptr->sg_count.bytecnt) {
-			if (VIFM_LASTHOP_ROUTER(mrtentry_rp->leaves,
-						mrtentry_rp->oifs)) {
+		    if (curr_bytecnt + pim_data_rate_bytes < kc->sg_count.bytecnt) {
+			if (VIFM_LASTHOP_ROUTER(mrt_rp->leaves, mrt_rp->oifs)) {
 #ifdef KERNEL_MFC_WC_G
-			    if (kernel_cache_ptr->source == INADDR_ANY_N) {
-				delete_single_kernel_cache(mrtentry_rp,
-							   kernel_cache_ptr);
-				mrtentry_rp->flags |= MRTF_MFC_CLONE_SG;
+			    if (kc->source == INADDR_ANY_N) {
+				delete_single_kernel_cache(mrt_rp, kc);
+				mrt_rp->flags |= MRTF_MFC_CLONE_SG;
 				continue;
 			    }
 #endif /* KERNEL_MFC_WC_G */
-			    switch_shortest_path(kernel_cache_ptr->source,
-						 kernel_cache_ptr->group);
+			    switch_shortest_path(kc->source, kc->group);
 			    did_switch_flag = TRUE;
 			}
 		    }
+
 		    /* RP initiated switch */
-		    if ((did_switch_flag == FALSE)
-			&& (curr_bytecnt + pim_reg_rate_bytes
-			    < kernel_cache_ptr->sg_count.bytecnt)) {
-			if (mrtentry_rp->incoming == reg_vif_num) {
+		    if ((did_switch_flag == FALSE) &&
+			(curr_bytecnt + pim_reg_rate_bytes < kc->sg_count.bytecnt)) {
+			if (mrt_rp->incoming == reg_vif_num) {
 #ifdef KERNEL_MFC_WC_G
-			    if (kernel_cache_ptr->source == INADDR_ANY_N) {
-				delete_single_kernel_cache(mrtentry_rp,
-							   kernel_cache_ptr);
-				mrtentry_rp->flags |= MRTF_MFC_CLONE_SG;
+			    if (kc->source == INADDR_ANY_N) {
+				delete_single_kernel_cache(mrt_rp, kc);
+				mrt_rp->flags |= MRTF_MFC_CLONE_SG;
 				continue;
 			    }
 #endif /* KERNEL_MFC_WC_G */
-			    switch_shortest_path(kernel_cache_ptr->source,
-						 kernel_cache_ptr->group);
+			    switch_shortest_path(kc->source, kc->group);
 			}
 		    }
 		}
 	    }
+
 	    /* Join/Prune timer */
-	    IF_TIMEOUT(mrtentry_rp->jp_timer) {
-		rp_action = join_or_prune(mrtentry_rp,
-					  mrtentry_rp->upstream);
+	    IF_TIMEOUT(mrt_rp->jp_timer) {
+		rp_action = join_or_prune(mrt_rp, mrt_rp->upstream);
+
 		if (rp_action != PIM_ACTION_NOTHING)
-		    add_jp_entry(mrtentry_rp->upstream,
+		    add_jp_entry(mrt_rp->upstream,
 				 PIM_JOIN_PRUNE_HOLDTIME,
 				 htonl(CLASSD_PREFIX),
 				 STAR_STAR_RP_MSKLEN,
-				 mrtentry_rp->source->address,
+				 mrt_rp->source->address,
 				 SINGLE_SRC_MSKLEN,
 				 MRTF_RP | MRTF_WC,
 				 rp_action);
-		SET_TIMER(mrtentry_rp->jp_timer, PIM_JOIN_PRUNE_PERIOD);
+
+		SET_TIMER(mrt_rp->jp_timer, PIM_JOIN_PRUNE_PERIOD);
 	    }
 
 	    /* Assert timer */
-	    if (mrtentry_rp->flags & MRTF_ASSERTED) {
-		IF_TIMEOUT(mrtentry_rp->assert_timer) {
+	    if (mrt_rp->flags & MRTF_ASSERTED) {
+		IF_TIMEOUT(mrt_rp->assert_timer) {
 		    /* TODO: XXX: reset the upstream router now */
-		    mrtentry_rp->flags &= ~MRTF_ASSERTED;
+		    mrt_rp->flags &= ~MRTF_ASSERTED;
 		}
 	    }
+
 	    /* Register-Suppression timer */
 	    /* TODO: to reduce the kernel calls, if the timer is running,
 	     * install a negative cache entry in the kernel?
@@ -491,114 +471,92 @@ void age_routes(void)
 	    /* TODO: can we have Register-Suppression timer for (*,*,RP)?
 	     * Currently no...
 	     */
-	    IF_TIMEOUT(mrtentry_rp->rs_timer) {}
+	    IF_TIMEOUT(mrt_rp->rs_timer) {}
 
 	    /* routing entry */
-	    if ((TIMEOUT(mrtentry_rp->timer))
-		&& (VIFM_ISEMPTY(mrtentry_rp->leaves))) {
-		delete_mrtentry(mrtentry_rp);
-	    }
-	} /* mrtentry_rp != NULL */
+	    if ((TIMEOUT(mrt_rp->timer)) && (VIFM_ISEMPTY(mrt_rp->leaves)))
+		delete_mrtentry(mrt_rp);
+	} /* if (mrt_rp) */
 
 	/* Just in case if that (*,*,RP) was deleted */
-	mrtentry_rp = cand_rp_ptr->rpentry->mrtlink;
+	mrt_rp = cand_rp->rpentry->mrtlink;
 
 	/* Check the (*,G) and (S,G) entries */
-	for (rp_grp_entry_ptr = cand_rp_ptr->rp_grp_next;
-	     rp_grp_entry_ptr != (rp_grp_entry_t *)NULL;
-	     rp_grp_entry_ptr = rp_grp_entry_ptr->rp_grp_next) {
-	    for (grpentry_ptr = rp_grp_entry_ptr->grplink;
-		 grpentry_ptr != (grpentry_t *)NULL;
-		 grpentry_ptr = grpentry_ptr_next) {
-		grpentry_ptr_next = grpentry_ptr->rpnext;
-		mrtentry_grp = grpentry_ptr->grp_route;
-		mrtentry_srcs = grpentry_ptr->mrtlink;
-
+	for (rp_grp = cand_rp->rp_grp_next; rp_grp; rp_grp = rp_grp->rp_grp_next) {
+	    for (grp = rp_grp->grplink; grp; grp = grp_next) {
+		grp_next   = grp->rpnext;
 		grp_action = PIM_ACTION_NOTHING;
-		if (mrtentry_grp != (mrtentry_t *)NULL) {
+		mrt_grp    = grp->grp_route;
+		mrt_srcs   = grp->mrtlink;
+
+		if (mrt_grp) {
 		    /* The (*,G) entry */
 		    /* outgoing interfaces timers */
 		    change_flag = FALSE;
 		    for (vifi = 0; vifi < numvifs; vifi++) {
-			if (VIFM_ISSET(vifi, mrtentry_grp->joined_oifs))
-			    IF_TIMEOUT(mrtentry_grp->vif_timers[vifi]) {
-			       VIFM_CLR(vifi, mrtentry_grp->joined_oifs);
-			       change_flag = TRUE;
+			if (VIFM_ISSET(vifi, mrt_grp->joined_oifs))
+			    IF_TIMEOUT(mrt_grp->vif_timers[vifi]) {
+				VIFM_CLR(vifi, mrt_grp->joined_oifs);
+				change_flag = TRUE;
 			    }
 		    }
 
 		    if ((change_flag == TRUE) || (update_rp_iif == TRUE)) {
-			change_interfaces(mrtentry_grp,
-					  rpentry_ptr->incoming,
-					  mrtentry_grp->joined_oifs,
-					  mrtentry_grp->pruned_oifs,
-					  mrtentry_grp->leaves,
-					  mrtentry_grp->asserted_oifs, 0);
-			mrtentry_grp->upstream = rpentry_ptr->upstream;
+			change_interfaces(mrt_grp,
+					  rp->incoming,
+					  mrt_grp->joined_oifs,
+					  mrt_grp->pruned_oifs,
+					  mrt_grp->leaves,
+					  mrt_grp->asserted_oifs, 0);
+			mrt_grp->upstream = rp->upstream;
 		    }
 
 		    /* Check the sources activity */
 		    if (rate_flag == TRUE) {
-			for (kernel_cache_ptr = mrtentry_grp->kernel_cache;
-			     kernel_cache_ptr != (kernel_cache_t *)NULL;
-			     kernel_cache_ptr = kernel_cache_next) {
-			    kernel_cache_next = kernel_cache_ptr->next;
-			    curr_bytecnt =
-				kernel_cache_ptr->sg_count.bytecnt;
-			    if (k_get_sg_cnt(udp_socket,
-					     kernel_cache_ptr->source,
-					     kernel_cache_ptr->group,
-					     &kernel_cache_ptr->sg_count)
-				|| (curr_bytecnt ==
-				    kernel_cache_ptr->sg_count.bytecnt)) {
+			for (kc = mrt_grp->kernel_cache; kc; kc = kc_next) {
+			    kc_next = kc->next;
+
+			    curr_bytecnt = kc->sg_count.bytecnt;
+			    if (k_get_sg_cnt(udp_socket, kc->source, kc->group, &kc->sg_count) ||
+				(curr_bytecnt == kc->sg_count.bytecnt)) {
 				/* Either for whatever reason there is
 				 * no such routing entry or that
-				 * particular (s,g) was idle.
-				 * Delete the routing entry from
-				 * the kernel.
-				 */
-				delete_single_kernel_cache(mrtentry_grp,
-							   kernel_cache_ptr);
+				 * particular (s,g) was idle.  Delete
+				 * the routing entry from the kernel. */
+				delete_single_kernel_cache(mrt_grp, kc);
 				continue;
 			    }
+
 			    /* Check if the datarate was high enough to
 			     * switch to source specific tree.
 			     */
 			    /* Forwarder initiated switch */
 			    did_switch_flag = FALSE;
-			    if (curr_bytecnt + pim_data_rate_bytes
-				< kernel_cache_ptr->sg_count.bytecnt) {
-				if (VIFM_LASTHOP_ROUTER(mrtentry_grp->leaves,
-							mrtentry_grp->oifs)) {
+			    if (curr_bytecnt + pim_data_rate_bytes < kc->sg_count.bytecnt) {
+				if (VIFM_LASTHOP_ROUTER(mrt_grp->leaves, mrt_grp->oifs)) {
 #ifdef KERNEL_MFC_WC_G
-				    if (kernel_cache_ptr->source
-					== INADDR_ANY_N) {
-					delete_single_kernel_cache(mrtentry_grp, kernel_cache_ptr);
-					mrtentry_grp->flags
-					    |= MRTF_MFC_CLONE_SG;
+				    if (kc->source == INADDR_ANY_N) {
+					delete_single_kernel_cache(mrt_grp, kc);
+					mrt_grp->flags |= MRTF_MFC_CLONE_SG;
 					continue;
 				    }
 #endif /* KERNEL_MFC_WC_G */
-				    switch_shortest_path(kernel_cache_ptr->source, kernel_cache_ptr->group);
+				    switch_shortest_path(kc->source, kc->group);
 				    did_switch_flag = TRUE;
 				}
 			    }
 			    /* RP initiated switch */
-			    if ((did_switch_flag == FALSE)
-				&& (curr_bytecnt + pim_reg_rate_bytes
-				    < kernel_cache_ptr->sg_count.bytecnt)){
-				if (mrtentry_grp->incoming == reg_vif_num) {
+			    if ((did_switch_flag == FALSE) &&
+				(curr_bytecnt + pim_reg_rate_bytes < kc->sg_count.bytecnt)){
+				if (mrt_grp->incoming == reg_vif_num) {
 #ifdef KERNEL_MFC_WC_G
-				    if (kernel_cache_ptr->source
-					== INADDR_ANY_N) {
-					delete_single_kernel_cache(mrtentry_grp, kernel_cache_ptr);
-					mrtentry_grp->flags
-					    |= MRTF_MFC_CLONE_SG;
+				    if (kc->source == INADDR_ANY_N) {
+					delete_single_kernel_cache(mrt_grp, kc);
+					mrt_grp->flags |= MRTF_MFC_CLONE_SG;
 					continue;
 				    }
 #endif /* KERNEL_MFC_WC_G */
-				    switch_shortest_path(kernel_cache_ptr->source,
-							 kernel_cache_ptr->group);
+				    switch_shortest_path(kc->source, kc->group);
 				}
 			    }
 			}
@@ -606,37 +564,37 @@ void age_routes(void)
 
 		    dont_calc_action = FALSE;
 		    if (rp_action != PIM_ACTION_NOTHING) {
-			grp_action = join_or_prune(mrtentry_grp,
-						   mrtentry_grp->upstream);
 			dont_calc_action = TRUE;
-			if (((rp_action == PIM_ACTION_JOIN)
-			     && (grp_action == PIM_ACTION_PRUNE))
-			    || ((rp_action == PIM_ACTION_PRUNE)
-				&& (grp_action == PIM_ACTION_JOIN)))
-			    FIRE_TIMER(mrtentry_grp->jp_timer);
+
+			grp_action = join_or_prune(mrt_grp, mrt_grp->upstream);
+			if (((rp_action == PIM_ACTION_JOIN)  && (grp_action == PIM_ACTION_PRUNE)) ||
+			    ((rp_action == PIM_ACTION_PRUNE) && (grp_action == PIM_ACTION_JOIN)))
+			    FIRE_TIMER(mrt_grp->jp_timer);
 		    }
+
+
 		    /* Join/Prune timer */
-		    IF_TIMEOUT(mrtentry_grp->jp_timer) {
+		    IF_TIMEOUT(mrt_grp->jp_timer) {
 			if (dont_calc_action != TRUE)
-			    grp_action = join_or_prune(mrtentry_grp,
-						       mrtentry_grp->upstream);
+			    grp_action = join_or_prune(mrt_grp, mrt_grp->upstream);
+
 			if (grp_action != PIM_ACTION_NOTHING)
-			    add_jp_entry(mrtentry_grp->upstream,
+			    add_jp_entry(mrt_grp->upstream,
 					 PIM_JOIN_PRUNE_HOLDTIME,
-					 mrtentry_grp->group->group,
+					 mrt_grp->group->group,
 					 SINGLE_GRP_MSKLEN,
-					 cand_rp_ptr->rpentry->address,
+					 cand_rp->rpentry->address,
 					 SINGLE_SRC_MSKLEN,
 					 MRTF_RP | MRTF_WC,
 					 grp_action);
-			SET_TIMER(mrtentry_grp->jp_timer, PIM_JOIN_PRUNE_PERIOD);
+			SET_TIMER(mrt_grp->jp_timer, PIM_JOIN_PRUNE_PERIOD);
 		    }
 
 		    /* Assert timer */
-		    if (mrtentry_grp->flags & MRTF_ASSERTED) {
-			IF_TIMEOUT(mrtentry_grp->assert_timer) {
+		    if (mrt_grp->flags & MRTF_ASSERTED) {
+			IF_TIMEOUT(mrt_grp->assert_timer) {
 			    /* TODO: XXX: reset the upstream router now */
-			    mrtentry_grp->flags &= ~MRTF_ASSERTED;
+			    mrt_grp->flags &= ~MRTF_ASSERTED;
 			}
 		    }
 		    /* Register-Suppression timer */
@@ -647,32 +605,28 @@ void age_routes(void)
 		    /* TODO: currently cannot have Register-Suppression
 		     * timer for (*,G) entry, but keep this around.
 		     */
-		    IF_TIMEOUT(mrtentry_grp->rs_timer) {}
+		    IF_TIMEOUT(mrt_grp->rs_timer) {}
 
 		    /* routing entry */
-		    if ((TIMEOUT(mrtentry_grp->timer))
-			&& (VIFM_ISEMPTY(mrtentry_grp->leaves))) {
-			delete_mrtentry(mrtentry_grp);
-		    }
-		} /* if (mrtentry_grp != NULL) */
+		    if ((TIMEOUT(mrt_grp->timer)) && (VIFM_ISEMPTY(mrt_grp->leaves)))
+			delete_mrtentry(mrt_grp);
+		} /* if (mrt_grp) */
 
 
 		/* For all (S,G) for this group */
-		/* XXX: mrtentry_srcs was set before */
-		for ( ; mrtentry_srcs != (mrtentry_t *)NULL;
-		      mrtentry_srcs = mrtentry_srcs_next) {
+		/* XXX: mrt_srcs was set before */
+		for (; mrt_srcs; mrt_srcs = mrt_srcs_next) {
 		    /* routing entry */
-		    mrtentry_srcs_next = mrtentry_srcs->grpnext;
+		    mrt_srcs_next = mrt_srcs->grpnext;
 
 		    /* outgoing interfaces timers */
 		    change_flag = FALSE;
 		    for (vifi = 0; vifi < numvifs; vifi++) {
-			if (VIFM_ISSET(vifi, mrtentry_srcs->joined_oifs)) {
+			if (VIFM_ISSET(vifi, mrt_srcs->joined_oifs)) {
 			    /* TODO: checking for reg_num_vif is slow! */
 			    if (vifi != reg_vif_num) {
-				IF_TIMEOUT(mrtentry_srcs->vif_timers[vifi]) {
-				    VIFM_CLR(vifi,
-					     mrtentry_srcs->joined_oifs);
+				IF_TIMEOUT(mrt_srcs->vif_timers[vifi]) {
+				    VIFM_CLR(vifi, mrt_srcs->joined_oifs);
 				    change_flag = TRUE;
 				}
 			    }
@@ -681,81 +635,62 @@ void age_routes(void)
 
 		    update_src_iif = FALSE;
 		    if (ucast_flag == TRUE) {
-			if (!(mrtentry_srcs->flags & MRTF_RP)) {
+			if (!(mrt_srcs->flags & MRTF_RP)) {
 			    /* iif toward the source */
-			    srcentry_save.incoming =
-				mrtentry_srcs->source->incoming;
-			    srcentry_save.upstream =
-				mrtentry_srcs->source->upstream;
-			    if (set_incoming(mrtentry_srcs->source,
-					     PIM_IIF_SOURCE) != TRUE) {
-				/*
-				 * XXX: not in the spec!
+			    srcentry_save.incoming = mrt_srcs->source->incoming;
+			    srcentry_save.upstream = mrt_srcs->source->upstream;
+			    if (set_incoming(mrt_srcs->source, PIM_IIF_SOURCE) != TRUE) {
+				/* XXX: not in the spec!
 				 * Cannot find route toward that source.
 				 * This is bad. Delete the entry.
 				 */
-				delete_mrtentry(mrtentry_srcs);
+				delete_mrtentry(mrt_srcs);
 				continue;
-			    }
-			    else {
+			    } else {
 				/* iif info found */
-				if ((srcentry_save.incoming !=
-				     mrtentry_srcs->incoming)
-				    || (srcentry_save.upstream !=
-					mrtentry_srcs->upstream)) {
+				if ((srcentry_save.incoming != mrt_srcs->incoming) ||
+				    (srcentry_save.upstream != mrt_srcs->upstream)) {
 				    /* Route change has occur */
 				    update_src_iif = TRUE;
-				    mrtentry_srcs->incoming =
-					mrtentry_srcs->source->incoming;
-				    mrtentry_srcs->upstream =
-					mrtentry_srcs->source->upstream;
+				    mrt_srcs->incoming = mrt_srcs->source->incoming;
+				    mrt_srcs->upstream = mrt_srcs->source->upstream;
 				}
 			    }
 			}
 			else {
 			    /* (S,G)RPBit with iif toward RP */
-			    if ((rpentry_save.upstream !=
-				 mrtentry_srcs->upstream)
-				|| (rpentry_save.incoming !=
-				    mrtentry_srcs->incoming)) {
+			    if ((rpentry_save.upstream != mrt_srcs->upstream) ||
+				(rpentry_save.incoming != mrt_srcs->incoming)) {
 				update_src_iif = TRUE; /* XXX: a hack */
 				/* XXX: setup the iif now! */
-				mrtentry_srcs->incoming =
-				    rpentry_ptr->incoming;
-				mrtentry_srcs->upstream =
-				    rpentry_ptr->upstream;
+				mrt_srcs->incoming = rp->incoming;
+				mrt_srcs->upstream = rp->upstream;
 			    }
 			}
 		    }
 
 		    if ((change_flag == TRUE) || (update_src_iif == TRUE))
 			/* Flush the changes */
-			change_interfaces(mrtentry_srcs,
-					  mrtentry_srcs->incoming,
-					  mrtentry_srcs->joined_oifs,
-					  mrtentry_srcs->pruned_oifs,
-					  mrtentry_srcs->leaves,
-					  mrtentry_srcs->asserted_oifs, 0);
+			change_interfaces(mrt_srcs,
+					  mrt_srcs->incoming,
+					  mrt_srcs->joined_oifs,
+					  mrt_srcs->pruned_oifs,
+					  mrt_srcs->leaves,
+					  mrt_srcs->asserted_oifs, 0);
 
 		    if (rate_flag == TRUE) {
-			for (kernel_cache_ptr = mrtentry_srcs->kernel_cache;
-			     kernel_cache_ptr != (kernel_cache_t *)NULL;
-			     kernel_cache_ptr = kernel_cache_next) {
-			    kernel_cache_next = kernel_cache_ptr->next;
-			    curr_bytecnt = kernel_cache_ptr->sg_count.bytecnt;
-			    if (k_get_sg_cnt(udp_socket,
-					     kernel_cache_ptr->source,
-					     kernel_cache_ptr->group,
-					     &kernel_cache_ptr->sg_count)
-				|| (curr_bytecnt ==
-				    kernel_cache_ptr->sg_count.bytecnt)) {
+			for (kc = mrt_srcs->kernel_cache; kc; kc = kc_next) {
+			    kc_next = kc->next;
+
+			    curr_bytecnt = kc->sg_count.bytecnt;
+			    if (k_get_sg_cnt(udp_socket, kc->source, kc->group, &kc->sg_count) ||
+				(curr_bytecnt == kc->sg_count.bytecnt)) {
 				/* Either for some reason there is no such
 				 * routing entry or that particular (s,g) was
 				 * idle. Delete the routing entry from the
 				 * kernel.
 				 */
-				delete_single_kernel_cache(mrtentry_srcs,
-							   kernel_cache_ptr);
+				delete_single_kernel_cache(mrt_srcs, kc);
 				continue;
 			    }
 			    /* Check if the datarate was high enough to
@@ -770,35 +705,33 @@ void age_routes(void)
 			     * for a while to make sure something
 			     * doesn't go wrong.
 			     */
-			    if (!(mrtentry_srcs->flags & MRTF_RP))
+			    if (!(mrt_srcs->flags & MRTF_RP))
 				continue;
 #endif /* 0 */
 			    /* Forwarder initiated switch */
 			    did_switch_flag = FALSE;
-			    if (curr_bytecnt + pim_data_rate_bytes
-				< kernel_cache_ptr->sg_count.bytecnt) {
-				if (!(mrtentry_srcs->flags & MRTF_RP)) {
-				    SET_TIMER(mrtentry_srcs->timer,
-					      PIM_DATA_TIMEOUT);
+			    if (curr_bytecnt + pim_data_rate_bytes < kc->sg_count.bytecnt) {
+				if (!(mrt_srcs->flags & MRTF_RP)) {
+				    SET_TIMER(mrt_srcs->timer, PIM_DATA_TIMEOUT);
 				    continue;
 				}
-				if (VIFM_LASTHOP_ROUTER(mrtentry_srcs->leaves,
-							mrtentry_srcs->oifs)) {
-				    switch_shortest_path(kernel_cache_ptr->source, kernel_cache_ptr->group);
+
+				if (VIFM_LASTHOP_ROUTER(mrt_srcs->leaves, mrt_srcs->oifs)) {
+				    switch_shortest_path(kc->source, kc->group);
 				    did_switch_flag = TRUE;
 				}
 			    }
+
 			    /* RP initiated switch */
-			    if ((did_switch_flag == FALSE)
-				&& (curr_bytecnt + pim_reg_rate_bytes
-				    < kernel_cache_ptr->sg_count.bytecnt)) {
-				if (!(mrtentry_srcs->flags & MRTF_RP)) {
-				    SET_TIMER(mrtentry_srcs->timer,
-					      PIM_DATA_TIMEOUT);
+			    if ((did_switch_flag == FALSE) &&
+				(curr_bytecnt + pim_reg_rate_bytes < kc->sg_count.bytecnt)) {
+				if (!(mrt_srcs->flags & MRTF_RP)) {
+				    SET_TIMER(mrt_srcs->timer, PIM_DATA_TIMEOUT);
 				    continue;
 				}
-				if (mrtentry_srcs->incoming == reg_vif_num)
-				    switch_shortest_path(kernel_cache_ptr->source, kernel_cache_ptr->group);
+
+				if (mrt_srcs->incoming == reg_vif_num)
+				    switch_shortest_path(kc->source, kc->group);
 			    }
 
 			    /* XXX: currentry the spec doesn't say to switch
@@ -810,100 +743,97 @@ void age_routes(void)
 			}
 		    }
 
-		    mrtentry_wide = mrtentry_srcs->group->grp_route;
-		    if (mrtentry_wide == (mrtentry_t *)NULL)
-			mrtentry_wide = mrtentry_rp;
+		    mrt_wide = mrt_srcs->group->grp_route;
+		    if (!mrt_wide)
+			mrt_wide = mrt_rp;
 
 		    dont_calc_action = FALSE;
-		    if ((rp_action != PIM_ACTION_NOTHING)
-			|| (grp_action != PIM_ACTION_NOTHING)) {
-			src_action_rp = join_or_prune(mrtentry_srcs,
-						      rpentry_ptr->upstream);
-			src_action = src_action_rp;
+		    if ((rp_action  != PIM_ACTION_NOTHING) ||
+			(grp_action != PIM_ACTION_NOTHING)) {
+			src_action_rp    = join_or_prune(mrt_srcs, rp->upstream);
+			src_action       = src_action_rp;
 			dont_calc_action = TRUE;
+
 			if (src_action_rp == PIM_ACTION_JOIN) {
-			    if ((grp_action == PIM_ACTION_PRUNE)
-				|| (rp_action == PIM_ACTION_PRUNE))
-				FIRE_TIMER(mrtentry_srcs->jp_timer);
+			    if ((grp_action == PIM_ACTION_PRUNE) ||
+				(rp_action  == PIM_ACTION_PRUNE))
+				FIRE_TIMER(mrt_srcs->jp_timer);
 			} else if (src_action_rp == PIM_ACTION_PRUNE) {
-			    if ((grp_action == PIM_ACTION_JOIN)
-				|| (rp_action == PIM_ACTION_JOIN))
-				FIRE_TIMER(mrtentry_srcs->jp_timer);
+			    if ((grp_action == PIM_ACTION_JOIN) ||
+				(rp_action  == PIM_ACTION_JOIN))
+				FIRE_TIMER(mrt_srcs->jp_timer);
 			}
 		    }
 
 		    /* Join/Prune timer */
-		    IF_TIMEOUT(mrtentry_srcs->jp_timer) {
-			if ((dont_calc_action != TRUE) || (rpentry_ptr->upstream != mrtentry_srcs->upstream))
-			    src_action = join_or_prune(mrtentry_srcs, mrtentry_srcs->upstream);
+		    IF_TIMEOUT(mrt_srcs->jp_timer) {
+			if ((dont_calc_action != TRUE) || (rp->upstream != mrt_srcs->upstream))
+			    src_action = join_or_prune(mrt_srcs, mrt_srcs->upstream);
 
 			if (src_action != PIM_ACTION_NOTHING)
-			    add_jp_entry(mrtentry_srcs->upstream,
+			    add_jp_entry(mrt_srcs->upstream,
 					 PIM_JOIN_PRUNE_HOLDTIME,
-					 mrtentry_srcs->group->group,
+					 mrt_srcs->group->group,
 					 SINGLE_GRP_MSKLEN,
-					 mrtentry_srcs->source->address,
+					 mrt_srcs->source->address,
 					 SINGLE_SRC_MSKLEN,
-					 mrtentry_srcs->flags & MRTF_RP,
+					 mrt_srcs->flags & MRTF_RP,
 					 src_action);
-			if (mrtentry_wide != (mrtentry_t *)NULL) {
+
+			if (mrt_wide) {
 			    /* Have both (S,G) and (*,G) (or (*,*,RP)).
-			     * Check if need to send (S,G) PRUNE toward RP
-			     */
-			    if (mrtentry_srcs->upstream != mrtentry_wide->upstream) {
+			     * Check if need to send (S,G) PRUNE toward RP */
+			    if (mrt_srcs->upstream != mrt_wide->upstream) {
 				if (dont_calc_action != TRUE)
-				    src_action_rp = join_or_prune(mrtentry_srcs,
-								  mrtentry_wide->upstream);
+				    src_action_rp = join_or_prune(mrt_srcs, mrt_wide->upstream);
+
 				/* XXX: TODO: do error check if
-				 * src_action == PIM_ACTION_JOIN, which should
-				 * be an error.
-				 */
-				if (src_action_rp == PIM_ACTION_PRUNE) {
-				    add_jp_entry(mrtentry_wide->upstream,
+				 * src_action == PIM_ACTION_JOIN, which
+				 * should be an error. */
+				if (src_action_rp == PIM_ACTION_PRUNE)
+				    add_jp_entry(mrt_wide->upstream,
 						 PIM_JOIN_PRUNE_HOLDTIME,
-						 mrtentry_srcs->group->group,
+						 mrt_srcs->group->group,
 						 SINGLE_GRP_MSKLEN,
-						 mrtentry_srcs->source->address,
+						 mrt_srcs->source->address,
 						 SINGLE_SRC_MSKLEN,
 						 MRTF_RP,
 						 src_action_rp);
-				}
 			    }
 			}
-			SET_TIMER(mrtentry_srcs->jp_timer, PIM_JOIN_PRUNE_PERIOD);
+			SET_TIMER(mrt_srcs->jp_timer, PIM_JOIN_PRUNE_PERIOD);
 		    }
+
 		    /* Assert timer */
-		    if (mrtentry_srcs->flags & MRTF_ASSERTED) {
-			IF_TIMEOUT(mrtentry_srcs->assert_timer) {
+		    if (mrt_srcs->flags & MRTF_ASSERTED) {
+			IF_TIMEOUT(mrt_srcs->assert_timer) {
 			    /* TODO: XXX: reset the upstream router now */
-			    mrtentry_srcs->flags &= ~MRTF_ASSERTED;
+			    mrt_srcs->flags &= ~MRTF_ASSERTED;
 			}
 		    }
+
 		    /* Register-Suppression timer */
 		    /* TODO: to reduce the kernel calls, if the timer
 		     * is running, install a negative cache entry in
-		     * the kernel?
-		     */
-		    IF_TIMER_SET(mrtentry_srcs->rs_timer) {
-			IF_TIMEOUT(mrtentry_srcs->rs_timer) {
+		     * the kernel? */
+		    IF_TIMER_SET(mrt_srcs->rs_timer) {
+			IF_TIMEOUT(mrt_srcs->rs_timer) {
 			    /* Start encapsulating the packets */
-			    VIFM_COPY(mrtentry_srcs->pruned_oifs,
-				      new_pruned_oifs);
+			    VIFM_COPY(mrt_srcs->pruned_oifs, new_pruned_oifs);
 			    VIFM_CLR(reg_vif_num, new_pruned_oifs);
-			    change_interfaces(mrtentry_srcs,
-					      mrtentry_srcs->incoming,
-					      mrtentry_srcs->joined_oifs,
+			    change_interfaces(mrt_srcs,
+					      mrt_srcs->incoming,
+					      mrt_srcs->joined_oifs,
 					      new_pruned_oifs,
-					      mrtentry_srcs->leaves,
-					      mrtentry_srcs->asserted_oifs, 0);
+					      mrt_srcs->leaves,
+					      mrt_srcs->asserted_oifs, 0);
 			}
 			ELSE {
 			    /* The register suppression timer is running. Check
 			     * whether it is time to send PIM_NULL_REGISTER.
 			     */
 			    /* TODO: XXX: TIMER implem. dependency! */
-			    if (mrtentry_srcs->rs_timer
-				<= PIM_REGISTER_PROBE_TIME) {
+			    if (mrt_srcs->rs_timer <= PIM_REGISTER_PROBE_TIME)
 				/* Time to send a PIM_NULL_REGISTER */
 				/* XXX: a (bad) hack! This will be sending
 				 * periodically NULL_REGISTERS between
@@ -913,15 +843,14 @@ void age_routes(void)
 				 * adding a flag to the routing entry whether
 				 * a NULL_REGISTER was sent.
 				 */
-				send_pim_null_register(mrtentry_srcs);
-			    }
+				send_pim_null_register(mrt_srcs);
 			}
 		    }
 
 		    /* routing entry */
-		    if (TIMEOUT(mrtentry_srcs->timer)) {
-			if (VIFM_ISEMPTY(mrtentry_srcs->leaves)) {
-			    delete_mrtentry(mrtentry_srcs);
+		    if (TIMEOUT(mrt_srcs->timer)) {
+			if (VIFM_ISEMPTY(mrt_srcs->leaves)) {
+			    delete_mrtentry(mrt_srcs);
 			    continue;
 			}
 			/* XXX: if DR, Register suppressed,
@@ -931,12 +860,9 @@ void age_routes(void)
 			 * oifs are inherited from (*,G); if true. delete the
 			 * (S,G) entry.
 			 */
-			if (mrtentry_srcs->group->grp_route
-			    != (mrtentry_t *)NULL) {
-			    if (!((mrtentry_srcs->group->grp_route->leaves
-				   & mrtentry_srcs->leaves)
-				  ^ mrtentry_srcs->leaves)) {
-				delete_mrtentry(mrtentry_srcs);
+			if (mrt_srcs->group->grp_route) {
+			    if (!((mrt_srcs->group->grp_route->leaves & mrt_srcs->leaves) ^ mrt_srcs->leaves)) {
+				delete_mrtentry(mrt_srcs);
 				continue;
 			    }
 			}
@@ -949,11 +875,8 @@ void age_routes(void)
     /* TODO: check again! */
     for (vifi = 0, v = &uvifs[0]; vifi < numvifs; vifi++, v++) {
 	/* Send all pending Join/Prune messages */
-	for (pim_nbr_ptr = v->uv_pim_neighbors;
-	     pim_nbr_ptr != (pim_nbr_entry_t *)NULL;
-	     pim_nbr_ptr = pim_nbr_ptr->next) {
-	    pack_and_send_jp_message(pim_nbr_ptr);
-	}
+	for (nbr = v->uv_pim_neighbors; nbr; nbr = nbr->next)
+	    pack_and_send_jp_message(nbr);
     }
 
     IF_DEBUG(DEBUG_PIM_MRT)
@@ -968,30 +891,24 @@ void age_routes(void)
  */
 void age_misc(void)
 {
-    rp_grp_entry_t *rp_grp_entry_ptr;
-    rp_grp_entry_t *rp_grp_entry_next;
-    grp_mask_t     *grp_mask_ptr;
-    grp_mask_t     *grp_mask_next;
+    rp_grp_entry_t *rp;
+    rp_grp_entry_t *rp_next;
+    grp_mask_t     *grp;
+    grp_mask_t     *grp_next;
 
     /* Timeout the Cand-RP-set entries */
-    for (grp_mask_ptr = grp_mask_list;
-	 grp_mask_ptr != (grp_mask_t *)NULL;
-	 grp_mask_ptr = grp_mask_next) {
-	/* If we timeout an entry, the grp_mask_ptr entry might be
-	 * removed.
-	 */
-	grp_mask_next = grp_mask_ptr->next;
-	for (rp_grp_entry_ptr = grp_mask_ptr->grp_rp_next;
-	     rp_grp_entry_ptr != (rp_grp_entry_t *)NULL;
-	     rp_grp_entry_ptr = rp_grp_entry_next) {
-	    rp_grp_entry_next = rp_grp_entry_ptr->grp_rp_next;
-				if (rp_grp_entry_ptr->holdtime < 60000) {
-	    IF_TIMEOUT(rp_grp_entry_ptr->holdtime)
-		delete_rp_grp_entry(&cand_rp_list, &grp_mask_list,
-				    rp_grp_entry_ptr);
+    for (grp = grp_mask_list; grp; grp = grp_next) {
+	/* If we timeout an entry, the grp entry might be removed */
+	grp_next = grp->next;
+	for (rp = grp->grp_rp_next; rp; rp = rp_next) {
+	    rp_next = rp->grp_rp_next;
+
+	    if (rp->holdtime < 60000) {
+		IF_TIMEOUT(rp->holdtime)
+		    delete_rp_grp_entry(&cand_rp_list, &grp_mask_list, rp);
+	    }
 	}
     }
-	}
 
     /* Cand-RP-Adv timer */
     if (cand_rp_flag == TRUE) {
@@ -1004,38 +921,30 @@ void age_misc(void)
     /* bootstrap-timer */
     IF_TIMEOUT(pim_bootstrap_timer) {
 	if (cand_bsr_flag == FALSE) {
-	    /*
-	     * If I am not Cand-BSR, start accepting Bootstrap messages
-	     * from anyone.
-	     * XXX: Even if the BSR has timeout, the existing
-	     * Cand-RP-Set is kept.
-	     */
-	    curr_bsr_fragment_tag = 0;
-	    curr_bsr_priority = 0;             /* Lowest priority */
-	    curr_bsr_address  = INADDR_ANY_N;  /* Lowest priority */
-	    MASKLEN_TO_MASK(RP_DEFAULT_IPV4_HASHMASKLEN, curr_bsr_hash_mask);
+	    /* If I am not Cand-BSR, start accepting Bootstrap messages from anyone.
+	     * XXX: Even if the BSR has timeout, the existing Cand-RP-Set is kept. */
 	    SET_TIMER(pim_bootstrap_timer, PIM_BOOTSTRAP_TIMEOUT);
-	}
-	else {
+	    curr_bsr_fragment_tag = 0;
+	    curr_bsr_priority     = 0;		  /* Lowest priority */
+	    curr_bsr_address      = INADDR_ANY_N; /* Lowest priority */
+	    MASKLEN_TO_MASK(RP_DEFAULT_IPV4_HASHMASKLEN, curr_bsr_hash_mask);
+	} else {
 	    /* I am Cand-BSR, so set the current BSR to me */
 	    if (curr_bsr_address == my_bsr_address) {
 		SET_TIMER(pim_bootstrap_timer, PIM_BOOTSTRAP_PERIOD);
 		send_pim_bootstrap();
-	    }
-	    else {
-		/* Short delay before becoming the BSR and start
-		 * sending of the Cand-RP set
-		 * (to reduce the transient control overhead).
-		 */
+	    } else {
+		/* Short delay before becoming the BSR and start sending
+		 * of the Cand-RP set (to reduce the transient control
+		 * overhead). */
 		SET_TIMER(pim_bootstrap_timer, bootstrap_initial_delay());
 		curr_bsr_fragment_tag = RANDOM();
-		curr_bsr_priority = my_bsr_priority;
-		curr_bsr_address = my_bsr_address;
-		curr_bsr_hash_mask = my_bsr_hash_mask;
+		curr_bsr_priority     = my_bsr_priority;
+		curr_bsr_address      = my_bsr_address;
+		curr_bsr_hash_mask    = my_bsr_hash_mask;
 	    }
 	}
     }
-
 
     IF_DEBUG(DEBUG_PIM_BOOTSTRAP | DEBUG_PIM_CAND_RP)
 	dump_rp_set(stderr);
