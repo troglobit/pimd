@@ -420,7 +420,7 @@ int main(int argc, char *argv[])
     openlog("pimd", LOG_PID);
 #endif /* LOG_DAEMON */
 
-    logit(LOG_DEBUG, 0, "%s starting", versionstring);
+    logit(LOG_NOTICE, 0, "%s starting ...", versionstring);
 
     do_randomize();
     time(&boottime);
@@ -628,7 +628,7 @@ int main(int argc, char *argv[])
 	} while (difftime.tv_sec > 0);
     } /* Main loop */
 
-    logit(LOG_NOTICE, 0, "%s exiting", versionstring);
+    logit(LOG_NOTICE, 0, "%s exiting.", versionstring);
     cleanup();
     exit(0);
 }
@@ -731,7 +731,7 @@ static void handler(int sig)
  */
 static void restart(int i __attribute__((unused)))
 {
-    logit(LOG_NOTICE, 0, "%s % restart", versionstring);
+    logit(LOG_NOTICE, 0, "%s restarting ...", versionstring);
 
     /*
      * reset all the entries

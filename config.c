@@ -897,7 +897,7 @@ int parse_rp_address(char *s)
     rph->next = g_rp_hold;
     g_rp_hold = rph;
 
-    logit(LOG_INFO, 0, "Added static RP: %s, group %s/%d, prioriy %d",
+    logit(LOG_INFO, 0, "Added static RP: %s, group %s/%d, priority %d",
 	  inet_fmt(local, s1, sizeof(s1)), inet_fmt(group_addr, s2, sizeof(s2)), masklen, priority);
 
     return TRUE;
