@@ -39,6 +39,10 @@
 
 
 #include "defs.h"
+//#ifdef GIL_SUPPORT_IGMPV3 //24Oct13 Add IGMPV3 Manage-Ip k_join/k_leave
+#include <arpa/inet.h>
+#define MCAST_ALL_IGMP_ROUTERS	"224.0.0.22" //IGMPv3 Manage-Ip
+//#endif /*GIL_SUPPORT_IGMPV3*/
 
 
 /*
@@ -318,6 +322,12 @@ static void start_vif(vifi_t vifi)
 	 */
 	k_join(igmp_socket, allrouters_group, v);
 
+//#ifdef GIL_SUPPORT_IGMPV3 //24Oct13 Add IGMPV3 Manage-Ip k_join/k_leave
+	/*
+	 * TO support V3 MEMBERSHIP_REPORT need to join ALL-IGMP-ROUTERS
+	 */
+	k_join(igmp_socket, inet_addr(MCAST_ALL_IGMP_ROUTERS), v);
+//#endif /*GIL_SUPPORT_IGMPV3*/
 	/*
 	 * Until neighbors are discovered, assume responsibility for sending
 	 * periodic group membership queries to the subnet.  Send the first
@@ -368,6 +378,9 @@ static void stop_vif(vifi_t vifi)
     if (!(v->uv_flags & VIFF_REGISTER)) {
 	k_leave(igmp_socket, allpimrouters_group, v);
 	k_leave(igmp_socket, allrouters_group, v);
+//#ifdef GIL_SUPPORT_IGMPV3 //24Oct13 Add IGMPV3 Manage-Ip k_join/k_leave
+	k_leave(igmp_socket, inet_addr(MCAST_ALL_IGMP_ROUTERS), v);
+//#endif /*GIL_SUPPORT_IGMPV3*/
 	/*
 	 * Discard all group addresses.  (No need to tell kernel;
 	 * the k_del_vif() call will clean up kernel state.)
