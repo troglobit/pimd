@@ -370,7 +370,9 @@ extern int		errno;
 #endif
 #define IGMP_V2_LEAVE_GROUP		IGMP_HOST_LEAVE_MESSAGE
 #endif
-#ifndef IGMP_V3_MEMBERSHIP_REPORT
+#if defined(__FreeBSD__)		/* From FreeBSD 8.x */
+#define IGMP_V3_MEMBERSHIP_REPORT       IGMP_v3_HOST_MEMBERSHIP_REPORT
+#else
 #define IGMP_V3_MEMBERSHIP_REPORT	0x22	/* Ver. 3 membership report */
 #endif
 

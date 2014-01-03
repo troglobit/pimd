@@ -31,14 +31,20 @@
 #ifndef __PIMD_IGMPV3_H__
 #define __PIMD_IGMPV3_H__
 
-/* V3 group record types [grec_type] */
-#define IGMP_REPORT_MODE_IN	1
-#define IGMP_REPORT_MODE_EX	2
-#define IGMP_REPORT_TO_IN	3
-#define IGMP_REPORT_TO_EX	4
-#define IGMP_REPORT_ALLOW_NEW	5
-#define IGMP_REPORT_BLOCK_OLD	6
+/*
+ * IGMPv3 report modes.
+ */
+#ifndef IGMP_MODE_IS_INCLUDE
+#define IGMP_DO_NOTHING			0	/* don't send a record */
+#define IGMP_MODE_IS_INCLUDE		1	/* MODE_IN */
+#define IGMP_MODE_IS_EXCLUDE		2	/* MODE_EX */
+#define IGMP_CHANGE_TO_INCLUDE_MODE	3	/* TO_IN */
+#define IGMP_CHANGE_TO_EXCLUDE_MODE	4	/* TO_EX */
+#define IGMP_ALLOW_NEW_SOURCES		5	/* ALLOW_NEW */
+#define IGMP_BLOCK_OLD_SOURCES		6	/* BLOCK_OLD */
+#endif
 
+#ifndef __FreeBSD__
 struct igmp_grouprec {
     u_char	    ig_type;	    /* record type */
     u_char	    ig_datalen;	    /* length of auxiliary data */
@@ -55,6 +61,7 @@ struct igmp_report {
     u_short	    ir_numgrps;	    /* number of group records */
     struct	    igmp_grouprec ir_groups[0];	    /* group records */
 };
+#endif
 
 #endif /* __PIMD_IGMPV3_H__ */
 

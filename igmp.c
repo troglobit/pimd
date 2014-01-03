@@ -281,9 +281,9 @@ static void accept_igmp(ssize_t recvlen)
 		/* Keep it in big endian, network byte order */
 		group = grec->ig_group.s_addr;
 
-		if ((grec->ig_type == IGMP_REPORT_MODE_EX) || (grec->ig_type == IGMP_REPORT_TO_EX))
+		if ((grec->ig_type == IGMP_MODE_IS_EXCLUDE) || (grec->ig_type == IGMP_CHANGE_TO_EXCLUDE_MODE))
 		    accept_group_report(src, dst, group, igmp->igmp_type);
-		else if (grec->ig_type == IGMP_REPORT_TO_IN)
+		else if (grec->ig_type == IGMP_CHANGE_TO_INCLUDE_MODE)
 		    accept_leave_message(src, dst, group);
 
 		/* Adjust for optional number of ig_sources[] */
