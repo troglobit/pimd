@@ -42,42 +42,6 @@
 
 #include "defs.h"
 
-//#ifdef GIL_SUPPORT_IGMPV3 //24Oct13, can be moved to ./igmpv3.h
-#define IGMPV3_HOST_MEMBERSHIP_REPORT	0x22	/* V3 version of 0x11 */
-/* V3 group record types [grec_type] */
-#define IGMPV3_MODE_IS_INCLUDE		1
-#define IGMPV3_MODE_IS_EXCLUDE		2
-#define IGMPV3_CHANGE_TO_INCLUDE	3
-#define IGMPV3_CHANGE_TO_EXCLUDE	4
-#define IGMPV3_ALLOW_NEW_SOURCES	5
-#define IGMPV3_BLOCK_OLD_SOURCES	6
-
-//Support iGMPv3 w/o support 'grec_src[]'!
-//From  <linux/igmp.h> all in BigEndian Format
-/* V3 group record types [grec_type] */
-#define IGMPV3_MODE_IS_INCLUDE		1
-#define IGMPV3_MODE_IS_EXCLUDE		2
-#define IGMPV3_CHANGE_TO_INCLUDE	3
-#define IGMPV3_CHANGE_TO_EXCLUDE	4
-#define IGMPV3_ALLOW_NEW_SOURCES	5
-#define IGMPV3_BLOCK_OLD_SOURCES	6
-struct igmpv3_grec {
-	u_int8_t	grec_type;
-	u_int8_t	grec_auxwords;
-	u_int16_t	grec_nsrcs;
-	u_int32		grec_mca;
-	u_int32		grec_src[0];
-};
-struct igmpv3_report {
-	u_int8_t	type;
-	u_int8_t	resv1;
-	u_int16_t	csum;
-	u_int16_t	resv2;
-	u_int16_t	ngrec;
-	struct igmpv3_grec grec[0];
-};
-//#endif /*GIL_SUPPORT_IGMPV3*/
-
 /*
  * Exported variables.
  */
@@ -86,6 +50,7 @@ char   *igmp_send_buf;		/* output packet buffer              */
 int     igmp_socket;		/* socket for all network I/O        */
 u_int32 allhosts_group;		/* allhosts  addr in net order       */
 u_int32 allrouters_group;	/* All-Routers addr in net order     */
+u_int32 allreports_group;	/* All IGMP routers in net order     */
 
 #ifdef RAW_OUTPUT_IS_RAW
 extern int curttl;
@@ -140,6 +105,7 @@ void init_igmp(void)
     /* Everywhere in the daemon we use network-byte-order */
     allhosts_group   = htonl(INADDR_ALLHOSTS_GROUP);
     allrouters_group = htonl(INADDR_ALLRTRS_GROUP);
+    allreports_group = htonl(INADDR_ALLRPTS_GROUP);
 
     if (register_input_handler(igmp_socket, igmp_read) < 0)
 	logit(LOG_ERR, 0, "Failed registering igmp_read() as an input handler in init_igmp()");
@@ -170,10 +136,13 @@ static void igmp_read(int i __attribute__((unused)), fd_set *rfd __attribute__((
  */
 static void accept_igmp(ssize_t recvlen)
 {
+    int ipdatalen, iphdrlen, igmpdatalen;
+    size_t numgrp, i;
     u_int32 src, dst, group;
     struct ip *ip;
     struct igmp *igmp;
-    int ipdatalen, iphdrlen, igmpdatalen;
+    struct igmp_report *igmpv3;
+    struct igmp_grouprec *grec, *next_grec;
 
     if (recvlen < (ssize_t)sizeof(struct ip)) {
 	logit(LOG_WARNING, 0, "Received packet too short (%u bytes) for IP header", recvlen);
@@ -268,8 +237,7 @@ static void accept_igmp(ssize_t recvlen)
 		    return;
 
 		case DVMRP_NEIGHBORS2:
-		    dvmrp_accept_neighbors2(src, dst, (u_char *)(igmp+1), igmpdatalen,
-					    group);
+		    dvmrp_accept_neighbors2(src, dst, (u_char *)(igmp+1), igmpdatalen, group);
 		    return;
 
 		case DVMRP_PRUNE:
@@ -298,47 +266,31 @@ static void accept_igmp(ssize_t recvlen)
 		    return;
 	    }
 
-//#ifdef GIL_SUPPORT_IGMPV3 //24Oct13
-	case IGMPV3_HOST_MEMBERSHIP_REPORT: //Join / Leave
-	{
-	    int			  ngrec, grec_i;
-	    char		 *NextGrecPtr;
-	    struct igmpv3_report *igmpv3;
-	    struct igmpv3_grec 	 *Grec;
+	case IGMP_V3_MEMBERSHIP_REPORT:
+	    igmpv3 = (struct igmp_report *)(igmp_recv_buf + iphdrlen);
+	    numgrp = ntohs(igmpv3->ir_numgrps);
 
-	    igmpv3 = (struct igmpv3_report *)(igmp_recv_buf + iphdrlen);
-	    ngrec  = ntohs(igmpv3->ngrec);
+//	    logit(LOG_DEBUG, 0, "accept_igmp() IGMPv3 report type:0x%x src:%s dst:%s num_grp:%u",
+//		  igmpv3->ir_type, inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)), numgrp);
 
-	    //logit(LOG_DEBUG, 0, "GIL 24OCT13 accept_igmp V3iGMP_Report type:0x%x src:%s dst:%s num_grp:%u",
-	    //	igmpv3->type, inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)), ngrec );
-	    Grec = &igmpv3->grec[0];
-	    NextGrecPtr = (char *)Grec;
-	    for (grec_i = 0; grec_i < ngrec; grec_i++)
-	    {
-		u_int8_t  grec_type = Grec->grec_type;		 //was: igmpv3->grec[grec_i].grec_type;
-		u_int16_t num_src   = ntohs(Grec->grec_nsrcs);	 //was: ntohs(igmpv3->grec[grec_i].grec_nsrcs);
+	    grec = &igmpv3->ir_groups[0];
+	    next_grec = grec;
+	    for (i = 0; i < numgrp; i++) {
+		size_t numsrc = ntohs(grec->ig_numsrc);
 
-		group = Grec->grec_mca;	//Keep it in BigEndian/NetworkOrder //was: igmpv3->grec[grec_i].grec_mca;
-		//logit(LOG_DEBUG, 0, "..GIL 24OCT13 accept_igmp grec:%u type:%u #src:%u group:%s ptr-match:%u", grec_i, grec_type, num_src,
-		//	inet_fmt(group, s2, sizeof(s2)), (NextGrecPtr==(char *)&igmpv3->grec[grec_i]) );
-		//Note "dst" is not as in IGMP_V1/V2 it is always 224.0.0.22, but it is ignored by the following callee
-		//Also type is only checked against IGMP_V1_MEMBERSHIP_REPORT or else...
-		//advance Grec for next loop!
-		NextGrecPtr += sizeof(struct igmpv3_grec); // Normal advance (i.e. for SOURCE EXCLUDE)
-		if (num_src > 1)
-		    NextGrecPtr += (num_src - 1) * sizeof(u_int32); // adjust for grec_src[N]
-		Grec = (struct igmpv3_grec *)NextGrecPtr;
+		/* Keep it in big endian, network byte order */
+		group = grec->ig_group.s_addr;
 
-		if (num_src != 0)
-		    continue;
-		if ((grec_type == IGMPV3_MODE_IS_EXCLUDE) || (grec_type == IGMPV3_CHANGE_TO_EXCLUDE))
+		if ((grec->ig_type == IGMP_REPORT_MODE_EX) || (grec->ig_type == IGMP_REPORT_TO_EX))
 		    accept_group_report(src, dst, group, igmp->igmp_type);
-		else if (grec_type == IGMPV3_CHANGE_TO_INCLUDE)
+		else if (grec->ig_type == IGMP_REPORT_TO_IN)
 		    accept_leave_message(src, dst, group);
+
+		/* Adjust for optional number of ig_sources[] */
+		next_grec += sizeof(struct igmp_grouprec) + numsrc * sizeof(struct in_addr);
+		grec       = next_grec;
 	    }
-	}
-	return;
-//#endif /*GIL_SUPPORT_IGMPV3*/
+	    return;
 
 	case IGMP_PIM:
 	    return;    /* TODO: this is PIM v1 message. Handle it?. */

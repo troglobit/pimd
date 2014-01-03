@@ -137,6 +137,7 @@ typedef void (*ihfunc_t) (int, fd_set *);
 #include "pimd.h"
 #include "mrt.h"
 #include "igmpv2.h"
+#include "igmpv3.h"
 #include "vif.h"
 #include "debug.h"
 #include "pathnames.h"
@@ -203,6 +204,10 @@ typedef void (*ihfunc_t) (int, fd_set *);
 #ifndef INADDR_ALLRTRS_GROUP
 					/* address for multicast mtrace msg */
 #define INADDR_ALLRTRS_GROUP	(u_int32)0xe0000002	/* 224.0.0.2 */
+#endif
+
+#ifndef INADDR_ALLRPTS_GROUP
+#define INADDR_ALLRPTS_GROUP    ((in_addr_t)0xe0000016) /* 224.0.0.22, IGMPv3 */
 #endif
 
 #ifndef INADDR_MAX_LOCAL_GROUP
@@ -274,6 +279,7 @@ extern int		igmp_socket;
 extern int		pim_socket;
 extern u_int32		allhosts_group;
 extern u_int32		allrouters_group;
+extern u_int32		allreports_group;
 extern u_int32		allpimrouters_group;
 extern build_jp_message_t *build_jp_message_pool;
 extern int		build_jp_message_pool_counter;
@@ -363,6 +369,9 @@ extern int		errno;
 #define IGMP_V2_MEMBERSHIP_REPORT	IGMP_v2_HOST_MEMBERSHIP_REPORT
 #endif
 #define IGMP_V2_LEAVE_GROUP		IGMP_HOST_LEAVE_MESSAGE
+#endif
+#ifndef IGMP_V3_MEMBERSHIP_REPORT
+#define IGMP_V3_MEMBERSHIP_REPORT	0x22	/* Ver. 3 membership report */
 #endif
 
 #if defined(NetBSD) || defined(OpenBSD) || defined(__FreeBSD__)

@@ -39,10 +39,6 @@
 
 
 #include "defs.h"
-//#ifdef GIL_SUPPORT_IGMPV3 //24Oct13 Add IGMPV3 Manage-Ip k_join/k_leave
-#include <arpa/inet.h>
-#define MCAST_ALL_IGMP_ROUTERS	"224.0.0.22" //IGMPv3 Manage-Ip
-//#endif /*GIL_SUPPORT_IGMPV3*/
 
 
 /*
@@ -310,35 +306,24 @@ static void start_vif(vifi_t vifi)
     logit(LOG_INFO, 0, "Interface %s comes up; vif #%u now in service", v->uv_name, vifi);
 
     if (!(v->uv_flags & VIFF_REGISTER)) {
-	/*
-	 * Join the PIM multicast group on the interface.
-	 */
+	/* Join the PIM multicast group on the interface. */
 	k_join(igmp_socket, allpimrouters_group, v);
 
-	/*
-	 * Join the ALL-ROUTERS multicast group on the interface.
-	 * This allows mtrace requests to loop back if they are run
-	 * on the multicast router.
-	 */
+	/* Join the ALL-ROUTERS multicast group on the interface.  This
+	 * allows mtrace requests to loop back if they are run on the
+	 * multicast router. */
 	k_join(igmp_socket, allrouters_group, v);
 
-//#ifdef GIL_SUPPORT_IGMPV3 //24Oct13 Add IGMPV3 Manage-Ip k_join/k_leave
-	/*
-	 * TO support V3 MEMBERSHIP_REPORT need to join ALL-IGMP-ROUTERS
-	 */
-	k_join(igmp_socket, inet_addr(MCAST_ALL_IGMP_ROUTERS), v);
-//#endif /*GIL_SUPPORT_IGMPV3*/
-	/*
-	 * Until neighbors are discovered, assume responsibility for sending
+	/* Join INADDR_ALLRPTS_GROUP to support IGMPv3 membership reports */
+	k_join(igmp_socket, allreports_group, v);
+
+	/* Until neighbors are discovered, assume responsibility for sending
 	 * periodic group membership queries to the subnet.  Send the first
-	 * query.
-	 */
+	 * query. */
 	v->uv_flags |= VIFF_QUERIER;
 	query_groups(v);
 
-	/*
-	 * Send a probe via the new vif to look for neighbors.
-	 */
+	/* Send a probe via the new vif to look for neighbors. */
 	send_pim_hello(v, PIM_TIMER_HELLO_HOLDTIME);
     }
 #ifdef __linux__
@@ -378,13 +363,10 @@ static void stop_vif(vifi_t vifi)
     if (!(v->uv_flags & VIFF_REGISTER)) {
 	k_leave(igmp_socket, allpimrouters_group, v);
 	k_leave(igmp_socket, allrouters_group, v);
-//#ifdef GIL_SUPPORT_IGMPV3 //24Oct13 Add IGMPV3 Manage-Ip k_join/k_leave
-	k_leave(igmp_socket, inet_addr(MCAST_ALL_IGMP_ROUTERS), v);
-//#endif /*GIL_SUPPORT_IGMPV3*/
-	/*
-	 * Discard all group addresses.  (No need to tell kernel;
-	 * the k_del_vif() call will clean up kernel state.)
-	 */
+	k_leave(igmp_socket, allreports_group, v);
+
+	/* Discard all group addresses.  (No need to tell kernel;
+	 * the k_del_vif() call will clean up kernel state.) */
 	while (v->uv_groups != NULL) {
 	    a = v->uv_groups;
 	    v->uv_groups = a->al_next;
