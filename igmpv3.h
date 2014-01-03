@@ -44,24 +44,29 @@
 #define IGMP_BLOCK_OLD_SOURCES		6	/* BLOCK_OLD */
 #endif
 
-#ifndef __FreeBSD__
+#ifndef IGMP_V3_REPORT_MINLEN
 struct igmp_grouprec {
     u_char	    ig_type;	    /* record type */
     u_char	    ig_datalen;	    /* length of auxiliary data */
     u_short	    ig_numsrc;	    /* number of sources */
     struct in_addr  ig_group;	    /* group address being reported */
-    struct in_addr  ig_sources[0];  /* source addresses */
+    /*struct in_addr  ig_sources[0];*/ /* source addresses */
 };
- 
+
+#define IGMP_GRPREC_HDRLEN		8
+
 struct igmp_report {
     u_char	    ir_type;	    /* record type */
     u_char	    ir_rsv1;	    /* reserved */
     u_short	    ir_cksum;	    /* checksum */
     u_short	    ir_rsv2;	    /* reserved */
     u_short	    ir_numgrps;	    /* number of group records */
-    struct	    igmp_grouprec ir_groups[0];	    /* group records */
+    /*struct	    igmp_grouprec ir_groups[0];*/ /* group records */
 };
-#endif
+
+#define IGMP_V3_REPORT_MINLEN		8
+#define IGMP_V3_REPORT_MAXRECS		65535
+#endif /* IGMP_V3_REPORT_MINLEN */
 
 #endif /* __PIMD_IGMPV3_H__ */
 

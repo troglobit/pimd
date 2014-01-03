@@ -273,7 +273,7 @@ static void accept_igmp(ssize_t recvlen)
 //	    logit(LOG_DEBUG, 0, "accept_igmp() IGMPv3 report type:0x%x src:%s dst:%s num_grp:%u",
 //		  igmpv3->ir_type, inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)), numgrp);
 
-	    grec = &igmpv3->ir_groups[0];
+	    grec = (struct igmp_grouprec *)igmpv3 + IGMP_V3_REPORT_MINLEN;
 	    next_grec = grec;
 	    for (i = 0; i < numgrp; i++) {
 		size_t numsrc = ntohs(grec->ig_numsrc);
@@ -287,7 +287,7 @@ static void accept_igmp(ssize_t recvlen)
 		    accept_leave_message(src, dst, group);
 
 		/* Adjust for optional number of ig_sources[] */
-		next_grec += sizeof(struct igmp_grouprec) + numsrc * sizeof(struct in_addr);
+		next_grec += IGMP_GRPREC_HDRLEN + numsrc * sizeof(struct in_addr);
 		grec       = next_grec;
 	    }
 	    return;
