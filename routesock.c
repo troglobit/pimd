@@ -219,7 +219,8 @@ int k_req_incoming(u_int32 source, struct rpfctl *rpfp)
 	    if (errno == EINTR)
 		continue;	/* Signalled, retry syscall. */
 	    if (errno == EAGAIN && retry_count--) {
-		logit(LOG_DEBUG, 0, "Retrying routing socket read (%d/3) ...", 3 - retry_count);
+		logit(LOG_DEBUG, 0, "Kernel busy, retrying (%d/3) routing socket read in one sec ...", 3 - retry_count);
+		sleep(1);
 		continue;
 	    }
 
