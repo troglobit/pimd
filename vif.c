@@ -307,7 +307,7 @@ static void start_vif(vifi_t vifi)
 
     if (!(v->uv_flags & VIFF_REGISTER)) {
 	/* Join the PIM multicast group on the interface. */
-	k_join(igmp_socket, allpimrouters_group, v);
+	k_join(pim_socket, allpimrouters_group, v);
 
 	/* Join the ALL-ROUTERS multicast group on the interface.  This
 	 * allows mtrace requests to loop back if they are run on the
@@ -361,7 +361,7 @@ static void stop_vif(vifi_t vifi)
      */
     v = &uvifs[vifi];
     if (!(v->uv_flags & VIFF_REGISTER)) {
-	k_leave(igmp_socket, allpimrouters_group, v);
+	k_leave(pim_socket, allpimrouters_group, v);
 	k_leave(igmp_socket, allrouters_group, v);
 	k_leave(igmp_socket, allreports_group, v);
 
