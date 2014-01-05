@@ -55,18 +55,22 @@ DEFS       = -D__BSD_SOURCE -D_GNU_SOURCE -DPIM
 # define MCAST_INCLUDE to be an appropriate `-I' options for the C compiler.
 #MCAST_INCLUDE=	-I/sys
 
+## Linux	-D__linux__ is defined by the OS
+# GNU/Linux systems do not seem to ship pim.h and pim_var.h,
+# use local include/netinet
+# For uClibc based Linux systems, add -DHAVE_STRLCPY to DEFS
+INCLUDES      = -Iinclude
+DEFS         += -DRAW_INPUT_IS_RAW -DRAW_OUTPUT_IS_RAW -DIOCTL_OK_ON_RAW_SOCKET
+EXTRA_OBJS    = strlcpy.o pidfile.o
+
 ## FreeBSD	-D__FreeBSD__ is defined by the OS
-## FreeBSD-3.x, FreeBSD-4.x
+## Verified on FreeBSD-9.x, ...
 # Seems to already have ip_mroute.h and pim.h, add -Iinclude/freebsd if
 # ip_mroute.h or in.h is missing on your system and -Iinclude for pim.h
 #INCLUDES     =
 #DEFS        += -DHAVE_STRTONUM -DHAVE_STRLCPY
 #EXTRA_OBJS   = pidfile.o
 #EXTRA_LIBS   =
-## FreeBSD-2.x
-#INCLUDES     = -Iinclude -Iinclude/freebsd2
-#DEFS        +=
-#EXTRA_OBJS   = strlcpy.o pidfile.o
 
 ## NetBSD	-DNetBSD is defined by the OS
 # Seems to already have ip_mroute.h and pim.h, add -Iinclude/netbsd if
@@ -116,12 +120,4 @@ DEFS       = -D__BSD_SOURCE -D_GNU_SOURCE -DPIM
 ## Solaris 2.x
 #EXTRA_OBJS   = strlcpy.o pidfile.o
 #EXTRA_LIBS   = -L/usr/ucblib -lucb -L/usr/lib -lsocket -lnsl
-
-## Linux	-D__linux__ is defined by the OS
-# GNU/Linux systems do not seem to ship pim.h and pim_var.h,
-# use local include/netinet
-# For uClibc based Linux systems, add -DHAVE_STRLCPY to DEFS
-INCLUDES      = -Iinclude
-DEFS         += -DRAW_INPUT_IS_RAW -DRAW_OUTPUT_IS_RAW -DIOCTL_OK_ON_RAW_SOCKET
-EXTRA_OBJS    = strlcpy.o pidfile.o
 
