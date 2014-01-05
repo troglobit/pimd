@@ -124,7 +124,7 @@ int init_routesock(void)
 /* get the rpf neighbor info */
 int k_req_incoming(u_int32 source, struct rpfctl *rpfp)
 {
-    int rlen, l, flags = RTF_STATIC;
+    int rlen, l, flags = RTF_STATIC, retry_count = 3;
     sup su;
     static int seq;
     char *cp = m_rtmsg.m_space;
@@ -200,25 +200,30 @@ int k_req_incoming(u_int32 source, struct rpfctl *rpfp)
     NEXTADDR(RTA_DST, so_dst);
     NEXTADDR(RTA_IFP, so_ifp);
     rtm.rtm_msglen = l = cp - (char *)&m_rtmsg;
-    
-    if ((rlen = write(routing_socket, (char *)&m_rtmsg, l)) < 0) {
+
+    rlen = write(routing_socket, &m_rtmsg, l);
+    if (rlen < 0) {
 	IF_DEBUG(DEBUG_RPF | DEBUG_KERN) {
 	    if (errno == ESRCH)
 		logit(LOG_DEBUG, 0, "Writing to routing socket: no such route\n");
 	    else
 		logit(LOG_DEBUG, 0, "Error writing to routing socket");
 	}
+
 	return FALSE;
     }
-    
+
     do {
-	l = read(routing_socket, (char *)&m_rtmsg, sizeof(m_rtmsg));
-    } while (l > 0 && (rtm.rtm_seq != seq || rtm.rtm_pid != pid));
-    
-    if (l < 0) {
-	IF_DEBUG(DEBUG_RPF | DEBUG_KERN) {
-	    logit(LOG_DEBUG, errno, "Read from routing socket failed");
+	l = read(routing_socket, &m_rtmsg, sizeof(m_rtmsg));
+	if (l < 0 && errno == EAGAIN && retry_count--) {
+	    logit(LOG_WARNING, 0, "Retrying routing socket read (%d/3) ...", 3 - retry_count);
+	    continue;
 	}
+    } while (l > 0 && (rtm.rtm_seq != seq || rtm.rtm_pid != pid));
+
+    if (l < 0) {
+	IF_DEBUG(DEBUG_RPF | DEBUG_KERN)
+	    logit(LOG_DEBUG, errno, "Read from routing socket failed");
 
 	return FALSE;
     }
