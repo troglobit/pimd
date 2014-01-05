@@ -145,9 +145,8 @@ static void accept_pim(ssize_t recvlen)
     int iphdrlen, pimlen;
 
     if (recvlen < (ssize_t)sizeof(struct ip)) {
-        logit(LOG_WARNING, 0, "packet too short (%u bytes) for IP header",
-	      recvlen);
-        return;
+	logit(LOG_WARNING, 0, "packet too short (%u bytes) for IP header", recvlen);
+	return;
     }
 
     ip          = (struct ip *)pim_recv_buf;
@@ -164,16 +163,14 @@ static void accept_pim(ssize_t recvlen)
         return;
     }
 
-#if 0   /* TODO: delete. Too noisy */
     IF_DEBUG(DEBUG_PIM_DETAIL) {
-        IF_DEBUG(DEBUG_PIM) {
-            logit(LOG_DEBUG, 0, "RECV %s from %-15s to %s ",
+	IF_DEBUG(DEBUG_PIM) {
+	    logit(LOG_DEBUG, 0, "RECV %s from %-15s to %s ",
 		  packet_kind(IPPROTO_PIM, pim->pim_type, 0),
 		  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
-            logit(LOG_DEBUG, 0, "PIM type is %u", pim->pim_type);
-        }
+	    logit(LOG_DEBUG, 0, "PIM type is %u", pim->pim_type);
+	}
     }
-#endif /* 0 */
 
     /* TODO: Check PIM version */
     /* TODO: check the dest. is ALL_PIM_ROUTERS (if multicast address) */
