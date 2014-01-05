@@ -284,6 +284,16 @@ void cdump(int i __attribute__((unused)))
     }
 }
 
+/*
+          1         2         3         4         5         6         7         8
+012345678901234567890123456789012345678901234567890123456789012345678901234567890
+Virtual Interface Table
+ Vif  Local-Address    Subnet                Thresh  Flags          Neighbors
+   0  10.0.3.1         10.0.3/24             1       DR NO-NBR
+   1  172.16.12.254    172.16.12/24          1       DR PIM         172.16.12.2
+                                                                    172.16.12.3
+   2  192.168.122.147  register_vif0         1
+*/
 void dump_vifs(FILE *fp)
 {
     vifi_t vifi;
@@ -292,23 +302,32 @@ void dump_vifs(FILE *fp)
     int width;
     int i;
 
-    fprintf(fp, "\nVirtual Interface Table\n %-3s  %-15s  %-20s %-8s %-14s %s",
-            "Vif", "Local-Address", "Subnet", "Thresh", "Flags",
-            "Neighbors\n");
+    fprintf(fp, "Virtual Interface Table\n");
+    fprintf(fp, " Vif  Local address    Subnet                Thresh  Flags          Neighbors\n");
 
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
+	int down = 0;
+
         fprintf(fp, " %3u  %-15s  ", vifi, inet_fmt(v->uv_lcl_addr, s1, sizeof(s1)));
+
         if (v->uv_flags & VIFF_REGISTER)
-            fprintf(fp, "%-20s ", v->uv_name);
+            fprintf(fp, "%-20s  ", v->uv_name);
         else
-            fprintf(fp,"%-20.20s ", netname(v->uv_subnet, v->uv_subnetmask));
-        fprintf(fp, "%-5u   ", v->uv_threshold);
+            fprintf(fp,"%-20.20s  ", netname(v->uv_subnet, v->uv_subnetmask));
+
+        fprintf(fp, "%-5u  ", v->uv_threshold);
+
         /* TODO: XXX: Print VIFF_TUNNEL? */
         width = 0;
-        if (v->uv_flags & VIFF_DISABLED)
+        if (v->uv_flags & VIFF_DISABLED) {
             fprintf(fp, " DISABLED");
-        if (v->uv_flags & VIFF_DOWN)
+	    down = 1;
+	}
+        if (v->uv_flags & VIFF_DOWN) {
             fprintf(fp, " DOWN");
+	    down = 1;
+	}
+
         if (v->uv_flags & VIFF_DR) {
             fprintf(fp, " DR");
             width += 3;
@@ -322,22 +341,22 @@ void dump_vifs(FILE *fp)
             width += 6;
         }
         if (v->uv_flags & VIFF_NONBRS) {
-            fprintf(fp, " %-12s", "NO-NBR");
+            fprintf(fp, " NO-NBR");
             width += 6;
         }
 
-        if ((n = v->uv_pim_neighbors) != NULL) {
-            /* Print the first neighbor on the same line */
+	n = v->uv_pim_neighbors;
+        if (!down && n) {
             for (i = width; i <= 15; i++)
                 fprintf(fp, " ");
             fprintf(fp, "%-15s\n", inet_fmt(n->address, s1, sizeof(s1)));
-            for (n = n->next; n != NULL; n = n->next)
-                fprintf(fp, "%64s %-15s\n", "", inet_fmt(n->address, s1, sizeof(s1)));
-
-        }
-        else
-            fprintf(fp, "\n");
+            for (n = n->next; n; n = n->next)
+                fprintf(fp, "%68s%-15s\n", "", inet_fmt(n->address, s1, sizeof(s1)));
+	} else {
+	    fprintf(fp, "\n");
+	}
     }
+
     fprintf(fp, "\n");
 }
 
@@ -419,8 +438,9 @@ void dump_pim_mrt(FILE *fp)
     cand_rp_t *rp;
     kernel_cache_t *kernel_cache;
 
-    fprintf(fp, "Multicast Routing Table\n%s",
-            " Source          Group           RP-addr         Flags\n");
+    fprintf(fp,
+	    "Multicast Routing Table\n"
+            " Source          Group           RP addr         Flags\n");
 
     /* TODO: remove the dummy 0.0.0.0 group (first in the chain) */
     for (g = grplist->next; g != (grpentry_t *)NULL; g = g->next) {
@@ -637,29 +657,30 @@ void dump_pim_mrt(FILE *fp)
 int dump_rp_set(FILE *fp)
 {
     cand_rp_t      *rp;
-    rp_grp_entry_t *rp_grp_entry;
-    grp_mask_t     *grp_mask;
+    rp_grp_entry_t *grp;
+    grp_mask_t     *mask;
 
-    fprintf(fp, "---------------------------RP-Set----------------------------\n");
+    fprintf(fp, "---------------------------RP Set----------------------------\n");
     fprintf(fp, "Current BSR address: %s\n", inet_fmt(curr_bsr_address, s1, sizeof(s1)));
-    fprintf(fp, "RP-address      Incoming   Group prefix   Priority   Holdtime \n");
+    fprintf(fp, "RP address      Incoming   Group prefix   Priority   Holdtime \n");
 
-    for (rp = cand_rp_list; rp != (cand_rp_t *)NULL; rp = rp->next) {
-        fprintf(fp, "%-15s %-3d        ", inet_fmt(rp->rpentry->address, s1, sizeof(s1)),
-                rp->rpentry->incoming);
-        if ((rp_grp_entry = rp->rp_grp_next) != (rp_grp_entry_t *)NULL) {
-            grp_mask = rp_grp_entry->group;
+    for (rp = cand_rp_list; rp; rp = rp->next) {
+        fprintf(fp, "%-15s %-3d        ",
+		inet_fmt(rp->rpentry->address, s1, sizeof(s1)),
+		rp->rpentry->incoming);
+
+	grp = rp->rp_grp_next;
+        if (grp) {
+            mask = grp->group;
             fprintf(fp, "%-14.14s %-3u        %-3u\n",
-                    netname(grp_mask->group_addr, grp_mask->group_mask),
-                    rp_grp_entry->priority, rp_grp_entry->holdtime);
+                    netname(mask->group_addr, mask->group_mask),
+                    grp->priority, grp->holdtime);
 
-            for (rp_grp_entry = rp_grp_entry->rp_grp_next;
-                 rp_grp_entry != (rp_grp_entry_t *)NULL;
-                 rp_grp_entry = rp_grp_entry->rp_grp_next) {
-                grp_mask = rp_grp_entry->group;
+            for (grp = grp->rp_grp_next; grp; grp = grp->rp_grp_next) {
+                mask = grp->group;
                 fprintf(fp, "%-14.14s %-3u        %-3u\n",
-                        netname(grp_mask->group_addr, grp_mask->group_mask),
-                        rp_grp_entry->priority, rp_grp_entry->holdtime);
+                        netname(mask->group_addr, mask->group_mask),
+                        grp->priority, grp->holdtime);
             }
         }
     }

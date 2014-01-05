@@ -196,8 +196,10 @@ void age_vifs(void)
 	    query_groups(v);
     }
 
-    IF_DEBUG(DEBUG_IF)
+    IF_DEBUG(DEBUG_IF) {
+	fputs("\n", stderr);
 	dump_vifs(stderr);
+    }
 }
 
 
@@ -879,9 +881,10 @@ void age_routes(void)
 	    pack_and_send_jp_message(nbr);
     }
 
-    IF_DEBUG(DEBUG_PIM_MRT)
+    IF_DEBUG(DEBUG_PIM_MRT) {
+	fputs("\n", stderr);
 	dump_pim_mrt(stderr);
-    return;
+    }
 }
 
 
