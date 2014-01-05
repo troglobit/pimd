@@ -229,8 +229,10 @@ int k_req_incoming(u_int32 source, struct rpfctl *rpfp)
 	    return FALSE;
 	}
 
-	if (rtm.rtm_seq != seq || rtm.rtm_pid != pid)
-	    break;
+	if (rlen > 0 && (rtm.rtm_seq != seq || rtm.rtm_pid != pid))
+	    continue;
+
+	break;
     }
 
     memset(&rpfinfo, 0, sizeof(rpfinfo));
