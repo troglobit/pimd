@@ -64,60 +64,80 @@ DEFS         += -DRAW_INPUT_IS_RAW -DRAW_OUTPUT_IS_RAW -DIOCTL_OK_ON_RAW_SOCKET
 EXTRA_OBJS    = strlcpy.o pidfile.o
 
 ## FreeBSD	-D__FreeBSD__ is defined by the OS
-## Verified on FreeBSD-9.x, ...
-# Seems to already have ip_mroute.h and pim.h, add -Iinclude/freebsd if
-# ip_mroute.h or in.h is missing on your system and -Iinclude for pim.h
+## Verified on FreeBSD-9.2, ...
+## Kernel must be rebuilt with "options MROUTING" support!
+# Has native netinet/ip_mroute.h, netinet/pim.h, as well as
+# IGMPv3 support in netinet/igmp.h
+# For older versions, add the following to INCLUDES below:
+#   -Iinclude/freebsd if ip_mroute.h or in.h is missing, and
+#   -Iinclude         if pim.h is missing
 #INCLUDES     =
 #DEFS        += -DHAVE_STRTONUM -DHAVE_STRLCPY
 #EXTRA_OBJS   = pidfile.o
 #EXTRA_LIBS   =
 
 ## NetBSD	-DNetBSD is defined by the OS
-# Seems to already have ip_mroute.h and pim.h, add -Iinclude/netbsd if
-# ip_mroute.h or in.h is missing on your system and -Iinclude for pim.h
+## Verified on NetBSD 6.1.2, ...
+## Kernel must be rebuilt with "options MROUTING" support!
+# Has native netinet/ip_mroute.h and netinet/pim.h
+# For older versions, add the following to INCLUDES below:
+#   -Iinclude/freebsd if ip_mroute.h or in.h is missing, and
+#   -Iinclude         if pim.h is missing
 #INCLUDES     =
 #DEFS        += -DHAVE_STRTONUM -DHAVE_STRLCPY -DHAVE_PIDFILE
 #EXTRA_OBJS   =
 #EXTRA_LIBS   = -lutil
 
 ## OpenBSD	-DOpenBSD is defined by the OS
-# Seems to already have ip_mroute.h and pim.h, add -Iinclude/openbsd if
-# ip_mroute.h or in.h is missing on your system and -Iinclude for pim.h
+## Verified on OpenBSD 5.4, ...
+## GENERIC kernel already has MROUTING support.
+# Has native netinet/ip_mroute.h and netinet/pim.h
+# For older versions, add the following to INCLUDES below:
+#   -Iinclude/openbsd if ip_mroute.h or in.h is missing, and
+#   -Iinclude         if pim.h is missing
 #INCLUDES     =
 #DEFS        += -DHAVE_STRTONUM -DHAVE_STRLCPY -DHAVE_PIDFILE
 #EXTRA_OBJS   =
 #EXTRA_LIBS   = -lutil
 
 ## BSDI		-D__bsdi__ is defined by the OS
+## Not verified!
 #INCLUDES     = -Iinclude
 #DEFS        +=
 #EXTRA_OBJS   = strlcpy.o pidfile.o
 
 ## SunOS, OSF1, gcc
+## Not verified!
 #INCLUDES     = -Iinclude -Iinclude/sunos-gcc
 #DEFS        += -DSunOS=43
 #EXTRA_OBJS   = strlcpy.o pidfile.o
 
 ## SunOS, OSF1, cc
+## Not verified!
 #INCLUDES     = -Iinclude -Iinclude/sunos-cc
 #DEFS        += -DSunOS=43
 #EXTRA_OBJS   = strlcpy.o pidfile.o
 
 ## IRIX
+## Not verified!
 #INCLUDES     = -Iinclude
 #DEFS        += -D_BSD_SIGNALS -DIRIX
 #EXTRA_OBJS   = strlcpy.o pidfile.o
 
 ## Solaris 2.5, gcc
+## Not verified!
 #INCLUDES     = -Iinclude
 #DEFS        += -DSYSV -DSunOS=55
 ## Solaris 2.5, cc
+## Not verified!
 #INCLUDES     = -Iinclude
 #DEFS        += -DSYSV -DSunOS=55
 ## Solaris 2.6
+## Not verified!
 #INCLUDES     = -Iinclude
 #DEFS        += -DSYSV -DSunOS=56
 ## Solaris 2.x
+## Not verified!
 #EXTRA_OBJS   = strlcpy.o pidfile.o
 #EXTRA_LIBS   = -L/usr/ucblib -lucb -L/usr/lib -lsocket -lnsl
 
