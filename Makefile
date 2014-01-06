@@ -37,7 +37,7 @@ OBJS          = $(IGMP_OBJS) $(ROUTER_OBJS) $(PIM_OBJS) $(DVMRP_OBJS) $(EXTRA_OB
 SRCS          = $(OBJS:.o=.c)
 DEPS          = $(addprefix .,$(SRCS:.c=.d))
 MANS          = $(addsuffix .8,$(EXEC))
-DISTFILES     = README README.config README.config.jp README.debug \
+DISTFILES     = README.md README README.config README.config.jp README.debug \
 		ChangeLog INSTALL LICENSE LICENSE.mrouted \
 		TODO CREDITS FAQ AUTHORS
 
