@@ -155,7 +155,7 @@ typedef void (*ihfunc_t) (int, fd_set *);
 #define min(a, b)               ((a) > (b) ? (b) : (a))
 #endif
 
-#define ENABLINGSTR(bool)       (bool) ? "enabling" : "disabling"
+#define ENABLINGSTR(val)        (val) ? "enabling" : "disabling"
 
 /*
  * Various definitions to make it working for different platforms
@@ -490,7 +490,7 @@ extern u_int32	inet_parse		(char *s, int n);
 /* kern.c */
 extern void	k_set_sndbuf		(int socket, int bufsize, int minsize);
 extern void	k_set_rcvbuf		(int socket, int bufsize, int minsize);
-extern void	k_hdr_include		(int socket, int bool);
+extern void	k_hdr_include		(int socket, int val);
 extern void	k_set_ttl		(int socket, int t);
 extern void	k_set_loop		(int socket, int l);
 extern void	k_set_if		(int socket, u_int32 ifa);
