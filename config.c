@@ -593,7 +593,7 @@ static int parse_phyint(char *s)
  * @s: String token
  *
  * Syntax:
- * cand_rp <local-addr> [priority <number>] [time <number>]
+ * cand_rp [address | ifname] [priority <0-255>] [time <10-16383>]
  *
  * Returns:
  * %TRUE if the parsing was successful, o.w. %FALSE
@@ -640,9 +640,6 @@ int parse_candidateRP(char *s)
 		time = PIM_DEFAULT_CAND_RP_ADV_PERIOD;
 		continue;
 	    }
-
-	    if (time > (my_cand_rp_adv_period = ~0))
-		time = my_cand_rp_adv_period;
 
 	    if (time < PIM_MIN_CAND_RP_ADV_PERIOD)
 		time = PIM_MIN_CAND_RP_ADV_PERIOD;
@@ -748,7 +745,7 @@ int parse_group_prefix(char *s)
  * @s: String token
  *
  * Syntax:
- * cand_bootstrap_router <local-addr> [priority <number>]
+ * cand_bootstrap_router [address | ifname] [priority <0-255>]
  */
 int parseBSR(char *s)
 {
@@ -760,37 +757,42 @@ int parseBSR(char *s)
     while (!EQUAL((w = next_word(&s)), "")) {
 	if (EQUAL(w, "priority")) {
 	    if (EQUAL((w = next_word(&s)), "")) {
-		WARN("Missing priority; set to default %u (0 is lowest)", PIM_DEFAULT_BSR_PRIORITY);
+		WARN("Missing Cand-BSR priority, defaulting to %u", PIM_DEFAULT_BSR_PRIORITY);
 		priority = PIM_DEFAULT_BSR_PRIORITY;
 		continue;
 	    }
 
 	    if (sscanf(w, "%u", &priority) != 1) {
-		WARN("Invalid priority %s; set to default %u (0 is lowest)", PIM_DEFAULT_BSR_PRIORITY);
+		WARN("Invalid Cand-BSR priority %s, defaulting to %u", PIM_DEFAULT_BSR_PRIORITY);
 		priority = PIM_DEFAULT_BSR_PRIORITY;
 		continue;
 	    }
 
-	    if (priority > (my_bsr_priority = ~0))
-		priority = my_bsr_priority;
+	    if (priority > PIM_MAX_CAND_BSR_PRIORITY) {
+		WARN("Too high Cand-BSR priority %u, defaulting to %d", priority, PIM_MAX_CAND_BSR_PRIORITY);
+		priority = PIM_MAX_CAND_BSR_PRIORITY;
+	    }
 
 	    my_bsr_priority = (u_int8)priority;
 	    continue;
 	}
 
-	/* BSR address */
-	local = inet_parse(w, 4);
+	/* Cand-BSR interface or address */
+	local = ifname2addr(w);
+	if (!local)
+	    local = inet_parse(w, 4);
+
 	if (!inet_valid_host(local)) {
 	    local = max_local_address();
-	    WARN("Invalid BSR address '%s'. Defaulting to largest enabled local address", w);
+	    WARN("Invalid Cand-BSR address '%s', defaulting to %s", w, inet_fmt(local, s1, sizeof(s1)));
 	    continue;
 	}
 
 	if (local_address(local) == NO_VIF) {
 	    local = max_local_address();
-	    WARN("Cand-BSR address '%s' is not local. Defaulting to largest enabled local address", w);
+	    WARN("Cand-BSR address '%s' is not local, defaulting to %s", w, inet_fmt(local, s1, sizeof(s1)));
 	}
-    } /* while not empty */
+    }
 
     if (local == INADDR_ANY_N) {
 	/* If address not provided, use the max. local */
@@ -801,8 +803,7 @@ int parseBSR(char *s)
     my_bsr_priority = priority;
     MASKLEN_TO_MASK(RP_DEFAULT_IPV4_HASHMASKLEN, my_bsr_hash_mask);
     cand_bsr_flag   = TRUE;
-    logit(LOG_INFO, 0, "Local Cand-BSR address is %s", inet_fmt(local, s1, sizeof(s1)));
-    logit(LOG_INFO, 0, "Local Cand-BSR priority is %u", priority);
+    logit(LOG_INFO, 0, "Local Cand-BSR address is %s, priority %u", inet_fmt(local, s1, sizeof(s1)), priority);
 
     return TRUE;
 }
