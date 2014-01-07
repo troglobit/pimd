@@ -165,9 +165,9 @@ There are eight different types of configuration commands:
 .Op Cm metric Ar cost
 .It
 .Cm cand_rp
-.Op <local-addr>
-.Op Cm priority Ar <number>
-.Op Cm time Ar <number>
+.Op Ar local-addr | Ar ifname
+.Op Cm priority Ar <0-255>
+.Op Cm time Ar <10-16384>
 .It
 .Cm cand_bootstrap_router
 .Op <local-addr>
@@ -267,20 +267,22 @@ using default settings.
 .Pp
 The
 .Nm cand_rp
-setting refers to Candidate Rendez-vous Point (CRP).  It specifies which
+setting refers to Candidate Rendezvous Point (CRP).  It specifies which
 interface on this machine should be included in RP elections.
 .Bl -bullet -compact
 .It
-.Nm local-addr .
-The default is the highest active IP address.
+.Nm local-addr | ifname :
+Local IPv4 address, or interface name to acquire address from.  The
+default is the highest active IP address.
 .It
-.Nm time number .
+.Nm priority <0-255> :
+How important this CRP is compared to others. The lower the value here,
+the more important the CRP.  Default is 0 for pimd and Cisco IOS, but
+the standard says 192.
+.It
+.Nm time <10-16383> :
 The number of seconds to wait between advertising this CRP. The default value
 is 60 seconds.
-.It
-.Nm priority number .
-How important this CRP is compared to others. The lower the value here, the
-more important the CRP.
 .El
 .Pp
 The
@@ -310,7 +312,7 @@ multicast addresses supported in pimd is 255.
 .Pp
 The
 .Nm rp_address
-setting is for static Rendez-vous Point configurations.  The argument can either
+setting is for static Rendezvous Point configurations.  The argument can either
 be a unicast address or a multicast group, with an optional group address,
 mask length, and priority arguments.
 .Pp

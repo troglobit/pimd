@@ -64,7 +64,11 @@
 #define PIM_JOIN_PRUNE_HOLDTIME        (3.5 * PIM_JOIN_PRUNE_PERIOD)
 #define PIM_RANDOM_DELAY_JOIN_TIMEOUT   4.5
 
+/* TODO: XXX: cannot be shorter than 10 seconds (not in the spec)
+ * MAX: Cisco max value (16383) for ip pim rp-candidate interval. */
+#define PIM_MIN_CAND_RP_ADV_PERIOD       10
 #define PIM_DEFAULT_CAND_RP_ADV_PERIOD   60
+#define PIM_MAX_CAND_RP_ADV_PERIOD       16383
 
 /* TODO: 60 is the original value. Temporarily set to 30 for debugging.
 #define PIM_BOOTSTRAP_PERIOD             60 */
@@ -81,6 +85,7 @@
 					     * pp.22 bottom of the spec.
 					     */
 #define PIM_MAX_CAND_RP_PRIORITY        255 /* 255 is the highest. */
+
 #define PIM_DEFAULT_BSR_PRIORITY          0 /* 0 is the lowest               */
 #define RP_DEFAULT_IPV4_HASHMASKLEN      30 /* the default group msklen used
 					     * by the hash function to 
