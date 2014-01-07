@@ -351,12 +351,11 @@ static int parse_option(char *word)
 }
 
 /* Check for optional /PREFIXLEN suffix to the address/group */
-static void parse_prefix_len (char *token, uint32_t *len)
+static void parse_prefix_len(char *token, uint32_t *len)
 {
-    char *masklen = strchr (token, '/');
+    char *masklen = strchr(token, '/');
 
-    if (masklen)
-    {
+    if (masklen) {
 	*masklen = 0;
 	masklen++;
 	if (!sscanf(masklen, "%u", len)) {
@@ -366,7 +365,7 @@ static void parse_prefix_len (char *token, uint32_t *len)
     }
 }
 
-static void validate_prefix_len (uint32_t *len)
+static void validate_prefix_len(uint32_t *len)
 {
     if (*len > (sizeof(uint32_t) * 8)) {
 	*len = (sizeof(uint32_t) * 8);
@@ -729,12 +728,12 @@ int parse_group_prefix(char *s)
 	    masklen = PIM_GROUP_PREFIX_DEFAULT_MASKLEN;
     }
 
-    validate_prefix_len (&masklen);
+    validate_prefix_len(&masklen);
 
     PUT_EGADDR(group_addr, (u_int8)masklen, 0, cand_rp_adv_message.insert_data_ptr);
     (*cand_rp_adv_message.prefix_cnt_ptr)++;
 
-    logit(LOG_INFO, 0, "Adding prefix %s/%d", inet_fmt(group_addr, s1, sizeof(s1)), masklen);
+    logit(LOG_INFO, 0, "Adding Cand-RP group prefix %s/%d", inet_fmt(group_addr, s1, sizeof(s1)), masklen);
 
     return TRUE;
 }
@@ -803,7 +802,7 @@ int parseBSR(char *s)
     my_bsr_priority = priority;
     MASKLEN_TO_MASK(RP_DEFAULT_IPV4_HASHMASKLEN, my_bsr_hash_mask);
     cand_bsr_flag   = TRUE;
-    logit(LOG_INFO, 0, "Local Cand-BSR address is %s, priority %u", inet_fmt(local, s1, sizeof(s1)), priority);
+    logit(LOG_INFO, 0, "Local Cand-BSR address %s, priority %u", inet_fmt(local, s1, sizeof(s1)), priority);
 
     return TRUE;
 }
@@ -882,7 +881,7 @@ int parse_rp_address(char *s)
 	masklen = PIM_GROUP_PREFIX_MIN_MASKLEN;
     }
 
-    validate_prefix_len (&masklen);
+    validate_prefix_len(&masklen);
 
     rph = calloc(1, sizeof(*rph));
     if (!rph) {
