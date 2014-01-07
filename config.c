@@ -818,8 +818,7 @@ int parseBSR(char *s)
  * multicast group addresses as well.
  *
  * Syntax:
- * rp_address <rp-address> [<group-addr>[/masklen>]          [priority <number>]]
- *                         [<group-addr> [masklen <masklen>] [priority <number>]]
+ * rp_address <ADDRESS> [<GROUP>[</LENGTH> masklen <LENGTH>]
  *
  * Returns:
  * When parsing @s is successful this function returns %TRUE, otherwise %FALSE.
@@ -830,7 +829,7 @@ int parse_rp_address(char *s)
     uint32_t local = 0xffffff;
     uint32_t group_addr = htonl(INADDR_UNSPEC_GROUP);
     uint32_t masklen = PIM_GROUP_PREFIX_DEFAULT_MASKLEN;
-    u_int priority = PIM_DEFAULT_CAND_RP_PRIORITY;
+    u_int dummy;
     struct rp_hold *rph;
 
     /* next is RP addr */
@@ -867,44 +866,40 @@ int parse_rp_address(char *s)
 		}
 	    }
 
+	    /* Unused, but keeping for backwards compatibility for people who
+	     * may still have this option in their pimd.conf
+	     * The priority of a static RP is hardcoded to always be 1, see Juniper's
+	     * configuration or similar sources for reference. */
 	    if (EQUAL(w, "priority")) {
 		w = next_word(&s);
-		if (sscanf(w, "%u", &priority) == 1) {
-		    if (priority > PIM_MAX_CAND_RP_PRIORITY) {
-			WARN("Too large priority %s. Defaulting to %d", w, PIM_MAX_CAND_RP_PRIORITY);
-			priority = PIM_MAX_CAND_RP_PRIORITY;
-		    }
-		} else {
-		    WARN("Invalid priority %s. Defaulting to %d", w, PIM_DEFAULT_CAND_RP_PRIORITY);
-		    priority = PIM_DEFAULT_CAND_RP_PRIORITY;
-		}
+		sscanf(w, "%u", &dummy);
+		WARN("The priority of static RP's is, as of pimd 2.2.0, always 1.");
 	    }
 	}
     } else {
 	group_addr = htonl(INADDR_UNSPEC_GROUP);
 	masklen = PIM_GROUP_PREFIX_MIN_MASKLEN;
-	priority = 1;
     }
 
     validate_prefix_len (&masklen);
 
     rph = calloc(1, sizeof(*rph));
     if (!rph) {
-	logit(LOG_WARNING, 0, "Ran out of memory in parse_rp_address()");
+	logit(LOG_WARNING, 0, "Out of memory when parsing rp-address %s",
+	      inet_fmt(local, s1, sizeof(s1)));
 	return FALSE;
     }
 
     rph->address = local;
     rph->group = group_addr;
     VAL_TO_MASK(rph->mask, masklen);
-    rph->priority = priority;
 
     /* attach at the beginning */
     rph->next = g_rp_hold;
     g_rp_hold = rph;
 
-    logit(LOG_INFO, 0, "Added static RP: %s, group %s/%d, priority %d",
-	  inet_fmt(local, s1, sizeof(s1)), inet_fmt(group_addr, s2, sizeof(s2)), masklen, priority);
+    logit(LOG_INFO, 0, "Local static RP: %s, group %s/%d",
+	  inet_fmt(local, s1, sizeof(s1)), inet_fmt(group_addr, s2, sizeof(s2)), masklen);
 
     return TRUE;
 }

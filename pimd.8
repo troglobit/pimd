@@ -173,7 +173,7 @@ There are eight different types of configuration commands:
 .Op <local-addr>
 .Op Cm priority Ar <number>
 .It
-.Cm rp_address Ar <rp-addr> [<group-addr>[/<masklen> | masklen <masklen] [priority <number>]]
+.Cm rp_address Ar <rp-addr> [<group-addr>[/<masklen> | masklen <masklen]
 .It
 .Cm group_prefix Ar <group-addr>[/<masklen> | Cm masklen Ar <masklen>]
 .It
@@ -286,6 +286,13 @@ is 60 seconds.
 .El
 .Pp
 The
+.Nm rp_address
+setting is for static Rendezvous Point configurations.  The argument can
+either be a unicast address or a multicast group, with an optional group
+address and netmask.  Default group and netmask is 224.0.0.0/16.  Note,
+all static RP's are announced with priority 1.
+.Pp
+The
 .Nm cand_bootstrap_router
 setting is similar to CRP.  Only difference is the lack of a 
 .Nm time
@@ -309,12 +316,6 @@ means its length is 4.
 Max
 .Nm group_prefix
 multicast addresses supported in pimd is 255.
-.Pp
-The
-.Nm rp_address
-setting is for static Rendezvous Point configurations.  The argument can either
-be a unicast address or a multicast group, with an optional group address,
-mask length, and priority arguments.
 .Pp
 The 
 .Nm switch_data_threshold
