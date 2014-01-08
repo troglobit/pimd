@@ -17,8 +17,31 @@ pimd also has a homepage, mainly to distribute releases:
 
 pimd is primarily developed on Linux and should work as-is out of the
 box on all major distributions.  Other UNIX variants should also work,
-but are not as thoroughly tested.  See the file `config.mk` for details
-on support and various tricks needed.
+but are not as thoroughly tested.  For some tips and details, see the
+`configure` script.
+
+
+Building
+--------
+
+When building pimd from source you first need to run the `configure`
+script to generate the file `config.mk`.  The script relies on Bourne
+shell standard features as well as expr and uname.  Any optional pimd
+features, such as `--enable-scoped-acls` are activated here as well.
+
+**Example:**
+
+    ./configure --enable-scoped-acls
+    make
+
+    sudo make install
+
+The Makefile supports de facto standard environment variables such as
+`prefix` and `DESTDIR` for the install process.  E.g., to install pimd
+to `/usr` instead of the default `/usr/local`, but redirect to a binary
+package directory in `/tmp`:
+
+    VERSION=2.2.0-1 prefix=/usr DESTDIR=/tmp/pimd-2.2.0-1 make clean install
 
 
 Configuration
@@ -117,64 +140,91 @@ to that of CRP, except for the interval time.  If either the address or
 the interface name is left out pimd uses the highest active IP address.
 If the priority is left out, pimd (like Cisco) defaults to priority 0.
 
+In a PIM-SM domain there can be two, or more, paths from a designated
+router (DR) for a multicast sender to reach a receiver.  When receivers
+begin joining multicast groups all data is received via the *shared
+tree* (RPT) from each Rendezvous Point (RP).  This is often not an
+optimal route, so when the volume starts exceeding a configurable
+threshold, on either the last-hop router or the RP itself, the router
+will attempt to switch to the *shortest path tree* (SPT) from the
+multicast source to the receiver.
+
+In versions of pimd prior to 2.2.0 this threshold was confusingly split
+in two different settings, one for the DR and one for the RP.  These
+settings are still supported, for compatibility reasons and documented
+in the man-page, but it is strongly recommended to change to the new
+syntax instead:
+
+    spt_threshold [rate <KBPS> | packets <NUM> | infinity] [interval <5-60>]
+
+Only slightly different from the Cisco `ip pim spt-threshold` setting,
+pimd can trigger a switch to SPT on a rate or number of packets and you
+can also tweak the poll interval.  It's recommended to keep the interval
+in the tens of seconds, the default is 100 sec.  The default threshold
+is set to zero packets, which will cause a switch over to the SPT after
+the first multicast packet is received.
 
 
-After this comes:
-
-    switch_data_threshold rate rvalue interval ivalue
-
-This statement defines the threshold at which transmission rates trigger
-the changeover from the shared tree to the RP tree; starting the line
-with `switch_register_threshold` does the opposite in the same format.
-Regardless of which of these you choose, the `rvalue` stands for the
-transmission rate in bits per second, and `ivalue` sets how often to
-sample the rate in seconds -- with a recommended minimum of five
-seconds.  It's recommended by the pimd developers to have `ivalue` the
-same in both statements.
-
-For example, I might end up with the following (these are real IP
-addresses; don't use them for actual testing purposes):
-
-    default_source_preference 105
-    
-    phyint 199.60.103.90 disable
-    phyint 199.60.103.91 preference 1029
-    phyint 199.60.103.92 preference 1024
-    cand_rp 199.60.103.91
-    cand_bootstrap_router 199.60.103.92
-    group_prefix 224.0.0.0 masklen 4
-    switch_data_threshold rate 60000 interval 10
-    switch_register_threshold rate 60000 interval 10
-
-
-Running
+Example
 -------
 
-After you've set up the configuration file, you're ready to actually run
-the PIM-SM daemon.  As usual, we recommend that you run this by hand for
-testing purposes and then later add the daemon, with any startup flags
-it needs, to your system's startup scripts.
+    # This pimd.conf example assumes a router with four interfaces.
+    # Interface eth0 is disabled, i.e., pimd will not run there.
+    # The default interface preference 101 has been changed on all
+    # the other interfaces.
+    phyint eth0 disable
+    phyint eth1 preference 255
+    phyint eth2 preference 250
+    phyint eth3 preference 251
+    
+    # Offer to be an RP for all of 224.0.0.0/4
+    cand_rp eth1
+    group_prefix 224.0.0.0 masklen 4
+    
+    # Partake in BSR elections as well
+    cand_bootstrap_router eth1
+    
+    # This is the built-in defaults, switch to SPT on first packet
+    spt_threshold packets 0 interval 100
 
-The format for running this daemon is:
 
-    pimd [-c file] [-d [level1,...,levelN]]
+Starting
+--------
 
-Both of the flags with their values are optional:
+Having set up the configuration file, you are ready to run pimd.  As
+usual, it is recommended that you start it manually first, to make sure
+everything works as expected, before adding it to your system's startup
+scripts,  with any startup flags it might need.
+
+    pimd [-c file] [-d[level1,...,levelN]]
 
    * `-c file`: Utilize the specified configuration file rather than the
       default, `/etc/pimd.conf`
 
-   * `-d [level1,...,levelN]`: Specifies the debug level(s) to utilize
+   * `-d[level1,...,levelN]`: Specifies the debug level(s) to utilize
       when running the daemon.  Type `pimd -h` for a full list of levels
+
+**Example:**
+
+    pimd -c /cfg/pimd.conf -digmp_proto,pim_jp,kernel,pim_register
+
+Notice the lack of spaces in the option argument to `-d`, the
+long-option `--debug=igmp_proto,pim_jp,kernel,pim_register`is slightly
+more readable.
 
 
 Monitoring
 ----------
 
+To see the virtual interface table, including neighboring PIM routers,
+and the multicast routing table:
+
     pimd -r
 
-or
+or to watch it continually:
 
     watch pimd -r
 
+In addition, pimd logs important events to the system logfile, in
+particular at startup when parsing the `pimd.conf` configuration file.
 
