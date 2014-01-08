@@ -202,6 +202,92 @@ void age_vifs(void)
     }
 }
 
+/*
+ * Check the SPT threshold for a given (*,*,RP) or (*,G) entry
+ *
+ * XXX: the spec says to start monitoring first the total traffic for
+ * all senders for particular (*,*,RP) or (*,G) and if the total traffic
+ * exceeds some predefined threshold, then start monitoring the data
+ * traffic for each particular sender for this group: (*,G) or
+ * (*,*,RP). However, because the kernel cache/traffic info is of the
+ * form (S,G), it is easier if we are simply collecting (S,G) traffic
+ * all the time.
+ *
+ * For (*,*,RP) if the number of bytes received between the last check
+ * and now exceeds some precalculated value (based on interchecking
+ * period and datarate threshold AND if there are directly connected
+ * members (i.e. we are their last hop(e) router), then create (S,G) and
+ * start initiating (S,G) Join toward the source. The same applies for
+ * (*,G).  The spec does not say that if the datarate goes below a given
+ * threshold, then will switch back to the shared tree, hence after a
+ * switch to the source-specific tree occurs, a source with low
+ * datarate, but periodically sending will keep the (S,G) states.
+ *
+ * If a source with kernel cache entry has been idle after the last time
+ * a check of the datarate for the whole routing table, then delete its
+ * kernel cache entry.
+ */
+static void check_spt_threshold(mrtentry_t *mrt)
+{
+    int did_switch_flag;
+    u_long curr_bytecnt;
+    kernel_cache_t *kc, *kc_next;
+
+    for (kc = mrt->kernel_cache; kc; kc = kc_next) {
+	kc_next = kc->next;
+
+	curr_bytecnt = kc->sg_count.bytecnt;
+	if (k_get_sg_cnt(udp_socket, kc->source, kc->group, &kc->sg_count)
+	    || (curr_bytecnt == kc->sg_count.bytecnt)) {
+	    /* Either for whatever reason there is no such routing
+	     * entry, or that particular (S,G) was idle.  Delete the
+	     * routing entry from the kernel. */
+	    delete_single_kernel_cache(mrt, kc);
+	    continue;
+	}
+
+	/* Check if the datarate was high enough to switch to source
+	 * specific tree. Need to check only when we have (S,G)RPbit in
+	 * the forwarder or the RP itself. */
+
+	/* Forwarder initiated switch */
+	did_switch_flag = FALSE;
+	if (curr_bytecnt + pim_data_rate_bytes < kc->sg_count.bytecnt) {
+	    if (VIFM_LASTHOP_ROUTER(mrt->leaves, mrt->oifs)) {
+#ifdef KERNEL_MFC_WC_G
+		if (kc->source == INADDR_ANY_N) {
+		    delete_single_kernel_cache(mrt, kc);
+		    mrt->flags |= MRTF_MFC_CLONE_SG;
+		    continue;
+		}
+#endif /* KERNEL_MFC_WC_G */
+		switch_shortest_path(kc->source, kc->group);
+		did_switch_flag = TRUE;
+	    }
+	}
+
+	/* RP initiated switch */
+	if ((did_switch_flag == FALSE) &&
+	    (curr_bytecnt + pim_reg_rate_bytes < kc->sg_count.bytecnt)) {
+	    if (mrt->incoming == reg_vif_num) {
+#ifdef KERNEL_MFC_WC_G
+		if (kc->source == INADDR_ANY_N) {
+		    delete_single_kernel_cache(mrt, kc);
+		    mrt->flags |= MRTF_MFC_CLONE_SG;
+		    continue;
+		}
+#endif /* KERNEL_MFC_WC_G */
+		switch_shortest_path(kc->source, kc->group);
+	    }
+	}
+
+	/* XXX: currentry the spec doesn't say to switch back to the
+	 * shared tree if low datarate, but if needed to implement, the
+	 * check must be done here. Don't forget to check whether I am a
+	 * forwarder for that source. */
+    }
+}
+
 
 /*
  * Scan the whole routing table and timeout a bunch of timers:
@@ -267,10 +353,6 @@ void age_routes(void)
     int change_flag;
     int rp_action, grp_action, src_action = PIM_ACTION_NOTHING, src_action_rp = PIM_ACTION_NOTHING;
     int dont_calc_action;
-    int did_switch_flag;
-    kernel_cache_t *kc;
-    kernel_cache_t *kc_next;
-    u_long curr_bytecnt;
     rpentry_t *rp;
     int update_rp_iif;
     int update_src_iif;
@@ -361,85 +443,9 @@ void age_routes(void)
 		mrt_rp->upstream = rp->upstream;
 	    }
 
-	    if (rate_flag == TRUE) {
-		/* Check the activity for this entry */
-
-		/* XXX: the spec says to start monitoring first the
-		 * total traffic for all senders for particular (*,*,RP)
-		 * or (*,G) and if the total traffic exceeds some
-		 * predefined threshold, then start monitoring the data
-		 * traffic for each particular sender for this group:
-		 * (*,G) or (*,*,RP). However, because the kernel
-		 * cache/traffic info is of the form (S,G), it is easier
-		 * if we are simply collecting (S,G) traffic all the time.
-		 *
-		 * For (*,*,RP) if the number of bytes received between
-		 * the last check and now exceeds some precalculated
-		 * value (based on interchecking period and datarate
-		 * threshold AND if there are directly connected
-		 * members (i.e. we are their last hop(e) router), then
-		 * create (S,G) and start initiating (S,G) Join toward
-		 * the source. The same applies for (*,G).
-		 * The spec does not say that if the datarate goes
-		 * below a given threshold, then will switch back to the
-		 * shared tree, hence after a switch to the source-specific
-		 * tree occurs, a source with low datarate, but
-		 * periodically sending will keep the (S,G) states.
-		 *
-		 * If a source with kernel cache entry has been idle
-		 * after the last time a check of the datarate for the
-		 * whole routing table, then delete its kernel cache
-		 * entry.
-		 */
-		for (kc = mrt_rp->kernel_cache; kc; kc = kc_next) {
-		    kc_next = kc->next;
-
-		    curr_bytecnt = kc->sg_count.bytecnt;
-		    if (k_get_sg_cnt(udp_socket, kc->source, kc->group, &kc->sg_count)
-			|| (curr_bytecnt == kc->sg_count.bytecnt)) {
-			/* Either for some reason there is no such
-			 * routing entry or that particular (s,g) was
-			 * idle. Delete the routing entry from the kernel.
-			 */
-			delete_single_kernel_cache(mrt_rp, kc);
-			continue;
-		    }
-
-		    /* Check if the datarate was high enough to switch
-		     * to source specific tree. */
-
-		    /* Forwarder initiated switch */
-		    did_switch_flag = FALSE;
-		    if (curr_bytecnt + pim_data_rate_bytes < kc->sg_count.bytecnt) {
-			if (VIFM_LASTHOP_ROUTER(mrt_rp->leaves, mrt_rp->oifs)) {
-#ifdef KERNEL_MFC_WC_G
-			    if (kc->source == INADDR_ANY_N) {
-				delete_single_kernel_cache(mrt_rp, kc);
-				mrt_rp->flags |= MRTF_MFC_CLONE_SG;
-				continue;
-			    }
-#endif /* KERNEL_MFC_WC_G */
-			    switch_shortest_path(kc->source, kc->group);
-			    did_switch_flag = TRUE;
-			}
-		    }
-
-		    /* RP initiated switch */
-		    if ((did_switch_flag == FALSE) &&
-			(curr_bytecnt + pim_reg_rate_bytes < kc->sg_count.bytecnt)) {
-			if (mrt_rp->incoming == reg_vif_num) {
-#ifdef KERNEL_MFC_WC_G
-			    if (kc->source == INADDR_ANY_N) {
-				delete_single_kernel_cache(mrt_rp, kc);
-				mrt_rp->flags |= MRTF_MFC_CLONE_SG;
-				continue;
-			    }
-#endif /* KERNEL_MFC_WC_G */
-			    switch_shortest_path(kc->source, kc->group);
-			}
-		    }
-		}
-	    }
+	    /* Check the activity for this entry */
+	    if (rate_flag == TRUE)
+		check_spt_threshold(mrt_rp);
 
 	    /* Join/Prune timer */
 	    IF_TIMEOUT(mrt_rp->jp_timer) {
@@ -514,55 +520,8 @@ void age_routes(void)
 		    }
 
 		    /* Check the sources activity */
-		    if (rate_flag == TRUE) {
-			for (kc = mrt_grp->kernel_cache; kc; kc = kc_next) {
-			    kc_next = kc->next;
-
-			    curr_bytecnt = kc->sg_count.bytecnt;
-			    if (k_get_sg_cnt(udp_socket, kc->source, kc->group, &kc->sg_count) ||
-				(curr_bytecnt == kc->sg_count.bytecnt)) {
-				/* Either for whatever reason there is
-				 * no such routing entry or that
-				 * particular (s,g) was idle.  Delete
-				 * the routing entry from the kernel. */
-				delete_single_kernel_cache(mrt_grp, kc);
-				continue;
-			    }
-
-			    /* Check if the datarate was high enough to
-			     * switch to source specific tree.
-			     */
-			    /* Forwarder initiated switch */
-			    did_switch_flag = FALSE;
-			    if (curr_bytecnt + pim_data_rate_bytes < kc->sg_count.bytecnt) {
-				if (VIFM_LASTHOP_ROUTER(mrt_grp->leaves, mrt_grp->oifs)) {
-#ifdef KERNEL_MFC_WC_G
-				    if (kc->source == INADDR_ANY_N) {
-					delete_single_kernel_cache(mrt_grp, kc);
-					mrt_grp->flags |= MRTF_MFC_CLONE_SG;
-					continue;
-				    }
-#endif /* KERNEL_MFC_WC_G */
-				    switch_shortest_path(kc->source, kc->group);
-				    did_switch_flag = TRUE;
-				}
-			    }
-			    /* RP initiated switch */
-			    if ((did_switch_flag == FALSE) &&
-				(curr_bytecnt + pim_reg_rate_bytes < kc->sg_count.bytecnt)){
-				if (mrt_grp->incoming == reg_vif_num) {
-#ifdef KERNEL_MFC_WC_G
-				    if (kc->source == INADDR_ANY_N) {
-					delete_single_kernel_cache(mrt_grp, kc);
-					mrt_grp->flags |= MRTF_MFC_CLONE_SG;
-					continue;
-				    }
-#endif /* KERNEL_MFC_WC_G */
-				    switch_shortest_path(kc->source, kc->group);
-				}
-			    }
-			}
-		    }
+		    if (rate_flag == TRUE)
+			check_spt_threshold(mrt_grp);
 
 		    dont_calc_action = FALSE;
 		    if (rp_action != PIM_ACTION_NOTHING) {
@@ -680,70 +639,8 @@ void age_routes(void)
 					  mrt_srcs->leaves,
 					  mrt_srcs->asserted_oifs, 0);
 
-		    if (rate_flag == TRUE) {
-			for (kc = mrt_srcs->kernel_cache; kc; kc = kc_next) {
-			    kc_next = kc->next;
-
-			    curr_bytecnt = kc->sg_count.bytecnt;
-			    if (k_get_sg_cnt(udp_socket, kc->source, kc->group, &kc->sg_count) ||
-				(curr_bytecnt == kc->sg_count.bytecnt)) {
-				/* Either for some reason there is no such
-				 * routing entry or that particular (s,g) was
-				 * idle. Delete the routing entry from the
-				 * kernel.
-				 */
-				delete_single_kernel_cache(mrt_srcs, kc);
-				continue;
-			    }
-			    /* Check if the datarate was high enough to
-			     * switch to source specific tree. Need to check
-			     * only when we have (S,G)RPbit in the forwarder
-			     * or the RP itself.
-			     */
-#if 0
-			    /* XXX: A bug report I've received report
-			     * says that we don't need this. I think
-			     * it is correct, but want this around
-			     * for a while to make sure something
-			     * doesn't go wrong.
-			     */
-			    if (!(mrt_srcs->flags & MRTF_RP))
-				continue;
-#endif /* 0 */
-			    /* Forwarder initiated switch */
-			    did_switch_flag = FALSE;
-			    if (curr_bytecnt + pim_data_rate_bytes < kc->sg_count.bytecnt) {
-				if (!(mrt_srcs->flags & MRTF_RP)) {
-				    SET_TIMER(mrt_srcs->timer, PIM_DATA_TIMEOUT);
-				    continue;
-				}
-
-				if (VIFM_LASTHOP_ROUTER(mrt_srcs->leaves, mrt_srcs->oifs)) {
-				    switch_shortest_path(kc->source, kc->group);
-				    did_switch_flag = TRUE;
-				}
-			    }
-
-			    /* RP initiated switch */
-			    if ((did_switch_flag == FALSE) &&
-				(curr_bytecnt + pim_reg_rate_bytes < kc->sg_count.bytecnt)) {
-				if (!(mrt_srcs->flags & MRTF_RP)) {
-				    SET_TIMER(mrt_srcs->timer, PIM_DATA_TIMEOUT);
-				    continue;
-				}
-
-				if (mrt_srcs->incoming == reg_vif_num)
-				    switch_shortest_path(kc->source, kc->group);
-			    }
-
-			    /* XXX: currentry the spec doesn't say to switch
-			     * back to the shared tree if low datarate,
-			     * but if needed to implement, the check must be
-			     * done here. Don't forget to check whether I am
-			     * a forwarder for that source.
-			     */
-			}
-		    }
+		    if (rate_flag == TRUE)
+			check_spt_threshold(mrt_srcs);
 
 		    mrt_wide = mrt_srcs->group->grp_route;
 		    if (!mrt_wide)
