@@ -59,14 +59,18 @@ void init_pim(void)
 
     /* Setup the PIM raw socket */
     if ((pim_socket = socket(AF_INET, SOCK_RAW, IPPROTO_PIM)) < 0)
-        logit(LOG_ERR, errno, "Failed creating PIM socket");
-    k_hdr_include(pim_socket, TRUE);      /* include IP header when sending */
-    k_set_sndbuf(pim_socket, SO_SEND_BUF_SIZE_MAX,
-                 SO_SEND_BUF_SIZE_MIN);   /* lots of output buffering        */
-    k_set_rcvbuf(pim_socket, SO_RECV_BUF_SIZE_MAX,
-                 SO_RECV_BUF_SIZE_MIN);   /* lots of input buffering        */
-    k_set_ttl(pim_socket, MINTTL);        /* restrict multicasts to one hop */
-    k_set_loop(pim_socket, FALSE);        /* disable multicast loopback     */
+	logit(LOG_ERR, errno, "Failed creating PIM socket");
+
+    /* Include IP header when sending */
+    k_hdr_include(pim_socket, TRUE);
+    /* Lots of output buffering */
+    k_set_sndbuf(pim_socket, SO_SEND_BUF_SIZE_MAX, SO_SEND_BUF_SIZE_MIN);
+    /* Lots of input buffering */
+    k_set_rcvbuf(pim_socket, SO_RECV_BUF_SIZE_MAX, SO_RECV_BUF_SIZE_MIN);
+    /* Restrict multicast to one hop */
+    k_set_ttl(pim_socket, MINTTL);
+    /* Disable multicast loopback */
+    k_set_loop(pim_socket, FALSE);
 
     allpimrouters_group = htonl(INADDR_ALL_PIM_ROUTERS);
 
@@ -302,6 +306,11 @@ void send_pim(char *buf, u_int32 src, u_int32 dst, int type, int datalen)
     }
 }
 
+static void check_errqueue(int type, int datalen)
+{
+    logit(LOG_WARNING, EMSGSIZE, "Failed sending PIM message type %d of length %d bytes", type, datalen);
+}
+
 u_int pim_send_cnt = 0;
 #define SEND_DEBUG_NUMBER 50
 
@@ -365,16 +374,30 @@ void send_pim_unicast(char *buf, u_int32 src, u_int32 dst, int type, int datalen
     sdst.sin_len = sizeof(sdst);
 #endif
     sdst.sin_addr.s_addr = dst;
+
+    /* Allow for improved error reporting and PMTU discovery */
+    if (type == PIM_REGISTER)
+	k_rcv_err(pim_socket, TRUE);
+
     while (sendto(pim_socket, buf, sendlen, 0, (struct sockaddr *)&sdst, sizeof(sdst)) < 0) {
 	if (errno == EINTR)
 	    continue;		/* Received signal, retry syscall. */
-        else if (errno == ENETDOWN)
-            check_vif_state();
-        else
-            logit(LOG_WARNING, errno, "sendto from %s to %s",
+	else if (errno == ENETDOWN)
+	    check_vif_state();
+	else if (errno == EMSGSIZE)
+	    check_errqueue(type, datalen);
+	else
+	    logit(LOG_WARNING, errno, "sendto from %s to %s",
 		  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
-        return;
+
+	if (type == PIM_REGISTER)
+	    k_rcv_err(pim_socket, TRUE);
+
+	return;
     }
+
+    if (type == PIM_REGISTER)
+	k_rcv_err(pim_socket, TRUE);
 
     IF_DEBUG(DEBUG_PIM_DETAIL) {
         IF_DEBUG(DEBUG_PIM) {

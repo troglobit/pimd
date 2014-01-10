@@ -491,6 +491,7 @@ extern u_int32	inet_parse		(char *s, int n);
 extern void	k_set_sndbuf		(int socket, int bufsize, int minsize);
 extern void	k_set_rcvbuf		(int socket, int bufsize, int minsize);
 extern void	k_hdr_include		(int socket, int val);
+extern void	k_rcv_err		(int socket, int val);
 extern void	k_set_ttl		(int socket, int t);
 extern void	k_set_loop		(int socket, int l);
 extern void	k_set_if		(int socket, u_int32 ifa);

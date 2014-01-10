@@ -192,6 +192,18 @@ void k_hdr_include(int socket, int val)
 #endif
 }
 
+/*
+ * For extended error reporting and PMTU discovery, needed for
+ * fragmenting of in PIM register messages.
+ */
+void k_rcv_err(int socket, int val)
+{
+#if defined(IP_RECVERR) && defined(MSG_ERRQUEUE)
+    if (setsockopt(socket, IPPROTO_IP, IP_RECVERR, (const void *)&val, sizeof(val)) < 0)
+	logit(LOG_ERR, errno, "Failed %s IP_RECVERR on socket %d",
+	      ENABLINGSTR(val), socket);
+#endif
+}
 
 /*
  * Set the default TTL for the multicast packets outgoing from this
