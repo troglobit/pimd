@@ -231,7 +231,7 @@ typedef void (*ihfunc_t) (int, fd_set *);
 
 /* Used if no relaible unicast routing information available */
 #define UCAST_DEFAULT_SOURCE_METRIC     1024
-#define UCAST_DEFAULT_SOURCE_PREFERENCE 1024
+#define UCAST_DEFAULT_SOURCE_PREFERENCE 101
 
 #define TIMER_INTERVAL		5	/* 5 sec virtual timer granularity  */
 
