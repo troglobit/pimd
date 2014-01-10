@@ -79,76 +79,77 @@ static struct debugname {
     {   "dvmrp_pruning",    DEBUG_DVMRP_PRUNE,    8	    },
     {   "dvmrp_routes",	    DEBUG_DVMRP_ROUTE,    7	    },
     {   "dvmrp_routing",    DEBUG_DVMRP_ROUTE,    7	    },
-    {   "dvmrp_mrt",        DEBUG_DVMRP_ROUTE,    7	    },
-    {   "dvmrp_neighbors",  DEBUG_DVMRP_PEER,     7	    },
-    {   "dvmrp_peers",	    DEBUG_DVMRP_PEER,     8	    },
-    {   "dvmrp_hello",      DEBUG_DVMRP_PEER,     7	    },
-    {   "dvmrp_timers",	    DEBUG_DVMRP_TIMER,    7	    },
-    {   "dvmrp",	    DEBUG_DVMRP,          1	    },
-    {   "igmp_proto",	    DEBUG_IGMP_PROTO,     6	    },
-    {   "igmp_timers",	    DEBUG_IGMP_TIMER,     6	    },
-    {   "igmp_members",	    DEBUG_IGMP_MEMBER,    6	    },
-    {   "groups",	    DEBUG_MEMBER,         1	    },
-    {   "membership",       DEBUG_MEMBER,         2	    },
-    {   "igmp",	            DEBUG_IGMP, 	  1	    },
-    {   "trace",	    DEBUG_TRACE,          2	    },
-    {   "mtrace",	    DEBUG_TRACE,          2	    },
-    {   "traceroute",       DEBUG_TRACE,          2	    },
-    {   "timeout",	    DEBUG_TIMEOUT,        2	    },
-    {   "callout",	    DEBUG_TIMEOUT,        3	    },
-    {   "packets",	    DEBUG_PKT,  	  2	    },
-    {   "pkt",	            DEBUG_PKT,  	  2	    },
-    {   "interfaces",       DEBUG_IF,   	  2	    },
-    {   "vif",	            DEBUG_IF,   	  1	    },
-    {   "kernel",           DEBUG_KERN,           2	    },
-    {   "cache",            DEBUG_MFC,   	  1	    },
-    {   "mfc",              DEBUG_MFC,  	  2	    },
-    {   "k_cache",          DEBUG_MFC,  	  2	    },
-    {   "k_mfc",            DEBUG_MFC,  	  2	    },
-    {   "rsrr",	            DEBUG_RSRR, 	  2	    },
-    {   "pim_detail",       DEBUG_PIM_DETAIL,     5	    },
-    {   "pim_hello",        DEBUG_PIM_HELLO,      5	    },
-    {   "pim_neighbors",    DEBUG_PIM_HELLO,      5	    },
-    {   "pim_peers",        DEBUG_PIM_HELLO,      5	    },
-    {   "pim_register",     DEBUG_PIM_REGISTER,   5	    },
-    {   "registers",        DEBUG_PIM_REGISTER,   2	    },
-    {   "pim_join_prune",   DEBUG_PIM_JOIN_PRUNE, 5	    },
-    {   "pim_j_p",          DEBUG_PIM_JOIN_PRUNE, 5	    },
-    {   "pim_jp",           DEBUG_PIM_JOIN_PRUNE, 5	    },
-    {   "pim_bootstrap",    DEBUG_PIM_BOOTSTRAP,  5	    },
-    {   "pim_bsr",          DEBUG_PIM_BOOTSTRAP,  5	    },
-    {   "bsr",	            DEBUG_PIM_BOOTSTRAP,  1	    },
-    {   "bootstrap",        DEBUG_PIM_BOOTSTRAP,  1	    },
-    {   "pim_asserts",      DEBUG_PIM_ASSERT,     5	    },
-    {   "pim_cand_rp",      DEBUG_PIM_CAND_RP,    5	    },
-    {   "pim_c_rp",         DEBUG_PIM_CAND_RP,    5	    },
-    {   "pim_rp",           DEBUG_PIM_CAND_RP,    6	    },
-    {   "rp",	            DEBUG_PIM_CAND_RP,    2	    },
-    {   "pim_routes",       DEBUG_PIM_MRT,        6	    },
-    {   "pim_routing",      DEBUG_PIM_MRT,        6	    },
-    {   "pim_mrt",          DEBUG_PIM_MRT,        5	    },
-    {   "pim_timers",       DEBUG_PIM_TIMER,      5	    },
-    {   "pim_rpf",          DEBUG_PIM_RPF,        6	    },
-    {   "rpf",              DEBUG_RPF,            3	    },
-    {   "pim",              DEBUG_PIM,  	  1	    },
-    {   "routes",	    DEBUG_MRT,            1	    },
-    {   "routing",	    DEBUG_MRT,            1	    },
-    {   "mrt",  	    DEBUG_MRT,            1	    },
-    {   "neighbors",        DEBUG_NEIGHBORS,      1	    },
-    {   "routers",          DEBUG_NEIGHBORS,      6	    },
-    {   "mrouters",         DEBUG_NEIGHBORS,      7	    },
-    {   "peers",            DEBUG_NEIGHBORS,      1	    },
-    {   "timers",           DEBUG_TIMER,          1	    },
-    {   "asserts",          DEBUG_ASSERT,         1	    },
-    {   "all",              DEBUG_ALL,            2         },
-    {   "3",	            0xffffffff,           1	    }    /* compat. */
+    {	"dvmrp_mrt",	    DEBUG_DVMRP_ROUTE,	  7	    },
+    {	"dvmrp_neighbors",  DEBUG_DVMRP_PEER,	  7	    },
+    {	"dvmrp_peers",	    DEBUG_DVMRP_PEER,	  8	    },
+    {	"dvmrp_hello",	    DEBUG_DVMRP_PEER,	  7	    },
+    {	"dvmrp_timers",	    DEBUG_DVMRP_TIMER,	  7	    },
+    {	"dvmrp",	    DEBUG_DVMRP,	  1	    },
+    {	"igmp_proto",	    DEBUG_IGMP_PROTO,	  6	    },
+    {	"igmp_timers",	    DEBUG_IGMP_TIMER,	  6	    },
+    {	"igmp_members",	    DEBUG_IGMP_MEMBER,	  6	    },
+    {	"groups",	    DEBUG_MEMBER,	  1	    },
+    {	"membership",	    DEBUG_MEMBER,	  2	    },
+    {	"igmp",		    DEBUG_IGMP,		  1	    },
+    {	"trace",	    DEBUG_TRACE,	  2	    },
+    {	"mtrace",	    DEBUG_TRACE,	  2	    },
+    {	"traceroute",	    DEBUG_TRACE,	  2	    },
+    {	"timeout",	    DEBUG_TIMEOUT,	  2	    },
+    {	"callout",	    DEBUG_TIMEOUT,	  3	    },
+    {	"packets",	    DEBUG_PKT,		  2	    },
+    {	"pkt",		    DEBUG_PKT,		  2	    },
+    {	"interfaces",	    DEBUG_IF,		  2	    },
+    {	"vif",		    DEBUG_IF,		  1	    },
+    {	"kernel",	    DEBUG_KERN,		  2	    },
+    {	"cache",	    DEBUG_MFC,		  1	    },
+    {	"mfc",		    DEBUG_MFC,		  2	    },
+    {	"k_cache",	    DEBUG_MFC,		  2	    },
+    {	"k_mfc",	    DEBUG_MFC,		  2	    },
+    {	"rsrr",		    DEBUG_RSRR,		  2	    },
+    {	"pim_detail",	    DEBUG_PIM_DETAIL,	  5	    },
+    {	"pim_hello",	    DEBUG_PIM_HELLO,	  5	    },
+    {	"pim_neighbors",    DEBUG_PIM_HELLO,	  5	    },
+    {	"pim_peers",	    DEBUG_PIM_HELLO,	  5	    },
+    {	"pim_register",	    DEBUG_PIM_REGISTER,	  5	    },
+    {	"registers",	    DEBUG_PIM_REGISTER,	  2	    },
+    {	"pim_join_prune",   DEBUG_PIM_JOIN_PRUNE, 5	    },
+    {	"pim_j_p",	    DEBUG_PIM_JOIN_PRUNE, 5	    },
+    {	"pim_jp",	    DEBUG_PIM_JOIN_PRUNE, 5	    },
+    {	"pim_bootstrap",    DEBUG_PIM_BOOTSTRAP,  5	    },
+    {	"pim_bsr",	    DEBUG_PIM_BOOTSTRAP,  5	    },
+    {	"bsr",		    DEBUG_PIM_BOOTSTRAP,  1	    },
+    {	"bootstrap",	    DEBUG_PIM_BOOTSTRAP,  1	    },
+    {	"pim_asserts",	    DEBUG_PIM_ASSERT,	  5	    },
+    {	"pim_cand_rp",	    DEBUG_PIM_CAND_RP,	  5	    },
+    {	"pim_c_rp",	    DEBUG_PIM_CAND_RP,	  5	    },
+    {	"pim_rp",	    DEBUG_PIM_CAND_RP,	  6	    },
+    {	"rp",		    DEBUG_PIM_CAND_RP,	  2	    },
+    {	"pim_routes",	    DEBUG_PIM_MRT,	  6	    },
+    {	"pim_routing",	    DEBUG_PIM_MRT,	  6	    },
+    {	"pim_mrt",	    DEBUG_PIM_MRT,	  5	    },
+    {	"pim_timers",	    DEBUG_PIM_TIMER,	  5	    },
+    {	"pim_rpf",	    DEBUG_PIM_RPF,	  6	    },
+    {	"rpf",		    DEBUG_RPF,		  3	    },
+    {	"pim",		    DEBUG_PIM,		  1	    },
+    {	"routes",	    DEBUG_MRT,		  1	    },
+    {	"routing",	    DEBUG_MRT,		  1	    },
+    {	"mrt",		    DEBUG_MRT,		  1	    },
+    {	"neighbors",	    DEBUG_NEIGHBORS,	  1	    },
+    {	"routers",	    DEBUG_NEIGHBORS,	  6	    },
+    {	"mrouters",	    DEBUG_NEIGHBORS,	  7	    },
+    {	"peers",	    DEBUG_NEIGHBORS,	  1	    },
+    {	"timers",	    DEBUG_TIMER,	  1	    },
+    {	"asserts",	    DEBUG_ASSERT,	  1	    },
+    {	"all",		    DEBUG_ALL,		  2	    },
+    {	"3",		    0xffffffff,		  1	    }	 /* compat. */
 };
+
 
 /*
  * Forward declarations.
  */
-static void handler     (int);
-static void timer        (void *);
+static void handler      (int);
+static void timer	 (void *);
 static void cleanup      (void);
 static void restart      (int);
 static void resetlogging (void *);
@@ -301,7 +302,7 @@ int main(int argc, char *argv[])
 
     snprintf(versionstring, sizeof (versionstring), "pimd version %s", todaysversion);
 
-    while ((ch = getopt_long (argc, argv, "c:d::fhlNvqr", long_options, NULL)) != EOF) {
+    while ((ch = getopt_long(argc, argv, "c:d::fhlNvqr", long_options, NULL)) != EOF) {
 	switch (ch) {
 	    case 'c':
 		config_file = optarg;
@@ -322,9 +323,10 @@ int main(int argc, char *argv[])
 			if (q)
 			    *q++ = '\0';
 			len = strlen(p);
-			for (i = 0, d = debugnames; i < ARRAY_LEN(debugnames); i++, d++)
+			for (i = 0, d = debugnames; i < ARRAY_LEN(debugnames); i++, d++) {
 			    if (len >= d->nchars && strncmp(d->name, p, len) == 0)
 				break;
+			}
 
 			if (i == ARRAY_LEN(debugnames))
 			    return usage();
@@ -519,25 +521,26 @@ int main(int argc, char *argv[])
 	else {
 	    timeout = &tv;
 	    timeout->tv_sec = secs;
-	   timeout->tv_usec = 0;
-        }
+	    timeout->tv_usec = 0;
+	}
 
-        if (boottime) {
-           time_t n;
+	if (boottime) {
+	    time_t n;
 
-           time(&n);
-           if (n > boottime + 15) {
-              struct rp_hold *rph = g_rp_hold;
+	    time(&n);
+	    if (n > boottime + 15) {
+		struct rp_hold *rph = g_rp_hold;
 
-              while(rph) {
-                 add_rp_grp_entry(&cand_rp_list, &grp_mask_list,
-                                  rph->address, 1, (u_int16)0xffffff, rph->group, rph->mask,
-                                  curr_bsr_hash_mask, curr_bsr_fragment_tag);
-                 rph = rph->next;
-              }
-              boottime = 0;
-           }
-        }
+		while(rph) {
+		    add_rp_grp_entry(&cand_rp_list, &grp_mask_list,
+				     rph->address, 1, (u_int16)0xffffff,
+				     rph->group, rph->mask,
+				     curr_bsr_hash_mask, curr_bsr_fragment_tag);
+		    rph = rph->next;
+		}
+		boottime = 0;
+	    }
+	}
 
 	if (sighandled) {
 	    if (sighandled & GOT_SIGINT) {
@@ -659,9 +662,9 @@ u_long virtual_time = 0;
  */
 static void timer(void *i __attribute__((unused)))
 {
-    age_vifs();	        /* Timeout neighbors and groups         */
-    age_routes();  	/* Timeout routing entries              */
-    age_misc();         /* Timeout the rest (Cand-RP list, etc) */
+    age_vifs();		/* Timeout neighbors and groups         */
+    age_routes();	/* Timeout routing entries              */
+    age_misc();		/* Timeout the rest (Cand-RP list, etc) */
 
     virtual_time += TIMER_INTERVAL;
     timer_setTimer(TIMER_INTERVAL, timer, NULL);
@@ -745,6 +748,7 @@ static void restart(int i __attribute__((unused)))
     nhandlers = 0;
     close(igmp_socket);
     close(pim_socket);
+
     /*
      * When IOCTL_OK_ON_RAW_SOCKET is defined, 'udp_socket' is equal
      * 'to igmp_socket'. Therefore, 'udp_socket' should be closed only
