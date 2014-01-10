@@ -301,13 +301,20 @@ extern int disable_all_by_default;
 
 /*
  * Used to contol the switching to the shortest path:
- *  `reg_rate`  used by the RP
- *  `data_rate` used by the last hop router
  */
-extern u_int32		pim_reg_rate_bytes;
-extern u_int32		pim_reg_rate_check_interval;
-extern u_int32		pim_data_rate_bytes;
-extern u_int32		pim_data_rate_check_interval;
+typedef enum {
+    SPT_RATE,
+    SPT_PACKETS,
+    SPT_INF
+} spt_mode_t;
+
+typedef struct {
+    u_int8      mode;
+    u_int32	bytes;
+    u_int32	packets;
+    u_int32	interval;
+} spt_threshold_t;
+extern spt_threshold_t  spt_threshold;
 
 extern cand_rp_t        *cand_rp_list;
 extern grp_mask_t       *grp_mask_list;

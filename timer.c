@@ -34,53 +34,36 @@
 
 #include "defs.h"
 
-
 /*
  * Global variables
  */
-/*
- * XXX: The RATE is in bits/s. To include the header overhead,
- * the approximation is 1 byte/s = 10 bits/s
- * `whatever_bytes` is the maximum number of bytes within the test interval.
- */
-u_int32 pim_reg_rate_bytes     =
-		(PIM_DEFAULT_REG_RATE * PIM_DEFAULT_REG_RATE_INTERVAL) / 10;
-u_int32 pim_reg_rate_check_interval  = PIM_DEFAULT_REG_RATE_INTERVAL;
-u_int32 pim_data_rate_bytes    =
-		(PIM_DEFAULT_DATA_RATE * PIM_DEFAULT_DATA_RATE_INTERVAL) / 10;
-u_int32 pim_data_rate_check_interval = PIM_DEFAULT_DATA_RATE_INTERVAL;
+
+/* To account for header overhead, we apx 1 byte/s = 10 bits/s (bps) */
+spt_threshold_t spt_threshold = {
+    .mode     = SPT_THRESHOLD_DEFAULT_MODE,
+    .bytes    = SPT_THRESHOLD_DEFAULT_RATE * SPT_THRESHOLD_DEFAULT_INTERVAL / 10,
+    .packets  = SPT_THRESHOLD_DEFAULT_PACKETS,
+    .interval = SPT_THRESHOLD_DEFAULT_INTERVAL,
+};
 
 /*
  * Local variables
  */
+u_int16 unicast_routing_interval = UCAST_ROUTING_CHECK_INTERVAL;
 u_int16 unicast_routing_timer;    /* Used to check periodically for any
-				   * change in the unicast routing.
-				   */
-u_int16 unicast_routing_check_interval;
-u_int8  ucast_flag;               /* Used to indicate there was a timeout */
+				   * change in the unicast routing. */
+u_int8  ucast_flag;
 
-u_int16 pim_data_rate_timer;      /* Used to check periodically the datarate
-				   * of the active sources and eventually
-				   * switch to the shortest path
-				   * (if forwarder)
-				   */
-u_int8  pim_data_rate_flag;       /* Used to indicate there was a timeout */
-
-u_int16 pim_reg_rate_timer;       /* The same as above, but used by the RP
-				   * to switch to the shortest path
-				   * and avoid the PIM registers.
-				   */
-u_int8  pim_reg_rate_flag;
+u_int16 pim_spt_threshold_timer;  /* Used for periodic check of spt-threshold
+				   * for the RP or the lasthop router. */
 u_int8  rate_flag;
 
 /*
- * TODO: XXX: the timers below are not used. Instead, the data rate timer
- * is used.
+ * TODO: XXX: the timers below are not used. Instead, the data rate timer is used.
  */
 u_int16 kernel_cache_timer;       /* Used to timeout the kernel cache
-				   * entries for idle sources
-				   */
-u_int16 kernel_cache_check_interval;
+				   * entries for idle sources */
+u_int16 kernel_cache_interval;
 
 /* to request and compare any route changes */
 srcentry_t srcentry_save;
@@ -91,21 +74,11 @@ rpentry_t  rpentry_save;
  */
 void init_timers(void)
 {
-    unicast_routing_check_interval = UCAST_ROUTING_CHECK_INTERVAL;
-    SET_TIMER(unicast_routing_timer, unicast_routing_check_interval);
-    /* The routing_check and the rate_check timers are interleaved to
-     * reduce the amount of work that has to be done at once.
-     */
-    /* XXX: for simplicity, both the intervals are the same */
-    if (pim_data_rate_check_interval < pim_reg_rate_check_interval)
-	pim_reg_rate_check_interval = pim_data_rate_check_interval;
-
-    SET_TIMER(pim_data_rate_timer, 3*pim_data_rate_check_interval/2);
-    SET_TIMER(pim_reg_rate_timer, 3*pim_reg_rate_check_interval/2);
+    SET_TIMER(unicast_routing_timer, unicast_routing_interval);
+    SET_TIMER(pim_spt_threshold_timer, spt_threshold.interval);
 
     /* Initialize the srcentry and rpentry used to save the old routes
-     * during unicast routing change discovery process.
-     */
+     * during unicast routing change discovery process. */
     srcentry_save.prev       = NULL;
     srcentry_save.next       = NULL;
     srcentry_save.address    = INADDR_ANY_N;
@@ -202,6 +175,24 @@ void age_vifs(void)
     }
 }
 
+#define MRT_IS_LASTHOP(mrt) VIFM_LASTHOP_ROUTER(mrt->leaves, mrt->oifs)
+#define MRT_IS_RP(mrt)      mrt->incoming == reg_vif_num
+
+static void try_switch_to_spt(mrtentry_t *mrt, kernel_cache_t *kc)
+{
+    if (MRT_IS_LASTHOP(mrt) || MRT_IS_RP(mrt)) {
+#ifdef KERNEL_MFC_WC_G
+	if (kc->source == INADDR_ANY_N) {
+	    delete_single_kernel_cache(mrt, kc);
+	    mrt->flags |= MRTF_MFC_CLONE_SG;
+	    return;
+	}
+#endif /* KERNEL_MFC_WC_G */
+
+	switch_shortest_path(kc->source, kc->group);
+    }
+}
+
 /*
  * Check the SPT threshold for a given (*,*,RP) or (*,G) entry
  *
@@ -229,59 +220,49 @@ void age_vifs(void)
  */
 static void check_spt_threshold(mrtentry_t *mrt)
 {
-    int did_switch_flag;
-    u_long curr_bytecnt;
+    int status;
+    u_long prev_bytecnt, prev_pktcnt;
     kernel_cache_t *kc, *kc_next;
+
+    /* XXX: TODO: When we add group-list support to spt_threshold we need
+     * to move this infinity check to inside the for-loop ... obviously. */
+    if (!rate_flag || spt_threshold.mode == SPT_INF)
+	return;
 
     for (kc = mrt->kernel_cache; kc; kc = kc_next) {
 	kc_next = kc->next;
 
-	curr_bytecnt = kc->sg_count.bytecnt;
-	if (k_get_sg_cnt(udp_socket, kc->source, kc->group, &kc->sg_count)
-	    || (curr_bytecnt == kc->sg_count.bytecnt)) {
-	    /* Either for whatever reason there is no such routing
+	prev_bytecnt = kc->sg_count.bytecnt;
+	prev_pktcnt  = kc->sg_count.pktcnt;
+
+	status = k_get_sg_cnt(udp_socket, kc->source, kc->group, &kc->sg_count);
+	if (status || prev_bytecnt == kc->sg_count.bytecnt) {
+	    /* Either (for whatever reason) there is no such routing
 	     * entry, or that particular (S,G) was idle.  Delete the
 	     * routing entry from the kernel. */
 	    delete_single_kernel_cache(mrt, kc);
 	    continue;
 	}
 
-	/* Check if the datarate was high enough to switch to source
-	 * specific tree. Need to check only when we have (S,G)RPbit in
-	 * the forwarder or the RP itself. */
+	/* Check spt-threshold for forwarder and RP, should we switch to
+	 * source specific tree (SPT).  Need to check only when we have
+	 * (S,G)RPbit in the forwarder or the RP itself. */
+	switch (spt_threshold.mode) {
+	    case SPT_RATE:
+		if (prev_bytecnt + spt_threshold.bytes < kc->sg_count.bytecnt)
+		    try_switch_to_spt(mrt, kc);
+		break;
 
-	/* Forwarder initiated switch */
-	did_switch_flag = FALSE;
-	if (curr_bytecnt + pim_data_rate_bytes < kc->sg_count.bytecnt) {
-	    if (VIFM_LASTHOP_ROUTER(mrt->leaves, mrt->oifs)) {
-#ifdef KERNEL_MFC_WC_G
-		if (kc->source == INADDR_ANY_N) {
-		    delete_single_kernel_cache(mrt, kc);
-		    mrt->flags |= MRTF_MFC_CLONE_SG;
-		    continue;
-		}
-#endif /* KERNEL_MFC_WC_G */
-		switch_shortest_path(kc->source, kc->group);
-		did_switch_flag = TRUE;
-	    }
+	    case SPT_PACKETS:
+		if (prev_pktcnt + spt_threshold.packets < kc->sg_count.pktcnt)
+		    try_switch_to_spt(mrt, kc);
+		break;
+
+	    default:
+		;		/* INF not handled here yet. */
 	}
 
-	/* RP initiated switch */
-	if ((did_switch_flag == FALSE) &&
-	    (curr_bytecnt + pim_reg_rate_bytes < kc->sg_count.bytecnt)) {
-	    if (mrt->incoming == reg_vif_num) {
-#ifdef KERNEL_MFC_WC_G
-		if (kc->source == INADDR_ANY_N) {
-		    delete_single_kernel_cache(mrt, kc);
-		    mrt->flags |= MRTF_MFC_CLONE_SG;
-		    continue;
-		}
-#endif /* KERNEL_MFC_WC_G */
-		switch_shortest_path(kc->source, kc->group);
-	    }
-	}
-
-	/* XXX: currentry the spec doesn't say to switch back to the
+	/* XXX: currently the spec doesn't say to switch back to the
 	 * shared tree if low datarate, but if needed to implement, the
 	 * check must be done here. Don't forget to check whether I am a
 	 * forwarder for that source. */
@@ -364,29 +345,19 @@ void age_routes(void)
      */
     IF_TIMEOUT(unicast_routing_timer) {
 	ucast_flag = TRUE;
-	SET_TIMER(unicast_routing_timer, unicast_routing_check_interval);
+	SET_TIMER(unicast_routing_timer, unicast_routing_interval);
     }
     ELSE {
 	ucast_flag = FALSE;
     }
 
-    IF_TIMEOUT(pim_data_rate_timer) {
-	pim_data_rate_flag = TRUE;
-	SET_TIMER(pim_data_rate_timer, pim_data_rate_check_interval);
+    IF_TIMEOUT(pim_spt_threshold_timer) {
+	rate_flag = TRUE;
+	SET_TIMER(pim_spt_threshold_timer, spt_threshold.interval);
     }
     ELSE {
-	pim_data_rate_flag = FALSE;
+	rate_flag = FALSE;
     }
-
-    IF_TIMEOUT(pim_reg_rate_timer) {
-	pim_reg_rate_flag = TRUE;
-	SET_TIMER(pim_reg_rate_timer, pim_reg_rate_check_interval);
-    }
-    ELSE {
-	pim_reg_rate_flag = FALSE;
-    }
-
-    rate_flag = pim_data_rate_flag | pim_reg_rate_flag;
 
     /* Scan the (*,*,RP) entries */
     for (cand_rp = cand_rp_list; cand_rp; cand_rp = cand_rp->next) {
@@ -444,8 +415,7 @@ void age_routes(void)
 	    }
 
 	    /* Check the activity for this entry */
-	    if (rate_flag == TRUE)
-		check_spt_threshold(mrt_rp);
+	    check_spt_threshold(mrt_rp);
 
 	    /* Join/Prune timer */
 	    IF_TIMEOUT(mrt_rp->jp_timer) {
@@ -520,8 +490,7 @@ void age_routes(void)
 		    }
 
 		    /* Check the sources activity */
-		    if (rate_flag == TRUE)
-			check_spt_threshold(mrt_grp);
+		    check_spt_threshold(mrt_grp);
 
 		    dont_calc_action = FALSE;
 		    if (rp_action != PIM_ACTION_NOTHING) {
@@ -639,8 +608,7 @@ void age_routes(void)
 					  mrt_srcs->leaves,
 					  mrt_srcs->asserted_oifs, 0);
 
-		    if (rate_flag == TRUE)
-			check_spt_threshold(mrt_srcs);
+		    check_spt_threshold(mrt_srcs);
 
 		    mrt_wide = mrt_srcs->group->grp_route;
 		    if (!mrt_wide)

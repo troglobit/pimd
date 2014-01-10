@@ -39,7 +39,9 @@
 
 #include "defs.h"
 
-#define WARN(fmt, args...) logit(LOG_WARNING, 0, "%s:%u - " fmt, config_file, lineno, ##args)
+#define WARN(fmt, args...)    logit(LOG_WARNING, 0, "%s:%u - " fmt, config_file, lineno, ##args)
+#define BAILOUT(msg, arg...)  { WARN(msg ", bailing out!", ##arg); return FALSE; }
+#define IGNORING(msg, arg...) { WARN(msg ", ignoring ...", ##arg); continue; }
 
 #define LINE_BUFSIZ 1024	/* Max. line length of the config file */
 
@@ -47,16 +49,16 @@
 #define CONF_EMPTY                              1
 #define CONF_PHYINT                             2
 #define CONF_CANDIDATE_RP                       3
-#define CONF_RP_ADDRESS                         64
-#define CONF_GROUP_PREFIX                       4
-#define CONF_BOOTSTRAP_RP                       5
-#define CONF_REG_THRESHOLD                      6
-#define CONF_DATA_THRESHOLD                     7
-#define CONF_DEFAULT_SOURCE_METRIC              8
-#define CONF_DEFAULT_SOURCE_PREFERENCE          9
-#define CONF_ALTNET                             10
-#define CONF_MASKLEN                            11
-#define CONF_SCOPED                             12
+#define CONF_RP_ADDRESS                         4
+#define CONF_GROUP_PREFIX                       5
+#define CONF_BOOTSTRAP_RP                       6
+#define CONF_COMPAT_THRESHOLD                   7
+#define CONF_SPT_THRESHOLD                      8
+#define CONF_DEFAULT_SOURCE_METRIC              9
+#define CONF_DEFAULT_SOURCE_PREFERENCE          10
+#define CONF_ALTNET                             11
+#define CONF_MASKLEN                            12
+#define CONF_SCOPED                             13
 
 /*
  * Forward declarations.
@@ -308,6 +310,13 @@ void config_vifs_from_kernel(void)
     }
 }
 
+static int deprecated(char *word, char *new_word, int code)
+{
+    WARN("The %s option is deprecated, replaced with %s", word, new_word);
+    WARN("Please update your configuration file!");
+
+    return code;
+}
 
 /**
  * parse_option - Convert result of string comparisons into numerics.
@@ -333,9 +342,11 @@ static int parse_option(char *word)
     if (EQUAL(word, "cand_bootstrap_router"))
 	return CONF_BOOTSTRAP_RP;
     if (EQUAL(word, "switch_register_threshold"))
-	return CONF_REG_THRESHOLD;
+	return deprecated(word, "spt_threshold", CONF_COMPAT_THRESHOLD);
     if (EQUAL(word, "switch_data_threshold"))
-	return CONF_DATA_THRESHOLD;
+	return deprecated(word, "spt_threshold", CONF_COMPAT_THRESHOLD);
+    if (EQUAL(word, "spt_threshold"))
+	return CONF_SPT_THRESHOLD;
     if (EQUAL(word, "default_source_metric"))
 	return CONF_DEFAULT_SOURCE_METRIC;
     if (EQUAL(word, "default_source_preference"))
@@ -906,115 +917,114 @@ int parse_rp_address(char *s)
 
 
 /**
- * parse_reg_threshold - Parse switch_register_threshold option
- * @s: String token
+ * parse_compat_threshold - Parse old deprecated pimd.conf thresholds
+ * @line:
  *
- * Reads and assigns the switch to the spt threshold due to registers
- * for the router, if used as RP.  Maybe extended to support different
- * thresholds for different groups(prefixes).
+ * This is a backwards compatible parser for the two older threshold
+ * settings used in pimd prior to v2.2.0.  The switchover mechanism has
+ * been completely changed, however, so we simply read the settings as
+ * if they where the same as the new spt_threshold, only converting the
+ * rate argument differently (bps vs kbps).  Last line to be read is
+ * what is activated in pimd as spt-threshold.
+ *
+ * Note, previously the parser was very lenient to errors, but since the
+ * default has changed it is much more strict. Any syntax error and pimd
+ * bails out ignoring the line.
  *
  * Syntax:
- * switch_register_threshold [rate <number> interval <number>]
+ * switch_register_threshold [rate <BPS> interval <SEC>]
+ * switch_data_threshold     [rate <BPS> interval <SEC>]
  *
  * Returns:
- * When parsing @s is successful this function returns %TRUE, otherwise %FALSE.
+ * When parsing @line is successful, returns %TRUE, otherwise %FALSE.
  */
-int parse_reg_threshold(char *s)
+static int parse_compat_threshold(char *line)
 {
     char *w;
-    u_int rate;
-    u_int interval;
+    int rate     = -1;
+    int interval = -1;
 
-    rate                        = PIM_DEFAULT_REG_RATE;
-    interval                    = PIM_DEFAULT_REG_RATE_INTERVAL;
-    pim_reg_rate_bytes          = (rate * interval) / 10;
-    pim_reg_rate_check_interval = interval;
-
-    while (!EQUAL((w = next_word(&s)), "")) {
+    while (!EQUAL((w = next_word(&line)), "")) {
 	if (EQUAL(w, "rate")) {
-	    if (EQUAL((w = next_word(&s)), "")) {
-		WARN("Missing reg_rate value; defaulting to %u bps", PIM_DEFAULT_REG_RATE);
-		rate = PIM_DEFAULT_REG_RATE;
-		continue;
-	    }
+	    if (EQUAL((w = next_word(&line)), ""))
+		BAILOUT("Missing rate value in compat threshold parser");
 
-	    if (sscanf(w, "%u", &rate) != 1) {
-		WARN("Invalid reg_rate value %s; defaulting to %u bps", w, PIM_DEFAULT_REG_RATE);
-		rate = PIM_DEFAULT_REG_RATE;
-	    }
+	    /* 10 --> 1,000,000,000 == 100 Gbps */
+	    if (sscanf(w, "%10d", &rate) != 1)
+		BAILOUT("Invalid rate value %s in compat threshold parser", w);
+
 	    continue;
 	}
 
 	if (EQUAL(w, "interval")) {
-	    if (EQUAL((w = next_word(&s)), "")) {
-		WARN("Missing reg_rate interval; defaulting to %u seconds", PIM_DEFAULT_REG_RATE_INTERVAL);
-		interval = PIM_DEFAULT_REG_RATE_INTERVAL;
-		continue;
-	    }
+	    if (EQUAL((w = next_word(&line)), ""))
+		IGNORING("Missing interval value in compat threshold parser");
 
-	    if (sscanf(w, "%u", &interval) != 1) {
-		WARN("Invalid reg_rate interval %s; defaulting to %u seconds", w, PIM_DEFAULT_REG_RATE_INTERVAL);
-		interval = PIM_DEFAULT_REG_RATE_INTERVAL;
-	    }
+	    /* 5 --> 99,999 ~= 27h */
+	    if (sscanf(w, "%5d", &interval) != 1)
+		IGNORING("Invalid interval %s in compat threshold parser", w);
+
 	    continue;
 	}
-
-	WARN("Invalid parameter %s; setting rate and interval to default", w);
-	rate     = PIM_DEFAULT_REG_RATE;
-	interval = PIM_DEFAULT_REG_RATE_INTERVAL;
-
-	break;
-    }	/* while not empty */
-
-    if (interval < TIMER_INTERVAL) {
-	WARN("reg_rate interval too short; set to default %u seconds", PIM_DEFAULT_REG_RATE_INTERVAL);
-	interval = PIM_DEFAULT_REG_RATE_INTERVAL;
     }
 
-    logit(LOG_INFO, 0, "reg_rate_limit is %u bps", rate);
-    logit(LOG_INFO, 0, "reg_rate_interval is %u seconds", interval);
-    pim_reg_rate_bytes = (rate * interval) / 10;
-    pim_reg_rate_check_interval = interval;
+    /* Set polling mode */
+    spt_threshold.mode = SPT_RATE;
+
+    /* Only accept values if they don't messup for new spt-threshold */
+    if (interval >= TIMER_INTERVAL)
+	spt_threshold.interval = interval;
+
+    /* Accounting for headers we can approximate 1 byte/s == 10 bits/s (bps) */
+    spt_threshold.bytes = rate * spt_threshold.interval / 10;
+
+    logit(LOG_INFO, 0, "Compatibility set spt-treshold rate %u kbps with interval %u sec",
+	  spt_threshold.bytes, spt_threshold.interval);
 
     return TRUE;
 }
 
 
 /**
- * parse_data_threshold - Parse switch_date_threshold option
+ * parse_spt_threshold - Parse spt_threshold option
  * @s: String token
  *
- * Reads and assigns the switch to the spt threshold due to data
- * packets, if used as DR.
+ * This configuration setting replaces the switch_register_threshold and
+ * switch_data_threshold.  It is more intuitive and more in line with
+ * what major vendors are also using.
+ *
+ * Note that the rate is in kbps instead of bps, compared to the old
+ * syntax.  Both the above parse_compat_threshold() and this function
+ * target the same backend.
  *
  * Syntax:
- * switch_data_threshold [rate <number> interval <number>]
+ * spt_threshold [rate <KBPS> | packets <NUM> | infinity] [interval <SEC>]
  *
  * Returns:
  * When parsing @s is successful this function returns %TRUE, otherwise %FALSE.
  */
-int parse_data_threshold(char *s)
+static int parse_spt_threshold(char *s)
 {
     char *w;
-    u_int rate;
-    u_int interval;
-
-    rate                         = PIM_DEFAULT_DATA_RATE;
-    interval                     = PIM_DEFAULT_DATA_RATE_INTERVAL;
-    pim_data_rate_bytes          = (rate * interval) / 10;
-    pim_data_rate_check_interval = interval;
+    u_int32 rate     = SPT_THRESHOLD_DEFAULT_RATE;
+    u_int32 packets  = SPT_THRESHOLD_DEFAULT_PACKETS;
+    u_int32 interval = SPT_THRESHOLD_DEFAULT_INTERVAL;
+    spt_mode_t mode  = SPT_THRESHOLD_DEFAULT_MODE;
 
     while (!EQUAL((w = next_word(&s)), "")) {
 	if (EQUAL(w, "rate")) {
+	    mode = SPT_RATE;
+
 	    if (EQUAL((w = next_word(&s)), "")) {
-		WARN("Missing data_rate value; defaulting to %u bps", PIM_DEFAULT_DATA_RATE);
-		rate = PIM_DEFAULT_DATA_RATE;
+		WARN("Missing spt-threshold rate argument, defaulting to %u", SPT_THRESHOLD_DEFAULT_RATE);
+		rate = SPT_THRESHOLD_DEFAULT_RATE;
 		continue;
 	    }
 
-	    if (sscanf(w, "%u", &rate) != 1) {
-		WARN("Invalid data_rate value %s; defaulting to %u bps", w, PIM_DEFAULT_DATA_RATE);
-		rate = PIM_DEFAULT_DATA_RATE;
+	    /* 10 --> 1,000,000,000 == 100 Gbps */
+	    if (sscanf(w, "%10u", &rate) != 1) {
+		WARN("Invalid spt-threshold rate %s, defaulting to %u", w, SPT_THRESHOLD_DEFAULT_RATE);
+		rate = SPT_THRESHOLD_DEFAULT_RATE;
 	    }
 
 	    continue;
@@ -1022,35 +1032,78 @@ int parse_data_threshold(char *s)
 
 	if (EQUAL(w, "interval")) {
 	    if (EQUAL((w = next_word(&s)), "")) {
-		WARN("Missing data_rate interval; defaulting to %u seconds", PIM_DEFAULT_DATA_RATE_INTERVAL);
-		interval = PIM_DEFAULT_DATA_RATE_INTERVAL;
+		WARN("Missing spt-threshold interval; defaulting to %u sec",  SPT_THRESHOLD_DEFAULT_INTERVAL);
+		interval = SPT_THRESHOLD_DEFAULT_INTERVAL;
 		continue;
 	    }
 
-	    if (sscanf(w, "%u", &interval) != 1) {
-		WARN("Invalid data_rate interval %s; defaulting to %u seconds", w, PIM_DEFAULT_DATA_RATE_INTERVAL);
-		interval = PIM_DEFAULT_DATA_RATE_INTERVAL;
+	    /* 5 --> 99,999 ~= 27h */
+	    if (sscanf(w, "%5u", &interval) != 1) {
+		WARN("Invalid spt-threshold interval %s; defaulting to %u sec", w, SPT_THRESHOLD_DEFAULT_INTERVAL);
+		interval = SPT_THRESHOLD_DEFAULT_INTERVAL;
 	    }
+
+	    if (interval < TIMER_INTERVAL) {
+		WARN("Too low spt-threshold interval %s; defaulting to %u sec", w, TIMER_INTERVAL);
+		interval = TIMER_INTERVAL;
+	    }
+
 	    continue;
-
 	}
-	WARN("Invalid parameter %s; setting rate and interval to default", w);
-	rate     = PIM_DEFAULT_DATA_RATE;
-	interval = PIM_DEFAULT_DATA_RATE_INTERVAL;
 
+	if (EQUAL(w, "packets")) {
+	    mode = SPT_PACKETS;
+
+	    if (EQUAL((w = next_word(&s)), "")) {
+		WARN("Missing spt-threshold number of packets; defaulting to %u", SPT_THRESHOLD_DEFAULT_PACKETS);
+		packets = SPT_THRESHOLD_DEFAULT_PACKETS;
+		continue;
+	    }
+
+	    /* 10 --> 4294967295, which is max of uint32_t */
+	    if (sscanf(w, "%10u", &packets) != 1) {
+		WARN("Invalid spt-threshold packets %s; defaulting to %u",
+		     w, SPT_THRESHOLD_DEFAULT_PACKETS);
+		packets = SPT_THRESHOLD_DEFAULT_INTERVAL;
+	    }
+
+	    continue;
+	}
+
+	if (EQUAL(w, "infinity")) {
+	    mode = SPT_INF;
+	    continue;
+	}
+
+	WARN("Invalid spt-threshold parameter %s; reverting to defaults.", w);
+	mode     = SPT_THRESHOLD_DEFAULT_MODE;
+	rate     = SPT_THRESHOLD_DEFAULT_RATE;
+	packets  = SPT_THRESHOLD_DEFAULT_PACKETS;
+	interval = SPT_THRESHOLD_DEFAULT_INTERVAL;
 	break;
-    }	/* while not empty */
-
-    if (interval < TIMER_INTERVAL) {
-	WARN("data_rate interval too short; defaulting to %u seconds",
-	      PIM_DEFAULT_DATA_RATE_INTERVAL);
-	interval = PIM_DEFAULT_DATA_RATE_INTERVAL;
     }
 
-    logit(LOG_INFO, 0, "data_rate_limit is %u bps", rate);
-    logit(LOG_INFO, 0, "data_rate_interval is %u seconds", interval);
-    pim_data_rate_bytes = (rate * interval) / 10;
-    pim_data_rate_check_interval = interval;
+    spt_threshold.mode = mode;
+    switch (mode) {
+	case SPT_INF:
+	    logit(LOG_INFO, 0, "spt-threshold infinity => RP and lasthop router will never switch to SPT.");
+	    break;
+
+	case SPT_RATE:
+	    /* Accounting for headers we can approximate 1 byte/s == 10 bits/s (bps)
+	     * Note, in the new spt_threshold setting the rate is in kbps as well! */
+	    spt_threshold.bytes    = rate * interval / 10 * 1000;
+	    spt_threshold.interval = interval;
+	    logit(LOG_INFO, 0, "spt-threshold rate %u interval %u", rate, interval);
+	    break;
+
+	case SPT_PACKETS:
+	    spt_threshold.packets  = packets;
+	    spt_threshold.interval = interval;
+	    logit(LOG_INFO, 0, "spt-threshold packets %u interval %u", packets, interval);
+	    break;
+
+    }
 
     return TRUE;
 }
@@ -1213,12 +1266,12 @@ void config_vifs_from_file(void)
 		parseBSR(s);
 		break;
 
-	    case CONF_REG_THRESHOLD:
-		parse_reg_threshold(s);
+	    case CONF_COMPAT_THRESHOLD:
+		parse_compat_threshold(s);
 		break;
 
-	    case CONF_DATA_THRESHOLD:
-		parse_data_threshold(s);
+	    case CONF_SPT_THRESHOLD:
+		parse_spt_threshold(s);
 		break;
 
 	    case CONF_DEFAULT_SOURCE_METRIC:

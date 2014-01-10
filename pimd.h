@@ -106,31 +106,29 @@
 #define PIM_GROUP_PREFIX_MIN_MASKLEN	  4 /* group prefix minimum length */
 
 /* Datarate related definitions */
-/* REG_RATE is used by the RP to switch to the shortest path instead of
- * decapsulating Registers.
- * DATA_RATE is the threshold for the last hop router to initiate
- * switching to the shortest path.
- */
-/* TODO: XXX: probably no need for two different intervals.
- */
-#define PIM_DEFAULT_REG_RATE            50000 /* max # of register bits/s   */
-#define PIM_DEFAULT_REG_RATE_INTERVAL      20 /* regrate probe interval     */
-#define PIM_DEFAULT_DATA_RATE           50000 /* max # of data bits/s       */
-#define PIM_DEFAULT_DATA_RATE_INTERVAL     20 /* datarate check interval    */
 
-#define DATA_RATE_CHECK_INTERVAL           20 /* Data rate check interval   */
-#define REG_RATE_CHECK_INTERVAL            20 /* PIM Reg. rate check interval*/
+/*
+ * This is the threshold for the last hop router, or the RP, to
+ * initiate switching to the shortest path tree.  Like Cisco we
+ * change to SPT on first packet to the (S,G), but only after
+ * 100 seconds (Xorp does this and Pavlin knows his PIM-SM-FU)
+ */
+#define SPT_THRESHOLD_DEFAULT_MODE        SPT_PACKETS
+#define SPT_THRESHOLD_DEFAULT_RATE        0
+#define SPT_THRESHOLD_DEFAULT_PACKETS     0
+#define SPT_THRESHOLD_MAX_PACKETS         0
+#define SPT_THRESHOLD_DEFAULT_INTERVAL    100
 
-#define UCAST_ROUTING_CHECK_INTERVAL       20 /* Unfortunately, if the unicast
-					       * routing changes, the kernel
-					       * or any of the existing
-					       * unicast routing daemons
-					       * don't send us a signal.
-					       * Have to ask periodically the
-					       * kernel for any route changes.
-					       * Default: every 20 seconds.
-					       * Sigh.
-					       */
+#define UCAST_ROUTING_CHECK_INTERVAL      20 /* Unfortunately, if the unicast
+                                              * routing changes, the kernel
+                                              * or any of the existing
+                                              * unicast routing daemons
+                                              * don't send us a signal.
+                                              * Have to ask periodically the
+                                              * kernel for any route changes.
+                                              * Default: every 20 seconds.
+                                              * Sigh.
+                                              */
 
 
 #define DEFAULT_PHY_RATE_LIMIT  0             /* default phyint rate limit  */
