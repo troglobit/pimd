@@ -320,6 +320,8 @@ void send_igmp(char *buf, u_int32 src, u_int32 dst, int type, int code, u_int32 
 
     /* Prepare the IP header */
     ip			    = (struct ip *)buf;
+    ip->ip_id    = 0;		/* let kernel fill in */
+    ip->ip_off   = 0;
     ip->ip_len		    = sizeof(struct ip) + IGMP_MINLEN + datalen;
     ip->ip_src.s_addr       = src;
     ip->ip_dst.s_addr       = dst;
