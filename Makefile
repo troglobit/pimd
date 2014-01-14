@@ -1,23 +1,8 @@
 # -*-Makefile-*-
 #
-# Protocol Independent Multicast, Sparse-Mode version 2.0
-#
-# 2010-08-21  Joachim Nilsson <jocke@vmlinux.org>
-#       * Cleanup unportable rules.mk and simplify for build
-#         using BSD make, and similar.
-#
-# 2010-01-16  Joachim Nilsson <jocke@vmlinux.org>
-#       * Cleanup and refactoring for cross building.
-#
-# 2003-03-27  Antonin Kral <A.Kral@sh.cvut.cz>
-# 	* Modified for Debian
-#
-# 2001-11-13  Pavlin Ivanov Radoslavov (pavlin@catarina.usc.edu)
-#       * Original Makefile
-#
 
 # VERSION      ?= $(shell git tag -l | tail -1)
-VERSION      ?= 2.1.8
+VERSION      ?= 2.2.0-alpha1
 EXEC          = pimd
 CONFIG        = $(EXEC).conf
 PKG           = $(EXEC)-$(VERSION)
@@ -33,11 +18,6 @@ datadir       = $(prefix)/share/doc/pimd
 mandir        = $(prefix)/share/man/man8
 
 
-# Uncomment the following line if you want to use RSRR (Routing
-# Support for Resource Reservations), currently used by RSVP.
-#RSRRDEF       = -DRSRR
-RSRR_OBJS     = rsrr.o
-
 IGMP_OBJS     = igmp.o igmp_proto.o trace.o
 ROUTER_OBJS   = inet.o kern.o main.o config.o debug.o netlink.o routesock.o \
 		vers.o callout.o
@@ -49,12 +29,11 @@ DVMRP_OBJS    = dvmrp_proto.o
 include config.mk
 
 ## Common
-CFLAGS       += $(MCAST_INCLUDE) $(RSRRDEF) $(INCLUDES) $(DEFS) $(USERCOMPILE)
+CFLAGS       += $(INCLUDES) $(DEFS) $(USERCOMPILE)
 CFLAGS       += -O2 -W -Wall -Werror -fno-strict-aliasing
 #CFLAGS       += -O -g
 LDLIBS        = $(EXTRA_LIBS)
-OBJS          = $(IGMP_OBJS) $(ROUTER_OBJS) $(PIM_OBJS) $(DVMRP_OBJS) \
-		$(RSRR_OBJS) $(EXTRA_OBJS)
+OBJS          = $(IGMP_OBJS) $(ROUTER_OBJS) $(PIM_OBJS) $(DVMRP_OBJS) $(EXTRA_OBJS)
 SRCS          = $(OBJS:.o=.c)
 DEPS          = $(addprefix .,$(SRCS:.c=.d))
 MANS          = $(addsuffix .8,$(EXEC))
