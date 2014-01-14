@@ -442,6 +442,11 @@ int receive_pim_register(u_int32 reg_src, u_int32 reg_dst, char *pim_message, si
     mrtentry_t *mrtentry2;
     vifbitmap_t oifs;
 
+    IF_DEBUG(DEBUG_PIM_REGISTER) {
+        logit(LOG_INFO, 0, "Received PIM register: len = %d from %s",
+              datalen, inet_fmt(reg_src, s1, sizeof(s1)));
+    }
+
     /*
      * Message length validation.
      * This is suppose to be done in the kernel, but some older kernel

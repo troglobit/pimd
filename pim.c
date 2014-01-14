@@ -51,7 +51,7 @@ extern int curttl;
  */
 static void pim_read   (int f, fd_set *rfd);
 static void accept_pim (ssize_t recvlen);
-
+static int send_raw_ip(char *buf, size_t len, struct sockaddr_in *sdst);
 
 void init_pim(void)
 {
@@ -227,6 +227,8 @@ void send_pim(char *buf, u_int32 src, u_int32 dst, int type, int datalen)
 
     /* Prepare the IP header */
     ip                 = (struct ip *)buf;
+    ip->ip_id    = 0;	 /* let kernel fill in */
+    ip->ip_off   = 0;
     ip->ip_len         = sizeof(struct ip) + sizeof(pim_header_t) + datalen;
     ip->ip_src.s_addr  = src;
     ip->ip_dst.s_addr  = dst;
@@ -313,6 +315,7 @@ u_int pim_send_cnt = 0;
  */
 void send_pim_unicast(char *buf, u_int32 src, u_int32 dst, int type, int datalen)
 {
+    static int ip_identification = 0;
     struct sockaddr_in sdst;
     struct ip *ip;
     pim_header_t *pim;
@@ -321,6 +324,8 @@ void send_pim_unicast(char *buf, u_int32 src, u_int32 dst, int type, int datalen
     /* Prepare the IP header */
     ip                 = (struct ip *)buf;
     ip->ip_len         = sizeof(struct ip) + sizeof(pim_header_t) + datalen;
+    /* We control the IP ID field for unicast msgs due to maybe fragmenting */
+    ip->ip_id = htons(++ip_identification);
     ip->ip_src.s_addr  = src;
     ip->ip_dst.s_addr  = dst;
     sendlen            = ip->ip_len;
@@ -365,16 +370,7 @@ void send_pim_unicast(char *buf, u_int32 src, u_int32 dst, int type, int datalen
     sdst.sin_len = sizeof(sdst);
 #endif
     sdst.sin_addr.s_addr = dst;
-    while (sendto(pim_socket, buf, sendlen, 0, (struct sockaddr *)&sdst, sizeof(sdst)) < 0) {
-	if (errno == EINTR)
-	    continue;		/* Received signal, retry syscall. */
-        else if (errno == ENETDOWN)
-            check_vif_state();
-        else
-            logit(LOG_WARNING, errno, "sendto from %s to %s",
-		  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
-        return;
-    }
+
 
     IF_DEBUG(DEBUG_PIM_DETAIL) {
         IF_DEBUG(DEBUG_PIM) {
@@ -391,7 +387,59 @@ void send_pim_unicast(char *buf, u_int32 src, u_int32 dst, int type, int datalen
 		  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
         }
     }
+
+    send_raw_ip(buf, sendlen, &sdst);
 }
+
+/* send a raw IP packet in fragments if necessary */
+static int send_raw_ip(char *buf, size_t len, struct sockaddr_in *sdst)
+{
+    struct ip *ip = (struct ip *)buf;
+
+    IF_DEBUG(DEBUG_PIM_REGISTER) {
+	logit(LOG_INFO, 0, "Sending unicast: len = %d to %s",
+                  len, inet_fmt(ip->ip_dst.s_addr, s1, sizeof(s1)));
+    }
+
+    while (sendto(pim_socket, buf, len, 0, (struct sockaddr *)sdst, 
+		  sizeof(*sdst)) < 0) {
+	switch (errno) {
+	    case EINTR:
+		continue;		/* Received signal, retry syscall. */
+	    case ENETDOWN:
+		check_vif_state();
+		return -1;
+	    case EMSGSIZE: {
+		/* split it in half and recursively send each half */
+		struct ip *ip2;
+		size_t hdrsize = sizeof(*ip);
+		size_t newlen1 = (len-hdrsize)/2 & 0xFFF8; /* 8 byte boundary */
+		size_t newlen2 = (len-hdrsize) - newlen1;
+		size_t offset = ntohs(ip->ip_off);
+
+		ip->ip_len = htons(newlen1+hdrsize);
+		ip->ip_off = htons(offset | IP_MF);
+		/* send first half */
+		if (send_raw_ip(buf, newlen1+hdrsize, sdst) == 0) {
+		    ip2 = (struct ip *)buf + newlen1;
+		    memcpy(ip2, ip, hdrsize);
+		    ip2->ip_len = htons(newlen2+hdrsize);
+		    ip2->ip_off = htons(offset + (newlen1>>3)); /* keep flgs */
+		    /* send second half */
+		    return send_raw_ip((char *)ip2, newlen2+hdrsize, sdst);
+		}
+	    }
+		return -1;
+	    default:
+		logit(LOG_WARNING, errno, "sendto from %s to %s",
+		      inet_fmt(ip->ip_src.s_addr, s1, sizeof(s1)),
+		      inet_fmt(ip->ip_dst.s_addr, s2, sizeof(s2)));
+		return -1;
+	}
+    }
+    return 0;
+}
+
 
 /**
  * Local Variables:
