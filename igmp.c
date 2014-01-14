@@ -299,6 +299,8 @@ static void send_ip_frame(u_int32 src, u_int32 dst, int type, int code, char *bu
     /* Prepare the IP header */
     len		     += IP_IGMP_HEADER_LEN;
     ip		      = (struct ip *)buf;
+    ip->ip_id	      = 0; /* let kernel fill in */
+    ip->ip_off	      = 0;
     ip->ip_src.s_addr = src;
     ip->ip_dst.s_addr = dst;
 #ifdef HAVE_IP_HDRINCL_BSD_ORDER
