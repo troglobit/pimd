@@ -51,7 +51,8 @@ extern int curttl;
  */
 static void pim_read   (int f, fd_set *rfd);
 static void accept_pim (ssize_t recvlen);
-static int send_raw_ip(char *buf, size_t len, struct sockaddr_in *sdst);
+static int  send_raw_ip(char *buf, size_t len, struct sockaddr *dst, size_t salen);
+static int send_fragment(char *buf, size_t len, size_t mtu, struct sockaddr *dst, size_t salen);
 
 void init_pim(void)
 {
@@ -309,13 +310,13 @@ u_int pim_send_cnt = 0;
  * Send an unicast PIM packet from src to dst, PIM message type = "type"
  * and data length (after the PIM common header) = "len"
  */
-void send_pim_unicast(char *buf, u_int32 src, u_int32 dst, int type, size_t len)
+void send_pim_unicast(char *buf, int mtu, u_int32 src, u_int32 dst, int type, size_t len)
 {
     static int ip_identification = 0;
     struct sockaddr_in sin;
     struct ip *ip;
     pim_header_t *pim;
-    int sendlen = sizeof(struct ip) + sizeof(pim_header_t) + len;
+    int result, sendlen = sizeof(struct ip) + sizeof(pim_header_t) + len;
 
     /* Prepare the IP header */
     ip                 = (struct ip *)buf;
@@ -364,6 +365,18 @@ void send_pim_unicast(char *buf, u_int32 src, u_int32 dst, int type, size_t len)
     sin.sin_len = sizeof(sin);
 #endif
 
+    if (mtu && sendlen > mtu)
+	result = send_fragment(buf, sendlen, mtu, (struct sockaddr *)&sin, sizeof(sin));
+    else
+	result = send_raw_ip(buf, sendlen, (struct sockaddr *)&sin, sizeof(sin));
+
+    if (result) {
+	logit(LOG_WARNING, errno, "sendto from %s to %s",
+	      inet_fmt(ip->ip_src.s_addr, s1, sizeof(s1)),
+	      inet_fmt(ip->ip_dst.s_addr, s2, sizeof(s2)));
+	return;
+    }
+
     IF_DEBUG(DEBUG_PIM_DETAIL) {
         IF_DEBUG(DEBUG_PIM) {
 #if 0 /* TODO: use pim_send_cnt? */
@@ -374,61 +387,108 @@ void send_pim_unicast(char *buf, u_int32 src, u_int32 dst, int type, size_t len)
 		      inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
 	    }
 #endif
-            logit(LOG_DEBUG, 0, "SENT %s from %-15s to %s",
-		  packet_kind(IPPROTO_PIM, type, 0),
+            logit(LOG_DEBUG, 0, "SENT %s (len: %-5d) from %-15s to %s",
+		  packet_kind(IPPROTO_PIM, type, 0), sendlen,
 		  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
-        }
+	}
     }
-
-    send_raw_ip(buf, sendlen, &sin);
 }
 
+/*
+ * Split in fragments according to MTU (or even better, use PMTU) and
+ * recursively send each fragment.
+ */
+static int send_fragment(char *buf, size_t len, size_t mtu, struct sockaddr *dst, size_t salen)
+{
+    struct ip *next, *ip = (struct ip *)buf;
+    size_t fraglen, offset;
+
+    if (!mtu)
+	mtu = IP_MSS;
+
+    if (len > mtu)
+	fraglen = mtu & 0xFFF8;			/* 8 byte boundary */
+    else
+	fraglen = len;
+
+    ip->ip_len = htons(fraglen);
+    offset     = ntohs(ip->ip_off);		/* keep flags */
+    len	       = len - fraglen;			/* remaining data */
+    if (len)
+	ip->ip_off = htons(offset | IP_MF);
+
+    IF_DEBUG(DEBUG_PIM_REGISTER) {
+	logit(LOG_INFO, 0, "Sending fragmented unicast: fraglen = %-4d (mtu: %-4d) to %s",
+	      fraglen, mtu, inet_fmt(ip->ip_dst.s_addr, s1, sizeof(s1)));
+    }
+
+    /* send first fragment */
+    while (sendto(pim_socket, ip, fraglen, 0, dst, salen) < 0) {
+	switch (errno) {
+	    case EINTR:
+		continue;		/* Received signal, retry syscall. */
+
+	    case ENETDOWN:
+		check_vif_state();
+		return -1;
+
+	    case EMSGSIZE:
+		if (mtu > IP_MSS)
+		    return send_fragment((char *)ip, fraglen, IP_MSS, dst, salen);
+		/* fall through */
+
+	    default:
+		return -1;
+	}
+    }
+
+    /* send reminder */
+    if (len) {
+	size_t ipsz = sizeof(struct ip);
+
+	/* Update data pointers */
+	next   = (struct ip *)(buf + fraglen - ipsz);
+	memcpy(next, ip, ipsz);
+
+	/* Update IP header */
+	next->ip_len = htons(len + ipsz);
+	next->ip_off = htons(offset + (len >> 3));
+
+	return send_fragment((char *)next, len + ipsz, mtu, dst, salen);
+    }
+
+    return 0;
+}
+
+
 /* send a raw IP packet in fragments if necessary */
-static int send_raw_ip(char *buf, size_t len, struct sockaddr_in *sdst)
+static int send_raw_ip(char *buf, size_t len, struct sockaddr *dst, size_t salen)
 {
     struct ip *ip = (struct ip *)buf;
 
     IF_DEBUG(DEBUG_PIM_REGISTER) {
 	logit(LOG_INFO, 0, "Sending unicast: len = %d to %s",
-                  len, inet_fmt(ip->ip_dst.s_addr, s1, sizeof(s1)));
+	      len, inet_fmt(ip->ip_dst.s_addr, s1, sizeof(s1)));
     }
 
-    while (sendto(pim_socket, buf, len, 0, (struct sockaddr *)sdst, 
-		  sizeof(*sdst)) < 0) {
+    while (sendto(pim_socket, buf, len, 0, dst, salen) < 0) {
 	switch (errno) {
 	    case EINTR:
 		continue;		/* Received signal, retry syscall. */
+
 	    case ENETDOWN:
 		check_vif_state();
 		return -1;
-	    case EMSGSIZE: {
-		/* split it in half and recursively send each half */
-		struct ip *ip2;
-		size_t hdrsize = sizeof(*ip);
-		size_t newlen1 = (len-hdrsize)/2 & 0xFFF8; /* 8 byte boundary */
-		size_t newlen2 = (len-hdrsize) - newlen1;
-		size_t offset = ntohs(ip->ip_off);
 
-		ip->ip_len = htons(newlen1+hdrsize);
-		ip->ip_off = htons(offset | IP_MF);
-		/* send first half */
-		if (send_raw_ip(buf, newlen1+hdrsize, sdst) == 0) {
-		    ip2 = (struct ip *)buf + newlen1;
-		    memcpy(ip2, ip, hdrsize);
-		    ip2->ip_len = htons(newlen2+hdrsize);
-		    ip2->ip_off = htons(offset + (newlen1>>3)); /* keep flgs */
-		    /* send second half */
-		    return send_raw_ip((char *)ip2, newlen2+hdrsize, sdst);
-		}
-	    }
-		return -1;
+	    case EMSGSIZE:
+		/* Retry with minimum allowed IPv4 MTU, 576 bytes */
+		return send_fragment(buf, len, IP_MSS, dst, salen);
+
 	    default:
-		logit(LOG_WARNING, errno, "sendto from %s to %s",
-		      inet_fmt(ip->ip_src.s_addr, s1, sizeof(s1)),
-		      inet_fmt(ip->ip_dst.s_addr, s2, sizeof(s2)));
 		return -1;
 	}
     }
+
     return 0;
 }
 

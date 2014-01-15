@@ -133,6 +133,7 @@ struct uvif {
     u_char	     uv_admetric;   /* advertised cost of this vif          */
     u_char	     uv_threshold;  /* min ttl required to forward on vif   */
     u_int	     uv_rate_limit; /* rate limit on this vif               */
+    int              uv_mtu;        /* Initially interface MTU, then PMTU   */
     u_int32	     uv_lcl_addr;   /* local address of this vif            */
     u_int32	     uv_rmt_addr;   /* remote end-point addr (tunnels only) */
     u_int32	     uv_dst_addr;   /* destination for DVMRP/PIM messages   */

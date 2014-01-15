@@ -250,6 +250,16 @@ void config_vifs_from_kernel(void)
 
 	strlcpy(v->uv_name, ifr.ifr_name, IFNAMSIZ);
 
+	/*
+	 * Figure out MTU of interface, needed as a seed value when
+	 * fragmenting PIM register messages.  We should really do
+	 * a PMTU check on initial PIM register send to a new RP...
+	 */
+	if (ioctl(udp_socket, SIOCGIFMTU, &ifr) < 0)
+	    v->uv_mtu = 1500;
+	else
+	    v->uv_mtu = ifr.ifr_mtu;
+
 	if (flags & IFF_POINTOPOINT) {
 	    v->uv_flags |= (VIFF_REXMIT_PRUNES | VIFF_POINT_TO_POINT);
 	    if (ioctl(udp_socket, SIOCGIFDSTADDR, (char *)&ifr) < 0)

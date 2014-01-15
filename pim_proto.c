@@ -165,7 +165,7 @@ int receive_pim_hello(u_int32 src, u_int32 dst __attribute__((unused)), char *pi
 	 * send an RP-Set message to the new neighbor.
 	 */
 	if ((bsr_length = create_pim_bootstrap_message(pim_send_buf)))
-	    send_pim_unicast(pim_send_buf, v->uv_lcl_addr, src, PIM_BOOTSTRAP, bsr_length);
+	    send_pim_unicast(pim_send_buf, v->uv_mtu, v->uv_lcl_addr, src, PIM_BOOTSTRAP, bsr_length);
 
 	/* The router with highest network address is the elected DR */
 	if (ntohl(v->uv_lcl_addr) < ntohl(src)) {
@@ -681,7 +681,7 @@ int send_pim_register(char *packet)
     mrtentry_t *mrtentry;
     mrtentry_t *mrtentry2;
     u_int32     reg_src, reg_dst;
-    int         pktlen = 0;
+    int		reg_mtu, pktlen = 0;
     char       *buf;
 
     ip = (struct ip *)packet;
@@ -742,10 +742,10 @@ int send_pim_register(char *packet)
 #endif
 	memcpy(buf, ip, pktlen);
 	pktlen += sizeof(pim_register_t);
+	reg_mtu = uvifs[vifi].uv_mtu; /* XXX: Use PMTU to RP instead! */
 	reg_src = uvifs[vifi].uv_lcl_addr;
 	reg_dst = mrtentry->group->rpaddr;
-	send_pim_unicast(pim_send_buf, reg_src, reg_dst,
-			 PIM_REGISTER, pktlen);
+	send_pim_unicast(pim_send_buf, reg_mtu, reg_src, reg_dst, PIM_REGISTER, pktlen);
 
 	return TRUE;
     }
@@ -758,9 +758,9 @@ int send_pim_null_register(mrtentry_t *mrtentry)
 {
     struct ip *ip;
     pim_register_t *pim_register;
-    int pktlen;
+    int reg_mtu, pktlen;
     vifi_t vifi;
-    u_int32 reg_source, dest;
+    u_int32 reg_src, reg_dst;
 
     /* No directly connected source; no local address */
     if ((vifi = find_vif_direct_local(mrtentry->source->address))== NO_VIF)
@@ -794,10 +794,11 @@ int send_pim_null_register(mrtentry_t *mrtentry)
     /* include the dummy ip header */
     pktlen = sizeof(pim_register_t) + sizeof(struct ip);
 
-    dest = mrtentry->group->rpaddr;
-    reg_source = uvifs[vifi].uv_lcl_addr;
+    reg_mtu = uvifs[vifi].uv_mtu;
+    reg_dst = mrtentry->group->rpaddr;
+    reg_src = uvifs[vifi].uv_lcl_addr;
 
-    send_pim_unicast(pim_send_buf, reg_source, dest, PIM_REGISTER, pktlen);
+    send_pim_unicast(pim_send_buf, reg_mtu, reg_src, reg_dst, PIM_REGISTER, pktlen);
 
     return TRUE;
 }
@@ -870,7 +871,7 @@ send_pim_register_stop(u_int32 reg_src, u_int32 reg_dst, u_int32 inner_grp, u_in
     data = (u_int8 *)buf;
     PUT_EGADDR(inner_grp, SINGLE_GRP_MSKLEN, 0, data);
     PUT_EUADDR(inner_src, data);
-    send_pim_unicast(pim_send_buf, reg_src, reg_dst, PIM_REGISTER_STOP, data - (u_int8 *)buf);
+    send_pim_unicast(pim_send_buf, 0, reg_src, reg_dst, PIM_REGISTER_STOP, data - (u_int8 *)buf);
 
     return TRUE;
 }
@@ -3156,7 +3157,7 @@ int send_pim_cand_rp_adv(void)
 
     data = (u_int8 *)(pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t));
     memcpy(data, cand_rp_adv_message.buffer, cand_rp_adv_message.message_size);
-    send_pim_unicast(pim_send_buf, my_cand_rp_address, curr_bsr_address,
+    send_pim_unicast(pim_send_buf, 0, my_cand_rp_address, curr_bsr_address,
 		     PIM_CAND_RP_ADV, cand_rp_adv_message.message_size);
 
     return TRUE;
