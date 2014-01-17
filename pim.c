@@ -51,9 +51,11 @@ extern int curttl;
  */
 static void pim_read   (int f, fd_set *rfd);
 static void accept_pim (ssize_t recvlen);
-static int  send_raw_ip(char *buf, size_t len, struct sockaddr *dst, size_t salen);
-static int send_fragment(char *buf, size_t len, size_t mtu, struct sockaddr *dst, size_t salen);
+static int  send_frame (char *buf, size_t len, size_t mtu, struct sockaddr *dst, size_t salen);
 
+/*
+ * Setup raw kernel socket for PIM protocol and send/receive buffers.
+ */
 void init_pim(void)
 {
     struct ip *ip;
@@ -365,11 +367,7 @@ void send_pim_unicast(char *buf, int mtu, u_int32 src, u_int32 dst, int type, si
     sin.sin_len = sizeof(sin);
 #endif
 
-    if (mtu && sendlen > mtu)
-	result = send_fragment(buf, sendlen, mtu, (struct sockaddr *)&sin, sizeof(sin));
-    else
-	result = send_raw_ip(buf, sendlen, (struct sockaddr *)&sin, sizeof(sin));
-
+    result = send_frame(buf, sendlen, mtu, (struct sockaddr *)&sin, sizeof(sin));
     if (result) {
 	logit(LOG_WARNING, errno, "sendto from %s to %s",
 	      inet_fmt(ip->ip_src.s_addr, s1, sizeof(s1)),
@@ -395,10 +393,10 @@ void send_pim_unicast(char *buf, int mtu, u_int32 src, u_int32 dst, int type, si
 }
 
 /*
- * Split in fragments according to MTU (or even better, use PMTU) and
- * recursively send each fragment.
+ * If needed, split in fragments according to MTU (or even better, use
+ * PMTU) and recursively send each fragment.  Otherwise sends directly.
  */
-static int send_fragment(char *buf, size_t len, size_t mtu, struct sockaddr *dst, size_t salen)
+static int send_frame(char *buf, size_t len, size_t mtu, struct sockaddr *dst, size_t salen)
 {
     struct ip *next, *ip = (struct ip *)buf;
     size_t fraglen, offset;
@@ -418,8 +416,9 @@ static int send_fragment(char *buf, size_t len, size_t mtu, struct sockaddr *dst
 	ip->ip_off = htons(offset | IP_MF);
 
     IF_DEBUG(DEBUG_PIM_REGISTER) {
-	logit(LOG_INFO, 0, "Sending fragmented unicast: fraglen = %-4d (mtu: %-4d) to %s",
-	      fraglen, mtu, inet_fmt(ip->ip_dst.s_addr, s1, sizeof(s1)));
+	logit(LOG_INFO, 0, "Sending %-4d bytes %sunicast (MTU %-4d) to %s",
+	      fraglen, len ? "fragmented " : "", mtu,
+	      inet_fmt(ip->ip_dst.s_addr, s1, sizeof(s1)));
     }
 
     /* send first fragment */
@@ -434,7 +433,7 @@ static int send_fragment(char *buf, size_t len, size_t mtu, struct sockaddr *dst
 
 	    case EMSGSIZE:
 		if (mtu > IP_MSS)
-		    return send_fragment((char *)ip, fraglen, IP_MSS, dst, salen);
+		    return send_frame((char *)ip, fraglen, IP_MSS, dst, salen);
 		/* fall through */
 
 	    default:
@@ -452,41 +451,9 @@ static int send_fragment(char *buf, size_t len, size_t mtu, struct sockaddr *dst
 
 	/* Update IP header */
 	next->ip_len = htons(len + ipsz);
-	next->ip_off = htons(offset + (len >> 3));
+	next->ip_off = htons(offset + (fraglen >> 3));
 
-	return send_fragment((char *)next, len + ipsz, mtu, dst, salen);
-    }
-
-    return 0;
-}
-
-
-/* send a raw IP packet in fragments if necessary */
-static int send_raw_ip(char *buf, size_t len, struct sockaddr *dst, size_t salen)
-{
-    struct ip *ip = (struct ip *)buf;
-
-    IF_DEBUG(DEBUG_PIM_REGISTER) {
-	logit(LOG_INFO, 0, "Sending unicast: len = %d to %s",
-	      len, inet_fmt(ip->ip_dst.s_addr, s1, sizeof(s1)));
-    }
-
-    while (sendto(pim_socket, buf, len, 0, dst, salen) < 0) {
-	switch (errno) {
-	    case EINTR:
-		continue;		/* Received signal, retry syscall. */
-
-	    case ENETDOWN:
-		check_vif_state();
-		return -1;
-
-	    case EMSGSIZE:
-		/* Retry with minimum allowed IPv4 MTU, 576 bytes */
-		return send_fragment(buf, len, IP_MSS, dst, salen);
-
-	    default:
-		return -1;
-	}
+	return send_frame((char *)next, len + ipsz, mtu, dst, salen);
     }
 
     return 0;
