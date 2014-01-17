@@ -337,7 +337,7 @@ void dump_vifs(FILE *fp)
 
 	n = v->uv_pim_neighbors;
 	if (!down && n) {
-	    for (i = width; i <= 15; i++)
+	    for (i = width; i <= 11; i++)
 		fprintf(fp, " ");
 	    fprintf(fp, "%-15s\n", inet_fmt(n->address, s1, sizeof(s1)));
 	    for (n = n->next; n; n = n->next)
