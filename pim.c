@@ -60,14 +60,14 @@ void init_pim(void)
 
     /* Setup the PIM raw socket */
     if ((pim_socket = socket(AF_INET, SOCK_RAW, IPPROTO_PIM)) < 0)
-        logit(LOG_ERR, errno, "Failed creating PIM socket");
+	logit(LOG_ERR, errno, "Failed creating PIM socket");
     k_hdr_include(pim_socket, TRUE);      /* include IP header when sending */
     k_set_sndbuf(pim_socket, SO_SEND_BUF_SIZE_MAX,
-                 SO_SEND_BUF_SIZE_MIN);   /* lots of output buffering        */
+		 SO_SEND_BUF_SIZE_MIN);   /* lots of output buffering        */
     k_set_rcvbuf(pim_socket, SO_RECV_BUF_SIZE_MAX,
-                 SO_RECV_BUF_SIZE_MIN);   /* lots of input buffering        */
-    k_set_ttl(pim_socket, MINTTL);        /* restrict multicasts to one hop */
-    k_set_loop(pim_socket, FALSE);        /* disable multicast loopback     */
+		 SO_RECV_BUF_SIZE_MIN);   /* lots of input buffering        */
+    k_set_ttl(pim_socket, MINTTL);	  /* restrict multicasts to one hop */
+    k_set_loop(pim_socket, FALSE);	  /* disable multicast loopback	    */
 
     allpimrouters_group = htonl(INADDR_ALL_PIM_ROUTERS);
 
@@ -77,7 +77,7 @@ void init_pim(void)
 	logit(LOG_ERR, 0, "Ran out of memory in init_pim()");
 
     /* One time setup in the buffers */
-    ip           = (struct ip *)pim_send_buf;
+    ip		 = (struct ip *)pim_send_buf;
     memset(ip, 0, sizeof(*ip));
     ip->ip_v     = IPVERSION;
     ip->ip_hl    = (sizeof(struct ip) >> 2);
@@ -88,7 +88,7 @@ void init_pim(void)
     ip->ip_sum   = 0;	 /* let kernel fill in */
 
     if (register_input_handler(pim_socket, pim_read) < 0)
-        logit(LOG_ERR, 0,  "Failed registering pim_read() as an input handler");
+	logit(LOG_ERR, 0,  "Failed registering pim_read() as an input handler");
 
     /* Initialize the building Join/Prune messages working area */
     build_jp_message_pool = (build_jp_message_t *)NULL;
@@ -112,14 +112,14 @@ static void pim_read(int f __attribute__((unused)), fd_set *rfd __attribute__((u
 	    continue;		/* Received signal, retry syscall. */
 
 	logit(LOG_ERR, errno, "Failed recvfrom() in pim_read()");
-        return;
+	return;
     }
 
 #if defined(SYSV) || defined(__USE_SVID)
     (void)sigemptyset(&block);
     (void)sigaddset(&block, SIGALRM);
     if (sigprocmask(SIG_BLOCK, &block, &oblock) < 0)
-        logit(LOG_ERR, errno, "sigprocmask");
+	logit(LOG_ERR, errno, "sigprocmask");
 #else
     /* Use of omask taken from main() */
     omask = sigblock(sigmask(SIGALRM));
@@ -146,12 +146,12 @@ static void accept_pim(ssize_t recvlen)
 	return;
     }
 
-    ip          = (struct ip *)pim_recv_buf;
-    src         = ip->ip_src.s_addr;
-    dst         = ip->ip_dst.s_addr;
-    iphdrlen    = ip->ip_hl << 2;
+    ip		= (struct ip *)pim_recv_buf;
+    src		= ip->ip_src.s_addr;
+    dst		= ip->ip_dst.s_addr;
+    iphdrlen	= ip->ip_hl << 2;
 
-    pim         = (pim_header_t *)(pim_recv_buf + iphdrlen);
+    pim		= (pim_header_t *)(pim_recv_buf + iphdrlen);
     pimlen	= recvlen - iphdrlen;
 
     /* Sanity check packet length */
@@ -224,8 +224,8 @@ void send_pim(char *buf, u_int32 src, u_int32 dst, int type, size_t len)
 
     /* Prepare the IP header */
     ip                 = (struct ip *)buf;
-    ip->ip_id    = 0;	 /* let kernel fill in */
-    ip->ip_off   = 0;
+    ip->ip_id          = 0;	 /* let kernel fill in */
+    ip->ip_off         = 0;
     ip->ip_src.s_addr  = src;
     ip->ip_dst.s_addr  = dst;
     ip->ip_ttl         = MAXTTL;            /* applies to unicast only */
@@ -236,7 +236,7 @@ void send_pim(char *buf, u_int32 src, u_int32 dst, int type, size_t len)
 #endif
 
     /* Prepare the PIM packet */
-    pim                = (pim_header_t *)(buf + sizeof(struct ip));
+    pim		       = (pim_header_t *)(buf + sizeof(struct ip));
     pim->pim_type      = type;
     pim->pim_vers      = PIM_PROTOCOL_VERSION;
     pim->pim_reserved  = 0;
@@ -247,16 +247,16 @@ void send_pim(char *buf, u_int32 src, u_int32 dst, int type, size_t len)
     pim->pim_cksum     = inet_cksum((u_int16 *)pim, sizeof(pim_header_t) + len);
 
     if (IN_MULTICAST(ntohl(dst))) {
-        k_set_if(pim_socket, src);
-        if ((dst == allhosts_group) || (dst == allrouters_group) ||
-            (dst == allpimrouters_group)) {
-            setloop = 1;
-            k_set_loop(pim_socket, TRUE);
-        }
+	k_set_if(pim_socket, src);
+	if ((dst == allhosts_group) || (dst == allrouters_group) ||
+	    (dst == allpimrouters_group)) {
+	    setloop = 1;
+	    k_set_loop(pim_socket, TRUE);
+	}
 #ifdef RAW_OUTPUT_IS_RAW
-        ip->ip_ttl = curttl;
+	ip->ip_ttl = curttl;
     } else {
-        ip->ip_ttl = MAXTTL;
+	ip->ip_ttl = MAXTTL;
 #endif /* RAW_OUTPUT_IS_RAW */
     }
 
@@ -270,8 +270,8 @@ void send_pim(char *buf, u_int32 src, u_int32 dst, int type, size_t len)
     while (sendto(pim_socket, buf, sendlen, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
 	if (errno == EINTR)
 	    continue;		/* Received signal, retry syscall. */
-        else if (errno == ENETDOWN)
-            check_vif_state();
+	else if (errno == ENETDOWN)
+	    check_vif_state();
 	else if (errno == EPERM)
 	    logit(LOG_WARNING, 0, "Not allowed (EPERM) to send PIM message from %s to %s, possibly firewall"
 #ifdef __linux__
@@ -280,24 +280,24 @@ void send_pim(char *buf, u_int32 src, u_int32 dst, int type, size_t len)
 		  " related problem."
 		  ,
 		  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
-        else
-            logit(LOG_WARNING, errno, "sendto from %s to %s",
+	else
+	    logit(LOG_WARNING, errno, "sendto from %s to %s",
 		  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
-        if (setloop)
-            k_set_loop(pim_socket, FALSE);
-        return;
+	if (setloop)
+	    k_set_loop(pim_socket, FALSE);
+	return;
     }
 
     if (setloop)
-        k_set_loop(pim_socket, FALSE);
+	k_set_loop(pim_socket, FALSE);
 
     IF_DEBUG(DEBUG_PIM_DETAIL) {
-        IF_DEBUG(DEBUG_PIM) {
-            logit(LOG_DEBUG, 0, "SENT %5d bytes %s from %-15s to %s",
+	IF_DEBUG(DEBUG_PIM) {
+	    logit(LOG_DEBUG, 0, "SENT %5d bytes %s from %-15s to %s",
 		  sendlen, packet_kind(IPPROTO_PIM, type, 0),
 		  src == INADDR_ANY_N ? "INADDR_ANY" :
 		  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
-        }
+	}
     }
 }
 
@@ -321,7 +321,7 @@ void send_pim_unicast(char *buf, int mtu, u_int32 src, u_int32 dst, int type, si
     /* Prepare the IP header */
     ip                 = (struct ip *)buf;
     /* We control the IP ID field for unicast msgs due to maybe fragmenting */
-    ip->ip_id = htons(++ip_identification);
+    ip->ip_id          = htons(++ip_identification);
     ip->ip_src.s_addr  = src;
     ip->ip_dst.s_addr  = dst;
     ip->ip_ttl         = MAXTTL; /* TODO: XXX: setup TTL from the inner mcast packet? */
@@ -351,8 +351,8 @@ void send_pim_unicast(char *buf, int mtu, u_int32 src, u_int32 dst, int type, si
     pim->pim_cksum	= inet_cksum((u_int16 *)pim, sizeof(pim_header_t) + len);
 #else /* !BROKEN_CISCO_CHECKSUM */
     if (PIM_REGISTER == type) {
-        pim->pim_cksum	= inet_cksum((u_int16 *)pim, sizeof(pim_header_t)
-                                     + sizeof(pim_register_t));
+	pim->pim_cksum	= inet_cksum((u_int16 *)pim, sizeof(pim_header_t)
+				     + sizeof(pim_register_t));
     } else {
         pim->pim_cksum	= inet_cksum((u_int16 *)pim, sizeof(pim_header_t) + len);
     }
@@ -378,7 +378,7 @@ void send_pim_unicast(char *buf, int mtu, u_int32 src, u_int32 dst, int type, si
     }
 
     IF_DEBUG(DEBUG_PIM_DETAIL) {
-        IF_DEBUG(DEBUG_PIM) {
+	IF_DEBUG(DEBUG_PIM) {
 #if 0 /* TODO: use pim_send_cnt? */
 	    if (++pim_send_cnt > SEND_DEBUG_NUMBER) {
 		pim_send_cnt = 0;
