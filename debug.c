@@ -291,20 +291,21 @@ void dump_vifs(FILE *fp)
     int width;
     int i;
 
-    fprintf(fp, "Virtual Interface Table\n");
-    fprintf(fp, " Vif  Local address    Subnet                Thresh  Flags          Neighbors\n");
+    fprintf(fp, "Virtual Interface Table ======================================================\n");
+    fprintf(fp, "Vif  Local Address    Subnet              Thresh  Flags      Neighbors\n");
+    fprintf(fp, "---  ---------------  ------------------  ------  ---------  -----------------\n");
 
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
 	int down = 0;
 
-	fprintf(fp, " %3u  %-15s  ", vifi, inet_fmt(v->uv_lcl_addr, s1, sizeof(s1)));
+	fprintf(fp, "%3u  %-15s  ", vifi, inet_fmt(v->uv_lcl_addr, s1, sizeof(s1)));
 
 	if (v->uv_flags & VIFF_REGISTER)
-	    fprintf(fp, "%-20s  ", v->uv_name);
+	    fprintf(fp, "%-18s  ", v->uv_name);
 	else
-	    fprintf(fp,"%-20.20s  ", netname(v->uv_subnet, v->uv_subnetmask));
+	    fprintf(fp,"%-18.18s  ", netname(v->uv_subnet, v->uv_subnetmask));
 
-	fprintf(fp, "%-5u  ", v->uv_threshold);
+	fprintf(fp, "%6u ", v->uv_threshold);
 
 	/* TODO: XXX: Print VIFF_TUNNEL? */
 	width = 0;
@@ -340,7 +341,7 @@ void dump_vifs(FILE *fp)
 		fprintf(fp, " ");
 	    fprintf(fp, "%-15s\n", inet_fmt(n->address, s1, sizeof(s1)));
 	    for (n = n->next; n; n = n->next)
-		fprintf(fp, "%68s%-15s\n", "", inet_fmt(n->address, s1, sizeof(s1)));
+		fprintf(fp, "%61s%-15s\n", "", inet_fmt(n->address, s1, sizeof(s1)));
 	} else {
 	    fprintf(fp, "\n");
 	}
