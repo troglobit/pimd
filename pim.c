@@ -153,19 +153,19 @@ static void accept_pim(ssize_t recvlen)
 
     pim         = (pim_header_t *)(pim_recv_buf + iphdrlen);
     pimlen	= recvlen - iphdrlen;
+
+    /* Sanity check packet length */
     if (pimlen < (ssize_t)sizeof(*pim)) {
-        logit(LOG_WARNING, 0,
-	      "IP data field too short (%u bytes) for PIM header, from %s to %s",
+	logit(LOG_WARNING, 0, "IP data field too short (%d bytes) for PIM header, from %s to %s",
 	      pimlen, inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
-        return;
+	return;
     }
 
     IF_DEBUG(DEBUG_PIM_DETAIL) {
 	IF_DEBUG(DEBUG_PIM) {
-	    logit(LOG_DEBUG, 0, "RECV %s from %-15s to %s ",
+	    logit(LOG_DEBUG, 0, "RECV %5d bytes %s from %-15s to %s ", recvlen,
 		  packet_kind(IPPROTO_PIM, pim->pim_type, 0),
 		  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
-	    logit(LOG_DEBUG, 0, "PIM type is %u", pim->pim_type);
 	}
     }
 
@@ -293,8 +293,8 @@ void send_pim(char *buf, u_int32 src, u_int32 dst, int type, size_t len)
 
     IF_DEBUG(DEBUG_PIM_DETAIL) {
         IF_DEBUG(DEBUG_PIM) {
-            logit(LOG_DEBUG, 0, "SENT %s from %-15s to %s",
-		  packet_kind(IPPROTO_PIM, type, 0),
+            logit(LOG_DEBUG, 0, "SENT %5d bytes %s from %-15s to %s",
+		  sendlen, packet_kind(IPPROTO_PIM, type, 0),
 		  src == INADDR_ANY_N ? "INADDR_ANY" :
 		  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
         }
@@ -382,13 +382,13 @@ void send_pim_unicast(char *buf, int mtu, u_int32 src, u_int32 dst, int type, si
 #if 0 /* TODO: use pim_send_cnt? */
 	    if (++pim_send_cnt > SEND_DEBUG_NUMBER) {
 		pim_send_cnt = 0;
-		logit(LOG_DEBUG, 0, "SENT %s from %-15s to %s",
-		      packet_kind(IPPROTO_PIM, type, 0),
+		logit(LOG_DEBUG, 0, "SENT %5d bytes %s from %-15s to %s",
+		      sendlen, packet_kind(IPPROTO_PIM, type, 0),
 		      inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
 	    }
 #endif
-            logit(LOG_DEBUG, 0, "SENT %s (len: %-5d) from %-15s to %s",
-		  packet_kind(IPPROTO_PIM, type, 0), sendlen,
+	    logit(LOG_DEBUG, 0, "SENT %5d bytes %s from %-15s to %s",
+		  sendlen, packet_kind(IPPROTO_PIM, type, 0),
 		  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
 	}
     }

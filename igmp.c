@@ -188,14 +188,11 @@ static void accept_igmp(ssize_t recvlen)
 	return;
     }
 
-/* TODO: too noisy. Remove it? */
-#if 0
-    IF_DEBUG(DEBUG_PKT | debug_kind(IPPROTO_IGMP, igmp->igmp_type,
-				    igmp->igmp_code))
-	logit(LOG_DEBUG, 0, "RECV %s from %-15s to %s",
+    IF_DEBUG(DEBUG_PKT | debug_kind(IPPROTO_IGMP, igmp->igmp_type, igmp->igmp_code)) {
+	logit(LOG_DEBUG, 0, "RECV %5d bytes %s from %-15s to %s", recvlen,
 	      packet_kind(IPPROTO_IGMP, igmp->igmp_type, igmp->igmp_code),
 	      inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
-#endif /* 0 */
+    }
 
     switch (igmp->igmp_type) {
 	case IGMP_MEMBERSHIP_QUERY:
@@ -343,19 +340,21 @@ static void send_ip_frame(u_int32 src, u_int32 dst, int type, int code, char *bu
 	    logit(log_level(IPPROTO_IGMP, type, code), errno, "Sendto to %s on %s",
 		  inet_fmt(dst, s1, sizeof(s1)), inet_fmt(src, s2, sizeof(s2)));
 
-	 if (setloop)
-	     k_set_loop(igmp_socket, FALSE);
+	if (setloop)
+	    k_set_loop(igmp_socket, FALSE);
 
-	 return;
-     }
+	return;
+    }
 
-     if (setloop)
-	 k_set_loop(igmp_socket, FALSE);
+    if (setloop)
+	k_set_loop(igmp_socket, FALSE);
 
-    IF_DEBUG(DEBUG_PKT|debug_kind(IPPROTO_IGMP, type, code)) {
-	logit(LOG_DEBUG, 0, "SENT %s from %-15s to %s",
+    IF_DEBUG(DEBUG_PKT | debug_kind(IPPROTO_IGMP, type, code)) {
+	logit(LOG_DEBUG, 0, "SENT %5d bytes %s from %-15s to %s", len,
 	      packet_kind(IPPROTO_IGMP, type, code),
-	      src == INADDR_ANY_N ? "INADDR_ANY" : inet_fmt(src, s1, sizeof(s1)),
+	      src == INADDR_ANY_N
+		  ? "INADDR_ANY"
+		  : inet_fmt(src, s1, sizeof(s1)),
 	      inet_fmt(dst, s2, sizeof(s2)));
     }
 }
