@@ -33,6 +33,8 @@
 
 #include "defs.h"
 
+#define SEND_DEBUG_NUMBER 50	/* For throttling log messages */
+
 /*
  * Exported variables.
  */
@@ -45,6 +47,13 @@ int	pim_socket;		/* socket for PIM control msgs */
 #ifdef RAW_OUTPUT_IS_RAW
 extern int curttl;
 #endif /* RAW_OUTPUT_IS_RAW */
+
+/*
+ * Local variables.
+ */
+static u_int16 ip_id = 0;
+//static u_int pim_send_cnt = 0;
+
 
 /*
  * Local function definitions.
@@ -84,7 +93,7 @@ void init_pim(void)
     ip->ip_v     = IPVERSION;
     ip->ip_hl    = (sizeof(struct ip) >> 2);
     ip->ip_tos   = 0;    /* TODO: setup?? */
-    ip->ip_id    = 0;	 /* let kernel fill in */
+    ip->ip_id    = 0;    /* Make sure to update ID field, maybe fragmenting below */
     ip->ip_off   = 0;
     ip->ip_p     = IPPROTO_PIM;
     ip->ip_sum   = 0;	 /* let kernel fill in */
@@ -226,7 +235,7 @@ void send_pim(char *buf, u_int32 src, u_int32 dst, int type, size_t len)
 
     /* Prepare the IP header */
     ip                 = (struct ip *)buf;
-    ip->ip_id          = 0;	 /* let kernel fill in */
+    ip->ip_id	       = htons(++ip_id);
     ip->ip_off         = 0;
     ip->ip_src.s_addr  = src;
     ip->ip_dst.s_addr  = dst;
@@ -250,7 +259,8 @@ void send_pim(char *buf, u_int32 src, u_int32 dst, int type, size_t len)
 
     if (IN_MULTICAST(ntohl(dst))) {
 	k_set_if(pim_socket, src);
-	if ((dst == allhosts_group) || (dst == allrouters_group) ||
+	if ((dst == allhosts_group) ||
+	    (dst == allrouters_group) ||
 	    (dst == allpimrouters_group)) {
 	    setloop = 1;
 	    k_set_loop(pim_socket, TRUE);
@@ -303,9 +313,6 @@ void send_pim(char *buf, u_int32 src, u_int32 dst, int type, size_t len)
     }
 }
 
-u_int pim_send_cnt = 0;
-#define SEND_DEBUG_NUMBER 50
-
 
 /* TODO: This can be merged with the above procedure */
 /*
@@ -314,7 +321,6 @@ u_int pim_send_cnt = 0;
  */
 void send_pim_unicast(char *buf, int mtu, u_int32 src, u_int32 dst, int type, size_t len)
 {
-    static int ip_identification = 0;
     struct sockaddr_in sin;
     struct ip *ip;
     pim_header_t *pim;
@@ -322,8 +328,7 @@ void send_pim_unicast(char *buf, int mtu, u_int32 src, u_int32 dst, int type, si
 
     /* Prepare the IP header */
     ip                 = (struct ip *)buf;
-    /* We control the IP ID field for unicast msgs due to maybe fragmenting */
-    ip->ip_id          = htons(++ip_identification);
+    ip->ip_id	       = htons(++ip_id);
     ip->ip_src.s_addr  = src;
     ip->ip_dst.s_addr  = dst;
     ip->ip_ttl         = MAXTTL; /* TODO: XXX: setup TTL from the inner mcast packet? */
@@ -334,11 +339,11 @@ void send_pim_unicast(char *buf, int mtu, u_int32 src, u_int32 dst, int type, si
 #endif
 
     /* Prepare the PIM packet */
-    pim                    = (pim_header_t *)(buf + sizeof(struct ip));
-    pim->pim_type          = type;
-    pim->pim_vers          = PIM_PROTOCOL_VERSION;
-    pim->pim_reserved      = 0;
-    pim->pim_cksum         = 0;
+    pim                = (pim_header_t *)(buf + sizeof(struct ip));
+    pim->pim_type      = type;
+    pim->pim_vers      = PIM_PROTOCOL_VERSION;
+    pim->pim_reserved  = 0;
+    pim->pim_cksum     = 0;
 
     /* XXX: The PIM_REGISTERs don't include the encapsulated
      * inner packet in the checksum.

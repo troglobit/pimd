@@ -684,9 +684,9 @@ int send_pim_register(char *packet)
     int		reg_mtu, pktlen = 0;
     char       *buf;
 
-    ip = (struct ip *)packet;
+    ip     = (struct ip *)packet;
     source = ip->ip_src.s_addr;
-    group = ip->ip_dst.s_addr;
+    group  = ip->ip_dst.s_addr;
 
     if ((vifi = find_vif_direct_local(source)) == NO_VIF)
 	return FALSE;
