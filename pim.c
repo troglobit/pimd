@@ -448,17 +448,17 @@ static int send_frame(char *buf, size_t len, size_t mtu, struct sockaddr *dst, s
 
     /* send reminder */
     if (len) {
-	size_t ipsz = sizeof(struct ip);
+	size_t hdrsz = sizeof(struct ip) + sizeof(struct pim);
 
 	/* Update data pointers */
-	next   = (struct ip *)(buf + fraglen - ipsz);
-	memcpy(next, ip, ipsz);
+	next   = (struct ip *)(buf + fraglen - hdrsz);
+	memcpy(next, ip, hdrsz);
 
 	/* Update IP header */
-	next->ip_len = htons(len + ipsz);
+	next->ip_len = htons(len + hdrsz);
 	next->ip_off = htons(offset + (fraglen >> 3));
 
-	return send_frame((char *)next, len + ipsz, mtu, dst, salen);
+	return send_frame((char *)next, len + hdrsz, mtu, dst, salen);
     }
 
     return 0;
