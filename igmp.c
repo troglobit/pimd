@@ -86,6 +86,7 @@ void init_igmp(void)
 		 SO_RECV_BUF_SIZE_MIN); /* lots of input buffering        */
     k_set_ttl(igmp_socket, MINTTL);	/* restrict multicasts to one hop */
     k_set_loop(igmp_socket, FALSE);	/* disable multicast loopback     */
+    k_set_router_alert(igmp_socket);	/* Enable RFC2113 IP Router Alert */
 
     ip	       = (struct ip *)igmp_send_buf;
     memset(ip, 0, sizeof(*ip));

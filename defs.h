@@ -495,6 +495,7 @@ extern void	k_hdr_include		(int socket, int val);
 extern void	k_set_ttl		(int socket, int t);
 extern void	k_set_loop		(int socket, int l);
 extern void	k_set_if		(int socket, u_int32 ifa);
+extern void	k_set_router_alert	(int socket);
 extern void	k_join			(int socket, u_int32 grp, struct uvif *v);
 extern void	k_leave			(int socket, u_int32 grp, struct uvif *v);
 extern void	k_init_pim		(int socket);

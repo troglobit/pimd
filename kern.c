@@ -245,6 +245,23 @@ void k_set_if(int socket, u_int32 ifa)
 
 
 /*
+ * Set Router Alert IP option, RFC2113
+ */
+void k_set_router_alert(int socket)
+{
+    char router_alert[4];	/* Router Alert IP Option	    */
+
+    router_alert[0] = IPOPT_RA;	/* Router Alert */
+    router_alert[1] = 4;	/* 4 bytes */
+    router_alert[2] = 0;
+    router_alert[3] = 0;
+
+    if (setsockopt(socket, IPPROTO_IP, IP_OPTIONS, router_alert, sizeof(router_alert) )< 0)
+	logit(LOG_ERR, errno, "setsockopt IP_OPTIONS IPOPT_RA");
+}
+
+
+/*
  * Join a multicast group on virtual interface 'v'.
  */
 void k_join(int socket, u_int32 grp, struct uvif *v)
