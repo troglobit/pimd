@@ -73,6 +73,7 @@ void query_groups(struct uvif *v)
 		  (v->uv_flags & VIFF_IGMPV1) ? 0 :
 		  IGMP_MAX_HOST_REPORT_DELAY * IGMP_TIMER_SCALE, 0, 0);
     }
+
     /*
      * Decrement the old-hosts-present timer for each
      * active group on that vif.
@@ -302,8 +303,7 @@ void accept_leave_message(u_int32 src, u_int32 dst __attribute__((unused)), u_in
     /* TODO: modify for DVMRP ??? */
     if ((vifi = find_vif_direct_local(src)) == NO_VIF) {
 	IF_DEBUG(DEBUG_IGMP) {
-	    logit(LOG_INFO, 0,
-		  "ignoring group leave report from non-adjacent host %s",
+	    logit(LOG_INFO, 0, "ignoring group leave report from non-adjacent host %s",
 		  inet_fmt(src, s1, sizeof(s1)));
 	}
 	return;
@@ -326,11 +326,8 @@ void accept_leave_message(u_int32 src, u_int32 dst __attribute__((unused)), u_in
      */
     for (g = v->uv_groups; g != NULL; g = g->al_next) {
 	if (group == g->al_addr) {
-	    IF_DEBUG(DEBUG_IGMP) {
-		logit(LOG_DEBUG, 0,
-		      "[vif.c, _accept_leave_message] %d %d \n",
-		      g->al_old, g->al_query);
-	    }
+	    IF_DEBUG(DEBUG_IGMP)
+		logit(LOG_DEBUG, 0, "accept_leave_message(): %d %d", g->al_old, g->al_query);
 
 	    /* Ignore the leave message if there are old hosts present */
 	    if (g->al_old)

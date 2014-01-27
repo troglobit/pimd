@@ -256,8 +256,14 @@ void add_leaf(vifi_t vifi, u_int32 source __attribute__((unused)), u_int32 group
     vifbitmap_t new_oifs;
     vifbitmap_t new_leaves;
 
-    if (ntohl(group) <= INADDR_MAX_LOCAL_GROUP)
-	return; /* Don't create routing entries for the LAN scoped addresses */
+    /* Don't create routing entries for the LAN scoped addresses */
+    if (ntohl(group) <= INADDR_MAX_LOCAL_GROUP) { /* group <= 224.0.0.255? */
+	IF_DEBUG(DEBUG_IGMP) {
+	    logit(LOG_DEBUG, 0, "Not creating routing entry for LAN scoped group %s",
+		  inet_fmt(group, s1, sizeof(s1)));
+	}
+	return;
+    }
 
     /*
      * XXX: only if I am a DR, the IGMP Join should result in creating

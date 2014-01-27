@@ -64,6 +64,7 @@ char *packet_kind(u_int proto, u_int type, u_int code)
                 case IGMP_MEMBERSHIP_QUERY:    return "IGMP Membership Query    ";
                 case IGMP_V1_MEMBERSHIP_REPORT:return "IGMP v1 Member Report    ";
                 case IGMP_V2_MEMBERSHIP_REPORT:return "IGMP v2 Member Report    ";
+                case IGMP_V3_MEMBERSHIP_REPORT:return "IGMP v3 Member Report    ";
                 case IGMP_V2_LEAVE_GROUP:      return "IGMP Leave message       ";
                 case IGMP_DVMRP:
                     switch (code) {
