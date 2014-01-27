@@ -365,6 +365,52 @@ void accept_leave_message(u_int32 src, u_int32 dst __attribute__((unused)), u_in
     }
 }
 
+/*
+ * Handle IGMP v3 membership reports (join/leave)
+ */
+void accept_membership_report(u_int32 src, u_int32 dst, struct igmp_report *report)
+{
+    size_t i, numgrp = ntohs(report->ir_numgrps);
+    u_int32 group;
+    struct igmp_grouprec *grec;
+
+    IF_DEBUG(DEBUG_IGMP)
+	logit(LOG_DEBUG, 0, "IGMP v3 report from %s with %u group records",
+	      inet_fmt(src, s1, sizeof(s1)), numgrp);
+
+    grec = (struct igmp_grouprec *)((char *)report + IGMP_V3_REPORT_MINLEN);
+    for (i = 0; i < numgrp; i++) {
+	u_char type = grec->ig_type;
+	size_t numsrc = ntohs(grec->ig_numsrc);
+
+	/* Keep it in big endian, network byte order */
+	group = grec->ig_group.s_addr;
+
+	IF_DEBUG(DEBUG_IGMP)
+	    logit(LOG_DEBUG, 0, "               group %s type %d num_src %u",
+		  inet_fmt(group, s1, sizeof(s1)), type, numsrc);
+
+	switch (type) {
+	    case IGMP_MODE_IS_EXCLUDE:
+	    case IGMP_CHANGE_TO_EXCLUDE_MODE:
+		accept_group_report(src, dst, group, IGMP_V3_MEMBERSHIP_REPORT);
+		break;
+
+	    case IGMP_CHANGE_TO_INCLUDE_MODE:
+		accept_leave_message(src, dst, group);
+		break;
+
+	    default:
+		/* Nothing to do */
+		break;
+	}
+
+	/* Adjust for optional number of ig_sources[] */
+	grec = (struct igmp_grouprec *)((char *)grec +
+					IGMP_GRPREC_HDRLEN +
+					numsrc * sizeof(struct in_addr));
+    }
+}
 
 /*
  * Time out record of a group membership on a vif

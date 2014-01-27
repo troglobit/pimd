@@ -477,6 +477,7 @@ extern void	query_groups		(struct uvif *v);
 extern void	accept_membership_query	(u_int32 src, u_int32 dst, u_int32 group, int tmo);
 extern void	accept_group_report	(u_int32 src, u_int32 dst, u_int32 group, int r_type);
 extern void	accept_leave_message	(u_int32 src, u_int32 dst, u_int32 group);
+extern void     accept_membership_report(u_int32 src, u_int32 dst, struct igmp_report *report);
 
 /* inet.c */
 extern int	inet_cksum		(u_int16 *addr, u_int len);
