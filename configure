@@ -52,7 +52,7 @@ heading()
         echo "# -D_GNU_SOURCE Use GNU extensions, where possible" >> $CFG
         echo "# -D_BSD_SOURCE Use functions derived from 4.3 BSD Unix rather than POSIX.1" >> $CFG
         echo "# -DPIM         Enable PIM extensions in RSRR" >> $CFG
-        echo "DEFS          = -D__BSD_SOURCE -D_GNU_SOURCE -DPIM" >> $CFG
+        echo "DEFS          = -D_BSD_SOURCE -D_GNU_SOURCE -DPIM" >> $CFG
         echo "# EXTRA_OBJS  = For locally provided objects missing on some platforms, e.g., strlcpy.o"  >> $CFG
         echo "# EXTRA_LIBS  = For platform specific libraries, e.g., -lutil" >> $CFG
         echo >> $CFG
