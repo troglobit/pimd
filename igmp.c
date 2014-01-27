@@ -142,7 +142,7 @@ static void accept_igmp(ssize_t recvlen)
     struct ip *ip;
     struct igmp *igmp;
     struct igmp_report *igmpv3;
-    struct igmp_grouprec *grec, *next_grec;
+    struct igmp_grouprec *grec;
 
     if (recvlen < (ssize_t)sizeof(struct ip)) {
 	logit(LOG_WARNING, 0, "Received packet too short (%u bytes) for IP header", recvlen);
@@ -270,16 +270,20 @@ static void accept_igmp(ssize_t recvlen)
 	    igmpv3 = (struct igmp_report *)(igmp_recv_buf + iphdrlen);
 	    numgrp = ntohs(igmpv3->ir_numgrps);
 
-//	    logit(LOG_DEBUG, 0, "accept_igmp() IGMPv3 report type:0x%x src:%s dst:%s num_grp:%u",
-//		  igmpv3->ir_type, inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)), numgrp);
+	    IF_DEBUG(DEBUG_IGMP)
+		logit(LOG_INFO, 0, "IGMPv3 report src:%s num_grp:%u",
+		      inet_fmt(src, s1, sizeof(s1)), numgrp);
 
-	    grec = (struct igmp_grouprec *)igmpv3 + IGMP_V3_REPORT_MINLEN;
-	    next_grec = grec;
+	    grec = (struct igmp_grouprec *)((char *)igmpv3 + IGMP_V3_REPORT_MINLEN);
 	    for (i = 0; i < numgrp; i++) {
 		size_t numsrc = ntohs(grec->ig_numsrc);
 
 		/* Keep it in big endian, network byte order */
 		group = grec->ig_group.s_addr;
+
+		IF_DEBUG(DEBUG_IGMP)
+		    logit(LOG_DEBUG, 0, "IGMP v3 report: group %s type %d num_src %u",
+			  inet_fmt(group, s1, sizeof(s1)), grec->ig_type, numsrc);
 
 		if ((grec->ig_type == IGMP_MODE_IS_EXCLUDE) || (grec->ig_type == IGMP_CHANGE_TO_EXCLUDE_MODE))
 		    accept_group_report(src, dst, group, igmp->igmp_type);
@@ -287,8 +291,9 @@ static void accept_igmp(ssize_t recvlen)
 		    accept_leave_message(src, dst, group);
 
 		/* Adjust for optional number of ig_sources[] */
-		next_grec += IGMP_GRPREC_HDRLEN + numsrc * sizeof(struct in_addr);
-		grec       = next_grec;
+		grec = (struct igmp_grouprec *)((char *)grec +
+						IGMP_GRPREC_HDRLEN +
+						numsrc * sizeof(struct in_addr));
 	    }
 	    return;
 
