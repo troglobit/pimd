@@ -44,6 +44,29 @@
 #define IGMP_BLOCK_OLD_SOURCES		6	/* BLOCK_OLD */
 #endif
 
+#ifndef IGMP_V3_QUERY_MINLEN
+/*
+ * IGMP v3 query format.
+ */
+struct igmpv3 {
+    u_char	    igmp_type;	    /* version & type of IGMP message	*/
+    u_char	    igmp_code;	    /* subtype for routing msgs		*/
+    u_short	    igmp_cksum;	    /* IP-style checksum		*/
+    struct in_addr  igmp_group;	    /* group address being reported	*/
+				    /*  (zero for queries)		*/
+    u_char	    igmp_misc;	    /* reserved/suppress/robustness	*/
+    u_char	    igmp_qqi;	    /* querier's query interval		*/
+    u_short	    igmp_numsrc;    /* number of sources		*/
+    /*struct in_addr  igmp_sources[1];*/ /* source addresses */
+};
+#define IGMP_V3_QUERY_MINLEN		12
+#define IGMP_EXP(x)			(((x) >> 4) & 0x07)
+#define IGMP_MANT(x)			((x) & 0x0f)
+#define IGMP_QRESV(x)			(((x) >> 4) & 0x0f)
+#define IGMP_SFLAG(x)			(((x) >> 3) & 0x01)
+#define IGMP_QRV(x)			((x) & 0x07)
+#endif
+
 #ifndef IGMP_V3_REPORT_MINLEN
 struct igmp_grouprec {
     u_char	    ig_type;	    /* record type */
@@ -55,6 +78,9 @@ struct igmp_grouprec {
 
 #define IGMP_GRPREC_HDRLEN		8
 
+/*
+ * IGMPv3 host membership report header.
+ */
 struct igmp_report {
     u_char	    ir_type;	    /* record type */
     u_char	    ir_rsv1;	    /* reserved */

@@ -162,23 +162,27 @@ struct uvif {
 };
 
 /* TODO: define VIFF_KERNEL_FLAGS */
-#define VIFF_KERNEL_FLAGS	(VIFF_TUNNEL | VIFF_SRCRT)
-#define VIFF_DOWN		0x000100       /* kernel state of interface */
-#define VIFF_DISABLED		0x000200       /* administratively disabled */
-#define VIFF_QUERIER		0x000400       /* I am the subnet's querier */
-#define VIFF_ONEWAY		0x000800       /* Maybe one way interface   */
-#define VIFF_LEAF		0x001000       /* all neighbors are leaves  */
-#define VIFF_IGMPV1		0x002000       /* Act as an IGMPv1 Router   */
-#define	VIFF_REXMIT_PRUNES	0x004000       /* retransmit prunes         */
-#define VIFF_PASSIVE		0x008000       /* passive tunnel	    */
-#define	VIFF_ALLOW_NONPRUNERS	0x010000       /* ok to peer with nonprunrs */
-#define VIFF_NOFLOOD		0x020000       /* don't flood on this vif   */
-#define	VIFF_DR			0x040000       /* designated router	    */
+#define VIFF_KERNEL_FLAGS       (VIFF_TUNNEL | VIFF_SRCRT)
+#define VIFF_DOWN               0x000100       /* kernel state of interface */
+#define VIFF_DISABLED           0x000200       /* administratively disabled */
+#define VIFF_QUERIER            0x000400       /* I am the subnet's querier */
+#define VIFF_ONEWAY             0x000800       /* Maybe one way interface   */
+
+#define VIFF_LEAF               0x001000       /* all neighbors are leaves  */
+#define VIFF_IGMPV1             0x002000       /* Act as an IGMPv1 Router   */
+#define VIFF_IGMPV2             0x004000       /* Act as an IGMPv2 Router   */
+#define VIFF_REXMIT_PRUNES      0x008000       /* retransmit prunes         */
+
+#define VIFF_PASSIVE            0x010000       /* passive tunnel            */
+#define VIFF_ALLOW_NONPRUNERS   0x020000       /* ok to peer with nonprunrs */
+#define VIFF_NOFLOOD            0x040000       /* don't flood on this vif   */
+#define VIFF_DR                 0x080000       /* designated router         */
+
 /* TODO: VIFF_NONBRS == VIFF_ONEWAY? */
-#define	VIFF_NONBRS		0x080000       /* no neighbor on vif	    */
-#define VIFF_POINT_TO_POINT     0x100000       /* point-to-point link       */
-#define VIFF_PIM_NBR            0x200000       /* PIM neighbor              */
-#define VIFF_DVMRP_NBR          0x400000       /* DVMRP neighbor            */
+#define VIFF_NONBRS             0x100000       /* no neighbor on vif        */
+#define VIFF_POINT_TO_POINT     0x200000       /* point-to-point link       */
+#define VIFF_PIM_NBR            0x400000       /* PIM neighbor              */
+#define VIFF_DVMRP_NBR          0x800000       /* DVMRP neighbor            */
 
 struct phaddr {
     struct phaddr   *pa_next;

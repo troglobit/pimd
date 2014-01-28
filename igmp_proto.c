@@ -476,8 +476,11 @@ static int DeleteTimer(int id)
 static void send_query(struct uvif *v, u_int32 group, int interval)
 {
     if (v->uv_flags & VIFF_QUERIER) {
-	send_igmp(igmp_send_buf, v->uv_lcl_addr, group,
-		  IGMP_MEMBERSHIP_QUERY, interval, group != allhosts_group ? group : 0, 0);
+	if (v->uv_flags & VIFF_IGMPV2)
+	    send_igmp(igmp_send_buf, v->uv_lcl_addr, group,
+		      IGMP_MEMBERSHIP_QUERY, interval, group != allhosts_group ? group : 0, 0);
+	else
+	    send_igmpv3_query(v->uv_lcl_addr, v->uv_gq_timer);
     }
 }
 
