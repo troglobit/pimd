@@ -210,7 +210,7 @@ void accept_mtrace(u_int32 src, u_int32 dst, u_int32 group, char *data, u_int no
         logit(LOG_DEBUG, 0, "Sending traceroute response");
 
     /* copy the packet to the sending buffer */
-    p = igmp_send_buf + MIN_IP_HEADER_LEN + IGMP_MINLEN;
+    p = igmp_send_buf + IP_IGMP_HEADER_LEN + IGMP_MINLEN;
 
     bcopy(data, p, datalen);
 
@@ -416,7 +416,7 @@ void accept_neighbor_request(u_int32 src, u_int32 dst __attribute__((unused)))
     *p++ = (temp_addr >> 8) & 0xFF;		\
     *p++ = temp_addr & 0xFF;
 
-    p = (u_char *) (igmp_send_buf + MIN_IP_HEADER_LEN + IGMP_MINLEN);
+    p = (u_char *) (igmp_send_buf + IP_IGMP_HEADER_LEN + IGMP_MINLEN);
     datalen = 0;
 
     for (vifi = 0, v = uvifs; vifi < numvifs; vifi++, v++) {
@@ -432,7 +432,7 @@ void accept_neighbor_request(u_int32 src, u_int32 dst __attribute__((unused)))
 	    if (datalen + (ncount == 0 ? 4 + 3 + 4 : 4) > MAX_DVMRP_DATA_LEN) {
 		send_igmp(igmp_send_buf, INADDR_ANY, them, IGMP_DVMRP,
 			  DVMRP_NEIGHBORS, htonl(PIMD_LEVEL), datalen);
-		p = (u_char *) (igmp_send_buf + MIN_IP_HEADER_LEN + IGMP_MINLEN);
+		p = (u_char *) (igmp_send_buf + IP_IGMP_HEADER_LEN + IGMP_MINLEN);
 		datalen = 0;
 		ncount = 0;
 	    }
@@ -475,7 +475,7 @@ void accept_neighbor_request2(u_int32 src, u_int32 dst __attribute__((unused)))
     int datalen;
     u_int32 them = src;
 
-    p = (u_char *) (igmp_send_buf + MIN_IP_HEADER_LEN + IGMP_MINLEN);
+    p = (u_char *) (igmp_send_buf + IP_IGMP_HEADER_LEN + IGMP_MINLEN);
     datalen = 0;
 
     for (vifi = 0, v = uvifs; vifi < numvifs; vifi++, v++) {
@@ -510,7 +510,7 @@ void accept_neighbor_request2(u_int32 src, u_int32 dst __attribute__((unused)))
 	    if (datalen > MAX_DVMRP_DATA_LEN - 12) {
 		send_igmp(igmp_send_buf, INADDR_ANY, them, IGMP_DVMRP,
 			  DVMRP_NEIGHBORS2, htonl(PIMD_LEVEL), datalen);
-		p = (u_char *) (igmp_send_buf + MIN_IP_HEADER_LEN + IGMP_MINLEN);
+		p = (u_char *) (igmp_send_buf + IP_IGMP_HEADER_LEN + IGMP_MINLEN);
 		datalen = 0;
 	    }
 
@@ -529,7 +529,7 @@ void accept_neighbor_request2(u_int32 src, u_int32 dst __attribute__((unused)))
 		if (datalen + (ncount == 0 ? 4+4+4 : 4) > MAX_DVMRP_DATA_LEN) {
 		    send_igmp(igmp_send_buf, INADDR_ANY, them, IGMP_DVMRP,
 			      DVMRP_NEIGHBORS2, htonl(PIMD_LEVEL), datalen);
-		    p = (u_char *) (igmp_send_buf + MIN_IP_HEADER_LEN + IGMP_MINLEN);
+		    p = (u_char *) (igmp_send_buf + IP_IGMP_HEADER_LEN + IGMP_MINLEN);
 		    datalen = 0;
 		    ncount = 0;
 		}

@@ -55,6 +55,7 @@ typedef struct {
 static void DelVif       (void *arg);
 static int SetTimer      (vifi_t vifi, struct listaddr *g);
 static int DeleteTimer   (int id);
+static void send_query   (struct uvif *v, u_int32 group, int interval);
 static void SendQuery    (void *arg);
 static int SetQueryTimer (struct listaddr *g, vifi_t vifi, int to_expire, int q_time);
 
@@ -67,12 +68,8 @@ void query_groups(struct uvif *v)
     struct listaddr *g;
 
     v->uv_gq_timer = IGMP_QUERY_INTERVAL;
-    if (v->uv_flags & VIFF_QUERIER) {
-	send_igmp(igmp_send_buf, v->uv_lcl_addr, allhosts_group,
-		  IGMP_MEMBERSHIP_QUERY,
-		  (v->uv_flags & VIFF_IGMPV1) ? 0 :
-		  IGMP_MAX_HOST_REPORT_DELAY * IGMP_TIMER_SCALE, 0, 0);
-    }
+    send_query(v, allhosts_group, (v->uv_flags & VIFF_IGMPV1)
+	       ? 0 : IGMP_MAX_HOST_REPORT_DELAY * IGMP_TIMER_SCALE);
 
     /*
      * Decrement the old-hosts-present timer for each
@@ -122,11 +119,13 @@ void accept_membership_query(u_int32 src, u_int32 dst __attribute__((unused)), u
 	    i >>= 1;
 	if (i == 1) {
 	    logit(LOG_WARNING, 0, "%s %s on vif %d, %s",
-		  tmo == 0 ? "Received IGMPv1 report from"
+		  tmo == 0
+		  ? "Received IGMPv1 report from"
 		  : "Received IGMPv2 report from",
 		  inet_fmt(src, s1, sizeof(s1)),
 		  vifi,
-		  tmo == 0 ? "please configure vif for IGMPv1"
+		  tmo == 0
+		  ? "please configure vif for IGMPv1"
 		  : "but I am configured for IGMPv1");
 	}
     }
@@ -145,13 +144,13 @@ void accept_membership_query(u_int32 src, u_int32 dst __attribute__((unused)), u
 	    IF_DEBUG(DEBUG_IGMP)
 		logit(LOG_DEBUG, 0, "new querier %s (was %s) on vif %d",
 		      inet_fmt(src, s1, sizeof(s1)),
-		      v->uv_querier ?
-		      inet_fmt(v->uv_querier->al_addr, s2, sizeof(s2)) :
-		      "me", vifi);
+		      v->uv_querier
+		      ? inet_fmt(v->uv_querier->al_addr, s2, sizeof(s2))
+		      : "me", vifi);
 	    if (!v->uv_querier) {
 		v->uv_querier = (struct listaddr *) calloc(1, sizeof(struct listaddr));
 		if (!v->uv_querier) {
-		    logit(LOG_ERR, 0, "Failed calloc() in accept_membership_query()\n");
+		    logit(LOG_ERR, 0, "Failed calloc() in accept_membership_query()");
 		    return;
 		}
 
@@ -348,14 +347,9 @@ void accept_leave_message(u_int32 src, u_int32 dst __attribute__((unused)), u_in
 */
 #endif
 	    /** send a group specific querry **/
-	    g->al_timer = IGMP_LAST_MEMBER_QUERY_INTERVAL *
-		(IGMP_LAST_MEMBER_QUERY_COUNT + 1);
-	    if (v->uv_flags & VIFF_QUERIER) {
-		send_igmp(igmp_send_buf, v->uv_lcl_addr, g->al_addr,
-			  IGMP_MEMBERSHIP_QUERY,
-			  IGMP_LAST_MEMBER_QUERY_INTERVAL * IGMP_TIMER_SCALE,
-			  g->al_addr, 0);
-	    }
+	    send_query(v, g->al_addr, IGMP_LAST_MEMBER_QUERY_INTERVAL * IGMP_TIMER_SCALE);
+
+	    g->al_timer = IGMP_LAST_MEMBER_QUERY_INTERVAL * (IGMP_LAST_MEMBER_QUERY_COUNT + 1);
 	    g->al_query = SetQueryTimer(g, vifi,
 					IGMP_LAST_MEMBER_QUERY_INTERVAL,
 					IGMP_LAST_MEMBER_QUERY_INTERVAL * IGMP_TIMER_SCALE);
@@ -454,7 +448,7 @@ static int SetTimer(vifi_t vifi, struct listaddr *g)
 
     cbk = (cbk_t *) calloc(1, sizeof(cbk_t));
     if (!cbk) {
-	logit(LOG_ERR, 0, "Failed calloc() in SetTimer()\n");
+	logit(LOG_ERR, 0, "Failed calloc() in SetTimer()");
 	return -1;
     }
 
@@ -477,18 +471,24 @@ static int DeleteTimer(int id)
 
 
 /*
+ * Send IGMP Query
+ */
+static void send_query(struct uvif *v, u_int32 group, int interval)
+{
+    if (v->uv_flags & VIFF_QUERIER) {
+	send_igmp(igmp_send_buf, v->uv_lcl_addr, group,
+		  IGMP_MEMBERSHIP_QUERY, interval, group != allhosts_group ? group : 0, 0);
+    }
+}
+
+/*
  * Send a group-specific query.
  */
 static void SendQuery(void *arg)
 {
     cbk_t *cbk = (cbk_t *)arg;
-    struct uvif *v = &uvifs[cbk->vifi];
 
-    if (v->uv_flags & VIFF_QUERIER) {
-	send_igmp(igmp_send_buf, v->uv_lcl_addr, cbk->g->al_addr,
-		  IGMP_MEMBERSHIP_QUERY,
-		  cbk->q_time, cbk->g->al_addr, 0);
-    }
+    send_query(&uvifs[cbk->vifi], cbk->g->al_addr, cbk->q_time);
     cbk->g->al_query = 0;
     free(cbk);
 }
@@ -503,7 +503,7 @@ static int SetQueryTimer(struct listaddr *g, vifi_t vifi, int to_expire, int q_t
 
     cbk = (cbk_t *)calloc(1, sizeof(cbk_t));
     if (!cbk) {
-	logit(LOG_ERR, 0, "Failed calloc() in SetQueryTimer()\n");
+	logit(LOG_ERR, 0, "Failed calloc() in SetQueryTimer()");
 	return -1;
     }
 

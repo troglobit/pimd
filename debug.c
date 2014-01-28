@@ -422,6 +422,40 @@ void logit(int severity, int syserr, const char *format, ...)
     if (severity <= LOG_ERR) exit(-1);
 }
 
+
+/*
+ * Hex dump a control frame to the log, MAX 64 bytes length
+ */
+void dump_frame(char *desc, void *dump, size_t len)
+{
+    unsigned int length, i = 0;
+    unsigned char *data = (unsigned char *)dump;
+    char buf[80] = "";
+    char tmp[10];
+
+    length = len;
+    if (length > 64)
+	length = 64;
+
+    if (desc)
+	logit(LOG_DEBUG, 0, "%s", desc);
+
+    sprintf(buf, "%03X: ", i);
+    while (i < length) {
+	sprintf(tmp, "%02X ", data[i++]);
+	strcat(buf, tmp);
+
+	if (i > 0 && !(i % 16)) {
+	    logit(LOG_DEBUG, 0, "%s", buf);
+	    sprintf(buf, "%03X: ", i);
+	} else if (i > 0 && !(i % 8)) {
+	    strcat(buf, ":: ");
+	}
+    }
+    logit(LOG_DEBUG, 0, "%s", buf);
+}
+
+
 /* TODO: format the output for better readability */
 void dump_pim_mrt(FILE *fp)
 {

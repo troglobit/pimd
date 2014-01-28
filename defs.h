@@ -194,6 +194,7 @@ typedef void (*ihfunc_t) (int, fd_set *);
 
 #define MAX_IP_PACKET_LEN       576
 #define MIN_IP_HEADER_LEN       20
+#define IP_IGMP_HEADER_LEN      24 /* MIN + Router Alert */
 #define MAX_IP_HEADER_LEN       60
 
 
@@ -449,6 +450,7 @@ extern void	config_vifs_from_file	(void);
 extern char	*packet_kind		(u_int proto, u_int type, u_int code);
 extern int	debug_kind		(u_int proto, u_int type, u_int code);
 extern void	logit			(int, int, const char *, ...);
+extern void	dump_frame		(char *desc, void *dump, size_t len);
 extern int	log_level		(u_int proto, u_int type, u_int code);
 extern void	dump			(int i);
 extern void	fdump			(int i);

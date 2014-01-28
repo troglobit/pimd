@@ -70,6 +70,7 @@ static void accept_igmp (ssize_t recvlen);
 void init_igmp(void)
 {
     struct ip *ip;
+    char *router_alert;
 
     igmp_recv_buf = calloc(1, RECV_BUF_SIZE);
     igmp_send_buf = calloc(1, SEND_BUF_SIZE);
@@ -86,12 +87,11 @@ void init_igmp(void)
 		 SO_RECV_BUF_SIZE_MIN); /* lots of input buffering        */
     k_set_ttl(igmp_socket, MINTTL);	/* restrict multicasts to one hop */
     k_set_loop(igmp_socket, FALSE);	/* disable multicast loopback     */
-    k_set_router_alert(igmp_socket);	/* Enable RFC2113 IP Router Alert */
 
     ip	       = (struct ip *)igmp_send_buf;
-    memset(ip, 0, sizeof(*ip));
+    memset(ip, 0, IP_IGMP_HEADER_LEN);
     ip->ip_v   = IPVERSION;
-    ip->ip_hl  = (sizeof(struct ip) >> 2);
+    ip->ip_hl  = IP_IGMP_HEADER_LEN >> 2;
     ip->ip_tos = 0xc0;			/* Internet Control   */
     ip->ip_id  = 0;			/* let kernel fill in */
     ip->ip_off = 0;
@@ -102,6 +102,13 @@ void init_igmp(void)
 #else
     ip->ip_sum = 0;			/* let kernel fill in		    */
 #endif /* old_Linux */
+
+    /* Enable RFC2113 IP Router Alert */
+    router_alert    = igmp_send_buf + sizeof(struct ip);
+    router_alert[0] = IPOPT_RA;
+    router_alert[1] = 4;
+    router_alert[2] = 0;
+    router_alert[3] = 0;
 
     /* Everywhere in the daemon we use network-byte-order */
     allhosts_group   = htonl(INADDR_ALLHOSTS_GROUP);
@@ -142,7 +149,7 @@ static void accept_igmp(ssize_t recvlen)
     struct ip *ip;
     struct igmp *igmp;
 
-    if (recvlen < (ssize_t)sizeof(struct ip)) {
+    if (recvlen < MIN_IP_HEADER_LEN) {
 	logit(LOG_WARNING, 0, "Received packet too short (%u bytes) for IP header", recvlen);
 	return;
     }
@@ -286,30 +293,22 @@ static void accept_igmp(ssize_t recvlen)
     }
 }
 
-void send_igmp(char *buf, u_int32 src, u_int32 dst, int type, int code, u_int32 group, int datalen)
+static void send_ip_frame(u_int32 src, u_int32 dst, int type, int code, char *buf, size_t len)
 {
-    struct sockaddr_in sdst;
-    struct ip *ip;
-    struct igmp *igmp;
-    int sendlen;
     int setloop = 0;
+    struct ip *ip;
+    struct sockaddr_in sin;
 
     /* Prepare the IP header */
-    ip			    = (struct ip *)buf;
-    ip->ip_len		    = sizeof(struct ip) + IGMP_MINLEN + datalen;
-    ip->ip_src.s_addr       = src;
-    ip->ip_dst.s_addr       = dst;
-    sendlen		    = ip->ip_len;
+    len		     += IP_IGMP_HEADER_LEN;
+    ip		      = (struct ip *)buf;
+    ip->ip_src.s_addr = src;
+    ip->ip_dst.s_addr = dst;
 #if defined(RAW_OUTPUT_IS_RAW) || defined(OpenBSD)
-    ip->ip_len		    = htons(ip->ip_len);
-#endif /* RAW_OUTPUT_IS_RAW || OpenBSD */
-
-    igmp		    = (struct igmp *)(buf + sizeof(struct ip));
-    igmp->igmp_type	    = type;
-    igmp->igmp_code	    = code;
-    igmp->igmp_group.s_addr = group;
-    igmp->igmp_cksum	    = 0;
-    igmp->igmp_cksum	    = inet_cksum((u_int16 *)igmp, IGMP_MINLEN + datalen);
+    ip->ip_len	      = htons(len);
+#else
+    ip->ip_len	      = len;
+#endif
 
     if (IN_MULTICAST(ntohl(dst))) {
 	k_set_if(igmp_socket, src);
@@ -321,16 +320,22 @@ void send_igmp(char *buf, u_int32 src, u_int32 dst, int type, int code, u_int32 
 	ip->ip_ttl = curttl;
     } else {
 	ip->ip_ttl = MAXTTL;
-#endif /* RAW_OUTPUT_IS_RAW */
+#endif
     }
 
-    memset(&sdst, 0, sizeof(sdst));
-    sdst.sin_family = AF_INET;
+    memset(&sin, 0, sizeof(sin));
+    sin.sin_family = AF_INET;
+    sin.sin_addr.s_addr = dst;
 #ifdef HAVE_SA_LEN
-    sdst.sin_len = sizeof(sdst);
+    sin.sin_len = sizeof(sin);
 #endif
-    sdst.sin_addr.s_addr = dst;
-    while (sendto(igmp_socket, igmp_send_buf, sendlen, 0, (struct sockaddr *)&sdst, sizeof(sdst)) < 0) {
+
+    IF_DEBUG(DEBUG_PKT) {
+	logit(LOG_INFO, 0, "Sending IGMP packet sd:%d, buf:%p, len:%u ...", igmp_socket, buf, len);
+	dump_frame(NULL, buf, len);
+    }
+
+    while (sendto(igmp_socket, buf, len, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
 	if (errno == EINTR)
 	    continue;		/* Received signal, retry syscall. */
 	else if (errno == ENETDOWN || errno == ENODEV)
@@ -348,12 +353,27 @@ void send_igmp(char *buf, u_int32 src, u_int32 dst, int type, int code, u_int32 
      if (setloop)
 	 k_set_loop(igmp_socket, FALSE);
 
-     IF_DEBUG(DEBUG_PKT|debug_kind(IPPROTO_IGMP, type, code)) {
-	 logit(LOG_DEBUG, 0, "SENT %s from %-15s to %s",
-	       packet_kind(IPPROTO_IGMP, type, code),
-	       src == INADDR_ANY_N ? "INADDR_ANY" :
-	       inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
+    IF_DEBUG(DEBUG_PKT|debug_kind(IPPROTO_IGMP, type, code)) {
+	logit(LOG_DEBUG, 0, "SENT %s from %-15s to %s",
+	      packet_kind(IPPROTO_IGMP, type, code),
+	      src == INADDR_ANY_N ? "INADDR_ANY" : inet_fmt(src, s1, sizeof(s1)),
+	      inet_fmt(dst, s2, sizeof(s2)));
     }
+}
+
+void send_igmp(char *buf, u_int32 src, u_int32 dst, int type, int code, u_int32 group, int datalen)
+{
+    size_t len = IGMP_MINLEN + datalen;
+    struct igmp *igmp;
+
+    igmp		    = (struct igmp *)(buf + IP_IGMP_HEADER_LEN);
+    igmp->igmp_type	    = type;
+    igmp->igmp_code	    = code;
+    igmp->igmp_group.s_addr = group;
+    igmp->igmp_cksum	    = 0;
+    igmp->igmp_cksum	    = inet_cksum((u_int16 *)igmp, len);
+
+    send_ip_frame(src, dst, type, code, buf, len);
 }
 
 /**
