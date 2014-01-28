@@ -352,7 +352,8 @@ void k_add_vif(int socket, vifi_t vifi, struct uvif *v)
     vc.vifc_vifi = vifi;
     uvif_to_vifctl(&vc, v);
     if (setsockopt(socket, IPPROTO_IP, MRT_ADD_VIF, (char *)&vc, sizeof(vc)) < 0)
-	logit(LOG_ERR, errno, "Failed adding VIF %d (MRT_ADD_VIF)", vifi);
+	logit(LOG_ERR, errno, "Failed adding VIF %d (MRT_ADD_VIF) for iface %s",
+	      vifi, v->uv_name);
 }
 
 
