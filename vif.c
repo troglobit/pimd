@@ -595,9 +595,7 @@ vifi_t local_address(u_int32 src)
 	if (v->uv_flags & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER))
 	    continue;
 
-	if (src != v->uv_lcl_addr)
-	    continue;
-	else
+	if (src == v->uv_lcl_addr)
 	    return vifi;
     }
 

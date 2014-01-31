@@ -435,9 +435,9 @@ int send_pim_hello(struct uvif *v, u_int16 holdtime)
 int receive_pim_register(u_int32 reg_src, u_int32 reg_dst, char *pim_message, size_t len)
 {
     u_int32 inner_src, inner_grp;
-    pim_register_t *register_p;
+    pim_register_t *reg;
     struct ip *ip;
-    u_int32 borderBit, nullRegisterBit;
+    u_int32 is_border, is_null;
     mrtentry_t *mrtentry;
     mrtentry_t *mrtentry2;
     vifbitmap_t oifs;
@@ -478,15 +478,16 @@ int receive_pim_register(u_int32 reg_src, u_int32 reg_dst, char *pim_message, si
 	return FALSE;
     }
 
-    register_p = (pim_register_t *)(pim_message + sizeof(pim_header_t));
-    borderBit       = ntohl(register_p->reg_flags) & PIM_MESSAGE_REGISTER_BORDER_BIT;
-    nullRegisterBit = ntohl(register_p->reg_flags) & PIM_MESSAGE_REGISTER_NULL_REGISTER_BIT;
+    /* Lookup register message flags */
+    reg = (pim_register_t *)(pim_message + sizeof(pim_header_t));
+    is_border = ntohl(reg->reg_flags) & PIM_MESSAGE_REGISTER_BORDER_BIT;
+    is_null   = ntohl(reg->reg_flags) & PIM_MESSAGE_REGISTER_NULL_REGISTER_BIT;
 
     /* initialize the pointer to the encapsulated packet */
-    ip = (struct ip *)(register_p + 1);
+    ip = (struct ip *)(reg + 1);
 
     /* check the IP version (especially for the NULL register...see above) */
-    if (ip->ip_v != IPVERSION && (! nullRegisterBit)) {
+    if (ip->ip_v != IPVERSION && (! is_null)) {
 	IF_DEBUG(DEBUG_PIM_REGISTER)
 	    logit(LOG_INFO, 0, "PIM register: incorrect IP version (%d) of the inner packet from %s",
 		  ip->ip_v, inet_fmt(reg_src, s1, sizeof(s1)));
@@ -523,26 +524,28 @@ int receive_pim_register(u_int32 reg_src, u_int32 reg_dst, char *pim_message, si
 	    logit(LOG_DEBUG, 0, "No routing entry for source %s and/or group %s" ,
 		  inet_fmt(inner_src, s1, sizeof(s1)), inet_fmt(inner_grp, s2, sizeof(s2)));
 	}
-	/* TODO: XXX: shoudn't be inner_src=INADDR_ANY? Not in the spec. */
+
+	/* TODO: XXX: shouldn't it be inner_src=INADDR_ANY? Not in the spec. */
 	send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
 
 	return TRUE;
     }
 
-    /* XXX: not in the spec: check if I am the RP for that group */
-    if ((local_address(reg_dst) == NO_VIF) ||
-	(check_mrtentry_rp(mrtentry, reg_dst) == FALSE)) {
+    /* Check if I am the RP for that group */
+    if ((local_address(reg_dst) == NO_VIF) || !check_mrtentry_rp(mrtentry, reg_dst)) {
 	send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
 
 	return TRUE;
     }
+
+    /* I am the RP */
 
     if (mrtentry->flags & MRTF_SG) {
 	/* (S,G) found */
 	/* TODO: check the timer again */
 	SET_TIMER(mrtentry->timer, PIM_DATA_TIMEOUT); /* restart timer */
 	if (!(mrtentry->flags & MRTF_SPT)) { /* The SPT bit is not set */
-	    if (!nullRegisterBit) {
+	    if (!is_null) {
 		calc_oifs(mrtentry, &oifs);
 		if (VIFM_ISEMPTY(oifs) && (mrtentry->incoming == reg_vif_num)) {
 		    send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
@@ -560,7 +563,7 @@ int receive_pim_register(u_int32 reg_src, u_int32 reg_dst, char *pim_message, si
 		 * cache to accept/forward all data coming from the
 		 * register_vif.
 		 */
-		if (borderBit) {
+		if (is_border) {
 		    if (mrtentry->pmbr_addr != reg_src) {
 			send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
 
@@ -581,7 +584,7 @@ int receive_pim_register(u_int32 reg_src, u_int32 reg_dst, char *pim_message, si
 	}
     }
     if (mrtentry->flags & (MRTF_WC | MRTF_PMBR)) {
-	if (borderBit) {
+	if (is_border) {
 	    /* Create (S,G) state. The oifs will be the copied from the
 	     * existing (*,G) or (*,*,RP) entry. */
 	    mrtentry2 = find_route(inner_src, inner_grp, MRTF_SG, CREATE);
@@ -611,7 +614,7 @@ int receive_pim_register(u_int32 reg_src, u_int32 reg_dst, char *pim_message, si
 	}
 	/* XXX: TODO: check with the spec again */
 	else {
-	    if (!nullRegisterBit) {
+	    if (!is_null) {
 		/* Install cache entry in the kernel */
 		/* TODO: XXX: probably redundant here, because the
 		 * decapsulated mcast packet in the kernel will
@@ -636,7 +639,7 @@ int receive_pim_register(u_int32 reg_src, u_int32 reg_dst, char *pim_message, si
 
     if (mrtentry->flags & MRTF_PMBR) {
 	/* (*,*,RP) entry */
-	if (!nullRegisterBit) {
+	if (!is_null) {
 	    u_int32 mfc_source = inner_src;
 	    /* XXX: have to create either (S,G) or (*,G).
 	     * The choice below is (*,G)
