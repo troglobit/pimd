@@ -1049,12 +1049,8 @@ int receive_pim_join_prune(u_int32 src, u_int32 dst __attribute__((unused)), cha
 
 	return FALSE;
     }
-    /*
 
-     * TODO: Sanity check for the message length through all the groups
-     * (see Kame's pim6sd).
-     */
-
+    datalen -= PIM_JOIN_PRUNE_MINLEN;
     data = (u_int8 *)(pim_message + sizeof(pim_header_t));
     /* Get the target address */
     GET_EUADDR(&eutaddr, data);
@@ -1063,6 +1059,40 @@ int receive_pim_join_prune(u_int32 src, u_int32 dst __attribute__((unused)), cha
     if (num_groups == 0)
 	return FALSE;    /* No indication for groups in the message */
     GET_HOSTSHORT(holdtime, data);
+
+    /* Sanity check for the message length through all the groups */
+    num_groups_tmp = num_groups;
+    data_start = data;
+    while (num_groups_tmp--) {
+        int srclen;
+	
+        /* group addr + #join + #src */
+        if (datalen < PIM_ENCODE_GRP_ADDR_LEN + (int)sizeof(u_int32_t)) {
+            logit(LOG_NOTICE, 0,
+                "receive_pim_join_prune: Join/Prune message from %s on %s is"
+                " too short to contain enough data",
+                inet_fmt(src, s1, sizeof(s1)), v->uv_name);
+            return(FALSE);
+        }
+        datalen -= (PIM_ENCODE_GRP_ADDR_LEN + sizeof(u_int32_t));
+        data += PIM_ENCODE_GRP_ADDR_LEN;
+
+        /* joined source addresses and pruned source addresses */
+        GET_HOSTSHORT(num_j_srcs, data);
+        GET_HOSTSHORT(num_p_srcs, data);
+        srclen = (num_j_srcs + num_p_srcs) * PIM_ENCODE_SRC_ADDR_LEN;
+        if (datalen < srclen) {
+            logit(LOG_NOTICE, 0,
+                "receive_pim_join_prune: Join/Prune message from %s on %s is"
+                " too short to contain enough data", inet_fmt(src, s1, sizeof(s1)),
+                v->uv_name);
+            return(FALSE);
+        }
+        datalen -= srclen;
+        data += srclen;
+    }
+    data = data_start;
+    num_groups_tmp = num_groups;
 
     if (eutaddr.unicast_addr != v->uv_lcl_addr) {
 	/* if I am not the targer of the join message */
