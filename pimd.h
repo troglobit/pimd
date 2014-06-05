@@ -184,6 +184,7 @@ typedef struct pim_encod_grp_addr_ {
     u_int8      masklen;
     u_int32     mcast_addr;
 } pim_encod_grp_addr_t;
+#define PIM_ENCODE_GRP_ADDR_LEN 8
 
 /* Encoded-Source */
 typedef struct pim_encod_src_addr_ {
@@ -193,6 +194,8 @@ typedef struct pim_encod_src_addr_ {
     u_int8      masklen;
     u_int32     src_addr;
 } pim_encod_src_addr_t;
+#define PIM_ENCODE_SRC_ADDR_LEN 8
+
 #define USADDR_RP_BIT 0x1
 #define USADDR_WC_BIT 0x2
 #define USADDR_S_BIT  0x4
