@@ -37,7 +37,7 @@
 /*
  * Local functions definitions.
  */
-static int parse_pim_hello         (char *pim_message, size_t datalen, u_int32 src, u_int16 *holdtime);
+static int parse_pim_hello         (char *pim_message, size_t len, u_int32 src, u_int16 *holdtime);
 static int send_pim_register_stop  (u_int32 reg_src, u_int32 reg_dst, u_int32 inner_source, u_int32 inner_grp);
 static build_jp_message_t *get_jp_working_buff (void);
 static void return_jp_working_buff (pim_nbr_entry_t *pim_nbr);
@@ -56,7 +56,7 @@ int build_jp_message_pool_counter;
 /************************************************************************
  *                        PIM_HELLO
  ************************************************************************/
-int receive_pim_hello(u_int32 src, u_int32 dst __attribute__((unused)), char *pim_message, size_t datalen)
+int receive_pim_hello(u_int32 src, u_int32 dst __attribute__((unused)), char *pim_message, size_t len)
 {
     vifi_t vifi;
     struct uvif *v;
@@ -68,7 +68,7 @@ int receive_pim_hello(u_int32 src, u_int32 dst __attribute__((unused)), char *pi
     mrtentry_t *mrtentry;
 
     /* Checksum */
-    if (inet_cksum((u_int16 *)pim_message, datalen))
+    if (inet_cksum((u_int16 *)pim_message, len))
 	return FALSE;
 
     if ((vifi = find_vif_direct(src)) == NO_VIF) {
@@ -88,7 +88,7 @@ int receive_pim_hello(u_int32 src, u_int32 dst __attribute__((unused)), char *pi
     data = (u_int8 *)(pim_message + sizeof(pim_header_t));
 
     /* Get the Holdtime (in seconds) from the message. Return if error. */
-    if (parse_pim_hello(pim_message, datalen, src, &holdtime) == FALSE)
+    if (parse_pim_hello(pim_message, len, src, &holdtime) == FALSE)
 	return FALSE;
 
     IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER) {
@@ -352,7 +352,7 @@ void delete_pim_nbr(pim_nbr_entry_t *nbr_delete)
 
 
 /* TODO: simplify it! */
-static int parse_pim_hello(char *pim_message, size_t datalen, u_int32 src, u_int16 *holdtime)
+static int parse_pim_hello(char *pim_message, size_t len, u_int32 src, u_int16 *holdtime)
 {
     u_int8 *pim_hello_message;
     u_int8 *data;
@@ -362,8 +362,8 @@ static int parse_pim_hello(char *pim_message, size_t datalen, u_int32 src, u_int
     int option_total_length;
 
     pim_hello_message = (u_int8 *)(pim_message + sizeof(pim_header_t));
-    datalen -= sizeof(pim_header_t);
-    for ( ; datalen >= sizeof(pim_hello_t); ) {
+    len -= sizeof(pim_header_t);
+    for ( ; len >= sizeof(pim_hello_t); ) {
 	/* Ignore any data if shorter than (pim_hello header) */
 	data = pim_hello_message;
 	GET_HOSTSHORT(option_type, data);
@@ -396,7 +396,7 @@ static int parse_pim_hello(char *pim_message, size_t datalen, u_int32 src, u_int
 	option_total_length = (sizeof(pim_hello_t) + option_length);
 #endif /* BOUNDARY_32_BIT */
 
-	datalen -= option_total_length;
+	len -= option_total_length;
 	pim_hello_message += option_total_length;
     }
 
@@ -408,7 +408,7 @@ int send_pim_hello(struct uvif *v, u_int16 holdtime)
 {
     char   *buf;
     u_int8 *data;
-    int     datalen;
+    size_t  len;
 
     buf = pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t);
     data = (u_int8 *)buf;
@@ -416,8 +416,8 @@ int send_pim_hello(struct uvif *v, u_int16 holdtime)
     PUT_HOSTSHORT(PIM_MESSAGE_HELLO_HOLDTIME_LENGTH, data);
     PUT_HOSTSHORT(holdtime, data);
 
-    datalen = data - (u_int8 *)buf;
-    send_pim(pim_send_buf, v->uv_lcl_addr, allpimrouters_group, PIM_HELLO, datalen);
+    len = data - (u_int8 *)buf;
+    send_pim(pim_send_buf, v->uv_lcl_addr, allpimrouters_group, PIM_HELLO, len);
     SET_TIMER(v->uv_pim_hello_timer, PIM_TIMER_HELLO_PERIOD);
 
     return TRUE;
@@ -432,7 +432,7 @@ int send_pim_hello(struct uvif *v, u_int16 holdtime)
  * AND AT THE SAME TIME IGNORE ANY CACHE_MISS
  * SIGNALS FROM THE KERNEL.
  */
-int receive_pim_register(u_int32 reg_src, u_int32 reg_dst, char *pim_message, size_t datalen)
+int receive_pim_register(u_int32 reg_src, u_int32 reg_dst, char *pim_message, size_t len)
 {
     u_int32 inner_src, inner_grp;
     pim_register_t *register_p;
@@ -447,10 +447,10 @@ int receive_pim_register(u_int32 reg_src, u_int32 reg_dst, char *pim_message, si
      * This is suppose to be done in the kernel, but some older kernel
      * versions do not pefrorm the check for the NULL register messages.
      */
-    if (datalen < sizeof(pim_header_t) + sizeof(pim_register_t) + sizeof(struct ip)) {
+    if (len < sizeof(pim_header_t) + sizeof(pim_register_t) + sizeof(struct ip)) {
 	IF_DEBUG(DEBUG_PIM_REGISTER) {
 	    logit(LOG_INFO, 0, "PIM register: short packet (len = %d) from %s",
-		  datalen, inet_fmt(reg_src, s1, sizeof(s1)));
+		  len, inet_fmt(reg_src, s1, sizeof(s1)));
 	}
 
 	return FALSE;
@@ -464,7 +464,7 @@ int receive_pim_register(u_int32 reg_src, u_int32 reg_dst, char *pim_message, si
      * then over the whole Register
      */
     if ((inet_cksum((u_int16 *)pim_message, sizeof(pim_header_t) + sizeof(pim_register_t)))
-	&& (inet_cksum((u_int16 *)pim_message, datalen))) {
+	&& (inet_cksum((u_int16 *)pim_message, len))) {
 	IF_DEBUG(DEBUG_PIM_REGISTER) {
 	    logit(LOG_DEBUG, 0, "PIM REGISTER from DR %s: invalid PIM header checksum",
 		  inet_fmt(reg_src, s1, sizeof(s1)));
@@ -799,7 +799,7 @@ int send_pim_null_register(mrtentry_t *mrtentry)
 /************************************************************************
  *                        PIM_REGISTER_STOP
  ************************************************************************/
-int receive_pim_register_stop(u_int32 reg_src, u_int32 reg_dst, char *pim_message, size_t datalen)
+int receive_pim_register_stop(u_int32 reg_src, u_int32 reg_dst, char *pim_message, size_t len)
 {
     pim_register_stop_t *pim_regstop_p;
     pim_encod_grp_addr_t egaddr;
@@ -809,7 +809,7 @@ int receive_pim_register_stop(u_int32 reg_src, u_int32 reg_dst, char *pim_messag
     vifbitmap_t pruned_oifs;
 
     /* Checksum */
-    if (inet_cksum((u_int16 *)pim_message, datalen))
+    if (inet_cksum((u_int16 *)pim_message, len))
 	return FALSE;
 
     pim_regstop_p = (pim_register_stop_t *)(pim_message +
@@ -961,7 +961,7 @@ int join_or_prune(mrtentry_t *mrtentry, pim_nbr_entry_t *upstream_router)
 /* TODO: when parsing, check if we go beyong message size */
 /* TODO: too long, simplify it! */
 #define PIM_JOIN_PRUNE_MINLEN (4 + PIM_ENCODE_UNI_ADDR_LEN + 4)
-int receive_pim_join_prune(u_int32 src, u_int32 dst __attribute__((unused)), char *pim_message, int datalen)
+int receive_pim_join_prune(u_int32 src, u_int32 dst __attribute__((unused)), char *pim_message, size_t len)
 {
     vifi_t vifi;
     struct uvif *v;
@@ -1010,7 +1010,7 @@ int receive_pim_join_prune(u_int32 src, u_int32 dst __attribute__((unused)), cha
     }
 
     /* Checksum */
-    if (inet_cksum((u_int16 *)pim_message, datalen))
+    if (inet_cksum((u_int16 *)pim_message, len))
 	return FALSE;
 
     v = &uvifs[vifi];
@@ -1018,14 +1018,14 @@ int receive_pim_join_prune(u_int32 src, u_int32 dst __attribute__((unused)), cha
 	return FALSE;    /* Shoudn't come on this interface */
 
     /* sanity check for the minimum length */
-    if (datalen < PIM_JOIN_PRUNE_MINLEN) {
+    if (len < PIM_JOIN_PRUNE_MINLEN) {
 	logit(LOG_NOTICE, 0, "receive_pim_join_prune: Join/Prune message size(%u) is too short from %s on %s",
-	      datalen, inet_fmt(src, s1, sizeof(s1)), v->uv_name);
+	      len, inet_fmt(src, s1, sizeof(s1)), v->uv_name);
 
 	return FALSE;
     }
 
-    datalen -= PIM_JOIN_PRUNE_MINLEN;
+    len -= PIM_JOIN_PRUNE_MINLEN;
     data = (u_int8 *)(pim_message + sizeof(pim_header_t));
     /* Get the target address */
     GET_EUADDR(&eutaddr, data);
@@ -1039,31 +1039,31 @@ int receive_pim_join_prune(u_int32 src, u_int32 dst __attribute__((unused)), cha
     num_groups_tmp = num_groups;
     data_start = data;
     while (num_groups_tmp--) {
-        int srclen;
+        size_t srclen;
 	
         /* group addr + #join + #src */
-        if (datalen < PIM_ENCODE_GRP_ADDR_LEN + (int)sizeof(u_int32_t)) {
+        if (len < PIM_ENCODE_GRP_ADDR_LEN + (int)sizeof(u_int32_t)) {
             logit(LOG_NOTICE, 0,
                 "receive_pim_join_prune: Join/Prune message from %s on %s is"
                 " too short to contain enough data",
                 inet_fmt(src, s1, sizeof(s1)), v->uv_name);
             return(FALSE);
         }
-        datalen -= (PIM_ENCODE_GRP_ADDR_LEN + sizeof(u_int32_t));
+        len -= (PIM_ENCODE_GRP_ADDR_LEN + sizeof(u_int32_t));
         data += PIM_ENCODE_GRP_ADDR_LEN;
 
         /* joined source addresses and pruned source addresses */
         GET_HOSTSHORT(num_j_srcs, data);
         GET_HOSTSHORT(num_p_srcs, data);
         srclen = (num_j_srcs + num_p_srcs) * PIM_ENCODE_SRC_ADDR_LEN;
-        if (datalen < srclen) {
+        if (len < srclen) {
             logit(LOG_NOTICE, 0,
                 "receive_pim_join_prune: Join/Prune message from %s on %s is"
                 " too short to contain enough data", inet_fmt(src, s1, sizeof(s1)),
                 v->uv_name);
             return(FALSE);
         }
-        datalen -= srclen;
+        len -= srclen;
         data += srclen;
     }
     data = data_start;
@@ -2328,15 +2328,15 @@ void pack_and_send_jp_message(pim_nbr_entry_t *pim_nbr)
 
 static void send_jp_message(pim_nbr_entry_t *pim_nbr)
 {
-    u_int16 datalen;
+    size_t len;
     vifi_t vifi;
 
-    datalen = pim_nbr->build_jp_message->jp_message_size;
+    len = pim_nbr->build_jp_message->jp_message_size;
     vifi = pim_nbr->vifi;
     memcpy(pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t),
-	   pim_nbr->build_jp_message->jp_message, datalen);
+	   pim_nbr->build_jp_message->jp_message, len);
     send_pim(pim_send_buf, uvifs[vifi].uv_lcl_addr, allpimrouters_group,
-	     PIM_JOIN_PRUNE, datalen);
+	     PIM_JOIN_PRUNE, len);
     return_jp_working_buff(pim_nbr);
 }
 
@@ -2344,7 +2344,7 @@ static void send_jp_message(pim_nbr_entry_t *pim_nbr)
 /************************************************************************
  *                        PIM_ASSERT
  ************************************************************************/
-int receive_pim_assert(u_int32 src, u_int32 dst __attribute__((unused)), char *pim_message, int datalen)
+int receive_pim_assert(u_int32 src, u_int32 dst __attribute__((unused)), char *pim_message, size_t len)
 {
     vifi_t vifi;
     pim_encod_uni_addr_t eusaddr;
@@ -2375,7 +2375,7 @@ int receive_pim_assert(u_int32 src, u_int32 dst __attribute__((unused)), char *p
     }
 
     /* Checksum */
-    if (inet_cksum((u_int16 *)pim_message, datalen))
+    if (inet_cksum((u_int16 *)pim_message, len))
 	return FALSE;
 
     v = &uvifs[vifi];
@@ -2701,7 +2701,7 @@ static int compare_metrics(u_int32 local_preference, u_int32 local_metric, u_int
  *                        PIM_BOOTSTRAP
  ************************************************************************/
 #define PIM_BOOTSTRAP_MINLEN (PIM_MINLEN + PIM_ENCODE_UNI_ADDR_LEN)
-int receive_pim_bootstrap(u_int32 src, u_int32 dst, char *pim_message, int datalen)
+int receive_pim_bootstrap(u_int32 src, u_int32 dst, char *pim_message, size_t len)
 {
     u_int8               *data;
     u_int8               *max_data;
@@ -2731,7 +2731,7 @@ int receive_pim_bootstrap(u_int32 src, u_int32 dst, char *pim_message, int datal
     rp_grp_entry_t       *grp_rp_next;
 
     /* Checksum */
-    if (inet_cksum((u_int16 *)pim_message, datalen))
+    if (inet_cksum((u_int16 *)pim_message, len))
 	return FALSE;
 
     if (find_vif_direct(src) == NO_VIF) {
@@ -2746,9 +2746,9 @@ int receive_pim_bootstrap(u_int32 src, u_int32 dst, char *pim_message, int datal
     }
 
     /* sanity check for the minimum length */
-    if (datalen < PIM_BOOTSTRAP_MINLEN) {
+    if (len < PIM_BOOTSTRAP_MINLEN) {
 	logit(LOG_NOTICE, 0, "receive_pim_bootstrap: Bootstrap message size(%u) is too short from %s",
-	      datalen, inet_fmt(src, s1, sizeof(s1)));
+	      len, inet_fmt(src, s1, sizeof(s1)));
 
 	return FALSE;
     }
@@ -2861,12 +2861,12 @@ int receive_pim_bootstrap(u_int32 src, u_int32 dst, char *pim_message, int datal
 	if (uvifs[vifi].uv_flags & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER | VIFF_NONBRS))
 	    continue;
 
-	memcpy(pim_send_buf + sizeof(struct ip), pim_message, datalen);
+	memcpy(pim_send_buf + sizeof(struct ip), pim_message, len);
 	send_pim(pim_send_buf, uvifs[vifi].uv_lcl_addr, allpimrouters_group,
-		 PIM_BOOTSTRAP, datalen - sizeof(pim_header_t));
+		 PIM_BOOTSTRAP, len - sizeof(pim_header_t));
     }
 
-    max_data = (u_int8 *)pim_message + datalen;
+    max_data = (u_int8 *)pim_message + len;
     /* TODO: XXX: this 22 is HARDCODING!!! Do a bunch of definitions
      * and make it stylish!
      */
@@ -3022,15 +3022,15 @@ int receive_pim_bootstrap(u_int32 src, u_int32 dst, char *pim_message, int datal
 
 void send_pim_bootstrap(void)
 {
-    int datalen;
+    size_t len;
     vifi_t vifi;
 
-    if ((datalen = create_pim_bootstrap_message(pim_send_buf))) {
+    if ((len = create_pim_bootstrap_message(pim_send_buf))) {
 	for (vifi = 0; vifi < numvifs; vifi++) {
 	    if (uvifs[vifi].uv_flags & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER))
 		continue;
 	    send_pim(pim_send_buf, uvifs[vifi].uv_lcl_addr,
-		     allpimrouters_group, PIM_BOOTSTRAP, datalen);
+		     allpimrouters_group, PIM_BOOTSTRAP, len);
 	}
     }
 }
@@ -3044,7 +3044,7 @@ void send_pim_bootstrap(void)
  * ignore it.
  */
 #define PIM_CAND_RP_ADV_MINLEN (PIM_MINLEN + PIM_ENCODE_UNI_ADDR_LEN)
-int receive_pim_cand_rp_adv(u_int32 src, u_int32 dst __attribute__((unused)), char *pim_message, int datalen)
+int receive_pim_cand_rp_adv(u_int32 src, u_int32 dst __attribute__((unused)), char *pim_message, size_t len)
 {
     u_int8 prefix_cnt;
     u_int8 priority;
@@ -3055,7 +3055,7 @@ int receive_pim_cand_rp_adv(u_int32 src, u_int32 dst __attribute__((unused)), ch
     u_int32 grp_mask;
 
     /* Checksum */
-    if (inet_cksum((u_int16 *)pim_message, datalen))
+    if (inet_cksum((u_int16 *)pim_message, len))
 	return FALSE;
 
     /* if I am not the bootstrap RP, then do not accept the message */
@@ -3063,16 +3063,16 @@ int receive_pim_cand_rp_adv(u_int32 src, u_int32 dst __attribute__((unused)), ch
 	return FALSE;
 
     /* sanity check for the minimum length */
-    if (datalen < PIM_CAND_RP_ADV_MINLEN) {
+    if (len < PIM_CAND_RP_ADV_MINLEN) {
 	logit(LOG_NOTICE, 0, "receive_pim_cand_rp_adv: cand_RP message size(%u) is too short from %s",
-	      datalen, inet_fmt(src, s1, sizeof(s1)));
+	      len, inet_fmt(src, s1, sizeof(s1)));
 
 	return FALSE;
     }
 
     data_ptr = (u_int8 *)(pim_message + sizeof(pim_header_t));
     /* Parse the CAND_RP_ADV message */
-    /* TODO: XXX: check datalen whether it is at least the minimum */
+    /* TODO: XXX: check len whether it is at least the minimum */
     GET_BYTE(prefix_cnt, data_ptr);
     GET_BYTE(priority, data_ptr);
     GET_HOSTSHORT(holdtime, data_ptr);
@@ -3097,7 +3097,7 @@ int receive_pim_cand_rp_adv(u_int32 src, u_int32 dst __attribute__((unused)), ch
 			 egaddr.mcast_addr, grp_mask,
 			 my_bsr_hash_mask,
 			 curr_bsr_fragment_tag);
-	/* TODO: Check for datalen */
+	/* TODO: Check for len */
     }
 
     return TRUE;
@@ -3141,7 +3141,7 @@ int send_pim_cand_rp_adv(void)
 			     addr.mcast_addr, mask,
 			     my_bsr_hash_mask,
 			     curr_bsr_fragment_tag);
-	    /* TODO: Check for datalen */
+	    /* TODO: Check for len */
 	}
 
 	return TRUE;

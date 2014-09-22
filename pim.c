@@ -215,11 +215,11 @@ static void accept_pim(ssize_t recvlen)
 
 /*
  * Send a multicast PIM packet from src to dst, PIM message type = "type"
- * and data length (after the PIM header) = "datalen"
+ * and data length (after the PIM header) = "len"
  */
-void send_pim(char *buf, u_int32 src, u_int32 dst, int type, int datalen)
+void send_pim(char *buf, u_int32 src, u_int32 dst, int type, size_t len)
 {
-    struct sockaddr_in sdst;
+    struct sockaddr_in sin;
     struct ip *ip;
     pim_header_t *pim;
     int sendlen;
@@ -227,7 +227,7 @@ void send_pim(char *buf, u_int32 src, u_int32 dst, int type, int datalen)
 
     /* Prepare the IP header */
     ip                 = (struct ip *)buf;
-    ip->ip_len         = sizeof(struct ip) + sizeof(pim_header_t) + datalen;
+    ip->ip_len         = sizeof(struct ip) + sizeof(pim_header_t) + len
     ip->ip_src.s_addr  = src;
     ip->ip_dst.s_addr  = dst;
     ip->ip_ttl         = MAXTTL;            /* applies to unicast only */
@@ -242,11 +242,10 @@ void send_pim(char *buf, u_int32 src, u_int32 dst, int type, int datalen)
     pim->pim_vers      = PIM_PROTOCOL_VERSION;
     pim->pim_reserved  = 0;
     pim->pim_cksum     = 0;
+
     /* TODO: XXX: if start using this code for PIM_REGISTERS, exclude the
-     * encapsulated packet from the checsum.
-     */
-    pim->pim_cksum     = inet_cksum((u_int16 *)pim,
-                                    sizeof(pim_header_t) + datalen);
+     * encapsulated packet from the checsum. */
+    pim->pim_cksum     = inet_cksum((u_int16 *)pim, sizeof(pim_header_t) + len);
 
     if (IN_MULTICAST(ntohl(dst))) {
         k_set_if(pim_socket, src);
@@ -262,13 +261,14 @@ void send_pim(char *buf, u_int32 src, u_int32 dst, int type, int datalen)
 #endif /* RAW_OUTPUT_IS_RAW */
     }
 
-    memset(&sdst, 0, sizeof(sdst));
-    sdst.sin_family = AF_INET;
+    memset(&sin, 0, sizeof(sin));
+    sin.sin_family = AF_INET;
+    sin.sin_addr.s_addr = dst;
 #ifdef HAVE_SA_LEN
-    sdst.sin_len = sizeof(sdst);
+    sin.sin_len = sizeof(sin);
 #endif
-    sdst.sin_addr.s_addr = dst;
-    while (sendto(pim_socket, buf, sendlen, 0, (struct sockaddr *)&sdst, sizeof(sdst)) < 0) {
+
+    while (sendto(pim_socket, buf, sendlen, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
 	if (errno == EINTR)
 	    continue;		/* Received signal, retry syscall. */
         else if (errno == ENETDOWN)
@@ -309,18 +309,18 @@ u_int pim_send_cnt = 0;
 /* TODO: This can be merged with the above procedure */
 /*
  * Send an unicast PIM packet from src to dst, PIM message type = "type"
- * and data length (after the PIM common header) = "datalen"
+ * and data length (after the PIM common header) = "len"
  */
-void send_pim_unicast(char *buf, u_int32 src, u_int32 dst, int type, int datalen)
+void send_pim_unicast(char *buf, u_int32 src, u_int32 dst, int type, size_t len)
 {
-    struct sockaddr_in sdst;
+    struct sockaddr_in sin;
     struct ip *ip;
     pim_header_t *pim;
     int sendlen;
 
     /* Prepare the IP header */
     ip                 = (struct ip *)buf;
-    ip->ip_len         = sizeof(struct ip) + sizeof(pim_header_t) + datalen;
+    ip->ip_len         = sizeof(struct ip) + sizeof(pim_header_t) + len;
     ip->ip_src.s_addr  = src;
     ip->ip_dst.s_addr  = dst;
     sendlen            = ip->ip_len;
@@ -332,8 +332,8 @@ void send_pim_unicast(char *buf, u_int32 src, u_int32 dst, int type, int datalen
 
     /* Prepare the PIM packet */
     pim                    = (pim_header_t *)(buf + sizeof(struct ip));
-    pim->pim_vers          = PIM_PROTOCOL_VERSION;
     pim->pim_type          = type;
+    pim->pim_vers          = PIM_PROTOCOL_VERSION;
     pim->pim_reserved      = 0;
     pim->pim_cksum         = 0;
 
@@ -347,29 +347,36 @@ void send_pim_unicast(char *buf, u_int32 src, u_int32 dst, int type, int datalen
      * may be dropped by some implementations (pimd should be OK).
      */
 #ifdef BROKEN_CISCO_CHECKSUM
-    pim->pim_cksum	= inet_cksum((u_int16 *)pim, sizeof(pim_header_t)
-                                     + datalen);
+    pim->pim_cksum	= inet_cksum((u_int16 *)pim, sizeof(pim_header_t) + len);
 #else /* !BROKEN_CISCO_CHECKSUM */
     if (PIM_REGISTER == type) {
         pim->pim_cksum	= inet_cksum((u_int16 *)pim, sizeof(pim_header_t)
                                      + sizeof(pim_register_t));
     } else {
-        pim->pim_cksum	= inet_cksum((u_int16 *)pim, sizeof(pim_header_t)
-                                     + datalen);
+        pim->pim_cksum	= inet_cksum((u_int16 *)pim, sizeof(pim_header_t) + len);
     }
 #endif /* !BROKEN_CISCO_CHECKSUM */
 
-    memset(&sdst, 0, sizeof(sdst));
-    sdst.sin_family = AF_INET;
+    memset(&sin, 0, sizeof(sin));
+    sin.sin_family = AF_INET;
+    sin.sin_addr.s_addr = dst;
 #ifdef HAVE_SA_LEN
-    sdst.sin_len = sizeof(sdst);
+    sin.sin_len = sizeof(sin);
 #endif
-    sdst.sin_addr.s_addr = dst;
-    while (sendto(pim_socket, buf, sendlen, 0, (struct sockaddr *)&sdst, sizeof(sdst)) < 0) {
+
+    while (sendto(pim_socket, buf, sendlen, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
 	if (errno == EINTR)
 	    continue;		/* Received signal, retry syscall. */
         else if (errno == ENETDOWN)
             check_vif_state();
+	else if (errno == EPERM)
+	    logit(LOG_WARNING, 0, "Not allowed (EPERM) to send PIM unicast message from %s to %s, possibly firewall"
+#ifdef __linux__
+		  ", or SELinux policy violation,"
+#endif
+		  " related problem."
+		  ,
+		  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
         else
             logit(LOG_WARNING, errno, "sendto from %s to %s",
 		  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));

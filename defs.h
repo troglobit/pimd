@@ -534,27 +534,27 @@ extern void	delete_single_kernel_cache_addr (mrtentry_t *mrtentry_ptr, u_int32 s
 extern void	add_kernel_cache	(mrtentry_t *mrtentry_ptr, u_int32 source, u_int32 group, u_int16 flags);
 /* pim.c */
 extern void	init_pim		(void);
-extern void	send_pim		(char *buf, u_int32 src, u_int32 dst, int type, int datalen);
-extern void	send_pim_unicast	(char *buf, u_int32 src, u_int32 dst, int type, int datalen);
+extern void	send_pim		(char *buf, u_int32 src, u_int32 dst, int type, size_t len);
+extern void	send_pim_unicast	(char *buf, u_int32 src, u_int32 dst, int type, size_t len);
 
 /* pim_proto.c */
-extern int	receive_pim_hello	(u_int32 src, u_int32 dst, char *pim_message, size_t datalen);
+extern int	receive_pim_hello	(u_int32 src, u_int32 dst, char *pim_message, size_t len);
 extern int	send_pim_hello		(struct uvif *v, u_int16 holdtime);
 extern void	delete_pim_nbr		(pim_nbr_entry_t *nbr_delete);
-extern int	receive_pim_register	(u_int32 src, u_int32 dst, char *pim_message, size_t datalen);
+extern int	receive_pim_register	(u_int32 src, u_int32 dst, char *pim_message, size_t len);
 extern int	send_pim_null_register	(mrtentry_t *r);
-extern int	receive_pim_register_stop (u_int32 src, u_int32 dst, char *pim_message, size_t datalen);
+extern int	receive_pim_register_stop (u_int32 src, u_int32 dst, char *pim_message, size_t len);
 extern int	send_pim_register	(char *pkt);
-extern int	receive_pim_join_prune	(u_int32 src, u_int32 dst, char *pim_message, int datalen);
+extern int	receive_pim_join_prune	(u_int32 src, u_int32 dst, char *pim_message, size_t len);
 extern int	join_or_prune		(mrtentry_t *mrtentry_ptr, pim_nbr_entry_t *upstream_router);
-extern int	receive_pim_assert	(u_int32 src, u_int32 dst, char *pim_message, int datalen);
+extern int	receive_pim_assert	(u_int32 src, u_int32 dst, char *pim_message, size_t len);
 extern int	send_pim_assert		(u_int32 source, u_int32 group, vifi_t vifi, mrtentry_t *mrtentry_ptr);
 extern int	send_periodic_pim_join_prune (vifi_t vifi, pim_nbr_entry_t *pim_nbr, u_int16 holdtime);
 extern int	add_jp_entry		(pim_nbr_entry_t *pim_nbr, u_int16 holdtime, u_int32 group, u_int8 grp_msklen,
                                          u_int32 source, u_int8 src_msklen,  u_int16 addr_flags, u_int8 join_prune);
 extern void	pack_and_send_jp_message (pim_nbr_entry_t *pim_nbr);
-extern int	receive_pim_cand_rp_adv	(u_int32 src, u_int32 dst, char *pim_message, int datalen);
-extern int	receive_pim_bootstrap	(u_int32 src, u_int32 dst, char *pim_message, int datalen);
+extern int	receive_pim_cand_rp_adv	(u_int32 src, u_int32 dst, char *pim_message, size_t len);
+extern int	receive_pim_bootstrap	(u_int32 src, u_int32 dst, char *pim_message, size_t len);
 extern int	send_pim_cand_rp_adv	(void);
 extern void	send_pim_bootstrap	(void);
 
