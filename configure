@@ -68,8 +68,6 @@ usage()
         echo "  --enable-broken-crc    Interop with older broken Cisco firmware that did the"
         echo "                         checksum in PIM Register messages slightly wrong."
         echo "                         Should not be needed anymore."
-        echo "  --enable-old-kernel    Really old UNIX kernels may need this for PIM Register"
-        echo "                         messages.  Should not be needed anymore."
         echo "  --enable-kernel-encap  Some kernels can do the PIM Register encapsulation by"
         echo "                         themselves, this speeds up processing considerably."
         echo "                         Only enable this if your kernel supports it."
@@ -106,10 +104,6 @@ while [ "$*" != "" ]; do
         case $opt in
                 enable-broken-crc)
                         echo "DEFS         += -DBROKEN_CISCO_CHECKSUM" >> $TMP
-                        ;;
-
-                enable-old-kernel)
-                        echo "DEFS         += -DPIM_OLD_KERNEL" >> $TMP
                         ;;
 
                 enable-kernel-encap)

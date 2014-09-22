@@ -725,31 +725,6 @@ int send_pim_register(char *packet)
 	/* The Register-Suppression Timer is not running.
 	 * Encapsulate the data and send to the RP.
 	 */
-
-#ifdef PIM_OLD_KERNEL
-	/* TODO: verify again! */
-	/* recompute the checksum; as checksum may fail when decapsulating
-	 * at the RP if we don't do this.
-	 */
-#ifdef old_Linux
-	ip->ip_csum = 0;
-#else
-	ip->ip_sum = 0;
-#endif /* old_Linux */
-#ifndef RAW_INPUT_IS_RAW
-	/* TODO: htons??? */
-	ip->ip_len = htons(ip->ip_len);
-	ip->ip_off = htons(ip->ip_off);
-#endif /* !RAW_INPUT_IS_RAW */
-
-#ifdef old_Linux
-	ip->ip_csum = inet_cksum((u_int16 *)ip, ip->ip_hl << 2);
-#else
-	ip->ip_sum = inet_cksum((u_int16 *)ip, ip->ip_hl << 2);
-#endif /* old_Linux */
-
-#endif /* PIM_OLD_KERNEL */
-
 	buf = pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t);
 	memset(buf, 0, sizeof(pim_register_t)); /* No flags set */
 	buf += sizeof(pim_register_t);
