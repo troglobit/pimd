@@ -171,11 +171,12 @@ static void accept_igmp(ssize_t recvlen)
     }
 
     iphdrlen  = ip->ip_hl << 2;
-#ifdef RAW_INPUT_IS_RAW
-    ipdatalen = ntohs(ip->ip_len) - iphdrlen;
+#ifdef HAVE_IP_HDRINCL_BSD_ORDER
+    ipdatalen = ip->ip_len - iphdrlen;
 #else
-    ipdatalen = ip->ip_len;
+    ipdatalen = ntohs(ip->ip_len) - iphdrlen;
 #endif
+
     if (iphdrlen + ipdatalen != recvlen) {
 	logit(LOG_WARNING, 0, "Received packet from %s shorter (%u bytes) than hdr+data length (%u+%u)",
 	    inet_fmt(src, s1, sizeof(s1)), recvlen, iphdrlen, ipdatalen);
@@ -304,10 +305,10 @@ static void send_ip_frame(u_int32 src, u_int32 dst, int type, int code, char *bu
     ip		      = (struct ip *)buf;
     ip->ip_src.s_addr = src;
     ip->ip_dst.s_addr = dst;
-#if defined(RAW_OUTPUT_IS_RAW) || defined(OpenBSD)
-    ip->ip_len	      = htons(len);
-#else
+#ifdef HAVE_IP_HDRINCL_BSD_ORDER
     ip->ip_len	      = len;
+#else
+    ip->ip_len	      = htons(len);
 #endif
 
     if (IN_MULTICAST(ntohl(dst))) {

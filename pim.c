@@ -222,19 +222,19 @@ void send_pim(char *buf, u_int32 src, u_int32 dst, int type, size_t len)
     struct sockaddr_in sin;
     struct ip *ip;
     pim_header_t *pim;
-    int sendlen;
+    int sendlen = sizeof(struct ip) + sizeof(pim_header_t) + len;
     int setloop = 0;
 
     /* Prepare the IP header */
     ip                 = (struct ip *)buf;
-    ip->ip_len         = sizeof(struct ip) + sizeof(pim_header_t) + len
     ip->ip_src.s_addr  = src;
     ip->ip_dst.s_addr  = dst;
     ip->ip_ttl         = MAXTTL;            /* applies to unicast only */
-    sendlen            = ip->ip_len;
-#if defined(RAW_OUTPUT_IS_RAW) || defined(OpenBSD)
-    ip->ip_len         = htons(ip->ip_len);
-#endif /* RAW_OUTPUT_IS_RAW || OpenBSD */
+#ifdef HAVE_IP_HDRINCL_BSD_ORDER
+    ip->ip_len         = sendlen;
+#else
+    ip->ip_len         = htons(sendlen);
+#endif
 
     /* Prepare the PIM packet */
     pim                = (pim_header_t *)(buf + sizeof(struct ip));
@@ -316,19 +316,18 @@ void send_pim_unicast(char *buf, u_int32 src, u_int32 dst, int type, size_t len)
     struct sockaddr_in sin;
     struct ip *ip;
     pim_header_t *pim;
-    int sendlen;
+    int sendlen = sizeof(struct ip) + sizeof(pim_header_t) + len;
 
     /* Prepare the IP header */
     ip                 = (struct ip *)buf;
-    ip->ip_len         = sizeof(struct ip) + sizeof(pim_header_t) + len;
     ip->ip_src.s_addr  = src;
     ip->ip_dst.s_addr  = dst;
-    sendlen            = ip->ip_len;
-    /* TODO: XXX: setup the TTL from the inner mcast packet? */
-    ip->ip_ttl         = MAXTTL;
-#if defined(RAW_OUTPUT_IS_RAW) || defined(OpenBSD)
-    ip->ip_len         = htons(ip->ip_len);
-#endif /* RAW_OUTPUT_IS_RAW || OpenBSD */
+    ip->ip_ttl         = MAXTTL; /* TODO: XXX: setup TTL from the inner mcast packet? */
+#ifdef HAVE_IP_HDRINCL_BSD_ORDER
+    ip->ip_len         = sendlen;
+#else
+    ip->ip_len         = htons(sendlen);
+#endif
 
     /* Prepare the PIM packet */
     pim                    = (pim_header_t *)(buf + sizeof(struct ip));

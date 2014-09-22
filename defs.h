@@ -171,6 +171,18 @@ typedef void (*ihfunc_t) (int, fd_set *);
 #define HAVE_ROUTING_SOCKETS	1
 #endif
 
+/* Older versions of UNIX don't really give us true raw sockets.
+ * Instead, they expect ip_len and ip_off in host byte order, and also
+ * provide them to us in that format when receiving raw frames.
+ *
+ * This list could probably be made longer, e.g., SunOS and __bsdi__
+ */
+#if defined(__NetBSD__) ||					\
+    (defined(__FreeBSD__) && (__FreeBSD_version < 1100030)) ||	\
+    (defined(__OpenBSD__) && (OpenBSD < 200311))
+#define HAVE_IP_HDRINCL_BSD_ORDER
+#endif
+
 #define TRUE			1
 #define FALSE			0
 

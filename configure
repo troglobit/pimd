@@ -7,15 +7,6 @@
 #   may be dropped by the cisco-RP.
 #DEFS += -DBROKEN_CISCO_CHECKSUM
 #
-# --enable-old-kernel:
-#   Older PIM kernels don't prepare the inner encapsulated pkt, and the
-#   daemon had to take care of the details (prior to pimd-2.1.0-alpha29).
-#   Newer kernels will prepare everything, and then the daemon should
-#   not touch anything.  Unfortunately, both kernels are not compatible.
-#   If you still have one of those old kernels around and want to use
-#   it, then define PIM_OLD_KERNEL here.
-#DEFS += -DPIM_OLD_KERNEL
-#
 # --enable-kernel-encap:
 #   Register kernel encapsulation.  Your kernel must support registers
 #   kernel encapsulation to be able to use it.
@@ -178,7 +169,7 @@ case $OS in
         Linux)
                 heading
 	        echo "INCLUDES      = -Iinclude" >> $CFG
-	        echo "DEFS         += -DRAW_INPUT_IS_RAW -DRAW_OUTPUT_IS_RAW -DIOCTL_OK_ON_RAW_SOCKET" >> $CFG
+	        echo "DEFS         += -DRAW_OUTPUT_IS_RAW -DIOCTL_OK_ON_RAW_SOCKET" >> $CFG
 	        echo "EXTRA_OBJS    = strlcpy.o pidfile.o" >> $CFG
 	        echo "EXTRA_LIBS   =" >> $CFG
 	        ;;
