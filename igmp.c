@@ -97,11 +97,7 @@ void init_igmp(void)
     ip->ip_off = 0;
     ip->ip_ttl = MAXTTL;		/* applies to unicasts only */
     ip->ip_p   = IPPROTO_IGMP;
-#ifdef old_Linux
-    ip->ip_csum = 0;			 /* let kernel fill in		     */
-#else
-    ip->ip_sum = 0;			/* let kernel fill in		    */
-#endif /* old_Linux */
+    ip->ip_sum = 0;			/* let kernel fill in */
 
     /* Enable RFC2113 IP Router Alert */
     router_alert    = igmp_send_buf + sizeof(struct ip);

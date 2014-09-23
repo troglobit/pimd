@@ -84,11 +84,7 @@ void init_pim(void)
     ip->ip_id    = 0;	 /* let kernel fill in */
     ip->ip_off   = 0;
     ip->ip_p     = IPPROTO_PIM;
-#ifdef old_Linux
-    ip->ip_csum = 0;		/* let kernel fill in */
-#else
-    ip->ip_sum = 0;		/* let kernel fill in */
-#endif /* old_Linux */
+    ip->ip_sum   = 0;	 /* let kernel fill in */
 
     if (register_input_handler(pim_socket, pim_read) < 0)
         logit(LOG_ERR, 0,  "Failed registering pim_read() as an input handler");

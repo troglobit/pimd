@@ -783,13 +783,8 @@ int send_pim_null_register(mrtentry_t *mrtentry)
     ip->ip_ttl   = MINTTL; /* TODO: XXX: check whether need to setup the ttl */
     ip->ip_src.s_addr = mrtentry->source->address;
     ip->ip_dst.s_addr = mrtentry->group->group;
-#ifdef old_Linux
-    ip->ip_csum   = 0;
-    ip->ip_csum   = inet_cksum((u_int16 *)ip, sizeof(struct ip));
-#else
     ip->ip_sum   = 0;
     ip->ip_sum   = inet_cksum((u_int16 *)ip, sizeof(struct ip));
-#endif /* old_Linux */
 
     /* include the dummy ip header */
     pktlen = sizeof(pim_register_t) + sizeof(struct ip);
