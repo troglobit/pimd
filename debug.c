@@ -45,6 +45,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#define MAX_MSG_SIZE 64                  /* Max for dump_frame() */
+
 int log_nmsgs = 0;
 unsigned long debug = 0x00000000;        /* If (long) is smaller than
 					  * 4 bytes, then we are in
@@ -423,23 +425,23 @@ void dump_frame(char *desc, void *dump, size_t len)
     char tmp[10];
 
     length = len;
-    if (length > 64)
-	length = 64;
+    if (length > MAX_MSG_SIZE)
+	length = MAX_MSG_SIZE;
 
     if (desc)
 	logit(LOG_DEBUG, 0, "%s", desc);
 
-    sprintf(buf, "%03X: ", i);
     while (i < length) {
+	if (!(i % 16))
+	    sprintf(buf, "%03X: ", i);
+
 	sprintf(tmp, "%02X ", data[i++]);
 	strcat(buf, tmp);
 
-	if (i > 0 && !(i % 16)) {
+	if (i > 0 && !(i % 16))
 	    logit(LOG_DEBUG, 0, "%s", buf);
-	    sprintf(buf, "%03X: ", i);
-	} else if (i > 0 && !(i % 8)) {
+	else if (i > 0 && !(i % 8))
 	    strcat(buf, ":: ");
-	}
     }
     logit(LOG_DEBUG, 0, "%s", buf);
 }
