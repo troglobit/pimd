@@ -60,7 +60,7 @@ static u_int16 ip_id = 0;
  */
 static void pim_read   (int f, fd_set *rfd);
 static void accept_pim (ssize_t recvlen);
-static int  send_frame (char *buf, size_t len, size_t mtu, struct sockaddr *dst, size_t salen);
+static int  send_frame (char *buf, size_t len, size_t frag, size_t mtu, struct sockaddr *dst, size_t salen);
 
 /*
  * Setup raw kernel socket for PIM protocol and send/receive buffers.
@@ -372,7 +372,15 @@ void send_pim_unicast(char *buf, int mtu, u_int32 src, u_int32 dst, int type, si
     sin.sin_len = sizeof(sin);
 #endif
 
-    result = send_frame(buf, sendlen, mtu, (struct sockaddr *)&sin, sizeof(sin));
+    IF_DEBUG(DEBUG_PIM_DETAIL) {
+	IF_DEBUG(DEBUG_PIM) {
+	    logit(LOG_DEBUG, 0, "SENDING %5d bytes %s from %-15s to %s ...",
+		  sendlen, packet_kind(IPPROTO_PIM, type, 0),
+		  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
+	}
+    }
+
+    result = send_frame(buf, sendlen, 0, mtu, (struct sockaddr *)&sin, sizeof(sin));
     if (result) {
 	logit(LOG_WARNING, errno, "sendto from %s to %s",
 	      inet_fmt(ip->ip_src.s_addr, s1, sizeof(s1)),
@@ -397,37 +405,114 @@ void send_pim_unicast(char *buf, int mtu, u_int32 src, u_int32 dst, int type, si
     }
 }
 
+
+#if 1
 /*
- * If needed, split in fragments according to MTU (or even better, use
- * PMTU) and recursively send each fragment.  Otherwise sends directly.
+ * send unicast register frames
+ * Version: Michael Fine
+ * Staus:   Works, albeit non-optimal
+ * Design:  Only fragments if sendto() fails with EMSGSIZE
+ *          It then tries to re-send by splitting the frame in two equal halves,
+ *          calling send_frame() recursively until the frame has been sent.
  */
-static int send_frame(char *buf, size_t len, size_t mtu, struct sockaddr *dst, size_t salen)
+static int send_frame(char *buf, size_t len, size_t frag, size_t mtu, struct sockaddr *dst, size_t salen)
+{
+    struct ip *ip = (struct ip *)buf;
+
+    IF_DEBUG(DEBUG_PIM_REGISTER) {
+	logit(LOG_INFO, 0, "Sending unicast: len = %d, frag %zd, mtu %zd, to %s",
+	      len, frag, mtu, inet_fmt(ip->ip_dst.s_addr, s1, sizeof(s1)));
+	dump_frame(NULL, buf, len);
+    }
+
+    while (sendto(pim_socket, buf, len, 0, dst, salen) < 0) {
+	switch (errno) {
+	    case EINTR:
+		continue; /* Received signal, retry syscall. */
+
+	    case ENETDOWN:
+		check_vif_state();
+		return -1;
+
+	    case EMSGSIZE:
+	    {
+		/* split it in half and recursively send each half */
+		size_t hdrsize = sizeof(struct ip);
+		size_t newlen1 = ((len - hdrsize) / 2) & 0xFFF8; /* 8 byte boundary */
+		size_t sendlen = newlen1 + hdrsize;
+		size_t offset  = ntohs(ip->ip_off);
+
+		/* send first half */
+		ip->ip_len = htons(sendlen);
+		ip->ip_off = htons(offset | IP_MF);
+		if (send_frame(buf, sendlen, 1, newlen1, dst, salen) == 0) {
+		    /* send second half */
+		    struct ip *ip2 = (struct ip *)(buf + newlen1);
+		    size_t newlen2 = len - sendlen;
+		           sendlen = newlen2 + hdrsize;
+
+		    memcpy(ip2, ip, hdrsize);
+		    ip2->ip_len = htons(sendlen);
+		    ip2->ip_off = htons(offset + (newlen1 >> 3)); /* keep flgs */
+		    return send_frame((char *)ip2, sendlen, 1, newlen2, dst, salen);
+		}
+
+		return -1;
+	    }
+
+	    default:
+		logit(LOG_WARNING, errno, "sendto from %s to %s",
+		      inet_fmt(ip->ip_src.s_addr, s1, sizeof(s1)),
+		      inet_fmt(ip->ip_dst.s_addr, s2, sizeof(s2)));
+		return -1;
+	}
+    }
+
+    return 0;
+}
+
+#else
+/*
+ * send unicast register frames
+ * Version: Michael Fine
+ * Staus:   Does not work (yet!)
+ * Design:  Fragment IP frames when the frame length exceeds the MTU
+ *          reported from the interface.  Optimizes for less fragments
+ *          and fewer syscalls, should get better network utilization.
+ *          Can be easily modified to use the PMTU instead.
+ *
+ * Feel free to debug this version and submit your patches -- it should work! --Joachim
+ */
+static int send_frame(char *buf, size_t len, size_t frag, size_t mtu, struct sockaddr *dst, size_t salen)
 {
     struct ip *next, *ip = (struct ip *)buf;
-    size_t fraglen, offset;
+    size_t xferlen, offset;
 
     if (!mtu)
 	mtu = IP_MSS;
 
     if (len > mtu)
-	fraglen = mtu & 0xFFF8;			/* 8 byte boundary */
+	xferlen = (mtu - sizeof(struct ip)) & 0xFFF8;
     else
-	fraglen = len;
+	xferlen = len;
 
-    ip->ip_len = htons(fraglen);
-    offset     = ntohs(ip->ip_off);		/* keep flags */
-    len	       = len - fraglen;			/* remaining data */
+    offset     = (ntohs(ip->ip_off) & IP_OFFMASK) + (frag >> 3);
+    ip->ip_off = offset;
+    len	       = len - xferlen;
     if (len)
-	ip->ip_off = htons(offset | IP_MF);
+	ip->ip_off |= IP_MF;
+    ip->ip_off = htons(ip->ip_off);
+    ip->ip_len = htons(xferlen);
 
     IF_DEBUG(DEBUG_PIM_REGISTER) {
-	logit(LOG_INFO, 0, "Sending %-4d bytes %sunicast (MTU %-4d) to %s",
-	      fraglen, len ? "fragmented " : "", mtu,
+	logit(LOG_INFO, 0, "Sending %-4d bytes %sunicast (MTU %-4d, offset %zd) to %s",
+	      xferlen, len ? "fragmented " : "", mtu, offset,
 	      inet_fmt(ip->ip_dst.s_addr, s1, sizeof(s1)));
+	dump_frame(NULL, buf, xferlen);
     }
 
     /* send first fragment */
-    while (sendto(pim_socket, ip, fraglen, 0, dst, salen) < 0) {
+    while (sendto(pim_socket, ip, xferlen, 0, dst, salen) < 0) {
 	switch (errno) {
 	    case EINTR:
 		continue;		/* Received signal, retry syscall. */
@@ -438,7 +523,7 @@ static int send_frame(char *buf, size_t len, size_t mtu, struct sockaddr *dst, s
 
 	    case EMSGSIZE:
 		if (mtu > IP_MSS)
-		    return send_frame((char *)ip, fraglen, IP_MSS, dst, salen);
+		    return send_frame((char *)ip, xferlen, frag, IP_MSS, dst, salen);
 		/* fall through */
 
 	    default:
@@ -448,22 +533,18 @@ static int send_frame(char *buf, size_t len, size_t mtu, struct sockaddr *dst, s
 
     /* send reminder */
     if (len) {
-	size_t hdrsz = sizeof(struct ip) + sizeof(struct pim);
+	size_t hdrsz = sizeof(struct ip);
 
 	/* Update data pointers */
-	next   = (struct ip *)(buf + fraglen - hdrsz);
+	next = (struct ip *)(buf + xferlen - hdrsz);
 	memcpy(next, ip, hdrsz);
 
-	/* Update IP header */
-	next->ip_len = htons(len + hdrsz);
-	next->ip_off = htons(offset + (fraglen >> 3));
-
-	return send_frame((char *)next, len + hdrsz, mtu, dst, salen);
+	return send_frame((char *)next, len + hdrsz, xferlen, mtu, dst, salen);
     }
 
     return 0;
 }
-
+#endif
 
 /**
  * Local Variables:

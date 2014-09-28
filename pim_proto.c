@@ -744,10 +744,21 @@ int send_pim_register(char *packet)
 	pktlen = ntohs(ip->ip_len);
 #endif
 	memcpy(buf, ip, pktlen);
-	pktlen += sizeof(pim_register_t);
+
+	pktlen += sizeof(pim_register_t); /* 'sizeof(struct ip) + sizeof(pim_header_t)' added by send_pim()  */
 	reg_mtu = uvifs[vifi].uv_mtu; /* XXX: Use PMTU to RP instead! */
 	reg_src = uvifs[vifi].uv_lcl_addr;
 	reg_dst = mrtentry->group->rpaddr;
+
+	IF_DEBUG(DEBUG_PIM_REGISTER) {
+	    logit(LOG_DEBUG, 0, "Composing PIM_REGISTER (%zd + %zd + %zd) %d bytes to RP %s for src = %s and group = %s",
+		  sizeof(struct ip), sizeof(pim_header_t) + sizeof(pim_register_t),
+		  htons(ip->ip_len), pktlen,
+		  inet_fmt(reg_dst, s1, sizeof(s1)),
+		  inet_fmt(reg_src, s2, sizeof(s2)),
+		  inet_fmt(group, s3, sizeof(s3)));
+	}
+
 	send_pim_unicast(pim_send_buf, reg_mtu, reg_src, reg_dst, PIM_REGISTER, pktlen);
 
 	return TRUE;
