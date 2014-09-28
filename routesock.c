@@ -97,8 +97,6 @@ int init_routesock(void)
     int on = 0;
 #endif
 
-    pid = getpid();
-
     routing_socket = socket(PF_ROUTE, SOCK_RAW, 0);
     if (routing_socket < 0) {
 	logit(LOG_ERR, errno, "Failed creating routing socket");
@@ -212,6 +210,8 @@ int k_req_incoming(u_int32 source, struct rpfctl *rpfp)
 
 	return FALSE;
     }
+
+    pid = getpid();
 
     while (1) {
 	rlen = read(routing_socket, &m_rtmsg, sizeof(m_rtmsg));
