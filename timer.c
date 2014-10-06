@@ -170,7 +170,7 @@ void age_vifs(void)
 
 	if (v->uv_querier &&
 	    (v->uv_querier->al_timer += TIMER_INTERVAL) >
-		IGMP_OTHER_QUERIER_PRESENT_INTERVAL) {
+		default_igmp_querier_timeout) {
 	    /*
 	     * The current querier has timed out.  We must become the
 	     * querier.

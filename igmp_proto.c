@@ -58,6 +58,11 @@ static int DeleteTimer   (int id);
 static void send_query   (struct uvif *v, u_int32 group, int interval);
 static void SendQuery    (void *arg);
 static int SetQueryTimer (struct listaddr *g, vifi_t vifi, int to_expire, int q_time);
+static u_int32 igmp_group_membership_timeout(void);
+
+/* The querier timeout depends on the configured query interval */
+u_int32 default_igmp_query_interval  = IGMP_QUERY_INTERVAL;
+u_int32 default_igmp_querier_timeout = IGMP_OTHER_QUERIER_PRESENT_INTERVAL;
 
 
 /*
@@ -67,7 +72,7 @@ void query_groups(struct uvif *v)
 {
     struct listaddr *g;
 
-    v->uv_gq_timer = IGMP_QUERY_INTERVAL;
+    v->uv_gq_timer = default_igmp_query_interval;
     send_query(v, allhosts_group, (v->uv_flags & VIFF_IGMPV1)
 	       ? 0 : IGMP_MAX_HOST_REPORT_DELAY * IGMP_TIMER_SCALE);
 
@@ -247,7 +252,7 @@ void accept_group_report(u_int32 src, u_int32 dst __attribute__((unused)), u_int
 	    g->al_reporter = src;
 
 	    /** delete old timers, set a timer for expiration **/
-	    g->al_timer = IGMP_GROUP_MEMBERSHIP_INTERVAL;
+	    g->al_timer = igmp_group_membership_timeout ();
 	    if (g->al_query)
 		g->al_query = DeleteTimer(g->al_query);
 	    if (g->al_timerid)
@@ -278,7 +283,7 @@ void accept_group_report(u_int32 src, u_int32 dst __attribute__((unused)), u_int
 
 	/** set a timer for expiration **/
 	g->al_query     = 0;
-	g->al_timer     = IGMP_GROUP_MEMBERSHIP_INTERVAL;
+	g->al_timer     = igmp_group_membership_timeout ();
 	g->al_reporter  = src;
 	g->al_timerid   = SetTimer(vifi, g);
 	g->al_next      = v->uv_groups;
@@ -404,6 +409,15 @@ void accept_membership_report(u_int32 src, u_int32 dst, struct igmp_report *repo
 					IGMP_GRPREC_HDRLEN +
 					numsrc * sizeof(struct in_addr));
     }
+}
+
+/*
+ * Calculate group membership timeout
+ */
+static u_int32 igmp_group_membership_timeout(void)
+{
+    return IGMP_ROBUSTNESS_VARIABLE * default_igmp_query_interval
+	+ IGMP_QUERY_RESPONSE_INTERVAL;
 }
 
 /*

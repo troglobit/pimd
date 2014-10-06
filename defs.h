@@ -352,13 +352,19 @@ extern u_int16          pim_bootstrap_timer;
 extern u_int32          rp_my_ipv4_hashmask;
 extern u_int16          pim_cand_rp_adv_timer;
 
+/* route.c */
 extern u_int32		default_source_metric;
 extern u_int32		default_source_preference;
 
+/* igmp_proto.c */
+extern uint32_t		default_igmp_query_interval;
+extern uint32_t		default_igmp_querier_timeout;
+
+/* mrt.c */
 extern srcentry_t 	*srclist;
 extern grpentry_t 	*grplist;
-extern rpentry_t        *rplist;
 
+/* vif.c */
 extern struct uvif	uvifs[MAXVIFS];
 extern vifi_t		numvifs;
 extern int              total_interfaces;

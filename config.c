@@ -43,6 +43,9 @@
 #define BAILOUT(msg, arg...)  { WARN(msg ", bailing out!", ##arg); return FALSE; }
 #define IGNORING(msg, arg...) { WARN(msg ", ignoring ...", ##arg); continue; }
 
+/* Helper macros */
+#define QUERIER_TIMEOUT(qintv) (IGMP_ROBUSTNESS_VARIABLE * (qintv) + IGMP_QUERY_RESPONSE_INTERVAL / 2)
+
 #define LINE_BUFSIZ 1024	/* Max. line length of the config file */
 
 #define CONF_UNKNOWN                           -1
@@ -59,6 +62,8 @@
 #define CONF_ALTNET                             11
 #define CONF_MASKLEN                            12
 #define CONF_SCOPED                             13
+#define CONF_DEFAULT_IGMP_QUERY_INTERVAL        14
+#define CONF_DEFAULT_IGMP_QUERIER_TIMEOUT       15
 
 /*
  * Forward declarations.
@@ -361,6 +366,10 @@ static int parse_option(char *word)
 	return CONF_DEFAULT_SOURCE_METRIC;
     if (EQUAL(word, "default_source_preference"))
 	return CONF_DEFAULT_SOURCE_PREFERENCE;
+    if (EQUAL(word, "default_igmp_query_interval"))
+	return CONF_DEFAULT_IGMP_QUERY_INTERVAL;
+    if (EQUAL(word, "default_igmp_querier_timeout"))
+	return CONF_DEFAULT_IGMP_QUERIER_TIMEOUT;
     if (EQUAL(word, "altnet"))
 	return CONF_ALTNET;
     if  (EQUAL(word, "masklen"))
@@ -1199,6 +1208,90 @@ int parse_default_source_preference(char *s)
     return TRUE;
 }
 
+/**
+ * parse_default_igmp_query_interval - Parse default_igmp_query_interval option
+ * @s: String token
+ *
+ * Reads and assigns the default IGMP query interval.  If the argument
+ * is missing or invalid the parser defaults to %IGMP_QUERY_INTERVAL
+ *
+ * Syntax:
+ * default_igmp_query_interval <SEC>
+ *
+ * Returns:
+ * When parsing @s is successful this function returns %TRUE, otherwise %FALSE.
+ */
+static int parse_default_igmp_query_interval(char *s)
+{
+    char *w;
+    uint32_t value = IGMP_QUERY_INTERVAL;
+
+    if (EQUAL((w = next_word(&s)), "")) {
+	WARN("Missing argument to default_igmp_query_interval; defaulting to %u", IGMP_QUERY_INTERVAL);
+    } else if (sscanf(w, "%u", &value) != 1) {
+	WARN("Invalid default default_igmp_query_interval; defaulting to %u", IGMP_QUERY_INTERVAL);
+	value = IGMP_QUERY_INTERVAL;
+    }
+
+    default_igmp_query_interval = value;
+
+    /* Calculate new querier timeout, or expect config option after this. */
+    default_igmp_querier_timeout = 0;
+
+    return TRUE;
+}
+
+/**
+ * parse_default_igmp_querier_timeout - Parse default_igmp_querier_timeout option
+ * @s: String token
+ *
+ * Reads and assigns default querier timeout for an active IGMP querier.
+ * This is the time it takes before pimd tries to take over as the
+ * active querier.  If the argument is missing or invalid the system
+ * will calculate a fallback based on the query interval.
+ *
+ * Syntax:
+ * default_igmp_querier_timeout <SEC>
+ *
+ * Returns:
+ * When parsing @s is successful this function returns %TRUE, otherwise %FALSE.
+ */
+static int parse_default_igmp_querier_timeout(char *s)
+{
+    char *w;
+    uint32_t value = 0;
+    uint32_t recommended = QUERIER_TIMEOUT(default_igmp_query_interval);
+
+    if (EQUAL((w = next_word(&s)), "")) {
+	WARN("Missing argument to default_igmp_querier_timeout!");
+    } else if (sscanf(w, "%u", &value) != 1) {
+	WARN("Invalid default default_igmp_querier_timeout!");
+	value = 0;
+    }
+
+    /* Do some sanity checks to prevent invalid configuration and to recommend
+     * better settings, see GitHub issue troglobit/pimd#31 for details. */
+    if (value != 0) {
+	/* 1) Prevent invalid configuration */
+	if (value <= default_igmp_query_interval) {
+	    WARN("IGMP querier timeout %d must be larger than the query interval %d, forcing default!",
+		 value, default_igmp_query_interval);
+	    value = recommended;
+	}
+
+	/* 2) Warn power user of potentially too low setting. */
+	if (value < recommended)
+	    WARN("The IGMP querier timeout %d is smaller than the recommended value %d, allowing ...",
+		 value, recommended);
+
+	logit(LOG_WARNING, 0, "Recommended querier timeout = Robustness x query-interval + response-time / 2 = %d x %d + %d / 2 = %d",
+	      IGMP_ROBUSTNESS_VARIABLE, default_igmp_query_interval, IGMP_QUERY_RESPONSE_INTERVAL, recommended);
+    }
+
+    default_igmp_querier_timeout = value;
+
+    return TRUE;
+}
 
 void config_vifs_from_file(void)
 {
@@ -1292,6 +1385,14 @@ void config_vifs_from_file(void)
 		parse_default_source_preference(s);
 		break;
 
+	    case CONF_DEFAULT_IGMP_QUERY_INTERVAL:
+		parse_default_igmp_query_interval(s);
+		break;
+
+	    case CONF_DEFAULT_IGMP_QUERIER_TIMEOUT:
+		parse_default_igmp_querier_timeout(s);
+		break;
+
 	    default:
 		logit(LOG_WARNING, 0, "%s:%u - Unknown command '%s'", config_file, lineno, w);
 		error_flag = TRUE;
@@ -1311,6 +1412,15 @@ void config_vifs_from_file(void)
 	PUT_BYTE(my_cand_rp_priority, data_ptr);
 	PUT_HOSTSHORT(my_cand_rp_holdtime, data_ptr);
 	PUT_EUADDR(my_cand_rp_address, data_ptr);
+    }
+
+    /* If no IGMP querier timeout was set, calculate from query interval */
+    if (!default_igmp_querier_timeout)
+	default_igmp_querier_timeout = QUERIER_TIMEOUT(default_igmp_query_interval);
+
+    IF_DEBUG(DEBUG_IGMP) {
+	logit(LOG_INFO, 0, "IGMP query interval  : %u sec", default_igmp_query_interval);
+	logit(LOG_INFO, 0, "IGMP querier timeout : %u sec", default_igmp_querier_timeout);
     }
 
     fclose(f);
