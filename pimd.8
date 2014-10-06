@@ -146,6 +146,12 @@ There are eight different types of configuration commands:
 .Cm default_source_metric
 .Ar <metric>
 .It
+.Cm default_igmp_query_interval
+.Ar <SEC>
+.It
+.Cm default_igmp_querier_timeout
+.Ar <SEC>
+.It
 .Cm phyint
 .Ar <local-addr Ns | Ns ifname>
 .Oo
@@ -182,6 +188,10 @@ There are eight different types of configuration commands:
 .It
 .Cm switch_register_threshold
 .Op Cm rate Ar <number> Cm interval Ar <number>
+.It
+.Cm spt_threshold
+.Op Cm rate Ar <KBPS> | Cm packets Ar <NUM> | Cm infinity Ns
+.Op Cm interval Ar <SEC>
 .El
 .Pp
 By default,
@@ -196,20 +206,36 @@ below.
 .Pp
 The
 .Cm default_source_preference
-option is used by assert elections to determine upstream routers.  Currently
-pimd cannot reliably obtain preferences and metrics from the unicast routing
-protocols, so a default preference may be configured.  In an assert election,
-the router advertising the lowest assert preference will be selected as the
-forwarder and upstream router for the LAN.  Setting 101 should be sufficiently
-high so that asserts from Cisco or GateD routers are prefered over poor-little
-pimd.
+option, or admin distance as it is more commonly known today, is used by
+PIM Assert elections to determine upstream routers.  Currently pimd
+cannot reliably obtain preferences and metrics from the unicast routing
+protocols, so a default preference (distance) may be configured.  In a
+PIM Assert election, the router advertising the lowest assert preference
+will be selected as the forwarder and upstream router for the LAN.
+Setting 101 should be sufficiently high so that asserts from Cisco or
+GateD routers are prefered over poor-little pimd.
 .Pp
-It is reccommended that preferences be set such that metrics are never
-consulted.  However, default metrics may also be set using the
+It is reccommended that preferences (distance) be set such that metrics
+are never consulted.  However, default metrics may also be set using the
 .Cm default_source_metric
-option.  This item sets the cost for sending data through this router.  You
-want only PIM-SM data to go to this daemon; so once again, a high value is
-recommended to prevent accidental usage.  The preferred default value is 1024.
+option.  This item sets the cost for sending data through this router.
+You want only PIM-SM data to go to this daemon; so once again, a high
+value is recommended to prevent accidental usage.  The preferred default
+value is 1024.
+.Pp
+Two settings for IGMP behavior are available:
+.Cm default_igmp_query_interval
+and
+.Cm default_igmp_querier_timeout
+which are similar, but very different.  The former controls the interval between
+IGMP querys when elected as querier, the latter controls the timeout for
+the elected querier -- before
+.Nm pimd
+decides to take over.  In IGMP the lowest numerical address in a LAN
+becomes the elected querier.  Obviously these settings must be handled
+with care. It is recommended that the querier timeout is set to at least
+twice the query interval.   The default querier timeout is 255 seconds
+and the default query interval is 125 seconds.
 .Pp
 The
 .Nm phyint
@@ -319,13 +345,15 @@ multicast addresses supported in pimd is 255.
 .Pp
 The 
 .Nm switch_data_threshold
-setting defines the threshold at which transmission rates trigger the
-changeover from the shared tree to the RP tree; starting the line with
+and
 .Nm switch_register_threshold
-does the opposite in the same format.  Regardless of which of these you choose,
-the rate option is for transmission rate in bits per second, interval is the
-sample rate in seconds -- with a recommended minimum of five seconds.  It is
-recommended to have the same interval if both settings are used.
+have been deprecated in favor of the new
+.Nm spt_threshold
+setting.  It is more in line with what other PIM-SM implementations use
+and is the new recommeded setting for controlling the switch-over from
+the shared tree to the shortest-path source tree.  The default is to do
+the switch-over after the first packet, but only after 100 seconds.  If
+infinity is specified the shortest path switch-over is disabled.
 .Sh SIGNALS
 .Nm
 responds to the following signals:
