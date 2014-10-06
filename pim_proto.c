@@ -347,6 +347,19 @@ void delete_pim_nbr(pim_nbr_entry_t *nbr_delete)
 	}
     }
 
+    /* Fix GitHub issue #22: Crash in (S,G) state when neighbor is lost */
+    for (cand_rp = cand_rp_list; cand_rp; cand_rp = cand_rp->next) {
+	for (rp_grp = cand_rp->rp_grp_next; rp_grp; rp_grp = rp_grp->rp_grp_next) {
+	    for (grp = rp_grp->grplink; grp; grp = grp->next) {
+		mrt = grp->grp_route;
+		if (mrt && mrt->upstream) {
+		    if (mrt->upstream == nbr_delete)
+			mrt->upstream = NULL;
+		}
+	    }
+	}
+    }
+
     free(nbr_delete);
 }
 
