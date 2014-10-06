@@ -167,6 +167,23 @@ void age_vifs(void)
 	/* IGMP query periodic */
 	IF_TIMEOUT(v->uv_gq_timer)
 	    query_groups(v);
+
+	if (v->uv_querier &&
+	    (v->uv_querier->al_timer += TIMER_INTERVAL) >
+		IGMP_OTHER_QUERIER_PRESENT_INTERVAL) {
+	    /*
+	     * The current querier has timed out.  We must become the
+	     * querier.
+	     */
+	    IF_DEBUG(DEBUG_IGMP) {
+		logit(LOG_DEBUG, 0, "IGMP Querier %s timed out.",
+		      inet_fmt(v->uv_querier->al_addr, s1, sizeof(s1)));
+	    }
+	    free(v->uv_querier);
+	    v->uv_querier = NULL;
+	    v->uv_flags |= VIFF_QUERIER;
+	    query_groups(v);
+	}
     }
 
     IF_DEBUG(DEBUG_IF) {
