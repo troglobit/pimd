@@ -1,0 +1,78 @@
+#!/bin/sh
+#
+# pimd		Starts pimd.
+#
+#
+# chkconfig:	2345 85 40
+# description:	pimd is a PIM-SM multicast routing daemon
+#
+
+# Source function library
+. /etc/rc.d/init.d/functions
+
+# Get network config
+. /etc/sysconfig/network
+
+# Check that networking is up.
+if is_yes "${NETWORKING}"; then
+	if [ ! -f /var/lock/subsys/network -a "$1" != stop -a "$1" != status ]; then
+		msg_network_down pimd
+		exit 1
+	fi
+else
+	exit 0
+fi
+
+# Get service config
+if [ -f /etc/sysconfig/pimd ]; then
+	. /etc/sysconfig/pimd
+fi
+
+RETVAL=0
+# See how we were called.
+case "$1" in
+  start)
+	# Check if the service is already running?
+	if [ ! -f /var/lock/subsys/pimd ]; then
+		show "Starting PIM-SM multicast routing daemon"
+		daemon pimd
+		RETVAL=$?
+		[ $RETVAL -eq 0 ] && touch /var/lock/subsys/pimd
+	else
+		msg_already_running pimd
+	fi
+	;;
+  stop)
+	if [ -f /var/lock/subsys/pimd ]; then
+		show "Stopping PIM-SM multicast routing daemon"
+		killproc pimd
+		rm -f /var/lock/subsys/pimd
+	else
+		msg_not_running pimd
+	fi
+	;;
+  status)
+	status pimd
+	exit $?
+	;;
+  reload|force-reload)
+	if [ -f /var/lock/subsys/pimd ]; then
+		show "Reloading PIM-SM multicast routing daemon"
+		killproc pimd -HUP
+		RETVAL=$?
+	else
+		msg_not_running pimd >&2
+		exit 7
+	fi
+	;;
+  restart)
+	$0 stop
+	$0 start
+	exit $?
+	;;
+  *)
+	msg_usage "$0 {start|stop|restart|reload|force-reload|status}"
+	exit 3
+esac
+
+exit $RETVAL
