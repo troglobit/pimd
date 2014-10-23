@@ -1,5 +1,6 @@
 README
 ======
+[![Build Status](https://travis-ci.org/troglobit/pimd.png?branch=master)](https://travis-ci.org/troglobit/pimd)[![Coverity Scan Status](https://scan.coverity.com/projects/3319/badge.svg)](https://scan.coverity.com/projects/3319)
 
 pimd is a lightweight, stand-alone implementation of RFC 2362, available
 under the 3-clause BSD license.  This is the restored original version
