@@ -394,6 +394,7 @@ int k_del_mfc(int socket, u_int32 source, u_int32 group)
 {
     struct mfcctl mc;
 
+    memset(&mc, 0, sizeof(mc));
     mc.mfcc_origin.s_addr   = source;
     mc.mfcc_mcastgrp.s_addr = group;
 
@@ -424,6 +425,7 @@ int k_chg_mfc(int socket, u_int32 source, u_int32 group, vifi_t iif, vifbitmap_t
     struct uvif   *v;
     struct mfcctl  mc;
 
+    memset(&mc, 0, sizeof(mc));
     mc.mfcc_origin.s_addr    = source;
 #ifdef OLD_KERNEL
     mc.mfcc_originmas.s_addr = 0xffffffff;    /* Got it from mrouted-3.9 */
