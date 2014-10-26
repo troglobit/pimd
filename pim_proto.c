@@ -1921,7 +1921,7 @@ int send_periodic_pim_join_prune(vifi_t vifi, pim_nbr_entry_t *pim_nbr, uint16_t
     grpentry_t      *grp;
     mrtentry_t      *mrt;
     rpentry_t       *rp;
-    uint32_t          addr;
+    uint32_t         addr;
     struct uvif     *v;
     pim_nbr_entry_t *nbr;
     cand_rp_t       *cand_rp;
@@ -1974,45 +1974,42 @@ int send_periodic_pim_join_prune(vifi_t vifi, pim_nbr_entry_t *pim_nbr, uint16_t
 	    if (mrt->flags & MRTF_RP) {
 		/* RPbit set */
 		addr = mrt->source->address;
-		if (VIFM_ISEMPTY(mrt->joined_oifs)
-		    || ((find_vif_direct_local(addr) != NO_VIF)
-			&& grp->grp_route))
+		if (VIFM_ISEMPTY(mrt->joined_oifs) || find_vif_direct_local(addr) != NO_VIF) {
 		    /* TODO: XXX: TIMER implem. dependency! */
-		    if ((grp->grp_route->incoming == vifi)
-			&& (grp->grp_route->jp_timer <= TIMER_INTERVAL))
+		    if (grp->grp_route &&
+			grp->grp_route->incoming == vifi &&
+			grp->grp_route->jp_timer <= TIMER_INTERVAL)
 			/* S is directly connected. Send toward RP */
 			add_jp_entry(grp->grp_route->upstream,
 				     holdtime,
 				     grp->group, SINGLE_GRP_MSKLEN,
 				     addr, SINGLE_SRC_MSKLEN,
 				     MRTF_RP, PIM_ACTION_PRUNE);
+		}
 	    }
 	    else {
 		/* RPbit cleared */
 		if (VIFM_ISEMPTY(mrt->joined_oifs)) {
 		    /* TODO: XXX: TIMER implem. dependency! */
-		    if ((mrt->incoming == vifi)
-			&& (mrt->jp_timer <= TIMER_INTERVAL))
+		    if (mrt->incoming == vifi && mrt->jp_timer <= TIMER_INTERVAL)
 			add_jp_entry(mrt->upstream, holdtime,
 				     grp->group, SINGLE_GRP_MSKLEN,
 				     mrt->source->address,
 				     SINGLE_SRC_MSKLEN, 0, PIM_ACTION_PRUNE);
-		}
-		else {
+		} else {
 		    /* TODO: XXX: TIMER implem. dependency! */
-		    if ((mrt->incoming == vifi)
-			&& (mrt->jp_timer <= TIMER_INTERVAL))
+		    if (mrt->incoming == vifi && mrt->jp_timer <= TIMER_INTERVAL)
 			add_jp_entry(mrt->upstream, holdtime,
 				     grp->group, SINGLE_GRP_MSKLEN,
 				     mrt->source->address,
 				     SINGLE_SRC_MSKLEN, 0, PIM_ACTION_JOIN);
 		}
 		/* TODO: XXX: TIMER implem. dependency! */
-		if ((mrt->flags & MRTF_SPT)
-		    && grp->grp_route
-		    && (mrt->incoming != grp->grp_route->incoming)
-		    && (grp->grp_route->incoming == vifi)
-		    && (grp->grp_route->jp_timer <= TIMER_INTERVAL))
+		if ((mrt->flags & MRTF_SPT) &&
+		    grp->grp_route &&
+		    mrt->incoming != grp->grp_route->incoming &&
+		    grp->grp_route->incoming == vifi &&
+		    grp->grp_route->jp_timer <= TIMER_INTERVAL)
 		    add_jp_entry(grp->grp_route->upstream, holdtime,
 				 grp->group, SINGLE_GRP_MSKLEN,
 				 mrt->source->address,
@@ -2031,9 +2028,9 @@ int send_periodic_pim_join_prune(vifi_t vifi, pim_nbr_entry_t *pim_nbr, uint16_t
 	    continue;
 
 	/* TODO: XXX: TIMER implem. dependency! */
-	if (rp->mrtlink
-	    && (rp->incoming == vifi)
-	    && (rp->mrtlink->jp_timer <= TIMER_INTERVAL)) {
+	if (rp->mrtlink &&
+	    rp->incoming == vifi &&
+	    rp->mrtlink->jp_timer <= TIMER_INTERVAL) {
 	    add_jp_entry(rp->upstream, holdtime, htonl(CLASSD_PREFIX), STAR_STAR_RP_MSKLEN,
 			 rp->address, SINGLE_SRC_MSKLEN, MRTF_RP | MRTF_WC, PIM_ACTION_JOIN);
 	}
