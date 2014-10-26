@@ -427,9 +427,6 @@ int k_chg_mfc(int socket, u_int32 source, u_int32 group, vifi_t iif, vifbitmap_t
 
     memset(&mc, 0, sizeof(mc));
     mc.mfcc_origin.s_addr    = source;
-#ifdef OLD_KERNEL
-    mc.mfcc_originmas.s_addr = 0xffffffff;    /* Got it from mrouted-3.9 */
-#endif /* OLD_KERNEL */
     mc.mfcc_mcastgrp.s_addr  = group;
     mc.mfcc_parent	     = iif;
     /*

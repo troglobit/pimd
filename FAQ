@@ -10,18 +10,6 @@ Mini-FAQ:
 	messages may not be accepted by some other vendors (pimd-to-pimd
 	should still be OK).
 
-  - Q: I have added in the past PIM patches to my *BSD kernel, but
-	recent pimd versions (pimd-2.1.0-alpha29 and later) do not work
-	with that kernel.
-    A: Around the time pimd-2.1.0-alpha29 was created, the kernel PIM API
-	was changed. Unfortunately, the result was non-compatibility.
-	Either update your kernel to use the most recent API, or recompile
-	pimd with PIM_OLD_KERNEL defined (see the beginning of Makefile)
-
-  - Q: I have Solaris 8, but my kernel crashes when I start pimd
-    A: There is a bug in the Solaris 8 kernel. I guess there is a patch
-	that fixes it, but I don't know its location.
-
   - Q: Do I need to re-configure my Linux kernel to run pimd?
   - A: Very likely, yes, because some of the options below are not
 	enabled by default. Make sure that you have:
