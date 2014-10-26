@@ -2034,7 +2034,7 @@ int send_periodic_pim_join_prune(vifi_t vifi, pim_nbr_entry_t *pim_nbr, uint16_t
     }
 
     /* Send all pending Join/Prune messages */
-    for (nbr = v->uv_pim_neighbors; nbr; nbr = pim_nbr->next) {
+    for (nbr = v->uv_pim_neighbors; nbr; nbr = nbr->next) {
 	/* If join/prune to a particular neighbor only was specified */
 	if (pim_nbr && (nbr != pim_nbr))
 	    continue;
