@@ -189,29 +189,38 @@ static void accept_pim(ssize_t recvlen)
 	case PIM_HELLO:
 	    receive_pim_hello(src, dst, (char *)(pim), pimlen);
 	    break;
+
 	case PIM_REGISTER:
 	    receive_pim_register(src, dst, (char *)(pim), pimlen);
 	    break;
+
 	case PIM_REGISTER_STOP:
 	    receive_pim_register_stop(src, dst, (char *)(pim), pimlen);
 	    break;
+
 	case PIM_JOIN_PRUNE:
 	    receive_pim_join_prune(src, dst, (char *)(pim), pimlen);
 	    break;
+
 	case PIM_BOOTSTRAP:
 	    receive_pim_bootstrap(src, dst, (char *)(pim), pimlen);
 	    break;
+
 	case PIM_ASSERT:
 	    receive_pim_assert(src, dst, (char *)(pim), pimlen);
 	    break;
+
 	case PIM_GRAFT:
 	case PIM_GRAFT_ACK:
 	    logit(LOG_INFO, 0, "ignore %s from %s to %s",
 		  packet_kind(IPPROTO_PIM, pim->pim_type, 0), inet_fmt(src, s1, sizeof(s1)),
 		  inet_fmt(dst, s2, sizeof(s2)));
+	    break;
+
 	case PIM_CAND_RP_ADV:
 	    receive_pim_cand_rp_adv(src, dst, (char *)(pim), pimlen);
 	    break;
+
 	default:
 	    logit(LOG_INFO, 0,
 		  "ignore unknown PIM message code %u from %s to %s",
