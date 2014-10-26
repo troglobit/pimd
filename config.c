@@ -859,7 +859,6 @@ int parse_rp_address(char *s)
     uint32_t local = 0xffffff;
     uint32_t group_addr = htonl(INADDR_UNSPEC_GROUP);
     uint32_t masklen = PIM_GROUP_PREFIX_DEFAULT_MASKLEN;
-    u_int dummy;
     struct rp_hold *rph;
 
     /* next is RP addr */
@@ -902,7 +901,6 @@ int parse_rp_address(char *s)
 	     * configuration or similar sources for reference. */
 	    if (EQUAL(w, "priority")) {
 		w = next_word(&s);
-		sscanf(w, "%u", &dummy);
 		WARN("The priority of static RP's is, as of pimd 2.2.0, always 1.");
 	    }
 	}
