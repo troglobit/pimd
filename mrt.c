@@ -126,13 +126,13 @@ srcentry_t *find_source(uint32_t source)
 
 mrtentry_t *find_route(uint32_t source, uint32_t group, uint16_t flags, char create)
 {
-    srcentry_t *src	     = NULL;
-    grpentry_t *grp	     = NULL;
-    mrtentry_t *mrt	     = NULL;
-    mrtentry_t *mrt_wc	     = NULL;
-    mrtentry_t *mrt_pmbr    = NULL;
-    mrtentry_t *mrt2	     = NULL;
-    rpentry_t  *rp	     = NULL;
+    srcentry_t *src	   = NULL;
+    grpentry_t *grp	   = NULL;
+    mrtentry_t *mrt	   = NULL;
+    mrtentry_t *mrt_wc	   = NULL;
+    mrtentry_t *mrt_pmbr   = NULL;
+    mrtentry_t *mrt2	   = NULL;
+    rpentry_t  *rp	   = NULL;
     rp_grp_entry_t *rp_grp = NULL;
 
     if (flags & (MRTF_SG | MRTF_WC)) {
@@ -160,10 +160,9 @@ mrtentry_t *find_route(uint32_t source, uint32_t group, uint16_t flags, char cre
 
 	    /* Search for the source */
 	    if (flags & MRTF_SG) {
-		if (search_grpmrtlink(grp, source, &mrt) == TRUE) {
+		if (search_grpmrtlink(grp, source, &mrt) == TRUE)
 		    /* Exact (S,G) entry found */
 		    return mrt;
-		}
 	    }
 
 	    /* No (S,G) entry. Return the (*,G) entry (if exist) */
@@ -197,10 +196,9 @@ mrtentry_t *find_route(uint32_t source, uint32_t group, uint16_t flags, char cre
 	if (!grp->active_rp_grp) {
 	    rp_grp = rp_grp_match(group);
 	    if (!rp_grp) {
-		if (!grp->mrtlink && !grp->grp_route) {
+		if (!grp->mrtlink && !grp->grp_route)
 		    /* New created grpentry. Delete it. */
 		    delete_grpentry(grp);
-		}
 
 		return NULL;
 	    }
@@ -214,8 +212,7 @@ mrtentry_t *find_route(uint32_t source, uint32_t group, uint16_t flags, char cre
 	    rp_grp->grplink = grp;
 	    if (grp->rpnext)
 		grp->rpnext->rpprev = grp;
-	}
-	else {
+	} else {
 	    rp = grp->active_rp_grp->rp->rpentry;
 	}
     }
@@ -226,20 +223,20 @@ mrtentry_t *find_route(uint32_t source, uint32_t group, uint16_t flags, char cre
 	/* Setup the (*,G) routing entry */
 	mrt_wc = create_mrtentry(NULL, grp, MRTF_WC);
 	if (!mrt_wc) {
-	    if (!grp->mrtlink) {
+	    if (!grp->mrtlink)
 		/* New created grpentry. Delete it. */
 		delete_grpentry(grp);
-	    }
 
 	    return NULL;
 	}
 
 	if (mrt_wc->flags & MRTF_NEW) {
 	    mrt_pmbr = rp->mrtlink;
+
 	    /* Copy the oif list from the (*,*,RP) entry */
-	    if (mrt_pmbr) {
+	    if (mrt_pmbr)
 		VOIF_COPY(mrt_pmbr, mrt_wc);
-	    }
+
 	    mrt_wc->incoming = rp->incoming;
 	    mrt_wc->upstream = rp->upstream;
 	    mrt_wc->metric   = rp->metric;
@@ -250,9 +247,8 @@ mrtentry_t *find_route(uint32_t source, uint32_t group, uint16_t flags, char cre
 #endif /* RSRR */
 	}
 
-	if (!(flags & MRTF_SG)) {
+	if (!(flags & MRTF_SG))
 	    return mrt_wc;
-	}
     }
 
     if (flags & MRTF_SG) {
@@ -320,15 +316,15 @@ mrtentry_t *find_route(uint32_t source, uint32_t group, uint16_t flags, char cre
 
     if (flags & MRTF_PMBR) {
 	/* Get/return the (*,*,RP) routing entry */
-	if (group != INADDR_ANY_N) {
+	if (group != INADDR_ANY_N)
 	    rp = rp_match(group);
-	} else if (source != INADDR_ANY_N) {
+	else if (source != INADDR_ANY_N)
 	    rp = rp_find(source);
-	    if (!rp)
-		return NULL;
-	} else {
+	else
 	    return NULL; /* source == group == INADDR_ANY */
-	}
+
+	if (!rp)
+	    return NULL;
 
 	if (rp->mrtlink)
 	    return rp->mrtlink;
@@ -337,9 +333,9 @@ mrtentry_t *find_route(uint32_t source, uint32_t group, uint16_t flags, char cre
 	if (!mrt)
 	    return NULL;
 
-	mrt->incoming = rp->incoming;
-	mrt->upstream = rp->upstream;
-	mrt->metric   = rp->metric;
+	mrt->incoming   = rp->incoming;
+	mrt->upstream   = rp->upstream;
+	mrt->metric     = rp->metric;
 	mrt->preference = rp->preference;
 
 	return mrt;
