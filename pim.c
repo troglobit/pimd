@@ -41,7 +41,7 @@
 char	*pim_recv_buf;		/* input packet buffer   */
 char	*pim_send_buf;		/* output packet buffer  */
 
-u_int32	allpimrouters_group;	/* ALL_PIM_ROUTERS address in net order */
+uint32_t	allpimrouters_group;	/* ALL_PIM_ROUTERS address in net order */
 int	pim_socket;		/* socket for PIM control msgs */
 
 #ifdef RAW_OUTPUT_IS_RAW
@@ -51,7 +51,7 @@ extern int curttl;
 /*
  * Local variables.
  */
-static u_int16 ip_id = 0;
+static uint16_t ip_id = 0;
 //static u_int pim_send_cnt = 0;
 
 
@@ -147,7 +147,7 @@ static void pim_read(int f __attribute__((unused)), fd_set *rfd __attribute__((u
 
 static void accept_pim(ssize_t recvlen)
 {
-    u_int32 src, dst;
+    uint32_t src, dst;
     struct ip *ip;
     pim_header_t *pim;
     int iphdrlen, pimlen;
@@ -225,7 +225,7 @@ static void accept_pim(ssize_t recvlen)
  * Send a multicast PIM packet from src to dst, PIM message type = "type"
  * and data length (after the PIM header) = "len"
  */
-void send_pim(char *buf, u_int32 src, u_int32 dst, int type, size_t len)
+void send_pim(char *buf, uint32_t src, uint32_t dst, int type, size_t len)
 {
     struct sockaddr_in sin;
     struct ip *ip;
@@ -255,7 +255,7 @@ void send_pim(char *buf, u_int32 src, u_int32 dst, int type, size_t len)
 
     /* TODO: XXX: if start using this code for PIM_REGISTERS, exclude the
      * encapsulated packet from the checsum. */
-    pim->pim_cksum     = inet_cksum((u_int16 *)pim, sizeof(pim_header_t) + len);
+    pim->pim_cksum     = inet_cksum((uint16_t *)pim, sizeof(pim_header_t) + len);
 
     if (IN_MULTICAST(ntohl(dst))) {
 	k_set_if(pim_socket, src);
@@ -319,7 +319,7 @@ void send_pim(char *buf, u_int32 src, u_int32 dst, int type, size_t len)
  * Send an unicast PIM packet from src to dst, PIM message type = "type"
  * and data length (after the PIM common header) = "len"
  */
-void send_pim_unicast(char *buf, int mtu, u_int32 src, u_int32 dst, int type, size_t len)
+void send_pim_unicast(char *buf, int mtu, uint32_t src, uint32_t dst, int type, size_t len)
 {
     struct sockaddr_in sin;
     struct ip *ip;
@@ -355,13 +355,13 @@ void send_pim_unicast(char *buf, int mtu, u_int32 src, u_int32 dst, int type, si
      * may be dropped by some implementations (pimd should be OK).
      */
 #ifdef BROKEN_CISCO_CHECKSUM
-    pim->pim_cksum	= inet_cksum((u_int16 *)pim, sizeof(pim_header_t) + len);
+    pim->pim_cksum	= inet_cksum((uint16_t *)pim, sizeof(pim_header_t) + len);
 #else /* !BROKEN_CISCO_CHECKSUM */
     if (PIM_REGISTER == type) {
-	pim->pim_cksum	= inet_cksum((u_int16 *)pim, sizeof(pim_header_t)
+	pim->pim_cksum	= inet_cksum((uint16_t *)pim, sizeof(pim_header_t)
 				     + sizeof(pim_register_t));
     } else {
-        pim->pim_cksum	= inet_cksum((u_int16 *)pim, sizeof(pim_header_t) + len);
+        pim->pim_cksum	= inet_cksum((uint16_t *)pim, sizeof(pim_header_t) + len);
     }
 #endif /* !BROKEN_CISCO_CHECKSUM */
 

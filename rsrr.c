@@ -57,7 +57,7 @@ static socklen_t client_length = sizeof(client_addr);
  */
 static void	rsrr_accept    (size_t recvlen);
 static void	rsrr_accept_iq (void);
-static int	rsrr_accept_rq (struct rsrr_rq *route_query, u_int8 flags, struct gtable *gt_notify);
+static int	rsrr_accept_rq (struct rsrr_rq *route_query, uint8_t flags, struct gtable *gt_notify);
 static void	rsrr_read      (int, fd_set *);
 static int	rsrr_send      (int sendlen);
 static void	rsrr_cache     (struct gtable *gt, struct rsrr_rq *route_query);
@@ -228,7 +228,7 @@ static void rsrr_accept_iq(void)
  * change notification.
  */
 /* XXX: must modify if your routing table structure/search is different */
-static int rsrr_accept_rq(struct rsrr_rq *route_query, u_int8 flags, struct gtable *gt_notify)
+static int rsrr_accept_rq(struct rsrr_rq *route_query, uint8_t flags, struct gtable *gt_notify)
 {
     struct rsrr_header *rsrr = (struct rsrr_header *)rsrr_send_buf;
     struct rsrr_rr *route_reply;
@@ -237,13 +237,13 @@ static int rsrr_accept_rq(struct rsrr_rq *route_query, u_int8 flags, struct gtab
     int status_ok;
 #ifdef PIM
     int found;
-    u_int8 tmp_flags;
+    uint8_t tmp_flags;
     rp_grp_entry_t *rp_grp_entry;
     grpentry_t *grpentry_ptr;
 #else
     struct gtable local_g;
     struct rtentry *r;
-    u_int32 mcastgrp;
+    uint32_t mcastgrp;
 #endif /* PIM */
     
     /* Set up message */
@@ -512,7 +512,7 @@ static void rsrr_cache(struct gtable *gt, struct rsrr_rq *route_query)
 void rsrr_cache_send(struct gtable *gt, int notify)
 {
     struct rsrr_cache *rc, **rcnp;
-    u_int8 flags = 0;
+    uint8_t flags = 0;
 
     if (notify) {
 	BIT_SET(flags, RSRR_NOTIFICATION_BIT);
@@ -546,7 +546,7 @@ void rsrr_cache_send(struct gtable *gt, int notify)
 void rsrr_cache_bring_up(struct gtable *gt)
 {
     struct gtable *gt_rp, *gt_wide;
-    u_int8 flags = 0;
+    uint8_t flags = 0;
     struct rsrr_cache *rc, **rcnp;
 
     if (gt == (struct gtable *)NULL)
@@ -678,7 +678,7 @@ void rsrr_cache_clean(struct gtable *gt)
     struct rsrr_cache *rc, *rc_next, **rcnp;
     struct gtable *gt_wide;
 #ifdef PIM
-    u_int8 flags = 0;
+    uint8_t flags = 0;
 
     IF_DEBUG(DEBUG_RSRR) {
 	if (gt->flags & MRTF_SG)

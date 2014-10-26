@@ -92,10 +92,10 @@
  * the header and a list of vifs.
  */
 struct rsrr_header {
-    u_int8 version;			/* RSRR Version, currently 1        */
-    u_int8 type;			/* type of message, as defined above*/
-    u_int8 flags;			/* flags; defined by type           */
-    u_int8 num;				/* number; defined by type          */
+    uint8_t version;			/* RSRR Version, currently 1        */
+    uint8_t type;			/* type of message, as defined above*/
+    uint8_t flags;			/* flags; defined by type           */
+    uint8_t num;			/* number; defined by type          */
 };
 
 /* Definition of a vif as seen by the reservation protocol.
@@ -118,10 +118,10 @@ struct rsrr_header {
  * packets are sent.
  */
 struct rsrr_vif {
-    u_int8 id;				/* vif id             */
-    u_int8 threshold;			/* vif threshold ttl  */
-    u_int16 status;			/* vif status bitmask */
-    u_int32 local_addr; 		/* vif local address  */
+    uint8_t id;				/* vif id             */
+    uint8_t threshold;			/* vif threshold ttl  */
+    uint16_t status;			/* vif status bitmask */
+    uint32_t local_addr; 		/* vif local address  */
 };
 
 /* Definition of an RSRR Route Query.
@@ -133,9 +133,9 @@ struct rsrr_vif {
  * Flags are defined above.
  */
 struct rsrr_rq {
-    u_int32 dest_addr;			/* destination */
-    u_int32 source_addr;		/* source      */
-    u_int32 query_id;			/* query ID    */
+    uint32_t dest_addr;			/* destination */
+    uint32_t source_addr;		/* source      */
+    uint32_t query_id;			/* query ID    */
 };
 
 /* Definition of an RSRR Route Reply.
@@ -150,12 +150,12 @@ struct rsrr_rq {
  * Bug in the spec?
  */
 struct rsrr_rr {
-    u_int32 dest_addr;  		/* destination          */
-    u_int32 source_addr;		/* source               */
-    u_int32 query_id;			/* query ID             */
-    u_int16 in_vif;			/* incoming vif         */
-    u_int16 reserved;			/* reserved             */
-    u_int32 out_vif_bm;			/* outgoing vif bitmask */
+    uint32_t dest_addr;  		/* destination          */
+    uint32_t source_addr;		/* source               */
+    uint32_t query_id;			/* query ID             */
+    uint16_t in_vif;			/* incoming vif         */
+    uint16_t reserved;			/* reserved             */
+    uint32_t out_vif_bm;		/* outgoing vif bitmask */
 };
 
 
@@ -168,10 +168,19 @@ struct rsrr_rr {
  * that the service applies to.
  */
 struct rsrr_sqr {
-    u_int32 dest_addr;                  /* destination */
-    u_int32 source_addr;                /* source      */
-    u_int32 query_id;                   /* query ID    */
-    u_int16 vif;                        /* vif         */
-    u_int16 reserved;                   /* reserved    */
+    uint32_t dest_addr;                  /* destination */
+    uint32_t source_addr;                /* source      */
+    uint32_t query_id;                   /* query ID    */
+    uint16_t vif;                        /* vif         */
+    uint16_t reserved;                   /* reserved    */
 };
 #endif /* NOT_IN_THE_SPEC */
+
+/**
+ * Local Variables:
+ *  version-control: t
+ *  indent-tabs-mode: t
+ *  c-file-style: "ellemtel"
+ *  c-basic-offset: 4
+ * End:
+ */

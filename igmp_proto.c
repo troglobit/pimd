@@ -55,14 +55,14 @@ typedef struct {
 static void DelVif       (void *arg);
 static int SetTimer      (vifi_t vifi, struct listaddr *g);
 static int DeleteTimer   (int id);
-static void send_query   (struct uvif *v, u_int32 group, int interval);
+static void send_query   (struct uvif *v, uint32_t group, int interval);
 static void SendQuery    (void *arg);
 static int SetQueryTimer (struct listaddr *g, vifi_t vifi, int to_expire, int q_time);
-static u_int32 igmp_group_membership_timeout(void);
+static uint32_t igmp_group_membership_timeout(void);
 
 /* The querier timeout depends on the configured query interval */
-u_int32 default_igmp_query_interval  = IGMP_QUERY_INTERVAL;
-u_int32 default_igmp_querier_timeout = IGMP_OTHER_QUERIER_PRESENT_INTERVAL;
+uint32_t default_igmp_query_interval  = IGMP_QUERY_INTERVAL;
+uint32_t default_igmp_querier_timeout = IGMP_OTHER_QUERIER_PRESENT_INTERVAL;
 
 
 /*
@@ -92,7 +92,7 @@ void query_groups(struct uvif *v)
 /*
  * Process an incoming host membership query
  */
-void accept_membership_query(u_int32 src, u_int32 dst __attribute__((unused)), u_int32 group, int tmo)
+void accept_membership_query(uint32_t src, uint32_t dst __attribute__((unused)), uint32_t group, int tmo)
 {
     vifi_t vifi;
     struct uvif *v;
@@ -224,7 +224,7 @@ void accept_membership_query(u_int32 src, u_int32 dst __attribute__((unused)), u
 /*
  * Process an incoming group membership report.
  */
-void accept_group_report(u_int32 src, u_int32 dst __attribute__((unused)), u_int32 group, int igmp_report_type)
+void accept_group_report(uint32_t src, uint32_t dst __attribute__((unused)), uint32_t group, int igmp_report_type)
 {
     vifi_t vifi;
     struct uvif *v;
@@ -298,7 +298,7 @@ void accept_group_report(u_int32 src, u_int32 dst __attribute__((unused)), u_int
 
 
 /* TODO: send PIM prune message if the last member? */
-void accept_leave_message(u_int32 src, u_int32 dst __attribute__((unused)), u_int32 group)
+void accept_leave_message(uint32_t src, uint32_t dst __attribute__((unused)), uint32_t group)
 {
     vifi_t vifi;
     struct uvif *v;
@@ -367,10 +367,10 @@ void accept_leave_message(u_int32 src, u_int32 dst __attribute__((unused)), u_in
 /*
  * Handle IGMP v3 membership reports (join/leave)
  */
-void accept_membership_report(u_int32 src, u_int32 dst, struct igmp_report *report)
+void accept_membership_report(uint32_t src, uint32_t dst, struct igmp_report *report)
 {
     size_t i, numgrp = ntohs(report->ir_numgrps);
-    u_int32 group;
+    uint32_t group;
     struct igmp_grouprec *grec;
 
     IF_DEBUG(DEBUG_IGMP)
@@ -379,7 +379,7 @@ void accept_membership_report(u_int32 src, u_int32 dst, struct igmp_report *repo
 
     grec = (struct igmp_grouprec *)((char *)report + IGMP_V3_REPORT_MINLEN);
     for (i = 0; i < numgrp; i++) {
-	u_char type = grec->ig_type;
+	uint8_t type = grec->ig_type;
 	size_t numsrc = ntohs(grec->ig_numsrc);
 
 	/* Keep it in big endian, network byte order */
@@ -414,7 +414,7 @@ void accept_membership_report(u_int32 src, u_int32 dst, struct igmp_report *repo
 /*
  * Calculate group membership timeout
  */
-static u_int32 igmp_group_membership_timeout(void)
+static uint32_t igmp_group_membership_timeout(void)
 {
     return IGMP_ROBUSTNESS_VARIABLE * default_igmp_query_interval
 	+ IGMP_QUERY_RESPONSE_INTERVAL;
@@ -487,7 +487,7 @@ static int DeleteTimer(int id)
 /*
  * Send IGMP Query
  */
-static void send_query(struct uvif *v, u_int32 group, int interval)
+static void send_query(struct uvif *v, uint32_t group, int interval)
 {
     if (v->uv_flags & VIFF_QUERIER) {
 	send_igmp(igmp_send_buf, v->uv_lcl_addr, group,

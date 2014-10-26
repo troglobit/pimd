@@ -62,12 +62,12 @@ static void   process_cache_miss  (struct igmpmsg *igmpctl);
 static void   process_wrong_iif   (struct igmpmsg *igmpctl);
 static void   process_whole_pkt   (char *buf);
 
-u_int32		default_source_metric     = UCAST_DEFAULT_SOURCE_METRIC;
-u_int32		default_source_preference = UCAST_DEFAULT_SOURCE_PREFERENCE;
+uint32_t		default_source_metric     = UCAST_DEFAULT_SOURCE_METRIC;
+uint32_t		default_source_preference = UCAST_DEFAULT_SOURCE_PREFERENCE;
 
 #ifdef SCOPED_ACL
 /* from mrouted. Contributed by Marian Stagarescu <marian@bile.cidera.com>*/
-static int scoped_addr(vifi_t vifi, u_int32 addr)
+static int scoped_addr(vifi_t vifi, uint32_t addr)
 {
     struct vif_acl *acl;
 
@@ -92,7 +92,7 @@ static int scoped_addr(vifi_t vifi, u_int32 addr)
 #endif  /* SCOPED_ACL */
 
 /* Return the iif for given address */
-vifi_t get_iif(u_int32 address)
+vifi_t get_iif(uint32_t address)
 {
     struct rpfctl rpfc;
 
@@ -108,11 +108,11 @@ vifi_t get_iif(u_int32 address)
  * but is not PIM router, or if the first hop router is not a PIM router,
  * then return NULL.
  */
-pim_nbr_entry_t *find_pim_nbr(u_int32 source)
+pim_nbr_entry_t *find_pim_nbr(uint32_t source)
 {
     struct rpfctl rpfc;
     pim_nbr_entry_t *nbr;
-    u_int32 addr;
+    uint32_t addr;
 
     if (local_address(source) != NO_VIF)
 	return NULL;
@@ -154,8 +154,8 @@ pim_nbr_entry_t *find_pim_nbr(u_int32 source)
 int set_incoming(srcentry_t *src, int type)
 {
     struct rpfctl rpfc;
-    u_int32 src_addr = src->address;
-    u_int32 nbr_addr;
+    uint32_t src_addr = src->address;
+    uint32_t nbr_addr;
     struct uvif *vif;
     pim_nbr_entry_t *nbr;
 
@@ -245,7 +245,7 @@ int set_incoming(srcentry_t *src, int type)
  * TODO: XXX: currently `source` is not used. Will be used with IGMPv3 where
  * we have source-specific Join/Prune.
  */
-void add_leaf(vifi_t vifi, u_int32 source __attribute__((unused)), u_int32 group)
+void add_leaf(vifi_t vifi, uint32_t source __attribute__((unused)), uint32_t group)
 {
     mrtentry_t *mrt;
     mrtentry_t *srcs;
@@ -343,7 +343,7 @@ void add_leaf(vifi_t vifi, u_int32 source __attribute__((unused)), u_int32 group
  * TODO: XXX: currently `source` is not used. To be used with IGMPv3 where
  * we have source-specific joins/prunes.
  */
-void delete_leaf(vifi_t vifi, u_int32 source __attribute__((unused)), u_int32 group)
+void delete_leaf(vifi_t vifi, uint32_t source __attribute__((unused)), uint32_t group)
 {
     mrtentry_t *mrt;
     mrtentry_t *srcs;
@@ -464,7 +464,7 @@ int change_interfaces(mrtentry_t *mrt,
 		      vifbitmap_t new_pruned_oifs,
 		      vifbitmap_t new_leaves_,
 		      vifbitmap_t new_asserted_oifs,
-		      u_int16 flags)
+		      uint16_t flags)
 {
     vifbitmap_t new_joined_oifs;  /* The oifs for that particular mrtentry */
     vifbitmap_t old_joined_oifs __attribute__ ((unused));
@@ -812,9 +812,9 @@ void process_kernel_call(void)
  */
 static void process_cache_miss(struct igmpmsg *igmpctl)
 {
-    u_int32 source, mfc_source;
-    u_int32 group;
-    u_int32 rp_addr;
+    uint32_t source, mfc_source;
+    uint32_t group;
+    uint32_t rp_addr;
     vifi_t iif;
     mrtentry_t *mrt;
     mrtentry_t *mrp;
@@ -959,8 +959,8 @@ static void process_cache_miss(struct igmpmsg *igmpctl)
  */
 static void process_wrong_iif(struct igmpmsg *igmpctl)
 {
-    u_int32 source;
-    u_int32 group;
+    uint32_t source;
+    uint32_t group;
     vifi_t  iif;
     mrtentry_t *mrt;
 
@@ -1020,7 +1020,7 @@ static void process_whole_pkt(char *buf)
 }
 
 
-mrtentry_t *switch_shortest_path(u_int32 source, u_int32 group)
+mrtentry_t *switch_shortest_path(uint32_t source, uint32_t group)
 {
     mrtentry_t *mrt;
 

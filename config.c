@@ -744,7 +744,7 @@ int parse_group_prefix(char *s)
 
     /* Was if (!(~(*cand_rp_adv_message.prefix_cnt_ptr))) which Arm GCC 4.4.2 dislikes:
      *  --> "config.c:693: warning: promoted ~unsigned is always non-zero"
-     * The prefix_cnt_ptr is a u_int8 so it seems this check was to prevent overruns.
+     * The prefix_cnt_ptr is a uint8_t so it seems this check was to prevent overruns.
      * I've changed the check to see if we've already read 255 entries, if so the cnt
      * is maximized and we need to tell the user. --Joachim Nilsson 2010-01-16 */
     if (*cand_rp_adv_message.prefix_cnt_ptr == 255) {
@@ -760,7 +760,7 @@ int parse_group_prefix(char *s)
 
     validate_prefix_len(&masklen);
 
-    PUT_EGADDR(group_addr, (u_int8)masklen, 0, cand_rp_adv_message.insert_data_ptr);
+    PUT_EGADDR(group_addr, (uint8_t)masklen, 0, cand_rp_adv_message.insert_data_ptr);
     (*cand_rp_adv_message.prefix_cnt_ptr)++;
 
     logit(LOG_INFO, 0, "Adding Cand-RP group prefix %s/%d", inet_fmt(group_addr, s1, sizeof(s1)), masklen);
@@ -802,7 +802,7 @@ int parseBSR(char *s)
 		priority = PIM_MAX_CAND_BSR_PRIORITY;
 	    }
 
-	    my_bsr_priority = (u_int8)priority;
+	    my_bsr_priority = (uint8_t)priority;
 	    continue;
 	}
 
@@ -1025,9 +1025,9 @@ static int parse_compat_threshold(char *line)
 static int parse_spt_threshold(char *s)
 {
     char *w;
-    u_int32 rate     = SPT_THRESHOLD_DEFAULT_RATE;
-    u_int32 packets  = SPT_THRESHOLD_DEFAULT_PACKETS;
-    u_int32 interval = SPT_THRESHOLD_DEFAULT_INTERVAL;
+    uint32_t rate     = SPT_THRESHOLD_DEFAULT_RATE;
+    uint32_t packets  = SPT_THRESHOLD_DEFAULT_PACKETS;
+    uint32_t interval = SPT_THRESHOLD_DEFAULT_INTERVAL;
     spt_mode_t mode  = SPT_THRESHOLD_DEFAULT_MODE;
 
     while (!EQUAL((w = next_word(&s)), "")) {
@@ -1301,7 +1301,7 @@ void config_vifs_from_file(void)
     struct ifconf ifc;
     int option;
     char ifbuf[BUFSIZ];
-    u_int8 *data_ptr;
+    uint8_t *data_ptr;
     int error_flag;
 
     error_flag = FALSE;

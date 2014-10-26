@@ -48,9 +48,9 @@
 char   *igmp_recv_buf;		/* input packet buffer               */
 char   *igmp_send_buf;		/* output packet buffer              */
 int     igmp_socket;		/* socket for all network I/O        */
-u_int32 allhosts_group;		/* allhosts  addr in net order       */
-u_int32 allrouters_group;	/* All-Routers addr in net order     */
-u_int32 allreports_group;	/* All IGMP routers in net order     */
+uint32_t allhosts_group;		/* allhosts  addr in net order       */
+uint32_t allrouters_group;	/* All-Routers addr in net order     */
+uint32_t allreports_group;	/* All IGMP routers in net order     */
 
 #ifdef RAW_OUTPUT_IS_RAW
 extern int curttl;
@@ -141,7 +141,7 @@ static void igmp_read(int i __attribute__((unused)), fd_set *rfd __attribute__((
 static void accept_igmp(ssize_t recvlen)
 {
     int ipdatalen, iphdrlen, igmpdatalen;
-    u_int32 src, dst, group;
+    uint32_t src, dst, group;
     struct ip *ip;
     struct igmp *igmp;
 
@@ -220,11 +220,11 @@ static void accept_igmp(ssize_t recvlen)
 
 	    switch (igmp->igmp_code) {
 		case DVMRP_PROBE:
-		    dvmrp_accept_probe(src, dst, (u_char *)(igmp+1), igmpdatalen, group);
+		    dvmrp_accept_probe(src, dst, (uint8_t *)(igmp+1), igmpdatalen, group);
 		    return;
 
 		case DVMRP_REPORT:
-		    dvmrp_accept_report(src, dst, (u_char *)(igmp+1), igmpdatalen, group);
+		    dvmrp_accept_report(src, dst, (uint8_t *)(igmp+1), igmpdatalen, group);
 		    return;
 
 		case DVMRP_ASK_NEIGHBORS:
@@ -236,31 +236,31 @@ static void accept_igmp(ssize_t recvlen)
 		    return;
 
 		case DVMRP_NEIGHBORS:
-		    dvmrp_accept_neighbors(src, dst, (u_char *)(igmp+1), igmpdatalen, group);
+		    dvmrp_accept_neighbors(src, dst, (uint8_t *)(igmp+1), igmpdatalen, group);
 		    return;
 
 		case DVMRP_NEIGHBORS2:
-		    dvmrp_accept_neighbors2(src, dst, (u_char *)(igmp+1), igmpdatalen, group);
+		    dvmrp_accept_neighbors2(src, dst, (uint8_t *)(igmp+1), igmpdatalen, group);
 		    return;
 
 		case DVMRP_PRUNE:
-		    dvmrp_accept_prune(src, dst, (u_char *)(igmp+1), igmpdatalen);
+		    dvmrp_accept_prune(src, dst, (uint8_t *)(igmp+1), igmpdatalen);
 		    return;
 
 		case DVMRP_GRAFT:
-		    dvmrp_accept_graft(src, dst, (u_char *)(igmp+1), igmpdatalen);
+		    dvmrp_accept_graft(src, dst, (uint8_t *)(igmp+1), igmpdatalen);
 		    return;
 
 		case DVMRP_GRAFT_ACK:
-		    dvmrp_accept_g_ack(src, dst, (u_char *)(igmp+1), igmpdatalen);
+		    dvmrp_accept_g_ack(src, dst, (uint8_t *)(igmp+1), igmpdatalen);
 		    return;
 
 		case DVMRP_INFO_REQUEST:
-		    dvmrp_accept_info_request(src, dst, (u_char *)(igmp+1), igmpdatalen);
+		    dvmrp_accept_info_request(src, dst, (uint8_t *)(igmp+1), igmpdatalen);
 		    return;
 
 		case DVMRP_INFO_REPLY:
-		    dvmrp_accept_info_reply(src, dst, (u_char *)(igmp+1), igmpdatalen);
+		    dvmrp_accept_info_reply(src, dst, (uint8_t *)(igmp+1), igmpdatalen);
 		    return;
 
 		default:
@@ -287,7 +287,7 @@ static void accept_igmp(ssize_t recvlen)
     }
 }
 
-static void send_ip_frame(u_int32 src, u_int32 dst, int type, int code, char *buf, size_t len)
+static void send_ip_frame(uint32_t src, uint32_t dst, int type, int code, char *buf, size_t len)
 {
     int setloop = 0;
     struct ip *ip;
@@ -359,7 +359,7 @@ static void send_ip_frame(u_int32 src, u_int32 dst, int type, int code, char *bu
     }
 }
 
-void send_igmp(char *buf, u_int32 src, u_int32 dst, int type, int code, u_int32 group, int datalen)
+void send_igmp(char *buf, uint32_t src, uint32_t dst, int type, int code, uint32_t group, int datalen)
 {
     size_t len = IGMP_MINLEN + datalen;
     struct igmp *igmp;
@@ -369,7 +369,7 @@ void send_igmp(char *buf, u_int32 src, u_int32 dst, int type, int code, u_int32 
     igmp->igmp_code	    = code;
     igmp->igmp_group.s_addr = group;
     igmp->igmp_cksum	    = 0;
-    igmp->igmp_cksum	    = inet_cksum((u_int16 *)igmp, len);
+    igmp->igmp_cksum	    = inet_cksum((uint16_t *)igmp, len);
 
     send_ip_frame(src, dst, type, code, buf, len);
 }

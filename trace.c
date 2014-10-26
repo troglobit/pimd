@@ -50,9 +50,9 @@
  * Traceroute function which returns traceroute replies to the requesting
  * router. Also forwards the request to downstream routers.
  */
-void accept_mtrace(u_int32 src, u_int32 dst, u_int32 group, char *data, u_int no, int datalen)
+void accept_mtrace(uint32_t src, uint32_t dst, uint32_t group, char *data, u_int no, int datalen)
 {
-    u_char type;
+    uint8_t type;
     mrtentry_t *mrt;
     struct tr_query *qry;
     struct tr_resp  *resp;
@@ -67,10 +67,10 @@ void accept_mtrace(u_int32 src, u_int32 dst, u_int32 group, char *data, u_int no
     /* TODO */
     struct sioc_sg_req sg_req;
 #endif /* 0 */
-    u_int32 parent_address = INADDR_ANY;
+    uint32_t parent_address = INADDR_ANY;
 
     /* Remember qid across invocations */
-    static u_int32 oqid = 0;
+    static uint32_t oqid = 0;
 
     /* timestamp the request/response */
     gettimeofday(&tp, 0);
@@ -400,15 +400,15 @@ void accept_mtrace(u_int32 src, u_int32 dst, u_int32 group, char *data, u_int no
  * accept_neighbor_request() supports some old DVMRP messages from mrinfo.
  * Haven't tested it, because I have only the new mrinfo.
  */
-void accept_neighbor_request(u_int32 src, u_int32 dst __attribute__((unused)))
+void accept_neighbor_request(uint32_t src, uint32_t dst __attribute__((unused)))
 {
     vifi_t vifi;
     struct uvif *v;
-    u_char *p, *ncount;
+    uint8_t *p, *ncount;
 /*    struct listaddr *la; */
     pim_nbr_entry_t *pim_nbr;
     int datalen;
-    u_int32 temp_addr, them = src;
+    uint32_t temp_addr, them = src;
 
 #define PUT_ADDR(a)     temp_addr = ntohl(a);	\
     *p++ = temp_addr >> 24;			\
@@ -416,7 +416,7 @@ void accept_neighbor_request(u_int32 src, u_int32 dst __attribute__((unused)))
     *p++ = (temp_addr >> 8) & 0xFF;		\
     *p++ = temp_addr & 0xFF;
 
-    p = (u_char *) (igmp_send_buf + IP_IGMP_HEADER_LEN + IGMP_MINLEN);
+    p = (uint8_t *) (igmp_send_buf + IP_IGMP_HEADER_LEN + IGMP_MINLEN);
     datalen = 0;
 
     for (vifi = 0, v = uvifs; vifi < numvifs; vifi++, v++) {
@@ -432,7 +432,7 @@ void accept_neighbor_request(u_int32 src, u_int32 dst __attribute__((unused)))
 	    if (datalen + (ncount == 0 ? 4 + 3 + 4 : 4) > MAX_DVMRP_DATA_LEN) {
 		send_igmp(igmp_send_buf, INADDR_ANY, them, IGMP_DVMRP,
 			  DVMRP_NEIGHBORS, htonl(PIMD_LEVEL), datalen);
-		p = (u_char *) (igmp_send_buf + IP_IGMP_HEADER_LEN + IGMP_MINLEN);
+		p = (uint8_t *) (igmp_send_buf + IP_IGMP_HEADER_LEN + IGMP_MINLEN);
 		datalen = 0;
 		ncount = 0;
 	    }
@@ -465,22 +465,22 @@ void accept_neighbor_request(u_int32 src, u_int32 dst __attribute__((unused)))
  * XXX: currently, we cannot specify the used multicast routing protocol;
  * only a protocol version is returned.
  */
-void accept_neighbor_request2(u_int32 src, u_int32 dst __attribute__((unused)))
+void accept_neighbor_request2(uint32_t src, uint32_t dst __attribute__((unused)))
 {
     vifi_t vifi;
     struct uvif *v;
-    u_char *p, *ncount;
+    uint8_t *p, *ncount;
 /*    struct listaddr *la; */
     pim_nbr_entry_t *pim_nbr;
     int datalen;
-    u_int32 them = src;
+    uint32_t them = src;
 
-    p = (u_char *) (igmp_send_buf + IP_IGMP_HEADER_LEN + IGMP_MINLEN);
+    p = (uint8_t *) (igmp_send_buf + IP_IGMP_HEADER_LEN + IGMP_MINLEN);
     datalen = 0;
 
     for (vifi = 0, v = uvifs; vifi < numvifs; vifi++, v++) {
-	u_int32 vflags = v->uv_flags;
-	u_char rflags = 0;
+	uint32_t vflags = v->uv_flags;
+	uint8_t rflags = 0;
 
 	if (vflags & VIFF_TUNNEL)
 	    rflags |= DVMRP_NF_TUNNEL;
@@ -510,7 +510,7 @@ void accept_neighbor_request2(u_int32 src, u_int32 dst __attribute__((unused)))
 	    if (datalen > MAX_DVMRP_DATA_LEN - 12) {
 		send_igmp(igmp_send_buf, INADDR_ANY, them, IGMP_DVMRP,
 			  DVMRP_NEIGHBORS2, htonl(PIMD_LEVEL), datalen);
-		p = (u_char *) (igmp_send_buf + IP_IGMP_HEADER_LEN + IGMP_MINLEN);
+		p = (uint8_t *) (igmp_send_buf + IP_IGMP_HEADER_LEN + IGMP_MINLEN);
 		datalen = 0;
 	    }
 
@@ -529,7 +529,7 @@ void accept_neighbor_request2(u_int32 src, u_int32 dst __attribute__((unused)))
 		if (datalen + (ncount == 0 ? 4+4+4 : 4) > MAX_DVMRP_DATA_LEN) {
 		    send_igmp(igmp_send_buf, INADDR_ANY, them, IGMP_DVMRP,
 			      DVMRP_NEIGHBORS2, htonl(PIMD_LEVEL), datalen);
-		    p = (u_char *) (igmp_send_buf + IP_IGMP_HEADER_LEN + IGMP_MINLEN);
+		    p = (uint8_t *) (igmp_send_buf + IP_IGMP_HEADER_LEN + IGMP_MINLEN);
 		    datalen = 0;
 		    ncount = 0;
 		}

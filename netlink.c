@@ -99,7 +99,7 @@ int init_routesock(void)
 }
 
 /* get the rpf neighbor info */
-int k_req_incoming(u_int32 source, struct rpfctl *rpf)
+int k_req_incoming(uint32_t source, struct rpfctl *rpf)
 {
     int l, rlen;
     char buf[512];

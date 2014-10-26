@@ -83,33 +83,33 @@
  */
 typedef struct build_jp_message_ {
     struct build_jp_message_ *next; /* Used to chain the free entries       */
-    u_int8 *jp_message;       /* The Join/Prune message                     */
-    u_int32 jp_message_size;  /* Size of the Join/Prune message (in bytes)  */
-    u_int16 holdtime;	      /* Join/Prune message holdtime field	    */
-    u_int32 curr_group;	      /* Current group address			    */
-    u_int8  curr_group_msklen;/* Current group masklen			    */
-    u_int8 *join_list;	      /* The working area for the join addresses    */
-    u_int32 join_list_size;   /* The size of the join_list (in bytes)       */
-    u_int16 join_addr_number; /* Number of the join addresses in join_list  */
-    u_int8 *prune_list;       /* The working area for the prune addresses   */
-    u_int32 prune_list_size;  /* The size of the prune_list (in bytes)      */
-    u_int16 prune_addr_number;/* Number of the prune addresses in prune_list*/
-    u_int8 *rp_list_join;     /* The working area for RP join addresses     */
-    u_int32 rp_list_join_size;/* The size of the rp_list_join (in bytes)    */
-    u_int16 rp_list_join_number;/* Number of RP addresses in rp_list_join   */
-    u_int8 *rp_list_prune;     /* The working area for RP prune addresses   */
-    u_int32 rp_list_prune_size;/* The size of the rp_list_prune (in bytes)  */
-    u_int16 rp_list_prune_number;/* Number of RP addresses in rp_list_prune */
-    u_int8 *num_groups_ptr;   /* Pointer to number_of_groups in jp_message  */
+    uint8_t *jp_message;       /* The Join/Prune message                     */
+    uint32_t jp_message_size;  /* Size of the Join/Prune message (in bytes)  */
+    uint16_t holdtime;	      /* Join/Prune message holdtime field	    */
+    uint32_t curr_group;	      /* Current group address			    */
+    uint8_t  curr_group_msklen;/* Current group masklen			    */
+    uint8_t *join_list;	      /* The working area for the join addresses    */
+    uint32_t join_list_size;   /* The size of the join_list (in bytes)       */
+    uint16_t join_addr_number; /* Number of the join addresses in join_list  */
+    uint8_t *prune_list;       /* The working area for the prune addresses   */
+    uint32_t prune_list_size;  /* The size of the prune_list (in bytes)      */
+    uint16_t prune_addr_number;/* Number of the prune addresses in prune_list*/
+    uint8_t *rp_list_join;     /* The working area for RP join addresses     */
+    uint32_t rp_list_join_size;/* The size of the rp_list_join (in bytes)    */
+    uint16_t rp_list_join_number;/* Number of RP addresses in rp_list_join   */
+    uint8_t *rp_list_prune;     /* The working area for RP prune addresses   */
+    uint32_t rp_list_prune_size;/* The size of the rp_list_prune (in bytes)  */
+    uint16_t rp_list_prune_number;/* Number of RP addresses in rp_list_prune */
+    uint8_t *num_groups_ptr;   /* Pointer to number_of_groups in jp_message  */
 } build_jp_message_t;
 
 
 typedef struct pim_nbr_entry {
     struct pim_nbr_entry *next;		  /* link to next neighbor	    */
     struct pim_nbr_entry *prev;		  /* link to prev neighbor	    */
-    u_int32		  address;	  /* neighbor address		    */
+    uint32_t		  address;	  /* neighbor address		    */
     vifi_t		  vifi;		  /* which interface		    */
-    u_int16		  timer;	  /* for timing out neighbor	    */
+    uint16_t		  timer;	  /* for timing out neighbor	    */
     build_jp_message_t *build_jp_message; /* A structure for fairly
 					   * complicated Join/Prune
 					   * message construction.
@@ -120,13 +120,13 @@ typedef struct pim_nbr_entry {
 typedef struct srcentry {
     struct srcentry	 *next;		/* link to next entry		    */
     struct srcentry	 *prev;		/* link to prev entry		    */
-    u_int32		  address;	/* source or RP address		    */
+    uint32_t		  address;	/* source or RP address		    */
     struct mrtentry	 *mrtlink;	/* link to routing entries	    */
     vifi_t		  incoming;	/* incoming vif			    */
     struct pim_nbr_entry *upstream;	/* upstream router		    */
-    u_int32		  metric;	/* Unicast Routing Metric to the source */
-    u_int32		  preference;	/* The metric preference (for assers)*/
-    u_int16		  timer;	/* Entry timer??? Delete?	    */
+    uint32_t		  metric;	/* Unicast Routing Metric to the source */
+    uint32_t		  preference;	/* The metric preference (for assers)*/
+    uint16_t		  timer;	/* Entry timer??? Delete?	    */
     struct cand_rp	 *cand_rp;	/* Used if this is rpentry_t	    */
 } srcentry_t;
 typedef srcentry_t rpentry_t;
@@ -144,11 +144,11 @@ typedef struct grp_mask {
     struct grp_mask	*next;
     struct grp_mask	*prev;
     struct rp_grp_entry *grp_rp_next;
-    u_int32		 group_addr;
-    u_int32		 group_mask;
-    u_int32		 hash_mask;
-    u_int16		 fragment_tag;	  /* Used for garbage collection    */
-    u_int8		 group_rp_number; /* Used when assembling segments  */
+    uint32_t		 group_addr;
+    uint32_t		 group_mask;
+    uint32_t		 hash_mask;
+    uint16_t		 fragment_tag;	  /* Used for garbage collection    */
+    uint8_t		 group_rp_number; /* Used when assembling segments  */
 } grp_mask_t;
 
 typedef struct rp_grp_entry {
@@ -157,10 +157,10 @@ typedef struct rp_grp_entry {
     struct rp_grp_entry *grp_rp_next; /* Next entry for same grp prefix	 */
     struct rp_grp_entry *grp_rp_prev; /* Prev entry for same grp prefix	 */
     struct grpentry	*grplink;     /* Link to all grps via this entry */
-    u_int16		 holdtime;    /* The RP holdtime		 */
-    u_int16		 fragment_tag; /* The fragment tag from the
+    uint16_t		 holdtime;    /* The RP holdtime		 */
+    uint16_t		 fragment_tag; /* The fragment tag from the
 					* received BSR message		 */
-    u_int8		 priority;    /* The RP priority		 */
+    uint8_t		 priority;    /* The RP priority		 */
     grp_mask_t		*group;	      /* Pointer to (group,mask) entry	 */
     cand_rp_t		*rp;	      /* Pointer to the RP		 */
 } rp_grp_entry_t;
@@ -171,8 +171,8 @@ typedef struct grpentry {
     struct grpentry	*prev;	       /* link to prev entry		    */
     struct grpentry	*rpnext;       /* next grp for the same RP	    */
     struct grpentry	*rpprev;       /* prev grp for the same RP	    */
-    u_int32		 group;	       /* subnet group of multicasts	    */
-    u_int32		 rpaddr;       /* The IP address of the RP	    */
+    uint32_t		 group;	       /* subnet group of multicasts	    */
+    uint32_t		 rpaddr;       /* The IP address of the RP	    */
     struct mrtentry	*mrtlink;      /* link to (S,G) routing entries	    */
     rp_grp_entry_t	*active_rp_grp;/* Pointer to the active rp_grp entry*/
     struct mrtentry	*grp_route;    /* Pointer to the (*,G) routing entry*/
@@ -196,15 +196,15 @@ typedef struct mrtentry {
 					 * than the source (or RP) upstream
 					 * router.
 					 */
-    u_int32		 metric;	/* Routing Metric for this entry    */
-    u_int32		 preference;	/* The metric preference value	    */
-    u_int32		 pmbr_addr;	/* The PMBR address (for interop)   */
-    u_int16		*vif_timers;	/* vifs timer list		    */
-    u_int16		*vif_deletion_delay; /* vifs deletion delay list    */
-    u_int16		 flags;		/* The MRTF_* flags		    */
-    u_int16		 timer;		/* entry timer			    */
-    u_int16		 jp_timer;	/* The Join/Prune timer		    */
-    u_int16		 rs_timer;	/* Register-Suppression Timer	    */
+    uint32_t		 metric;	/* Routing Metric for this entry    */
+    uint32_t		 preference;	/* The metric preference value	    */
+    uint32_t		 pmbr_addr;	/* The PMBR address (for interop)   */
+    uint16_t		*vif_timers;	/* vifs timer list		    */
+    uint16_t		*vif_deletion_delay; /* vifs deletion delay list    */
+    uint16_t		 flags;		/* The MRTF_* flags		    */
+    uint16_t		 timer;		/* entry timer			    */
+    uint16_t		 jp_timer;	/* The Join/Prune timer		    */
+    uint16_t		 rs_timer;	/* Register-Suppression Timer	    */
     u_int		 assert_timer;
     u_int		 assert_rate_timer;
     struct kernel_cache *kernel_cache;	/* List of the kernel cache entries */
@@ -220,16 +220,16 @@ typedef struct mrtentry {
  * bits, etc)
  */
 struct sg_count {
-    u_long  pktcnt;     /*  Number of packets for (s,g) */
-    u_long  bytecnt;    /*  Number of bytes for (s,g)   */
-    u_long  wrong_if;   /*  Number of packets received on wrong iif for (s,g) */
+    uint32_t  pktcnt;     /*  Number of packets for (s,g) */
+    uint32_t  bytecnt;    /*  Number of bytes for (s,g)   */
+    uint32_t  wrong_if;   /*  Number of packets received on wrong iif for (s,g) */
 };
 
 struct vif_count {
-    u_long  icount;     /* Input packet count on vif    */
-    u_long  ocount;     /* Output packet count on vif   */
-    u_long  ibytes;     /* Input byte count on vif      */
-    u_long  obytes;     /* Output byte count on vif     */
+    uint32_t  icount;     /* Input packet count on vif    */
+    uint32_t  ocount;     /* Output packet count on vif   */
+    uint32_t  ibytes;     /* Input byte count on vif      */
+    uint32_t  obytes;     /* Output byte count on vif     */
 };
 
 /*
@@ -251,8 +251,8 @@ struct vif_count {
 typedef struct kernel_cache {
     struct kernel_cache *next;
     struct kernel_cache *prev;
-    u_int32		 source;
-    u_int32		 group;
+    uint32_t		 source;
+    uint32_t		 group;
     struct sg_count      sg_count; /* The (s,g) data retated counters (see above) */
 } kernel_cache_t;
 

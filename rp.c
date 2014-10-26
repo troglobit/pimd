@@ -43,37 +43,36 @@ cand_rp_t               *cand_rp_list;
 grp_mask_t              *grp_mask_list;
 cand_rp_t               *segmented_cand_rp_list;
 grp_mask_t              *segmented_grp_mask_list;
-u_int16                 curr_bsr_fragment_tag;
-u_int8                  curr_bsr_priority;
-u_int32                 curr_bsr_address;
-u_int32                 curr_bsr_hash_mask;
-u_int16                 pim_bootstrap_timer;    /* For electing the BSR and
+uint16_t                 curr_bsr_fragment_tag;
+uint8_t                  curr_bsr_priority;
+uint32_t                 curr_bsr_address;
+uint32_t                 curr_bsr_hash_mask;
+uint16_t                 pim_bootstrap_timer;   /* For electing the BSR and
 						 * sending Cand-RP-set msgs */
-u_int8                  my_bsr_priority;
-u_int32                 my_bsr_address;
-u_int32                 my_bsr_hash_mask;
-u_int8                  cand_bsr_flag = FALSE;  /* Set to TRUE if I am
+uint8_t                  my_bsr_priority;
+uint32_t                 my_bsr_address;
+uint32_t                 my_bsr_hash_mask;
+uint8_t                  cand_bsr_flag = FALSE; /* Set to TRUE if I am
 						 * a candidate BSR */
-u_int32                 my_cand_rp_address;
-u_int8                  my_cand_rp_priority;
-u_int16                 my_cand_rp_holdtime;
-u_int16                 my_cand_rp_adv_period;  /* The locally configured
-						 * Cand-RP adv. period.
-						 */
-u_int16                 pim_cand_rp_adv_timer;
-u_int8                  cand_rp_flag  = FALSE;  /* Candidate RP flag */
+uint32_t                 my_cand_rp_address;
+uint8_t                  my_cand_rp_priority;
+uint16_t                 my_cand_rp_holdtime;
+uint16_t                 my_cand_rp_adv_period; /* The locally configured
+						 * Cand-RP adv. period. */
+uint16_t                 pim_cand_rp_adv_timer;
+uint8_t                  cand_rp_flag  = FALSE;  /* Candidate RP flag */
 struct cand_rp_adv_message_ cand_rp_adv_message;
-u_int32                 rp_my_ipv4_hashmask;
+uint32_t                 rp_my_ipv4_hashmask;
 
 
 /*
  * Local functions definition.
  */
-static cand_rp_t  *add_cand_rp          (cand_rp_t **used_cand_rp_list, u_int32 address);
+static cand_rp_t  *add_cand_rp          (cand_rp_t **used_cand_rp_list, uint32_t address);
 static grp_mask_t *add_grp_mask         (grp_mask_t **used_grp_mask_list,
-					 u_int32 group_addr,
-					 u_int32 group_mask,
-					 u_int32 hash_mask);
+					 uint32_t group_addr,
+					 uint32_t group_mask,
+					 uint32_t hash_mask);
 static void       delete_grp_mask_entry (cand_rp_t **used_cand_rp_list,
 					 grp_mask_t **used_grp_mask_list,
 					 grp_mask_t *grp_mask_delete);
@@ -114,13 +113,13 @@ void init_rp_and_bsr(void)
 }
 
 
-u_int16 bootstrap_initial_delay(void)
+uint16_t bootstrap_initial_delay(void)
 {
     long addr_delay;
     long delay;
     long log_mask;
     int  log_of_2;
-    u_int8 best_priority;
+    uint8_t best_priority;
 
     /*
      * The bootstrap timer initial value (if Cand-BSR).
@@ -169,17 +168,17 @@ u_int16 bootstrap_initial_delay(void)
 
     delay = 5 + 2 * log_of_2 + addr_delay;
 
-    return (u_int16)delay;
+    return (uint16_t)delay;
 }
 
 
-static cand_rp_t *add_cand_rp(cand_rp_t **used_cand_rp_list, u_int32 address)
+static cand_rp_t *add_cand_rp(cand_rp_t **used_cand_rp_list, uint32_t address)
 {
     cand_rp_t *prev = NULL;
     cand_rp_t *next;
     cand_rp_t *ptr;
     rpentry_t *entry;
-    u_int32 addr_h = ntohl(address);
+    uint32_t addr_h = ntohl(address);
 
     /* The ordering is the bigger first */
     for (next = *used_cand_rp_list; next; prev = next, next = next->next) {
@@ -236,12 +235,12 @@ static cand_rp_t *add_cand_rp(cand_rp_t **used_cand_rp_list, u_int32 address)
 }
 
 
-static grp_mask_t *add_grp_mask(grp_mask_t **used_grp_mask_list, u_int32 group_addr, u_int32 group_mask, u_int32 hash_mask)
+static grp_mask_t *add_grp_mask(grp_mask_t **used_grp_mask_list, uint32_t group_addr, uint32_t group_mask, uint32_t hash_mask)
 {
     grp_mask_t *prev = NULL;
     grp_mask_t *next;
     grp_mask_t *ptr;
-    u_int32 prefix_h = ntohl(group_addr & group_mask);
+    uint32_t prefix_h = ntohl(group_addr & group_mask);
 
     /* The ordering of group_addr is: bigger first */
     for (next = *used_grp_mask_list; next; prev = next, next = next->next) {
@@ -289,13 +288,13 @@ static grp_mask_t *add_grp_mask(grp_mask_t **used_grp_mask_list, u_int32 group_a
  */
 rp_grp_entry_t *add_rp_grp_entry(cand_rp_t  **used_cand_rp_list,
 				 grp_mask_t **used_grp_mask_list,
-				 u_int32 rp_addr,
-				 u_int8  rp_priority,
-				 u_int16 rp_holdtime,
-				 u_int32 group_addr,
-				 u_int32 group_mask,
-				 u_int32 bsr_hash_mask,
-				 u_int16 fragment_tag)
+				 uint32_t rp_addr,
+				 uint8_t  rp_priority,
+				 uint16_t rp_holdtime,
+				 uint32_t group_addr,
+				 uint32_t group_mask,
+				 uint32_t bsr_hash_mask,
+				 uint16_t fragment_tag)
 {
     cand_rp_t *cand_rp_ptr;
     grp_mask_t *mask_ptr;
@@ -305,8 +304,8 @@ rp_grp_entry_t *add_rp_grp_entry(cand_rp_t  **used_cand_rp_list,
     rp_grp_entry_t *entry_prev = NULL;
     grpentry_t *grpentry_ptr_prev;
     grpentry_t *grpentry_ptr_next;
-    u_int32 rp_addr_h;
-    u_int8 old_highest_priority = ~0;  /* Smaller value means "higher" */
+    uint32_t rp_addr_h;
+    uint8_t old_highest_priority = ~0;  /* Smaller value means "higher" */
 
     /* Input data verification */
     if (!inet_valid_host(rp_addr))
@@ -527,10 +526,10 @@ void delete_rp_list(cand_rp_t  **used_cand_rp_list, grp_mask_t **used_grp_mask_l
 }
 
 
-void delete_grp_mask(cand_rp_t **used_cand_rp_list, grp_mask_t **used_grp_mask_list, u_int32 group_addr, u_int32 group_mask)
+void delete_grp_mask(cand_rp_t **used_cand_rp_list, grp_mask_t **used_grp_mask_list, uint32_t group_addr, uint32_t group_mask)
 {
     grp_mask_t *ptr;
-    u_int32 prefix_h = ntohl(group_addr & group_mask);
+    uint32_t prefix_h = ntohl(group_addr & group_mask);
 
     for (ptr = *used_grp_mask_list; ptr; ptr = ptr->next) {
 	if (ntohl(ptr->group_addr & ptr->group_mask) > prefix_h)
@@ -601,10 +600,10 @@ static void delete_grp_mask_entry(cand_rp_t **used_cand_rp_list, grp_mask_t **us
 /*
  * TODO: currently not used.
  */
-void delete_rp(cand_rp_t **used_cand_rp_list, grp_mask_t **used_grp_mask_list, u_int32 rp_addr)
+void delete_rp(cand_rp_t **used_cand_rp_list, grp_mask_t **used_grp_mask_list, uint32_t rp_addr)
 {
     cand_rp_t *ptr;
-    u_int32 rp_addr_h = ntohl(rp_addr);
+    uint32_t rp_addr_h = ntohl(rp_addr);
 
     for(ptr = *used_cand_rp_list; ptr != NULL; ptr = ptr->next) {
 	if (ntohl(ptr->rpentry->address) > rp_addr_h)
@@ -754,7 +753,7 @@ int remap_grpentry(grpentry_t *grpentry_ptr)
 }
 
 
-rpentry_t *rp_match(u_int32 group)
+rpentry_t *rp_match(uint32_t group)
 {
     rp_grp_entry_t *ptr;
 
@@ -765,17 +764,17 @@ rpentry_t *rp_match(u_int32 group)
     return NULL;
 }
 
-rp_grp_entry_t *rp_grp_match(u_int32 group)
+rp_grp_entry_t *rp_grp_match(uint32_t group)
 {
     grp_mask_t *mask_ptr;
     rp_grp_entry_t *entry_ptr;
     rp_grp_entry_t *best_entry = NULL;
-    u_int8 best_priority       = ~0; /* Smaller is better */
-    u_int32 best_hash_value    = 0;  /* Bigger is better */
-    u_int32 best_address_h     = 0;  /* Bigger is better */
-    u_int32 curr_hash_value    = 0;
-    u_int32 curr_address_h     = 0;
-    u_int32 group_h            = ntohl(group);
+    uint8_t best_priority       = ~0; /* Smaller is better */
+    uint32_t best_hash_value    = 0;  /* Bigger is better */
+    uint32_t best_address_h     = 0;  /* Bigger is better */
+    uint32_t curr_hash_value    = 0;
+    uint32_t curr_address_h     = 0;
+    uint32_t group_h            = ntohl(group);
 
     if (grp_mask_list == NULL)
 	return NULL;
@@ -816,10 +815,10 @@ rp_grp_entry_t *rp_grp_match(u_int32 group)
 }
 
 
-rpentry_t *rp_find(u_int32 rp_address)
+rpentry_t *rp_find(uint32_t rp_address)
 {
     cand_rp_t *cand_rp_ptr;
-    u_int32 address_h = ntohl(rp_address);
+    uint32_t address_h = ntohl(rp_address);
 
     for(cand_rp_ptr = cand_rp_list; cand_rp_ptr != NULL; cand_rp_ptr = cand_rp_ptr->next) {
 	if (ntohl(cand_rp_ptr->rpentry->address) > address_h)
@@ -843,16 +842,16 @@ rpentry_t *rp_find(u_int32 rp_address)
  */
 int create_pim_bootstrap_message(char *send_buff)
 {
-    u_int8 *data_ptr;
+    uint8_t *data_ptr;
     grp_mask_t *mask_ptr;
     rp_grp_entry_t *entry_ptr;
     int datalen;
-    u_int8 masklen;
+    uint8_t masklen;
 
     if (curr_bsr_address == INADDR_ANY_N)
 	return 0;
 
-    data_ptr = (u_int8 *)(send_buff + sizeof(struct ip) + sizeof(pim_header_t));
+    data_ptr = (uint8_t *)(send_buff + sizeof(struct ip) + sizeof(pim_header_t));
     if (curr_bsr_address == my_bsr_address)
 	curr_bsr_fragment_tag++;
 
@@ -878,7 +877,7 @@ int create_pim_bootstrap_message(char *send_buff)
 	}
     }
 
-    datalen = (data_ptr - (u_int8 *)send_buff) - sizeof(struct ip) - sizeof(pim_header_t);
+    datalen = (data_ptr - (uint8_t *)send_buff) - sizeof(struct ip) - sizeof(pim_header_t);
 
     return datalen;
 }
@@ -888,7 +887,7 @@ int create_pim_bootstrap_message(char *send_buff)
  * Check if the addr is the RP for the group corresponding to mrt.
  * Return TRUE or FALSE.
  */
-int check_mrtentry_rp(mrtentry_t *mrt, u_int32 addr)
+int check_mrtentry_rp(mrtentry_t *mrt, uint32_t addr)
 {
     rp_grp_entry_t *ptr;
 

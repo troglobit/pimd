@@ -203,7 +203,7 @@ void k_set_ttl(int socket __attribute__((unused)), int t)
 #ifdef RAW_OUTPUT_IS_RAW
     curttl = t;
 #else
-    u_char ttl;
+    uint8_t ttl;
 
     ttl = t;
     if (setsockopt(socket, IPPROTO_IP, IP_MULTICAST_TTL, (char *)&ttl, sizeof(ttl)) < 0)
@@ -217,7 +217,7 @@ void k_set_ttl(int socket __attribute__((unused)), int t)
  */
 void k_set_loop(int socket, int flag)
 {
-    u_char loop;
+    uint8_t loop;
 
     loop = flag;
     if (setsockopt(socket, IPPROTO_IP, IP_MULTICAST_LOOP, (char *)&loop, sizeof(loop)) < 0)
@@ -229,7 +229,7 @@ void k_set_loop(int socket, int flag)
 /*
  * Set the IP_MULTICAST_IF option on local interface ifa.
  */
-void k_set_if(int socket, u_int32 ifa)
+void k_set_if(int socket, uint32_t ifa)
 {
     struct in_addr adr;
 
@@ -264,7 +264,7 @@ void k_set_router_alert(int socket)
 /*
  * Join a multicast group on virtual interface 'v'.
  */
-void k_join(int socket, u_int32 grp, struct uvif *v)
+void k_join(int socket, uint32_t grp, struct uvif *v)
 {
 #ifdef __linux__
     struct ip_mreqn mreq;
@@ -298,7 +298,7 @@ void k_join(int socket, u_int32 grp, struct uvif *v)
 /*
  * Leave a multicast group on virtual interface 'v'.
  */
-void k_leave(int socket, u_int32 grp, struct uvif *v)
+void k_leave(int socket, uint32_t grp, struct uvif *v)
 {
 #ifdef __linux__
     struct ip_mreqn mreq;
@@ -390,7 +390,7 @@ void k_del_vif(int socket, vifi_t vifi, struct uvif *v __attribute__((unused)))
 /*
  * Delete all MFC entries for particular routing entry from the kernel.
  */
-int k_del_mfc(int socket, u_int32 source, u_int32 group)
+int k_del_mfc(int socket, uint32_t source, uint32_t group)
 {
     struct mfcctl mc;
 
@@ -419,7 +419,7 @@ int k_del_mfc(int socket, u_int32 source, u_int32 group)
 /*
  * Install/modify a MFC entry in the kernel
  */
-int k_chg_mfc(int socket, u_int32 source, u_int32 group, vifi_t iif, vifbitmap_t oifs, u_int32 rp_addr __attribute__((unused)))
+int k_chg_mfc(int socket, uint32_t source, uint32_t group, vifi_t iif, vifbitmap_t oifs, uint32_t rp_addr __attribute__((unused)))
 {
     vifi_t	   vifi;
     struct uvif   *v;
@@ -490,7 +490,7 @@ int k_get_vif_count(vifi_t vifi, struct vif_count *retval)
  * Gets the number of packets, bytes, and number op packets arrived
  * on wrong if in the kernel for particular (S,G) entry.
  */
-int k_get_sg_cnt(int socket, u_int32 source, u_int32 group, struct sg_count *retval)
+int k_get_sg_cnt(int socket, uint32_t source, uint32_t group, struct sg_count *retval)
 {
     struct sioc_sg_req sgreq;
 

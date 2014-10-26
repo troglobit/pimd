@@ -533,7 +533,7 @@ int main(int argc, char *argv[])
 
 		while(rph) {
 		    add_rp_grp_entry(&cand_rp_list, &grp_mask_list,
-				     rph->address, 1, (u_int16)0xffffff,
+				     rph->address, 1, (uint16_t)0xffffff,
 				     rph->group, rph->mask,
 				     curr_bsr_hash_mask, curr_bsr_fragment_tag);
 		    rph = rph->next;
@@ -653,7 +653,7 @@ int main(int argc, char *argv[])
  * avoid unwanted synchronization with other routers.
  */
 
-u_long virtual_time = 0;
+uint32_t virtual_time = 0;
 
 /*
  * Timer routine. Performs all perodic functions:

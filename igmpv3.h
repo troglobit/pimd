@@ -46,9 +46,9 @@
 
 #ifndef IGMP_V3_REPORT_MINLEN
 struct igmp_grouprec {
-    u_char	    ig_type;	    /* record type */
-    u_char	    ig_datalen;	    /* length of auxiliary data */
-    u_short	    ig_numsrc;	    /* number of sources */
+    uint8_t	    ig_type;	    /* record type */
+    uint8_t	    ig_datalen;	    /* length of auxiliary data */
+    uint16_t	    ig_numsrc;	    /* number of sources */
     struct in_addr  ig_group;	    /* group address being reported */
     /*struct in_addr  ig_sources[0];*/ /* source addresses */
 };
@@ -56,11 +56,11 @@ struct igmp_grouprec {
 #define IGMP_GRPREC_HDRLEN		8
 
 struct igmp_report {
-    u_char	    ir_type;	    /* record type */
-    u_char	    ir_rsv1;	    /* reserved */
-    u_short	    ir_cksum;	    /* checksum */
-    u_short	    ir_rsv2;	    /* reserved */
-    u_short	    ir_numgrps;	    /* number of group records */
+    uint8_t	    ir_type;	    /* record type */
+    uint8_t	    ir_rsv1;	    /* reserved */
+    uint16_t	    ir_cksum;	    /* checksum */
+    uint16_t	    ir_rsv2;	    /* reserved */
+    uint16_t	    ir_numgrps;	    /* number of group records */
     /*struct	    igmp_grouprec ir_groups[0];*/ /* group records */
 };
 

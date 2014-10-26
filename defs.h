@@ -41,6 +41,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <unistd.h> 
 #include <ctype.h>
 #include <errno.h>
@@ -94,10 +95,6 @@
 #ifdef RSRR
 #include <sys/un.h>
 #endif /* RSRR */
-
-typedef u_int   u_int32;
-typedef u_short u_int16;
-typedef u_char  u_int8;
 
 #ifndef BYTE_ORDER
 #if (BSD >= 199103)
@@ -216,7 +213,7 @@ typedef void (*ihfunc_t) (int, fd_set *);
  */
 #ifndef INADDR_ALLRTRS_GROUP
 					/* address for multicast mtrace msg */
-#define INADDR_ALLRTRS_GROUP	(u_int32)0xe0000002	/* 224.0.0.2 */
+#define INADDR_ALLRTRS_GROUP	(uint32_t)0xe0000002	/* 224.0.0.2 */
 #endif
 
 #ifndef INADDR_ALLRPTS_GROUP
@@ -224,17 +221,17 @@ typedef void (*ihfunc_t) (int, fd_set *);
 #endif
 
 #ifndef INADDR_MAX_LOCAL_GROUP
-#define INADDR_MAX_LOCAL_GROUP	(u_int32)0xe00000ff	/* 224.0.0.255 */
+#define INADDR_MAX_LOCAL_GROUP	(uint32_t)0xe00000ff	/* 224.0.0.255 */
 #endif
 
-#define INADDR_ANY_N            (u_int32)0x00000000     /* INADDR_ANY in
+#define INADDR_ANY_N            (uint32_t)0x00000000     /* INADDR_ANY in
 							 * network order */
-#define CLASSD_PREFIX           (u_int32)0xe0000000     /* 224.0.0.0 */
+#define CLASSD_PREFIX           (uint32_t)0xe0000000     /* 224.0.0.0 */
 #define STAR_STAR_RP_MSKLEN     4                       /* Masklen for
 							 * 224.0.0.0 :
 							 * to encode (*,*,RP)
 							 */
-#define ALL_MCAST_GROUPS_ADDR   (u_int32)0xe0000000     /* 224.0.0.0 */
+#define ALL_MCAST_GROUPS_ADDR   (uint32_t)0xe0000000     /* 224.0.0.0 */
 #define ALL_MCAST_GROUPS_LENGTH 4
 
 /* Used by DVMRP */
@@ -290,23 +287,23 @@ extern char		*pim_recv_buf;
 extern char		*pim_send_buf;
 extern int		igmp_socket;
 extern int		pim_socket;
-extern u_int32		allhosts_group;
-extern u_int32		allrouters_group;
-extern u_int32		allreports_group;
-extern u_int32		allpimrouters_group;
+extern uint32_t		allhosts_group;
+extern uint32_t		allrouters_group;
+extern uint32_t		allreports_group;
+extern uint32_t		allpimrouters_group;
 extern build_jp_message_t *build_jp_message_pool;
 extern int		build_jp_message_pool_counter;
 
-extern u_long		virtual_time;
+extern uint32_t		virtual_time;
 extern char	       *config_file;
 extern int              haveterminal;
 extern char            *__progname;
 
 extern struct cand_rp_adv_message_ {
-    u_int8    *buffer;
-    u_int8    *insert_data_ptr;
-    u_int8    *prefix_cnt_ptr;
-    u_int16   message_size;
+    uint8_t  *buffer;
+    uint8_t  *insert_data_ptr;
+    uint8_t  *prefix_cnt_ptr;
+    uint16_t  message_size;
 } cand_rp_adv_message;
 
 extern int disable_all_by_default;
@@ -321,10 +318,10 @@ typedef enum {
 } spt_mode_t;
 
 typedef struct {
-    u_int8      mode;
-    u_int32	bytes;
-    u_int32	packets;
-    u_int32	interval;
+    uint8_t   mode;
+    uint32_t  bytes;
+    uint32_t  packets;
+    uint32_t  interval;
 } spt_threshold_t;
 extern spt_threshold_t  spt_threshold;
 
@@ -333,28 +330,28 @@ extern grp_mask_t       *grp_mask_list;
 extern cand_rp_t        *segmented_cand_rp_list;
 extern grp_mask_t       *segmented_grp_mask_list;
 
-extern u_int16          curr_bsr_fragment_tag;
-extern u_int8           curr_bsr_priority;
-extern u_int32          curr_bsr_address;
-extern u_int32          curr_bsr_hash_mask;
-extern u_int8		cand_bsr_flag;		   /* candidate BSR flag */
-extern u_int8           my_bsr_priority;
-extern u_int32          my_bsr_address;
-extern u_int32          my_bsr_hash_mask;
-extern u_int8           cand_rp_flag;              /* Candidate RP flag */
-extern u_int32          my_cand_rp_address;
-extern u_int8           my_cand_rp_priority;
-extern u_int16          my_cand_rp_holdtime;
-extern u_int16          my_cand_rp_adv_period;     /* The locally configured
+extern uint16_t          curr_bsr_fragment_tag;
+extern uint8_t           curr_bsr_priority;
+extern uint32_t          curr_bsr_address;
+extern uint32_t          curr_bsr_hash_mask;
+extern uint8_t		 cand_bsr_flag;		   /* candidate BSR flag */
+extern uint8_t           my_bsr_priority;
+extern uint32_t          my_bsr_address;
+extern uint32_t          my_bsr_hash_mask;
+extern uint8_t           cand_rp_flag;              /* Candidate RP flag */
+extern uint32_t          my_cand_rp_address;
+extern uint8_t           my_cand_rp_priority;
+extern uint16_t          my_cand_rp_holdtime;
+extern uint16_t          my_cand_rp_adv_period;     /* The locally configured
 						    * Cand-RP adv. period.
 						    */
-extern u_int16          pim_bootstrap_timer;
-extern u_int32          rp_my_ipv4_hashmask;
-extern u_int16          pim_cand_rp_adv_timer;
+extern uint16_t          pim_bootstrap_timer;
+extern uint32_t          rp_my_ipv4_hashmask;
+extern uint16_t          pim_cand_rp_adv_timer;
 
 /* route.c */
-extern u_int32		default_source_metric;
-extern u_int32		default_source_preference;
+extern uint32_t		default_source_metric;
+extern uint32_t		default_source_preference;
 
 /* igmp_proto.c */
 extern uint32_t		default_igmp_query_interval;
@@ -427,24 +424,10 @@ extern int		errno;
 #define NOT_TIMEOUT(timer)		\
 	((timer) -= (MIN(timer, TIMER_INTERVAL)))
 
-#if 0
-#define IF_TIMEOUT(value)     \
-  if (!(((value) >= TIMER_INTERVAL) && ((value) -= TIMER_INTERVAL)))
-
-#define IF_NOT_TIMEOUT(value) \
-  if (((value) >= TIMER_INTERVAL) && ((value) -= TIMER_INTERVAL))
-
-#define TIMEOUT(value)        \
-     (!(((value) >= TIMER_INTERVAL) && ((value) -= TIMER_INTERVAL)))
-
-#define NOT_TIMEOUT(value)    \
-     (((value) >= TIMER_INTERVAL) && ((value) -= TIMER_INTERVAL))
-#endif /* 0 */
-
 #define ELSE else           /* To make emacs cc-mode happy */      
 
 #define MASK_TO_VAL(x, i) {		   \
-	u_int32 _x = ntohl(x);		   \
+	uint32_t _x = ntohl(x);		   \
 	(i) = 1;			   \
 	while ((_x) <<= 1)		   \
 	    (i)++;			   \
@@ -485,35 +468,35 @@ extern void	dump_pim_mrt		(FILE *fp);
 extern int	dump_rp_set		(FILE *fp);
 
 /* dvmrp_proto.c */
-extern void	dvmrp_accept_probe	(u_int32 src, u_int32 dst, u_char *p, int datalen, u_int32 level);
-extern void	dvmrp_accept_report	(u_int32 src, u_int32 dst, u_char *p, int datalen, u_int32 level);
-extern void	dvmrp_accept_info_request (u_int32 src, u_int32 dst, u_char *p, int datalen);
-extern void	dvmrp_accept_info_reply	(u_int32 src, u_int32 dst, u_char *p, int datalen);
-extern void	dvmrp_accept_neighbors	(u_int32 src, u_int32 dst, u_char *p, int datalen, u_int32 level);
-extern void	dvmrp_accept_neighbors2	(u_int32 src, u_int32 dst, u_char *p, int datalen, u_int32 level);
-extern void	dvmrp_accept_prune	(u_int32 src, u_int32 dst, u_char *p, int datalen);
-extern void	dvmrp_accept_graft	(u_int32 src, u_int32 dst, u_char *p, int datalen);
-extern void	dvmrp_accept_g_ack	(u_int32 src, u_int32 dst, u_char *p, int datalen);
+extern void	dvmrp_accept_probe	(uint32_t src, uint32_t dst, uint8_t *p, int datalen, uint32_t level);
+extern void	dvmrp_accept_report	(uint32_t src, uint32_t dst, uint8_t *p, int datalen, uint32_t level);
+extern void	dvmrp_accept_info_request (uint32_t src, uint32_t dst, uint8_t *p, int datalen);
+extern void	dvmrp_accept_info_reply	(uint32_t src, uint32_t dst, uint8_t *p, int datalen);
+extern void	dvmrp_accept_neighbors	(uint32_t src, uint32_t dst, uint8_t *p, int datalen, uint32_t level);
+extern void	dvmrp_accept_neighbors2	(uint32_t src, uint32_t dst, uint8_t *p, int datalen, uint32_t level);
+extern void	dvmrp_accept_prune	(uint32_t src, uint32_t dst, uint8_t *p, int datalen);
+extern void	dvmrp_accept_graft	(uint32_t src, uint32_t dst, uint8_t *p, int datalen);
+extern void	dvmrp_accept_g_ack	(uint32_t src, uint32_t dst, uint8_t *p, int datalen);
 
 /* igmp.c */
 extern void	init_igmp		(void);
-extern void	send_igmp		(char *buf, u_int32 src, u_int32 dst, int type, int code, u_int32 group, int datalen);
+extern void	send_igmp		(char *buf, uint32_t src, uint32_t dst, int type, int code, uint32_t group, int datalen);
 
 /* igmp_proto.c */
 extern void	query_groups		(struct uvif *v);
-extern void	accept_membership_query	(u_int32 src, u_int32 dst, u_int32 group, int tmo);
-extern void	accept_group_report	(u_int32 src, u_int32 dst, u_int32 group, int r_type);
-extern void	accept_leave_message	(u_int32 src, u_int32 dst, u_int32 group);
-extern void     accept_membership_report(u_int32 src, u_int32 dst, struct igmp_report *report);
+extern void	accept_membership_query	(uint32_t src, uint32_t dst, uint32_t group, int tmo);
+extern void	accept_group_report	(uint32_t src, uint32_t dst, uint32_t group, int r_type);
+extern void	accept_leave_message	(uint32_t src, uint32_t dst, uint32_t group);
+extern void     accept_membership_report(uint32_t src, uint32_t dst, struct igmp_report *report);
 
 /* inet.c */
-extern int	inet_cksum		(u_int16 *addr, u_int len);
-extern int	inet_valid_host		(u_int32 naddr);
-extern int	inet_valid_mask		(u_int32 mask);
-extern int	inet_valid_subnet	(u_int32 nsubnet, u_int32 nmask);
-extern char	*inet_fmt		(u_int32 addr, char *s, size_t len);
-extern char	*netname		(u_int32 addr, u_int32 mask);
-extern u_int32	inet_parse		(char *s, int n);
+extern int	inet_cksum		(uint16_t *addr, u_int len);
+extern int	inet_valid_host		(uint32_t naddr);
+extern int	inet_valid_mask		(uint32_t mask);
+extern int	inet_valid_subnet	(uint32_t nsubnet, uint32_t nmask);
+extern char	*inet_fmt		(uint32_t addr, char *s, size_t len);
+extern char	*netname		(uint32_t addr, uint32_t mask);
+extern uint32_t	inet_parse		(char *s, int n);
 
 /* kern.c */
 extern void	k_set_sndbuf		(int socket, int bufsize, int minsize);
@@ -521,78 +504,78 @@ extern void	k_set_rcvbuf		(int socket, int bufsize, int minsize);
 extern void	k_hdr_include		(int socket, int val);
 extern void	k_set_ttl		(int socket, int t);
 extern void	k_set_loop		(int socket, int l);
-extern void	k_set_if		(int socket, u_int32 ifa);
+extern void	k_set_if		(int socket, uint32_t ifa);
 extern void	k_set_router_alert	(int socket);
-extern void	k_join			(int socket, u_int32 grp, struct uvif *v);
-extern void	k_leave			(int socket, u_int32 grp, struct uvif *v);
+extern void	k_join			(int socket, uint32_t grp, struct uvif *v);
+extern void	k_leave			(int socket, uint32_t grp, struct uvif *v);
 extern void	k_init_pim		(int socket);
 extern void	k_stop_pim		(int socket);
-extern int	k_del_mfc		(int socket, u_int32 source, u_int32 group);
-extern int	k_chg_mfc		(int socket, u_int32 source, u_int32 group, vifi_t iif, vifbitmap_t oifs,
-                                         u_int32 rp_addr);
+extern int	k_del_mfc		(int socket, uint32_t source, uint32_t group);
+extern int	k_chg_mfc		(int socket, uint32_t source, uint32_t group, vifi_t iif, vifbitmap_t oifs,
+                                         uint32_t rp_addr);
 extern void	k_add_vif		(int socket, vifi_t vifi, struct uvif *v);
 extern void	k_del_vif		(int socket, vifi_t vifi, struct uvif *v);
 extern int	k_get_vif_count		(vifi_t vifi, struct vif_count *retval);
-extern int	k_get_sg_cnt		(int socket, u_int32 source, u_int32 group, struct sg_count *retval);
+extern int	k_get_sg_cnt		(int socket, uint32_t source, uint32_t group, struct sg_count *retval);
 
 /* main.c */
 extern int	register_input_handler	(int fd, ihfunc_t func);
 
 /* mrt.c */
 extern void	init_pim_mrt		(void);
-extern mrtentry_t *find_route		(u_int32 source, u_int32 group, u_int16 flags, char create);
-extern grpentry_t *find_group		(u_int32 group);
-extern srcentry_t *find_source		(u_int32 source);
+extern mrtentry_t *find_route		(uint32_t source, uint32_t group, uint16_t flags, char create);
+extern grpentry_t *find_group		(uint32_t group);
+extern srcentry_t *find_source		(uint32_t source);
 extern void	delete_mrtentry		(mrtentry_t *mrtentry_ptr);
 extern void	delete_srcentry		(srcentry_t *srcentry_ptr);
 extern void	delete_grpentry		(grpentry_t *grpentry_ptr);
 extern void	delete_mrtentry_all_kernel_cache (mrtentry_t *mrtentry_ptr);
 extern void	delete_single_kernel_cache (mrtentry_t *mrtentry_ptr, kernel_cache_t *kernel_cache_ptr);
-extern void	delete_single_kernel_cache_addr (mrtentry_t *mrtentry_ptr, u_int32 source, u_int32 group);
-extern void	add_kernel_cache	(mrtentry_t *mrtentry_ptr, u_int32 source, u_int32 group, u_int16 flags);
+extern void	delete_single_kernel_cache_addr (mrtentry_t *mrtentry_ptr, uint32_t source, uint32_t group);
+extern void	add_kernel_cache	(mrtentry_t *mrtentry_ptr, uint32_t source, uint32_t group, uint16_t flags);
 /* pim.c */
 extern void	init_pim		(void);
-extern void	send_pim		(char *buf, u_int32 src, u_int32 dst, int type, size_t len);
-extern void	send_pim_unicast	(char *buf, int mtu, u_int32 src, u_int32 dst, int type, size_t len);
+extern void	send_pim		(char *buf, uint32_t src, uint32_t dst, int type, size_t len);
+extern void	send_pim_unicast	(char *buf, int mtu, uint32_t src, uint32_t dst, int type, size_t len);
 
 /* pim_proto.c */
-extern int	receive_pim_hello	(u_int32 src, u_int32 dst, char *pim_message, size_t len);
-extern int	send_pim_hello		(struct uvif *v, u_int16 holdtime);
+extern int	receive_pim_hello	(uint32_t src, uint32_t dst, char *pim_message, size_t len);
+extern int	send_pim_hello		(struct uvif *v, uint16_t holdtime);
 extern void	delete_pim_nbr		(pim_nbr_entry_t *nbr_delete);
-extern int	receive_pim_register	(u_int32 src, u_int32 dst, char *pim_message, size_t len);
+extern int	receive_pim_register	(uint32_t src, uint32_t dst, char *pim_message, size_t len);
 extern int	send_pim_null_register	(mrtentry_t *r);
-extern int	receive_pim_register_stop (u_int32 src, u_int32 dst, char *pim_message, size_t len);
+extern int	receive_pim_register_stop (uint32_t src, uint32_t dst, char *pim_message, size_t len);
 extern int	send_pim_register	(char *pkt);
-extern int	receive_pim_join_prune	(u_int32 src, u_int32 dst, char *pim_message, size_t len);
+extern int	receive_pim_join_prune	(uint32_t src, uint32_t dst, char *pim_message, size_t len);
 extern int	join_or_prune		(mrtentry_t *mrtentry_ptr, pim_nbr_entry_t *upstream_router);
-extern int	receive_pim_assert	(u_int32 src, u_int32 dst, char *pim_message, size_t len);
-extern int	send_pim_assert		(u_int32 source, u_int32 group, vifi_t vifi, mrtentry_t *mrtentry_ptr);
-extern int	send_periodic_pim_join_prune (vifi_t vifi, pim_nbr_entry_t *pim_nbr, u_int16 holdtime);
-extern int	add_jp_entry		(pim_nbr_entry_t *pim_nbr, u_int16 holdtime, u_int32 group, u_int8 grp_msklen,
-                                         u_int32 source, u_int8 src_msklen,  u_int16 addr_flags, u_int8 join_prune);
+extern int	receive_pim_assert	(uint32_t src, uint32_t dst, char *pim_message, size_t len);
+extern int	send_pim_assert		(uint32_t source, uint32_t group, vifi_t vifi, mrtentry_t *mrtentry_ptr);
+extern int	send_periodic_pim_join_prune (vifi_t vifi, pim_nbr_entry_t *pim_nbr, uint16_t holdtime);
+extern int	add_jp_entry		(pim_nbr_entry_t *pim_nbr, uint16_t holdtime, uint32_t group, uint8_t grp_msklen,
+                                         uint32_t source, uint8_t src_msklen,  uint16_t addr_flags, uint8_t join_prune);
 extern void	pack_and_send_jp_message (pim_nbr_entry_t *pim_nbr);
-extern int	receive_pim_cand_rp_adv	(u_int32 src, u_int32 dst, char *pim_message, size_t len);
-extern int	receive_pim_bootstrap	(u_int32 src, u_int32 dst, char *pim_message, size_t len);
+extern int	receive_pim_cand_rp_adv	(uint32_t src, uint32_t dst, char *pim_message, size_t len);
+extern int	receive_pim_bootstrap	(uint32_t src, uint32_t dst, char *pim_message, size_t len);
 extern int	send_pim_cand_rp_adv	(void);
 extern void	send_pim_bootstrap	(void);
 
 /* route.c */
 extern int	set_incoming		(srcentry_t *srcentry_ptr, int srctype);
-extern vifi_t	get_iif			(u_int32 source);
-extern pim_nbr_entry_t *find_pim_nbr	(u_int32 source);
-extern int	add_sg_oif		(mrtentry_t *mrtentry_ptr, vifi_t vifi, u_int16 holdtime, int update_holdtime);
-extern void	add_leaf		(vifi_t vifi, u_int32 source, u_int32 group);
-extern void	delete_leaf		(vifi_t vifi, u_int32 source, u_int32 group);
+extern vifi_t	get_iif			(uint32_t source);
+extern pim_nbr_entry_t *find_pim_nbr	(uint32_t source);
+extern int	add_sg_oif		(mrtentry_t *mrtentry_ptr, vifi_t vifi, uint16_t holdtime, int update_holdtime);
+extern void	add_leaf		(vifi_t vifi, uint32_t source, uint32_t group);
+extern void	delete_leaf		(vifi_t vifi, uint32_t source, uint32_t group);
 extern int	change_interfaces	(mrtentry_t *mrtentry_ptr,  vifi_t new_iif,
                                          vifbitmap_t new_joined_oifs_, vifbitmap_t new_pruned_oifs,
-                                         vifbitmap_t new_leaves_, vifbitmap_t new_asserted_oifs, u_int16 flags);
+                                         vifbitmap_t new_leaves_, vifbitmap_t new_asserted_oifs, uint16_t flags);
 extern void	calc_oifs		(mrtentry_t *mrtentry_ptr, vifbitmap_t *oifs_ptr);
 extern void	process_kernel_call	(void);
 extern int	delete_vif_from_mrt	(vifi_t vifi);
-extern mrtentry_t *switch_shortest_path	(u_int32 source, u_int32 group);
+extern mrtentry_t *switch_shortest_path	(uint32_t source, uint32_t group);
 
 /* routesock.c */
-extern int	k_req_incoming		(u_int32 source, struct rpfctl *rpfp);
+extern int	k_req_incoming		(uint32_t source, struct rpfctl *rpfp);
 #ifdef HAVE_ROUTING_SOCKETS
 extern int	init_routesock		(void);
 extern int	routing_socket;
@@ -600,29 +583,29 @@ extern int	routing_socket;
 
 /* rp.c */
 extern void	init_rp_and_bsr		(void);
-extern u_int16	bootstrap_initial_delay (void);
+extern uint16_t	bootstrap_initial_delay (void);
 extern rp_grp_entry_t *add_rp_grp_entry (cand_rp_t  **used_cand_rp_list,
                                          grp_mask_t **used_grp_mask_list,
-                                         u_int32 rp_addr,
-                                         u_int8  rp_priority,
-                                         u_int16 rp_holdtime,
-                                         u_int32 group_addr,
-                                         u_int32 group_mask,
-                                         u_int32 bsr_hash_mask,
-                                         u_int16 fragment_tag);
+                                         uint32_t rp_addr,
+                                         uint8_t  rp_priority,
+                                         uint16_t rp_holdtime,
+                                         uint32_t group_addr,
+                                         uint32_t group_mask,
+                                         uint32_t bsr_hash_mask,
+                                         uint16_t fragment_tag);
 extern void	delete_rp_grp_entry	(cand_rp_t  **used_cand_rp_list, grp_mask_t **used_grp_mask_list,
                                          rp_grp_entry_t *rp_grp_entry_delete);
 extern void	delete_grp_mask		(cand_rp_t  **used_cand_rp_list, grp_mask_t **used_grp_mask_list,
-                                         u_int32 group_addr, u_int32 group_mask);
+                                         uint32_t group_addr, uint32_t group_mask);
 extern void	delete_rp		(cand_rp_t  **used_cand_rp_list, grp_mask_t **used_grp_mask_list,
-                                         u_int32 rp_addr);
+                                         uint32_t rp_addr);
 extern void	delete_rp_list		(cand_rp_t  **used_cand_rp_list, grp_mask_t **used_grp_mask_list);
-extern rpentry_t *rp_match		(u_int32 group);
-extern rp_grp_entry_t *rp_grp_match	(u_int32 group);
-extern rpentry_t *rp_find		(u_int32 rp_address);
+extern rpentry_t *rp_match		(uint32_t group);
+extern rp_grp_entry_t *rp_grp_match	(uint32_t group);
+extern rpentry_t *rp_find		(uint32_t rp_address);
 extern int	remap_grpentry		(grpentry_t *grpentry_ptr);
 extern int	create_pim_bootstrap_message (char *send_buff);
-extern int	check_mrtentry_rp	(mrtentry_t *mrtentry_ptr, u_int32 rp_addr);
+extern int	check_mrtentry_rp	(mrtentry_t *mrtentry_ptr, uint32_t rp_addr);
 
 #ifdef RSRR
 #ifdef PIM
@@ -648,27 +631,27 @@ extern int	unicast_routing_changes	(srcentry_t *src_ent);
 extern int	clean_srclist		(void);
 
 /* trace.c */
-/* u_int is promoted u_char */
-extern void	accept_mtrace		(u_int32 src, u_int32 dst, u_int32 group, char *data, u_int no, int datalen);
-extern void	accept_neighbor_request	(u_int32 src, u_int32 dst);
-extern void	accept_neighbor_request2 (u_int32 src, u_int32 dst);
+/* u_int is promoted uint8_t */
+extern void	accept_mtrace		(uint32_t src, uint32_t dst, uint32_t group, char *data, u_int no, int datalen);
+extern void	accept_neighbor_request	(uint32_t src, uint32_t dst);
+extern void	accept_neighbor_request2 (uint32_t src, uint32_t dst);
 
 /* vif.c */
 extern void	init_vifs		(void);
 extern void	zero_vif		(struct uvif *, int);
 extern void	stop_all_vifs		(void);
 extern void	check_vif_state		(void);
-extern vifi_t	local_address		(u_int32 src);
-extern vifi_t	find_vif_direct		(u_int32 src);
-extern vifi_t	find_vif_direct_local	(u_int32 src);
-extern u_int32	max_local_address	(void);
+extern vifi_t	local_address		(uint32_t src);
+extern vifi_t	find_vif_direct		(uint32_t src);
+extern vifi_t	find_vif_direct_local	(uint32_t src);
+extern uint32_t	max_local_address	(void);
 
 struct rp_hold {
 	struct rp_hold *next;
-	u_int32	address;
-	u_int32	group;
-	u_int32	mask;
-	u_int8	priority;
+	uint32_t	address;
+	uint32_t	group;
+	uint32_t	mask;
+	uint8_t	priority;
 };
 
 #ifndef HAVE_STRLCPY

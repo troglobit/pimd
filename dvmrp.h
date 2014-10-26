@@ -131,7 +131,7 @@
  * Various protocol constants (all times in seconds)
  */
 				        /* address for multicast DVMRP msgs */
-#define INADDR_DVMRP_GROUP	(u_int32)0xe0000004     /* 224.0.0.4 */
+#define INADDR_DVMRP_GROUP	(uint32_t)0xe0000004     /* 224.0.0.4 */
 
 #define DVMRP_ROUTE_MAX_REPORT_DELAY  5	/* max delay for reporting changes  */
 					/*  (This is the timer interrupt    */

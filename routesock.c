@@ -61,7 +61,7 @@ int routing_socket = -1;
 int rtm_addrs;
 static pid_t pid;
 struct rt_metrics rt_metrics;
-u_long rtm_inits;
+uint32_t rtm_inits;
 
 struct {
     struct  rt_msghdr m_rtm;
@@ -120,7 +120,7 @@ int init_routesock(void)
 }
 
 /* get the rpf neighbor info */
-int k_req_incoming(u_int32 source, struct rpfctl *rpfp)
+int k_req_incoming(uint32_t source, struct rpfctl *rpfp)
 {
     int rlen, l, flags = RTF_STATIC, retry_count = 3;
     sup su;
@@ -365,7 +365,7 @@ int getmsg(struct rt_msghdr *rtm, int msglen __attribute__((unused)), struct rpf
  * toward source.
  */
 /* TODO: check whether next hop router address is in network or host order */
-int k_req_incoming(u_int32 source, struct rpfctl *rpfcinfo)
+int k_req_incoming(uint32_t source, struct rpfctl *rpfcinfo)
 {
     rpfcinfo->source.s_addr = source;
     rpfcinfo->iif = NO_VIF;     /* just initialized, will be */

@@ -41,11 +41,11 @@
  */
 void
 dvmrp_accept_probe(src, dst, p, datalen, level)
-    u_int32 src __attribute__((unused));
-    u_int32 dst __attribute__((unused));
-    u_char *p __attribute__((unused));
+    uint32_t src __attribute__((unused));
+    uint32_t dst __attribute__((unused));
+    uint8_t *p __attribute__((unused));
     int datalen __attribute__((unused));
-    u_int32 level __attribute__((unused));
+    uint32_t level __attribute__((unused));
 {
     return;
 }
@@ -57,11 +57,11 @@ dvmrp_accept_probe(src, dst, p, datalen, level)
  */
 void
 dvmrp_accept_report(src, dst, p, datalen, level)
-    u_int32 src __attribute__((unused));
-    u_int32 dst __attribute__((unused));
-    u_char *p __attribute__((unused));
+    uint32_t src __attribute__((unused));
+    uint32_t dst __attribute__((unused));
+    uint8_t *p __attribute__((unused));
     int datalen __attribute__((unused));
-    u_int32 level __attribute__((unused));
+    uint32_t level __attribute__((unused));
 {
     return;
 }
@@ -70,9 +70,9 @@ dvmrp_accept_report(src, dst, p, datalen, level)
 /* TODO */
 void
 dvmrp_accept_info_request(src, dst, p, datalen)
-    u_int32 src __attribute__((unused));
-    u_int32 dst __attribute__((unused));
-    u_char *p __attribute__((unused));
+    uint32_t src __attribute__((unused));
+    uint32_t dst __attribute__((unused));
+    uint8_t *p __attribute__((unused));
     int datalen __attribute__((unused));
 {
     return;
@@ -84,9 +84,9 @@ dvmrp_accept_info_request(src, dst, p, datalen)
  */
 void
 dvmrp_accept_info_reply(src, dst, p, datalen)
-    u_int32 src;
-    u_int32 dst;
-    u_char *p __attribute__((unused));
+    uint32_t src;
+    uint32_t dst;
+    uint8_t *p __attribute__((unused));
     int datalen __attribute__((unused));
 {
     IF_DEBUG(DEBUG_PKT)
@@ -100,11 +100,11 @@ dvmrp_accept_info_reply(src, dst, p, datalen)
  */
 void
 dvmrp_accept_neighbors(src, dst, p, datalen, level)
-    u_int32 src;
-    u_int32 dst;
-    u_char *p __attribute__((unused));
+    uint32_t src;
+    uint32_t dst;
+    uint8_t *p __attribute__((unused));
     int datalen __attribute__((unused));
-    u_int32 level __attribute__((unused));
+    uint32_t level __attribute__((unused));
 {
     logit(LOG_INFO, 0, "ignoring spurious DVMRP neighbor list from %s to %s",
           inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
@@ -116,11 +116,11 @@ dvmrp_accept_neighbors(src, dst, p, datalen, level)
  */
 void
 dvmrp_accept_neighbors2(src, dst, p, datalen, level)
-    u_int32 src;
-    u_int32 dst;
-    u_char *p __attribute__((unused));
+    uint32_t src;
+    uint32_t dst;
+    uint8_t *p __attribute__((unused));
     int datalen __attribute__((unused));
-    u_int32 level __attribute__((unused));
+    uint32_t level __attribute__((unused));
 {
     IF_DEBUG(DEBUG_PKT)
         logit(LOG_DEBUG, 0,
@@ -142,9 +142,9 @@ dvmrp_accept_neighbors2(src, dst, p, datalen, level)
  */
 void
 dvmrp_accept_prune(src, dst, p, datalen)
-    u_int32 src __attribute__((unused));
-    u_int32 dst __attribute__((unused));
-    u_char *p __attribute__((unused));
+    uint32_t src __attribute__((unused));
+    uint32_t dst __attribute__((unused));
+    uint8_t *p __attribute__((unused));
     int datalen __attribute__((unused));
 {
     return;
@@ -166,9 +166,9 @@ dvmrp_accept_prune(src, dst, p, datalen)
  */
 void
 dvmrp_accept_graft(src, dst, p, datalen)
-    u_int32     src __attribute__((unused));
-    u_int32     dst __attribute__((unused));
-    u_char     *p __attribute__((unused));
+    uint32_t     src __attribute__((unused));
+    uint32_t     dst __attribute__((unused));
+    uint8_t     *p __attribute__((unused));
     int         datalen __attribute__((unused));
 {
     return;
@@ -186,9 +186,9 @@ dvmrp_accept_graft(src, dst, p, datalen)
  */
 void
 dvmrp_accept_g_ack(src, dst, p, datalen)
-    u_int32     src __attribute__((unused));
-    u_int32     dst __attribute__((unused));
-    u_char     *p __attribute__((unused));
+    uint32_t     src __attribute__((unused));
+    uint32_t     dst __attribute__((unused));
+    uint8_t     *p __attribute__((unused));
     int         datalen __attribute__((unused));
 {
     return;

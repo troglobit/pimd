@@ -545,7 +545,7 @@ void check_vif_state(void)
  * Local addresses are excluded.
  * Return the vif number or NO_VIF if not found.
  */
-vifi_t find_vif_direct(u_int32 src)
+vifi_t find_vif_direct(uint32_t src)
 {
     vifi_t vifi;
     struct uvif *v;
@@ -585,7 +585,7 @@ vifi_t find_vif_direct(u_int32 src)
  * Checks if src is local address. If "yes" return the vif index,
  * otherwise return value is NO_VIF.
  */
-vifi_t local_address(u_int32 src)
+vifi_t local_address(uint32_t src)
 {
     vifi_t vifi;
     struct uvif *v;
@@ -609,7 +609,7 @@ vifi_t local_address(u_int32 src)
  * (Register and tunnels excluded).
  * Return the vif number or NO_VIF if not found.
  */
-vifi_t find_vif_direct_local(u_int32 src)
+vifi_t find_vif_direct_local(uint32_t src)
 {
     vifi_t vifi;
     struct uvif *v;
@@ -648,11 +648,11 @@ vifi_t find_vif_direct_local(u_int32 src)
  * Returns the highest address of local vif that is UP and ENABLED.
  * The VIFF_REGISTER interface(s) is/are excluded.
  */
-u_int32 max_local_address(void)
+uint32_t max_local_address(void)
 {
     vifi_t vifi;
     struct uvif *v;
-    u_int32 max_address = 0;
+    uint32_t max_address = 0;
 
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
 	/* Count vif if not DISABLED or DOWN */

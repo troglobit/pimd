@@ -41,20 +41,20 @@ grpentry_t		*grplist;
 /*
  * Local functions definition
  */
-static srcentry_t *create_srcentry   (u_int32);
-static int	   search_srclist    (u_int32, srcentry_t **);
-static int	   search_srcmrtlink (srcentry_t *, u_int32, mrtentry_t **);
+static srcentry_t *create_srcentry   (uint32_t);
+static int	   search_srclist    (uint32_t, srcentry_t **);
+static int	   search_srcmrtlink (srcentry_t *, uint32_t, mrtentry_t **);
 static void	   insert_srcmrtlink (mrtentry_t *, mrtentry_t *, srcentry_t *);
 
-static grpentry_t *create_grpentry   (u_int32);
-static int	   search_grplist    (u_int32, grpentry_t **);
-static int	   search_grpmrtlink (grpentry_t *, u_int32, mrtentry_t **);
+static grpentry_t *create_grpentry   (uint32_t);
+static int	   search_grplist    (uint32_t, grpentry_t **);
+static int	   search_grpmrtlink (grpentry_t *, uint32_t, mrtentry_t **);
 static void	   insert_grpmrtlink (mrtentry_t *, mrtentry_t *, grpentry_t *);
 
 static mrtentry_t *alloc_mrtentry    (srcentry_t *, grpentry_t *);
-static mrtentry_t *create_mrtentry   (srcentry_t *, grpentry_t *, u_int16);
+static mrtentry_t *create_mrtentry   (srcentry_t *, grpentry_t *, uint16_t);
 
-static void	   move_kernel_cache (mrtentry_t *, u_int16);
+static void	   move_kernel_cache (mrtentry_t *, uint16_t);
 
 
 void init_pim_mrt(void)
@@ -96,7 +96,7 @@ void init_pim_mrt(void)
 }
 
 
-grpentry_t *find_group(u_int32 group)
+grpentry_t *find_group(uint32_t group)
 {
     grpentry_t *grp;
 
@@ -110,7 +110,7 @@ grpentry_t *find_group(u_int32 group)
 }
 
 
-srcentry_t *find_source(u_int32 source)
+srcentry_t *find_source(uint32_t source)
 {
     srcentry_t *src;
 
@@ -124,7 +124,7 @@ srcentry_t *find_source(u_int32 source)
 }
 
 
-mrtentry_t *find_route(u_int32 source, u_int32 group, u_int16 flags, char create)
+mrtentry_t *find_route(uint32_t source, uint32_t group, uint16_t flags, char create)
 {
     srcentry_t *src	     = NULL;
     grpentry_t *grp	     = NULL;
@@ -516,10 +516,10 @@ void delete_mrtentry(mrtentry_t *mrt)
 }
 
 
-static int search_srclist(u_int32 source, srcentry_t **found)
+static int search_srclist(uint32_t source, srcentry_t **found)
 {
     srcentry_t *prev, *node;
-    u_int32 source_h = ntohl(source);
+    uint32_t source_h = ntohl(source);
 
     for (prev = srclist, node = prev->next; node; prev = node, node = node->next) {
 	/* The srclist is ordered with the smallest addresses first.
@@ -540,10 +540,10 @@ static int search_srclist(u_int32 source, srcentry_t **found)
 }
 
 
-static int search_grplist(u_int32 group, grpentry_t **found)
+static int search_grplist(uint32_t group, grpentry_t **found)
 {
     grpentry_t *prev, *node;
-    u_int32 group_h = ntohl(group);
+    uint32_t group_h = ntohl(group);
 
     for (prev = grplist, node = prev->next; node; prev = node, node = node->next) {
 	/* The grplist is ordered with the smallest address first.
@@ -564,7 +564,7 @@ static int search_grplist(u_int32 group, grpentry_t **found)
 }
 
 
-static srcentry_t *create_srcentry(u_int32 source)
+static srcentry_t *create_srcentry(uint32_t source)
 {
     srcentry_t *node;
     srcentry_t *prev;
@@ -605,7 +605,7 @@ static srcentry_t *create_srcentry(u_int32 source)
 }
 
 
-static grpentry_t *create_grpentry(u_int32 group)
+static grpentry_t *create_grpentry(uint32_t group)
 {
     grpentry_t *node;
     grpentry_t *prev;
@@ -656,11 +656,11 @@ static grpentry_t *create_grpentry(u_int32 group)
  * that entry. Otherwise return FALSE and *found points the previous
  * entry, or NULL if first in the chain.
  */
-static int search_srcmrtlink(srcentry_t *src, u_int32 group, mrtentry_t **found)
+static int search_srcmrtlink(srcentry_t *src, uint32_t group, mrtentry_t **found)
 {
     mrtentry_t *node;
     mrtentry_t *prev = NULL;
-    u_int32 group_h = ntohl(group);
+    uint32_t group_h = ntohl(group);
 
     for (node = src->mrtlink; node; prev = node, node = node->srcnext) {
 	/* The entries are ordered with the smaller group address first.
@@ -687,11 +687,11 @@ static int search_srcmrtlink(srcentry_t *src, u_int32 group, mrtentry_t **found)
  * that entry.  Otherwise return FALSE and *found points the previous
  * entry, or NULL if first in the chain.
  */
-static int search_grpmrtlink(grpentry_t *grp, u_int32 source, mrtentry_t **found)
+static int search_grpmrtlink(grpentry_t *grp, uint32_t source, mrtentry_t **found)
 {
     mrtentry_t *node;
     mrtentry_t *prev = NULL;
-    u_int32 source_h = ntohl(source);
+    uint32_t source_h = ntohl(source);
 
     for (node = grp->mrtlink; node; prev = node, node = node->grpnext) {
 	/* The entries are ordered with the smaller source address first.
@@ -754,8 +754,8 @@ static void insert_grpmrtlink(mrtentry_t *node, mrtentry_t *prev, grpentry_t *gr
 static mrtentry_t *alloc_mrtentry(srcentry_t *src, grpentry_t *grp)
 {
     mrtentry_t *mrt;
-    u_int16 i, *timer;
-    u_int8  vif_numbers;
+    uint16_t i, *timer;
+    uint8_t  vif_numbers;
 
     mrt = calloc(1, sizeof(mrtentry_t));
     if (!mrt) {
@@ -791,12 +791,12 @@ static mrtentry_t *alloc_mrtentry(srcentry_t *src, grpentry_t *grp)
      * need to delete the routing table and disturb the forwarding.
      */
 #ifdef SAVE_MEMORY
-    mrt->vif_timers	    = (u_int16 *)calloc(1, sizeof(u_int16) * numvifs);
-    mrt->vif_deletion_delay = (u_int16 *)calloc(1, sizeof(u_int16) * numvifs);
+    mrt->vif_timers	    = (uint16_t *)calloc(1, sizeof(uint16_t) * numvifs);
+    mrt->vif_deletion_delay = (uint16_t *)calloc(1, sizeof(uint16_t) * numvifs);
     vif_numbers = numvifs;
 #else
-    mrt->vif_timers	    = (u_int16 *)calloc(1, sizeof(u_int16) * total_interfaces);
-    mrt->vif_deletion_delay = (u_int16 *)calloc(1, sizeof(u_int16) * total_interfaces);
+    mrt->vif_timers	    = (uint16_t *)calloc(1, sizeof(uint16_t) * total_interfaces);
+    mrt->vif_deletion_delay = (uint16_t *)calloc(1, sizeof(uint16_t) * total_interfaces);
     vif_numbers = total_interfaces;
 #endif /* SAVE_MEMORY */
     if (!mrt->vif_timers || !mrt->vif_deletion_delay) {
@@ -824,12 +824,12 @@ static mrtentry_t *alloc_mrtentry(srcentry_t *src, grpentry_t *grp)
 }
 
 
-static mrtentry_t *create_mrtentry(srcentry_t *src, grpentry_t *grp, u_int16 flags)
+static mrtentry_t *create_mrtentry(srcentry_t *src, grpentry_t *grp, uint16_t flags)
 {
     mrtentry_t *node;
     mrtentry_t *grp_insert, *src_insert; /* pointers to insert */
-    u_int32 source;
-    u_int32 group;
+    uint32_t source;
+    uint32_t group;
 
     if (flags & MRTF_SG) {
 	/* (S,G) entry */
@@ -951,10 +951,10 @@ void delete_single_kernel_cache(mrtentry_t *mrt, kernel_cache_t *node)
 }
 
 
-void delete_single_kernel_cache_addr(mrtentry_t *mrt, u_int32 source, u_int32 group)
+void delete_single_kernel_cache_addr(mrtentry_t *mrt, uint32_t source, uint32_t group)
 {
-    u_int32 source_h;
-    u_int32 group_h;
+    uint32_t source_h;
+    uint32_t group_h;
     kernel_cache_t *node;
 
     if (!mrt)
@@ -1008,10 +1008,10 @@ void delete_single_kernel_cache_addr(mrtentry_t *mrt, u_int32 source, u_int32 gr
  * Installs kernel cache for (source, group). Assumes mrt
  * is the correct entry.
  */
-void add_kernel_cache(mrtentry_t *mrt, u_int32 source, u_int32 group, u_int16 flags)
+void add_kernel_cache(mrtentry_t *mrt, uint32_t source, uint32_t group, uint16_t flags)
 {
-    u_int32 source_h;
-    u_int32 group_h;
+    uint32_t source_h;
+    uint32_t group_h;
     kernel_cache_t *next;
     kernel_cache_t *prev;
     kernel_cache_t *node;
@@ -1083,7 +1083,7 @@ void add_kernel_cache(mrtentry_t *mrt, u_int32 source, u_int32 group, u_int16 fl
 /*
  * Bring the kernel cache "UP": from the (*,*,RP) to (*,G) or (S,G)
  */
-static void move_kernel_cache(mrtentry_t *mrt, u_int16 flags)
+static void move_kernel_cache(mrtentry_t *mrt, uint16_t flags)
 {
     kernel_cache_t *node;
     kernel_cache_t *insert_node;
@@ -1092,8 +1092,8 @@ static void move_kernel_cache(mrtentry_t *mrt, u_int16 flags)
     kernel_cache_t *prev_node;
     mrtentry_t     *mrtentry_pmbr;
     mrtentry_t     *mrtentry_rp;
-    u_int32	    group_h;
-    u_int32	    source_h;
+    uint32_t	    group_h;
+    uint32_t	    source_h;
     int		    found;
 
     if (!mrt)

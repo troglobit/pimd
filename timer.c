@@ -49,21 +49,21 @@ spt_threshold_t spt_threshold = {
 /*
  * Local variables
  */
-u_int16 unicast_routing_interval = UCAST_ROUTING_CHECK_INTERVAL;
-u_int16 unicast_routing_timer;    /* Used to check periodically for any
+uint16_t unicast_routing_interval = UCAST_ROUTING_CHECK_INTERVAL;
+uint16_t unicast_routing_timer;   /* Used to check periodically for any
 				   * change in the unicast routing. */
-u_int8  ucast_flag;
+uint8_t ucast_flag;
 
-u_int16 pim_spt_threshold_timer;  /* Used for periodic check of spt-threshold
+uint16_t pim_spt_threshold_timer; /* Used for periodic check of spt-threshold
 				   * for the RP or the lasthop router. */
-u_int8  rate_flag;
+uint8_t rate_flag;
 
 /*
  * TODO: XXX: the timers below are not used. Instead, the data rate timer is used.
  */
-u_int16 kernel_cache_timer;       /* Used to timeout the kernel cache
+uint16_t kernel_cache_timer;      /* Used to timeout the kernel cache
 				   * entries for idle sources */
-u_int16 kernel_cache_interval;
+uint16_t kernel_cache_interval;
 
 /* to request and compare any route changes */
 srcentry_t srcentry_save;
@@ -238,7 +238,7 @@ static void try_switch_to_spt(mrtentry_t *mrt, kernel_cache_t *kc)
 static void check_spt_threshold(mrtentry_t *mrt)
 {
     int status;
-    u_long prev_bytecnt, prev_pktcnt;
+    uint32_t prev_bytecnt, prev_pktcnt;
     kernel_cache_t *kc, *kc_next;
 
     /* XXX: TODO: When we add group-list support to spt_threshold we need

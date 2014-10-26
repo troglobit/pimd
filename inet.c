@@ -28,9 +28,9 @@ char s4[MAX_INET_BUF_LEN];
  * (Without a mask, cannot detect addresses of the form {subnet,0} or
  * {subnet,-1}.)
  */
-int inet_valid_host(u_int32 naddr)
+int inet_valid_host(uint32_t naddr)
 {
-    u_int32 addr;
+    uint32_t addr;
 
     addr = ntohl(naddr);
 
@@ -44,7 +44,7 @@ int inet_valid_host(u_int32 naddr)
  * make sure that it is a series of 1's followed by
  * a series of 0's with no discontiguous 1's.
  */
-int inet_valid_mask(u_int32 mask)
+int inet_valid_mask(uint32_t mask)
 {
     if (~(((mask & -mask) - 1) | mask) != 0) {
         /* Mask is not contiguous */
@@ -63,9 +63,9 @@ int inet_valid_mask(u_int32 mask)
  * within the [ABC] range and that the host bits of the subnet
  * are all 0.
  */
-int inet_valid_subnet(u_int32 nsubnet, u_int32 nmask)
+int inet_valid_subnet(uint32_t nsubnet, uint32_t nmask)
 {
-    u_int32 subnet, mask;
+    uint32_t subnet, mask;
 
     subnet = ntohl(nsubnet);
     mask   = ntohl(nmask);
@@ -100,13 +100,13 @@ int inet_valid_subnet(u_int32 nsubnet, u_int32 nmask)
 
 
 /*
- * Convert an IP address in u_int32 (network) format into a printable string.
+ * Convert an IP address in uint32_t (network) format into a printable string.
  */
-char *inet_fmt(u_int32 addr, char *s, size_t len)
+char *inet_fmt(uint32_t addr, char *s, size_t len)
 {
-    u_char *a;
+    uint8_t *a;
 
-    a = (u_char *)&addr;
+    a = (uint8_t *)&addr;
     snprintf(s, len, "%u.%u.%u.%u", a[0], a[1], a[2], a[3]);
 
     return s;
@@ -114,14 +114,14 @@ char *inet_fmt(u_int32 addr, char *s, size_t len)
 
 /*
  * Convert the printable string representation of an IP address into the
- * u_int32 (network) format.  Return 0xffffffff on error.  (To detect the
+ * uint32_t (network) format.  Return 0xffffffff on error.  (To detect the
  * legal address with that value, you must explicitly compare the string
  * with "255.255.255.255".)
  * The return value is in network order.
  */
-u_int32 inet_parse(char *s, int n)
+uint32_t inet_parse(char *s, int n)
 {
-    u_int32 a = 0;
+    uint32_t a = 0;
     u_int a0 = 0, a1 = 0, a2 = 0, a3 = 0;
     int i;
     char c;
@@ -130,10 +130,10 @@ u_int32 inet_parse(char *s, int n)
     if (i < n || i > 4 || a0 > 255 || a1 > 255 || a2 > 255 || a3 > 255)
         return 0xffffffff;
 
-    ((u_char *)&a)[0] = a0;
-    ((u_char *)&a)[1] = a1;
-    ((u_char *)&a)[2] = a2;
-    ((u_char *)&a)[3] = a3;
+    ((uint8_t *)&a)[0] = a0;
+    ((uint8_t *)&a)[1] = a1;
+    ((uint8_t *)&a)[2] = a2;
+    ((uint8_t *)&a)[3] = a3;
 
     return a;
 }
@@ -157,12 +157,12 @@ u_int32 inet_parse(char *s, int n)
  * Checksum routine for Internet Protocol family headers (C Version)
  *
  */
-int inet_cksum(u_int16 *addr, u_int len)
+int inet_cksum(uint16_t *addr, u_int len)
 {
         int sum = 0;
         int nleft = (int)len;
-        u_int16 *w = addr;
-        u_int16 answer = 0;
+        uint16_t *w = addr;
+        uint16_t answer = 0;
 
         /*
          *  Our algorithm is simple, using a 32 bit accumulator (sum),
@@ -177,7 +177,7 @@ int inet_cksum(u_int16 *addr, u_int len)
 
         /* mop up an odd byte, if necessary */
         if (nleft == 1) {
-                *(u_char *) (&answer) = *(u_char *)w ;
+                *(uint8_t *) (&answer) = *(uint8_t *)w ;
                 sum += answer;
         }
 
@@ -220,9 +220,9 @@ void trimdomain(char *cp)
     }
 }
 
-static u_long forgemask(u_long a)
+static uint32_t forgemask(uint32_t a)
 {
-    u_long m;
+    uint32_t m;
 
     if (IN_CLASSA(a))
         m = IN_CLASSA_NET;
@@ -234,7 +234,7 @@ static u_long forgemask(u_long a)
     return (m);
 }
 
-static void domask(char *dst, size_t len, u_long addr, u_long mask)
+static void domask(char *dst, size_t len, uint32_t addr, uint32_t mask)
 {
     int b, i;
 
@@ -260,7 +260,7 @@ static void domask(char *dst, size_t len, u_long addr, u_long mask)
     }
 
     if (i == -1)
-        snprintf(dst, len, "&0x%lx", mask);
+        snprintf(dst, len, "&0x%x", mask);
     else
         snprintf(dst, len, "/%d", 32 - i);
 }
@@ -269,11 +269,11 @@ static void domask(char *dst, size_t len, u_long addr, u_long mask)
  * Return the name of the network whose address is given.
  * The address is assumed to be that of a net or subnet, not a host.
  */
-char *netname(u_int32 addr, u_int32 mask)
+char *netname(uint32_t addr, uint32_t mask)
 {
     static char line[MAXHOSTNAMELEN + 4];
-    u_int32 omask;
-    u_int32 i;
+    uint32_t omask;
+    uint32_t i;
 
     i = ntohl(addr);
     omask = mask = ntohl(mask);
