@@ -225,8 +225,11 @@ static void killshow(int signo, char *file)
     char buf[100];
 
     if (pid > 0) {
-	if (file)
-	    remove(file);
+	if (file && -1 != access(file, F_OK)) {
+	    if (remove(file))
+		warn("Failed removing %s, may be showing stale information", file);
+	}
+
 	kill(pid, signo);
 	if (file) {
 	    usleep(200);
