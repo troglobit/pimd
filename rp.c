@@ -115,11 +115,11 @@ void init_rp_and_bsr(void)
 
 uint16_t bootstrap_initial_delay(void)
 {
-    long addr_delay;
-    long delay;
-    long log_mask;
-    int  log_of_2;
-    uint8_t best_priority;
+    uint32_t addr_delay;
+    uint32_t delay;
+    uint32_t log_mask;
+    int32_t  log_of_2;
+    uint8_t  best_priority;
 
     /*
      * The bootstrap timer initial value (if Cand-BSR).
@@ -147,8 +147,8 @@ uint16_t bootstrap_initial_delay(void)
 	for (log_of_2 = (sizeof(addr_delay) << 3) - 1 ; log_of_2; log_of_2--) {
 	    if (addr_delay & log_mask)
 		break;
-	    else
-		log_mask >>= 1;  /* Start shifting `1` on right */
+
+	    log_mask >>= 1;  /* Start shifting `1` on right */
 	}
 	addr_delay = log_of_2 / 16;
     } else {
@@ -162,8 +162,8 @@ uint16_t bootstrap_initial_delay(void)
     for (log_of_2 = (sizeof(delay) << 3) - 1 ; log_of_2; log_of_2--) {
 	if (delay & log_mask)
 	    break;
-	else
-	    log_mask >>= 1;  /* Start shifting `1` on right */
+
+	log_mask >>= 1;  /* Start shifting `1` on right */
     }
 
     delay = 5 + 2 * log_of_2 + addr_delay;
