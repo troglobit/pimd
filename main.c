@@ -225,10 +225,8 @@ static int killshow(int signo, char *file)
     char buf[100];
 
     if (pid > 0) {
-	if (file && -1 != access(file, F_OK)) {
-	    if (remove(file))
-		warn("Failed removing %s, may be showing stale information", file);
-	}
+	if (file && -1 == remove(file) && errno != ENOENT)
+	    warn("Failed removing %s, may be showing stale information", file);
 
 	kill(pid, signo);
 	if (file) {
