@@ -219,7 +219,7 @@ static pid_t daemon_pid(void)
 }
 
 /* Send signal to running daemon and the show resulting file. */
-static void killshow(int signo, char *file)
+static int killshow(int signo, char *file)
 {
     pid_t pid = daemon_pid();
     char buf[100];
@@ -239,6 +239,8 @@ static void killshow(int signo, char *file)
 	    }
 	}
     }
+
+    return 0;
 }
 
 static int usage(void)
@@ -348,8 +350,7 @@ int main(int argc, char *argv[])
 		return usage();
 
 	    case 'l':
-		killshow(SIGHUP, NULL);
-		return 0;
+		return killshow(SIGHUP, NULL);
 
 	    case 'N':
 		disable_all_by_default = 1;
@@ -360,20 +361,17 @@ int main(int argc, char *argv[])
 		return 0;
 
 	    case 'q':
-		killshow(SIGTERM, NULL);
-		return 0;
+		return killshow(SIGTERM, NULL);
 
 	    case 'r':
-		killshow(SIGUSR1, _PATH_PIMD_DUMP);
-		return 0;
+		return killshow(SIGUSR1, _PATH_PIMD_DUMP);
+
 #if 0 /* XXX: TODO */
 	    case 'i':
-		killshow(SIGUSR2, _PATH_PIMD_CACHE);
-		return 0;
+		return killshow(SIGUSR2, _PATH_PIMD_CACHE);
 
 	    case 'p':
-		killshow(SIGQUIT, NULL);
-		return 0;
+		return killshow(SIGQUIT, NULL);
 #endif
 	    default:
 		return usage();
@@ -382,15 +380,12 @@ int main(int argc, char *argv[])
 
     argc -= optind;
     argv += optind;
-
-    if (argc > 0) {
+    if (argc > 0)
 	return usage();
-    }
 
-    if (geteuid() != 0) {
-	fprintf(stderr, "%s: must be root\n", __progname);
-	exit(1);
-    }
+    if (geteuid() != 0)
+	errx(1, "Need root privileges to start.");
+
     setlinebuf(stderr);
 
     if (debug != 0) {
@@ -413,7 +408,8 @@ int main(int argc, char *argv[])
     /*
      * Create directory for runtime files
      */
-    mkdir(_PATH_PIMD_RUNDIR, 0755);
+    if (-1 == mkdir(_PATH_PIMD_RUNDIR, 0755) && errno != EEXIST)
+	err(1, "Failed creating %s directory for runtime files", _PATH_PIMD_RUNDIR);
 
     /*
      * Setup logging
