@@ -56,7 +56,7 @@ static char dumpfilename[] = _PATH_PIMD_DUMP;
 static char cachefilename[] = _PATH_PIMD_CACHE; /* TODO: notused */
 
 
-char *packet_kind(u_int proto, u_int type, u_int code)
+char *packet_kind(int proto, int type, int code)
 {
     static char unknown[60];
 
@@ -85,6 +85,7 @@ char *packet_kind(u_int proto, u_int type, u_int code)
 			    snprintf(unknown, sizeof(unknown), "UNKNOWN DVMRP message code = %3d ", code);
 			    return unknown;
 		    }
+
 		case IGMP_PIM:
 		    /* The old style (PIM v1) encapsulation of PIM messages
 		     * inside IGMP messages.
@@ -99,6 +100,7 @@ char *packet_kind(u_int proto, u_int type, u_int code)
 			case PIM_V1_JOIN_PRUNE:    return "PIM v1 Join/Prune        ";
 			case PIM_V1_RP_REACHABILITY:
 			    return "PIM v1 RP-Reachability   ";
+
 			case PIM_V1_ASSERT:        return "PIM v1 Assert            ";
 			case PIM_V1_GRAFT:         return "PIM v1 Graft             ";
 			case PIM_V1_GRAFT_ACK:     return "PIM v1 Graft_Ack         ";
@@ -106,12 +108,14 @@ char *packet_kind(u_int proto, u_int type, u_int code)
 			    snprintf(unknown, sizeof(unknown), "UNKNOWN PIM v1 message type =%3d ", code);
 			    return unknown;
 		    }
+
 		case IGMP_MTRACE:              return "IGMP trace query         ";
 		case IGMP_MTRACE_RESP:         return "IGMP trace reply         ";
 		default:
 		    snprintf(unknown, sizeof (unknown), "UNKNOWN IGMP message: type = 0x%02x, code = 0x%02x ", type, code);
 		    return unknown;
 	    }
+
 	case IPPROTO_PIM:    /* PIM v2 */
 	    switch (type) {
 		case PIM_V2_HELLO:             return "PIM v2 Hello             ";
@@ -127,6 +131,7 @@ char *packet_kind(u_int proto, u_int type, u_int code)
 		    snprintf(unknown, sizeof(unknown), "UNKNOWN PIM v2 message type =%3d ", type);
 		    return unknown;
 	    }
+
 	default:
 	    snprintf(unknown, sizeof(unknown), "UNKNOWN proto =%3d               ", proto);
 	    return unknown;
@@ -137,7 +142,7 @@ char *packet_kind(u_int proto, u_int type, u_int code)
 /*
  * Used for debugging particular type of messages.
  */
-int debug_kind(u_int proto, u_int type, u_int code)
+int debug_kind(int proto, int type, int code)
 {
     switch (proto) {
 	case IPPROTO_IGMP:
@@ -161,6 +166,7 @@ int debug_kind(u_int proto, u_int type, u_int code)
 			case DVMRP_INFO_REPLY:         return 0;
 			default:                       return 0;
 		    }
+
 		case IGMP_PIM:
 		    /* PIM v1 is not implemented */
 		    switch (code) {
@@ -174,10 +180,12 @@ int debug_kind(u_int proto, u_int type, u_int code)
 			case PIM_V1_GRAFT_ACK:         return DEBUG_PIM;
 			default:                       return DEBUG_PIM;
 		    }
+
 		case IGMP_MTRACE:                  return DEBUG_TRACE;
 		case IGMP_MTRACE_RESP:             return DEBUG_TRACE;
 		default:                           return DEBUG_IGMP;
 	    }
+
 	case IPPROTO_PIM:       /* PIM v2 */
 	    /* TODO: modify? */
 	    switch (type) {
@@ -192,8 +200,10 @@ int debug_kind(u_int proto, u_int type, u_int code)
 		case PIM_V2_CAND_RP_ADV:       return DEBUG_PIM_CAND_RP;
 		default:                       return DEBUG_PIM;
 	    }
+
 	default:                               return 0;
     }
+
     return 0;
 }
 
@@ -205,8 +215,7 @@ int debug_kind(u_int proto, u_int type, u_int code)
  * reachability and someone is trying to, i.e., mrinfo me periodically.
  */
 int
-log_level(proto, type, code)
-    u_int proto, type, code;
+log_level(int proto, int type, int code)
 {
     switch (proto) {
 	case IPPROTO_IGMP:
@@ -220,12 +229,16 @@ log_level(proto, type, code)
 			case DVMRP_NEIGHBORS2:
 			    return LOG_INFO;
 		    }
+		    return LOG_WARNING;
+
 		case IGMP_PIM:
 		    /* PIM v1 */
 		    switch (code) {
 			default:
 			    return LOG_INFO;
 		    }
+		    return LOG_WARNING;
+
 		default:
 		    return LOG_WARNING;
 	    }
@@ -236,6 +249,8 @@ log_level(proto, type, code)
 		default:
 		    return LOG_INFO;
 	    }
+	    return LOG_WARNING;
+
 	default:
 	    return LOG_WARNING;
     }
@@ -251,10 +266,10 @@ void fdump(int i __attribute__((unused)))
     FILE *fp;
 
     fp = fopen(dumpfilename, "w");
-    if (fp != NULL) {
+    if (fp) {
 	dump_vifs(fp);
 	dump_pim_mrt(fp);
-	(void) fclose(fp);
+	fclose(fp);
     }
 }
 
@@ -267,11 +282,11 @@ void cdump(int i __attribute__((unused)))
     FILE *fp;
 
     fp = fopen(cachefilename, "w");
-    if (fp != NULL) {
+    if (fp) {
 	/* XXX: TODO: implement it:
 	   dump_cache(fp);
 	*/
-	(void) fclose(fp);
+	fclose(fp);
     }
 }
 

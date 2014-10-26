@@ -455,11 +455,11 @@ extern void	config_vifs_from_kernel	(void);
 extern void	config_vifs_from_file	(void);
 
 /* debug.c */
-extern char	*packet_kind		(u_int proto, u_int type, u_int code);
-extern int	debug_kind		(u_int proto, u_int type, u_int code);
+extern char	*packet_kind		(int proto, int type, int code);
+extern int	debug_kind		(int proto, int type, int code);
 extern void	logit			(int, int, const char *, ...);
 extern void	dump_frame		(char *desc, void *dump, size_t len);
-extern int	log_level		(u_int proto, u_int type, u_int code);
+extern int	log_level		(int proto, int type, int code);
 extern void	dump			(int i);
 extern void	fdump			(int i);
 extern void	cdump			(int i);
