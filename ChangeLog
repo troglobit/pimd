@@ -1,6 +1,39 @@
 #+TITLE:    pimd | Change Log
 #+AUTHOR:   Ahmed Helmy, George Edmond Eddy, Pavlin Ivanov Radoslavov
 
+* Version 2.2.0: October XX, 2014
+** Changes & New Features
+  - Add IP fragmentation support for PIM register messages,
+    by Michael Fine of Cumulus Networks
+  - Support for /LEN instead of masklen LEN, issue #12
+  - Add support for /31 networks, point-to-point, thanks to Apollon Oikonomopoulos
+  - Remove old broken SNMP support
+  - OpenBSD inspired cleanup (deregister)
+  - General code cleanup, shorten local variable names, func decl. etc.
+  - Support for router alert IP option in IGMP queries
+  - Support for reading IGMPv3 membership reports
+  - Update IGMP code to support FreeBSD >= 8.x
+  - Retry read of routing tables on FreeBSD
+  - Fix join/leve of ALL PIM Routers for FreeBSD and other UNIX kernels
+  - Tested on FreeBSD, NetBSD and OpenBSD
+  - Add very simple homegrown configure script
+  - Update and document support for rp_address, cand_rp, and cand_bootstrap_router
+  - Add new spt_threshold to replace existing switch_register_threshold
+    and switch_data_threshold settings.  Cisco like and easier to understand
+
+** Bug Fixes
+  - Fix to avoid infinite loop during unicast send failure, by Alex Tessmer
+  - Fix bug in bootstrap when configured as candidate RP, issue #15
+  - Fix segfault in accept_igmp(), issue #29
+  - Fix default source preference, should be 101 (not 1024!)
+  - Fix ip_len handling on older BSD's, thanks to Olivier Cochard-Labbé, issue #23
+  - Fix default prefix len in static RP example in pimd.conf, should be /4
+  - Fix issue #31: Make IGMP query interval and querier timeout configurable
+  - Fix issue #33: pimd does not work in background under FreeBSD
+  - Fix issue #35: support for timing out other queriers from mrouted
+  - Hopefully fix issue #22: Crash in (S,G) state when neighbor is lost
+  - Misc. bug fixes thanks to Coverity Scan, static code analysis tool
+
 * Version 2.1.8: October 22, 2011
 ** Changes & New Features
   - Update docs of static Rendez-Vous Point, rp_address, configuration in man page
