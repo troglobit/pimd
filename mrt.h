@@ -61,18 +61,19 @@
 
 #define FREE_MRTENTRY(mrtentry_ptr)				\
     do {							\
-	kernel_cache_t *prev;					\
+	kernel_cache_t *curr;					\
 	kernel_cache_t *next;					\
 								\
 	if ((mrtentry_ptr)->vif_timers)				\
 	    free((mrtentry_ptr)->vif_timers);			\
 	if ((mrtentry_ptr)->vif_deletion_delay)			\
 	    free((mrtentry_ptr)->vif_deletion_delay);		\
-	for (next = (mrtentry_ptr)->kernel_cache; next; ) {	\
-	    prev = next; next = next->next;			\
-	    free(prev);						\
+	curr = (mrtentry_ptr)->kernel_cache;			\
+	while (curr) {						\
+	    next = curr->next;					\
+	    free(curr);						\
+	    curr = next;					\
 	}							\
-	free((mrtentry_ptr)->kernel_cache);			\
 	free(mrtentry_ptr);					\
     } while (0)
 
