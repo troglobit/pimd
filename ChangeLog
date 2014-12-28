@@ -1,11 +1,11 @@
 #+TITLE:    pimd | Change Log
 #+AUTHOR:   Ahmed Helmy, George Edmond Eddy, Pavlin Ivanov Radoslavov
 
-* Version 2.2.0: October XX, 2014
+* Version 2.2.0: December 28, 2014
 ** Changes & New Features
   - Add IP fragmentation support for PIM register messages,
     by Michael Fine of Cumulus Networks
-  - Support for /LEN instead of masklen LEN, issue #12
+  - Support =/LEN= syntax in =phyint= to complement =masklen LEN=, issue #12
   - Add support for /31 networks, point-to-point, thanks to Apollon Oikonomopoulos
   - Remove old broken SNMP support
   - OpenBSD inspired cleanup (deregister)
@@ -33,6 +33,7 @@
   - Fix issue #35: support for timing out other queriers from mrouted
   - Hopefully fix issue #22: Crash in (S,G) state when neighbor is lost
   - Misc. bug fixes thanks to Coverity Scan, static code analysis tool
+    https://scan.coverity.com/projects/3319
 
 * Version 2.1.8: October 22, 2011
 ** Changes & New Features
