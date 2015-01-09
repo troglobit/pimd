@@ -152,6 +152,9 @@ struct uvif {
     struct phaddr   *uv_addrs;	    /* Additional subnets on this vif       */
     struct vif_filter *uv_filter;   /* Route filters on this vif	    */
     uint16_t	    uv_pim_hello_timer;/* timer for sending PIM hello msgs  */
+#ifdef ADD_PIM_HELLO_GENID
+    int         uv_pim_hello_genid; /* Random PIM Hello Generation Identifier */
+#endif /* ADD_PIM_HELLO_GENID */
     uint16_t	    uv_gq_timer;    /* Group Query timer        	    */
     uint16_t         uv_jp_timer;    /* The Join/Prune timer                 */
     int             uv_local_pref;  /* default local preference for assert  */

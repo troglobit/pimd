@@ -301,6 +301,10 @@ typedef struct pim_jp_encod_grp_ {
 #define PIM_MESSAGE_HELLO_HOLDTIME              1
 #define PIM_MESSAGE_HELLO_HOLDTIME_LENGTH       2
 #define PIM_MESSAGE_HELLO_HOLDTIME_FOREVER      0xffff
+#ifdef ADD_PIM_HELLO_GENID
+#define PIM_MESSAGE_HELLO_GENID                 20
+#define PIM_MESSAGE_HELLO_GENID_LENGTH          4
+#endif /* ADD_PIM_HELLO_GENID */
 
 /* PIM_REGISTER definitions */
 #define PIM_MESSAGE_REGISTER_BORDER_BIT         0x80000000

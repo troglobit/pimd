@@ -74,6 +74,10 @@ usage()
         echo "                         used by RSVP.  EXPERIMENTAL"
         echo "  --with-includes=PATH   Use this if the multicast header files are not in the"
         echo "                         standard location on your system. E.g., /sys"
+        echo "  --enable-continue-on-error	Do not exit on LOG_ERR log entry."
+        echo "  --enable-add-pim-hello-genid	Add Generation ID in PIM Hello messages (rfc3973)."
+        echo "  --enable-allow-vif-mask-32	Allow virtual tunctl vifs with masklen 32."
+        echo "  --enable-linux-max-vifs-64	Raise maximum number of allowed vifs to 64 on Linux."
         echo
         echo "Report any bugs to https://github.com/troglobit/pimd/issues"
         echo
@@ -120,6 +124,22 @@ while [ "$*" != "" ]; do
 
                 with-includes)
                         echo "INCLUDES     += -I$arg" >> $TMP
+                        ;;
+
+                enable-continue-on-error)
+                        echo "DEFS         += -DCONTINUE_ON_ERROR" >> $TMP
+                        ;;
+
+                enable-add-pim-hello-genid)
+                        echo "DEFS         += -DADD_PIM_HELLO_GENID" >> $TMP
+                        ;;
+
+                enable-allow-vif-mask-32)
+                        echo "DEFS         += -DALLOW_VIF_MASK_32" >> $TMP
+                        ;;
+
+                enable-linux-max-vifs-64)
+                        echo "DEFS         += -DLINUX_MAX_VIFS_64" >> $TMP
                         ;;
 
                 help)

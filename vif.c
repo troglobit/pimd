@@ -165,6 +165,9 @@ void zero_vif(struct uvif *v, int t)
     v->uv_addrs		= (struct phaddr *)NULL;
     v->uv_filter	= (struct vif_filter *)NULL;
     RESET_TIMER(v->uv_pim_hello_timer);
+#ifdef ADD_PIM_HELLO_GENID
+    v->uv_pim_hello_genid = 0;
+#endif /* ADD_PIM_HELLO_GENID */
     RESET_TIMER(v->uv_gq_timer);
     RESET_TIMER(v->uv_jp_timer);
     v->uv_pim_neighbors	= (struct pim_nbr_entry *)NULL;
@@ -294,6 +297,9 @@ static void start_vif(vifi_t vifi)
 	v->uv_flags = v->uv_flags & ~VIFF_DOWN;
     else {
 	v->uv_flags = (v->uv_flags | VIFF_DR | VIFF_NONBRS) & ~VIFF_DOWN;
+#ifdef ADD_PIM_HELLO_GENID
+	v->uv_pim_hello_genid = RANDOM();
+#endif /* ADD_PIM_HELLO_GENID */
 	SET_TIMER(v->uv_pim_hello_timer, 1 + RANDOM() % PIM_TIMER_HELLO_PERIOD);
 	SET_TIMER(v->uv_jp_timer, 1 + RANDOM() % PIM_JOIN_PRUNE_PERIOD);
 	/* TODO: CHECK THE TIMERS!!!!! Set or reset? */
