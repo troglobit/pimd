@@ -56,24 +56,30 @@ usage()
         echo
         echo "Usage: $0 [ARG]"
         echo
-        echo "  --enable-broken-crc    Interop with older broken Cisco firmware that did the"
-        echo "                         checksum in PIM Register messages slightly wrong."
-        echo "                         Should not be needed anymore."
-        echo "  --enable-kernel-encap  Some kernels can do the PIM Register encapsulation by"
-        echo "                         themselves, this speeds up processing considerably."
-        echo "                         Only enable this if your kernel supports it."
-        echo "  --enable-kernel-mfc    Some specialized kernels may have (*,G) MFC support."
-        echo "                         Only enable this if your kernel supports it."
-        echo "  --enable-memory-save   Save 4 bytes per unconfigured interface per routing"
-        echo "                         entry.  Must restart pimd and cause routing table to"
-        echo "                         be flushed when configuring new interfaces."
-        echo "  --enable-scoped-acls   Scoped access control list support in pimd.conf, as"
-        echo "                         phyint IFNAME [scoped <MCGROUP> masklen <LEN>], e.g."
-        echo "                         phyint fxp0 scoped 239.0.0.0 masklen 8"
-        echo "  --enable-rsrr          Routing Support for Resource Reservations, currently"
-        echo "                         used by RSVP.  EXPERIMENTAL"
-        echo "  --with-includes=PATH   Use this if the multicast header files are not in the"
-        echo "                         standard location on your system. E.g., /sys"
+        echo "  --enable-broken-crc       Interop with older broken Cisco firmware that did"
+        echo "                            checksum in PIM Register messages slightly wrong."
+        echo "                            Should not be needed anymore."
+        echo "  --enable-kernel-encap     Some kernels can do PIM Register encapsulation by"
+        echo "                            themselves, this speeds up processing considerably"
+        echo "                            Only enable this if your kernel supports it"
+        echo "  --enable-kernel-mfc       Specialized kernels may have (*,G) MFC support."
+        echo "                            Only enable this if your kernel supports it."
+        echo "  --enable-memory-save      Save 4 bytes/unconfigured interface/routing entry"
+        echo "                            Must restart pimd and cause routing table to be"
+        echo "                            flushed when configuring new interfaces."
+        echo "  --enable-scoped-acls      Scoped access control list support in pimd.conf"
+        echo "                            phyint IFNAME [scoped <MCGROUP> masklen <LEN>]"
+        echo "                            phyint fxp0 scoped 239.0.0.0 masklen 8"
+        echo "  --enable-rsrr             Routing Support for Resource Reservations,"
+        echo "                            currently used by RSVP.  EXPERIMENTAL"
+        echo "  --enable-pim-hello-genid  Add Generation ID in PIM Hello messages, RFC3973"
+        echo
+        echo "  --disable-exit-on-error   Do not exit on error messages (LOG_ERR)"
+        echo "  --disable-masklen-check   Allow virtual tunctl VIFs with masklen 32"
+        echo
+        echo "  --with-includes=PATH      Use this if the multicast header files are not in"
+        echo "                            a standard location on your system. E.g., /sys"
+        echo "  --with-max-vifs=MAXVIFS   Kernel maximum number of allowed VIFs, default 32"
         echo
         echo "Report any bugs to https://github.com/troglobit/pimd/issues"
         echo
@@ -118,8 +124,24 @@ while [ "$*" != "" ]; do
                         echo "EXTRA_OBJS   += rsrr.o" >> $TMP
                         ;;     
 
+                enable-pim-hello-genid)
+                        echo "DEFS         += -DPIM_HELLO_GENID" >> $TMP
+                        ;;
+
+                disable-exit-on-error)
+                        echo "DEFS         += -DCONTINUE_ON_ERROR" >> $TMP
+                        ;;
+
+                disable-masklen-check)
+                        echo "DEFS         += -DDISABLE_MASKLEN_CHECK" >> $TMP
+                        ;;
+
                 with-includes)
                         echo "INCLUDES     += -I$arg" >> $TMP
+                        ;;
+
+                with-max-vifs)
+                        echo "DEFS         += -DCUSTOM_MAX_VIFS=$arg" >> $TMP
                         ;;
 
                 help)

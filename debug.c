@@ -424,8 +424,9 @@ void logit(int severity, int syserr, const char *format, ...)
 	    syslog(severity, "%s", msg);
 	}
     }
-
+#ifndef CONTINUE_ON_ERROR
     if (severity <= LOG_ERR) exit(-1);
+#endif /* CONTINUE_ON_ERROR */
 }
 
 

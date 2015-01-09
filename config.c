@@ -190,13 +190,19 @@ void config_vifs_from_kernel(void)
 	}
 
 	subnet = addr & mask;
-	if ((!inet_valid_subnet(subnet, mask)) || (addr == subnet) || addr == (subnet | ~mask)) {
-	    if (!(inet_valid_host(addr) && ((mask == htonl(0xfffffffe)) || (flags & IFF_POINTOPOINT)))) {
-		logit(LOG_WARNING, 0, "Ignoring %s, has invalid address %s and/or netmask %s",
-		      ifr.ifr_name, inet_fmt(addr, s1, sizeof(s1)), inet_fmt(mask, s2, sizeof(s2)));
-		continue;
-	    }
+#ifdef DISABLE_MASKLEN_CHECK
+	if (mask != 0xffffffff) {
+#endif
+		if ((!inet_valid_subnet(subnet, mask)) || (addr == subnet) || addr == (subnet | ~mask)) {
+			if (!(inet_valid_host(addr) && ((mask == htonl(0xfffffffe)) || (flags & IFF_POINTOPOINT)))) {
+				logit(LOG_WARNING, 0, "Ignoring %s, has invalid address %s and/or netmask %s",
+				ifr.ifr_name, inet_fmt(addr, s1, sizeof(s1)), inet_fmt(mask, s2, sizeof(s2)));
+				continue;
+			}
+		}
+#ifdef DISABLE_MASKLEN_CHECK
 	}
+#endif
 
 	/*
 	 * Ignore any interface that is connected to the same subnet as
