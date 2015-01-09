@@ -50,6 +50,7 @@ char versionstring[100];
 int disable_all_by_default = 0;
 int haveterminal = 1;
 struct rp_hold *g_rp_hold = NULL;
+int mrt_table_id = 0;
 
 char *config_file = _PATH_PIMD_CONF;
 
@@ -257,6 +258,7 @@ static int usage(void)
     /* fputs("  -p,--show-debug      Show debug dump, only if debug is enabled\n", stderr); */
     fputs("  -q, --quit-daemon    Send SIGTERM to a running pimd\n", stderr);
     fputs("  -r, --show-routes    Show state of VIFs and multicast routing tables\n", stderr);
+    fputs("  -t, --table-id       Set multicast routing table id. Allowed values are 0 ... 999999999. Default value is 0 (use default table).\n", stderr);
     fprintf(stderr, "  -v, --version        Show %s version\n", __progname);
     fputs("\n", stderr);
 
@@ -298,6 +300,7 @@ int main(int argc, char *argv[])
 	{"quit-daemon", 0, 0, 'q'},
 	{"reload-config", 0, 0, 'l'},
 	{"show-routes", 0, 0, 'r'},
+	{"table-id", 3, 0, 't'},
 	/* {"show-cache", 0, 0, 'i'}, */
 	/* {"show-debug", 0, 0, 'p'}, */
 	{0, 0, 0, 0}
@@ -305,7 +308,7 @@ int main(int argc, char *argv[])
 
     snprintf(versionstring, sizeof (versionstring), "pimd version %s", todaysversion);
 
-    while ((ch = getopt_long(argc, argv, "c:d::fhlNvqr", long_options, NULL)) != EOF) {
+    while ((ch = getopt_long(argc, argv, "c:d::fhlNvqrt:", long_options, NULL)) != EOF) {
 	switch (ch) {
 	    case 'c':
 		config_file = optarg;
@@ -363,6 +366,24 @@ int main(int argc, char *argv[])
 
 	    case 'r':
 		return killshow(SIGUSR1, _PATH_PIMD_DUMP);
+
+	    case 't':
+		errno = 0;
+		char *endptr;
+		int res = strtol(optarg, &endptr, 10);
+		if (endptr==optarg) {
+			fprintf(stderr, "Table ID must be number\n");
+			return usage();
+		}
+		if (errno!=0) {
+			fprintf(stderr, "Invalid Table ID: %s\n", strerror(errno));
+			return usage();
+		} else if (res<0 || res>999999999) {
+			fprintf(stderr, "Table ID must be in range [0 ... 999999999]\n");
+			return usage();
+		}
+		mrt_table_id = res;
+		break;
 
 #if 0 /* XXX: TODO */
 	    case 'i':
