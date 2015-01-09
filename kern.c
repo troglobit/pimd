@@ -51,6 +51,10 @@ int curttl = 0;
 #define MRT_PIM MRT_ASSERT
 #endif /* MRT_PIM */
 
+#ifndef MRT_TABLE
+#define MRT_TABLE       (MRT_BASE+9)    /* Specify mroute table ID              */
+#endif /* MRT_TABLE */
+
 /*
  * Open/init the multicast routing in the kernel and sets the
  * MRT_PIM (aka MRT_ASSERT) flag in the kernel.
@@ -58,6 +62,12 @@ int curttl = 0;
 void k_init_pim(int socket)
 {
     int v = 1;
+
+    if (mrt_table_id != 0) {
+        logit(LOG_INFO, 0, "Initializing multicast routing table id %u", mrt_table_id);
+        if (setsockopt(socket, IPPROTO_IP, MRT_TABLE, &mrt_table_id, sizeof(mrt_table_id)) < 0)
+            logit(LOG_ERR, errno, "Cannot set multicast routing table id. Make sure CONFIG_IP_MROUTE_MULTIPLE_TABLES=y is set in running kernel.");
+    }
 
     if (setsockopt(socket, IPPROTO_IP, MRT_INIT, (char *)&v, sizeof(int)) < 0) {
 	if (errno == EADDRINUSE)

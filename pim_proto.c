@@ -460,6 +460,24 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *pim_message, 
     mrtentry_t *mrtentry2;
     vifbitmap_t oifs;
 
+    /*
+     * If instance specific multicast routing table is in use, check
+     * that we are the target of the register packet. Otherwise we
+     * might end up responding to register packet belonging to another
+     * pimd instance. If we are not an RP candidate, we shouldn't have
+     * pimreg interface and shouldn't receive register packets, but we'll
+     * check the cand_rp flag anyway, just to be on the safe side.
+     */
+    if (mrt_table_id != 0) {
+        if (!cand_rp_flag || my_cand_rp_address != reg_dst) {
+            IF_DEBUG(DEBUG_PIM_REGISTER) {
+                logit(LOG_DEBUG, 0, "PIM register: packet from %s to %s is not destined for us",
+                    inet_fmt(reg_src, s1, sizeof(s1)), inet_fmt(reg_dst, s2, sizeof(s2)));
+	        }
+            return FALSE;
+        }
+    }
+
     IF_DEBUG(DEBUG_PIM_REGISTER) {
         logit(LOG_INFO, 0, "Received PIM register: len = %d from %s",
               len, inet_fmt(reg_src, s1, sizeof(s1)));

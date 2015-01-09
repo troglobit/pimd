@@ -346,13 +346,20 @@ static void start_vif(vifi_t vifi)
 	struct ifreq ifr;
 
 	memset(&ifr, 0, sizeof(struct ifreq));
-	/* strlcpy(ifr.ifr_name,v->uv_name, IFNAMSIZ); */
-	strlcpy(ifr.ifr_name, "pimreg", IFNAMSIZ);
+
+	if (mrt_table_id != 0) {
+	        logit(LOG_INFO, 0, "Initializing pimreg%u", mrt_table_id);
+		snprintf(ifr.ifr_name, IFNAMSIZ, "pimreg%u", mrt_table_id);
+	} else {
+		strlcpy(ifr.ifr_name, "pimreg", IFNAMSIZ);
+	}
+
 	if (ioctl(udp_socket, SIOGIFINDEX, (char *) &ifr) < 0) {
 	    logit(LOG_ERR, errno, "ioctl SIOGIFINDEX for %s", ifr.ifr_name);
 	    /* Not reached */
 	    return;
 	}
+
 	v->uv_ifindex = ifr.ifr_ifindex;
     }
 #endif /* __linux__ */

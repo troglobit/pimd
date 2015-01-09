@@ -307,6 +307,7 @@ extern struct cand_rp_adv_message_ {
 } cand_rp_adv_message;
 
 extern int disable_all_by_default;
+extern int mrt_table_id;
 
 /*
  * Used to contol the switching to the shortest path:
