@@ -44,7 +44,7 @@ extern unsigned long	debug;
 extern int log_nmsgs;
 #define IF_DEBUG(l)	if (debug && debug & (l))
 
-#define LOG_MAX_MSGS	20	/* if > 20/minute then shut up for a while */
+#define LOG_MAX_MSGS	100	/* if > 100/minute then shut up for a while */
 #define LOG_SHUT_UP	600	/* shut up for 10 minutes */
 
 /* Debug values definition */

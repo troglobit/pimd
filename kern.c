@@ -416,11 +416,9 @@ int k_del_mfc(int socket, uint32_t source, uint32_t group)
 	return FALSE;
     }
 
-    IF_DEBUG(DEBUG_MFC) {
-	logit(LOG_DEBUG, 0, "Removed MFC entry src %s, grp %s",
-	      inet_fmt(mc.mfcc_origin.s_addr, s1, sizeof(s1)),
-	      inet_fmt(mc.mfcc_mcastgrp.s_addr, s2, sizeof(s2)));
-    }
+    logit(LOG_INFO, 0, "Removed MFC entry src %s, grp %s",
+	inet_fmt(mc.mfcc_origin.s_addr, s1, sizeof(s1)),
+	inet_fmt(mc.mfcc_mcastgrp.s_addr, s2, sizeof(s2)));
 
     return TRUE;
 }
@@ -462,6 +460,10 @@ int k_chg_mfc(int socket, uint32_t source, uint32_t group, vifi_t iif, vifbitmap
 
 	return FALSE;
     }
+
+    logit(LOG_INFO, 0, "Added kernel MFC entry src %s grp %s",
+	  inet_fmt(mc.mfcc_origin.s_addr, s1, sizeof(s1)),
+	  inet_fmt(mc.mfcc_mcastgrp.s_addr, s2, sizeof(s2)));
 
     return TRUE;
 }
