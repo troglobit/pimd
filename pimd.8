@@ -127,6 +127,24 @@ running pimd, similar to --reload-config.
 Show
 .Nm
 version
+.It Fl s, -loglevel=LEVEL
+Set syslog level to one of the following:
+.Pp
+.Bl -tag -width TERM -compact -offset indent
+.It Cm 1
+LOG_ALERT - Action must be taken immediately
+.It Cm 2
+LOG_CRIT - Critical conditions
+.It Cm 3
+LOG_ERR - Error conditions
+.It Cm 4
+LOG_WARNING - Warning conditions
+.It Cm 5
+LOG_NOTICE - Normal but significant condition (Default)
+.It Cm 6
+LOG_INFO - Informational
+.It Cm 7
+LOG_DEBUG - Debug-level messages
 .El
 .Sh CONFIGURATION
 The configuration is kept in the file
