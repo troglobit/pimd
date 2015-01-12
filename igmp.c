@@ -188,11 +188,10 @@ static void accept_igmp(ssize_t recvlen)
 	return;
     }
 
-    IF_DEBUG(DEBUG_PKT | debug_kind(IPPROTO_IGMP, igmp->igmp_type, igmp->igmp_code)) {
-	logit(LOG_DEBUG, 0, "RECV %5d bytes %s from %-15s to %s", recvlen,
-	      packet_kind(IPPROTO_IGMP, igmp->igmp_type, igmp->igmp_code),
-	      inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
-    }
+    /* TODO: rate-limit logging? */
+    logit(LOG_INFO, 0, "Received %s from %s to %s",
+	  packet_kind(IPPROTO_IGMP, igmp->igmp_type, igmp->igmp_code),
+	  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
 
     switch (igmp->igmp_type) {
 	case IGMP_MEMBERSHIP_QUERY:
@@ -326,10 +325,11 @@ static void send_ip_frame(uint32_t src, uint32_t dst, int type, int code, char *
     sin.sin_len = sizeof(sin);
 #endif
 
-    IF_DEBUG(DEBUG_PKT) {
-	logit(LOG_INFO, 0, "Sending IGMP packet sd:%d, buf:%p, len:%u ...", igmp_socket, buf, len);
-	dump_frame(NULL, buf, len);
-    }
+    /* Todo: rate-limit logging? */
+    logit(LOG_INFO, 0, "Send %s from %s to %s",
+	  packet_kind(IPPROTO_IGMP, type, code),
+	  src == INADDR_ANY_N ? "INADDR_ANY" :
+	  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
 
     while (sendto(igmp_socket, buf, len, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
 	if (errno == EINTR)

@@ -143,6 +143,9 @@ void age_vifs(void)
 	    IF_NOT_TIMEOUT(curr->timer)
 		continue;
 
+	    logit(LOG_INFO, 0, "Delete PIM neighbor %s on %s (holdtime timeout)",
+		  inet_fmt(curr->address, s2, sizeof(s2)), v->uv_name);
+
 	    delete_pim_nbr(curr);
 	}
 
@@ -789,8 +792,13 @@ void age_misc(void)
 	    rp_next = rp->grp_rp_next;
 
 	    if (rp->holdtime < 60000) {
-		IF_TIMEOUT(rp->holdtime)
+		IF_TIMEOUT(rp->holdtime) {
+		    if (rp->group!=NULL) {
+			logit(LOG_INFO, 0, "Delete RP group entry for group %s (holdtime timeout)",
+			      inet_fmt(rp->group->group_addr, s2, sizeof(s2)));
+		    }
 		    delete_rp_grp_entry(&cand_rp_list, &grp_mask_list, rp);
+		}
 	    }
 	}
     }

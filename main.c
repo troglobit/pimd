@@ -474,9 +474,6 @@ int main(int argc, char *argv[])
     do_randomize();
     time(&boottime);
 
-    /* Start up the log rate-limiter */
-    resetlogging(NULL);
-
     callout_init();
     init_igmp();
     init_pim();
@@ -485,6 +482,9 @@ int main(int argc, char *argv[])
 #endif /* HAVE_ROUTING_SOCKETS */
     init_pim_mrt();
     init_timers();
+
+    /* Start up the log rate-limiter */
+    resetlogging(NULL);
 
     /* TODO: check the kernel DVMRP/MROUTED/PIM support version */
 
@@ -836,12 +836,15 @@ static void resetlogging(void *arg)
     int nxttime = 60;
     void *narg = NULL;
 
-    if (arg == NULL && log_nmsgs > LOG_MAX_MSGS) {
+    if (arg == NULL && log_nmsgs >= LOG_MAX_MSGS) {
 	nxttime = LOG_SHUT_UP;
 	narg = (void *)&log_nmsgs;	/* just need some valid void * */
 	syslog(LOG_WARNING, "logging too fast, shutting up for %d minutes",
 	       LOG_SHUT_UP / 60);
     } else {
+	if (arg != NULL) {
+	    syslog(LOG_NOTICE, "logging enabled again after rate limiting");
+	}
 	log_nmsgs = 0;
     }
 

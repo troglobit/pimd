@@ -131,6 +131,8 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
      * This is a new neighbor. Create a new entry for it.
      * It must be added right after `prev_nbr`
      */
+    logit(LOG_INFO, 0, "Received PIM HELLO from new neighbor %s",
+	  inet_fmt(src, s1, sizeof(s1)));
     new_nbr = calloc(1, sizeof(pim_nbr_entry_t));
     if (!new_nbr)
 	logit(LOG_ERR, 0, "Ran out of memory in receive_pim_hello()");
@@ -553,6 +555,9 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *pim_message, 
 	return FALSE;
     }
 
+    logit(LOG_INFO, 0, "Received PIM REGISTER: src %s, group %s",
+	  inet_fmt(reg_src, s1, sizeof(s1)), inet_fmt(reg_dst, s2, sizeof(s2)));
+
     mrtentry = find_route(inner_src, inner_grp, MRTF_SG | MRTF_WC | MRTF_PMBR, DONT_CREATE);
     if (!mrtentry) {
 	/* No routing entry. Send REGISTER_STOP and return. */
@@ -810,14 +815,8 @@ int send_pim_register(char *packet)
 	reg_src = uvifs[vifi].uv_lcl_addr;
 	reg_dst = mrtentry->group->rpaddr;
 
-	IF_DEBUG(DEBUG_PIM_REGISTER) {
-	    logit(LOG_DEBUG, 0, "Composing PIM_REGISTER (%zd + %zd + %zd) %d bytes to RP %s for src = %s and group = %s",
-		  sizeof(struct ip), sizeof(pim_header_t) + sizeof(pim_register_t),
-		  htons(ip->ip_len), pktlen,
-		  inet_fmt(reg_dst, s1, sizeof(s1)),
-		  inet_fmt(reg_src, s2, sizeof(s2)),
-		  inet_fmt(group, s3, sizeof(s3)));
-	}
+	logit(LOG_INFO, 0, "Send PIM REGISTER: src %s, group %s",
+	      inet_fmt(reg_src, s1, sizeof(s1)), inet_fmt(reg_dst, s2, sizeof(s2)));
 
 	send_pim_unicast(pim_send_buf, reg_mtu, reg_src, reg_dst, PIM_REGISTER, pktlen);
 
@@ -897,11 +896,9 @@ int receive_pim_register_stop(uint32_t reg_src, uint32_t reg_dst, char *pim_mess
     GET_EGADDR(&egaddr,  data);
     GET_EUADDR(&eusaddr, data);
 
-    IF_DEBUG(DEBUG_PIM_REGISTER) {
-	logit(LOG_DEBUG, 0, "Received PIM_REGISTER_STOP from RP %s to %s for src = %s and group = %s", inet_fmt(reg_src, s1, sizeof(s1)), inet_fmt(reg_dst, s2, sizeof(s2)),
-	      inet_fmt(eusaddr.unicast_addr, s3, sizeof(s3)),
-	      inet_fmt(egaddr.mcast_addr, s4, sizeof(s4)));
-    }
+    logit(LOG_INFO, 0, "Received PIM_REGISTER_STOP from RP %s to %s for src = %s and group = %s", inet_fmt(reg_src, s1, sizeof(s1)), inet_fmt(reg_dst, s2, sizeof(s2)),
+	  inet_fmt(eusaddr.unicast_addr, s3, sizeof(s3)),
+	  inet_fmt(egaddr.mcast_addr, s4, sizeof(s4)));
 
     /* TODO: apply the group mask and do register_stop for all grp addresses */
     /* TODO: check for SourceAddress == 0 */
@@ -938,11 +935,9 @@ send_pim_register_stop(uint32_t reg_src, uint32_t reg_dst, uint32_t inner_grp, u
     char   *buf;
     uint8_t *data;
 
-    IF_DEBUG(DEBUG_PIM_REGISTER) {
-	logit(LOG_DEBUG, 0, "Sending register stop (%s, %s, %s, %s)",
-	      inet_fmt(reg_src, s1, sizeof(s1)), inet_fmt(reg_dst, s2, sizeof(s2)),
-	      inet_fmt(inner_grp, s3, sizeof(s3)), inet_fmt(inner_src, s4, sizeof(s4)));
-    }
+    logit(LOG_INFO, 0, "Send PIM REGISTER STOP from %s to RP %s for src = %s and group = %s",
+	  inet_fmt(reg_src, s1, sizeof(s1)), inet_fmt(reg_dst, s2, sizeof(s2)),
+	  inet_fmt(inner_src, s3, sizeof(s3)), inet_fmt(inner_grp, s4, sizeof(s4)));
 
     buf  = pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t);
     data = (uint8_t *)buf;
@@ -1119,6 +1114,9 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
     if (num_groups == 0)
 	return FALSE;    /* No indication for groups in the message */
     GET_HOSTSHORT(holdtime, data);
+
+    logit(LOG_INFO, 0, "Received PIM JOIN/PRUNE from %s on %s",
+	  inet_fmt(src, s1, sizeof(s1)), v->uv_name);
 
     /* Sanity check for the message length through all the groups */
     num_groups_tmp = num_groups;
@@ -2417,6 +2415,8 @@ static void send_jp_message(pim_nbr_entry_t *pim_nbr)
     vifi = pim_nbr->vifi;
     memcpy(pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t),
 	   pim_nbr->build_jp_message->jp_message, len);
+    logit(LOG_INFO, 0, "Send PIM JOIN/PRUNE from %s on %s",
+	  inet_fmt(uvifs[vifi].uv_lcl_addr, s1, sizeof(s1)), uvifs[vifi].uv_name);
     send_pim(pim_send_buf, uvifs[vifi].uv_lcl_addr, allpimrouters_group,
 	     PIM_JOIN_PRUNE, len);
     return_jp_working_buff(pim_nbr);
@@ -2477,6 +2477,11 @@ int receive_pim_assert(uint32_t src, uint32_t dst __attribute__((unused)), char 
 
     source = eusaddr.unicast_addr;
     group = egaddr.mcast_addr;
+
+    logit(LOG_INFO, 0, "Received PIM ASSERT from %s for group %s and source %s",
+	inet_fmt(src, s1, sizeof(s1)), inet_fmt(group, s2, sizeof(s2)),
+	inet_fmt(source, s3, sizeof(s3)));
+
     /* Find the longest "active" entry, i.e. the one with a kernel mirror */
     if (assert_rptbit) {
 	mrt = find_route(INADDR_ANY_N, group, MRTF_WC | MRTF_PMBR, DONT_CREATE);
@@ -2741,6 +2746,12 @@ int send_pim_assert(uint32_t source, uint32_t group, vifi_t vifi, mrtentry_t *mr
 	local_preference |= PIM_ASSERT_RPT_BIT;
     PUT_HOSTLONG(local_preference, data);
     PUT_HOSTLONG(local_metric, data);
+
+    logit(LOG_INFO, 0, "Send PIM ASSERT from %s for group %s and source %s",
+	  inet_fmt(uvifs[vifi].uv_lcl_addr, s1, sizeof(s1)),
+	  inet_fmt(group, s2, sizeof(s2)),
+	  inet_fmt(source, s3, sizeof(s3)));
+
     send_pim(pim_send_buf, uvifs[vifi].uv_lcl_addr, allpimrouters_group,
 	     PIM_ASSERT, data - data_start);
 
