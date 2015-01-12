@@ -53,6 +53,7 @@ struct rp_hold *g_rp_hold = NULL;
 int mrt_table_id = 0;
 
 char *config_file = _PATH_PIMD_CONF;
+int syslog_level = LOG_NOTICE;
 
 extern char todaysversion[];
 
@@ -259,6 +260,7 @@ static int usage(void)
     fputs("  -q, --quit-daemon    Send SIGTERM to a running pimd\n", stderr);
     fputs("  -r, --show-routes    Show state of VIFs and multicast routing tables\n", stderr);
     fputs("  -t, --table-id       Set multicast routing table id. Allowed values are 0 ... 999999999. Default value is 0 (use default table).\n", stderr);
+    fputs("  -s, --syslog-level=LEVEL  Maximum syslog level to use, default LOG_NOTICE\n", stderr);
     fprintf(stderr, "  -v, --version        Show %s version\n", __progname);
     fputs("\n", stderr);
 
@@ -277,6 +279,16 @@ static int usage(void)
 	    j &= ~d->level;
 	}
     }
+    fputc('\n', stderr);
+
+    fputs("\nValid syslog levels:", stderr);
+    fputs("\n  1 - LOG_ALERT: action must be taken immediately", stderr);
+    fputs("\n  2 - LOG_CRIT: critical conditions", stderr);
+    fputs("\n  3 - LOG_ERR: error conditions", stderr);
+    fputs("\n  4 - LOG_WARNING: warning conditions", stderr);
+    fputs("\n  5 - LOG_NOTICE: normal but significant condition (DEFAULT)", stderr);
+    fputs("\n  6 - LOG_INFO: informational", stderr);
+    fputs("\n  7 - LOG_DEBUG: debug-level messages", stderr);
     fputc('\n', stderr);
 
     return 1;
@@ -301,6 +313,7 @@ int main(int argc, char *argv[])
 	{"reload-config", 0, 0, 'l'},
 	{"show-routes", 0, 0, 'r'},
 	{"table-id", 3, 0, 't'},
+	{"syslog-level", 1, 0, 's'},
 	/* {"show-cache", 0, 0, 'i'}, */
 	/* {"show-debug", 0, 0, 'p'}, */
 	{0, 0, 0, 0}
@@ -308,7 +321,7 @@ int main(int argc, char *argv[])
 
     snprintf(versionstring, sizeof (versionstring), "pimd version %s", todaysversion);
 
-    while ((ch = getopt_long(argc, argv, "c:d::fhlNvqrt:", long_options, NULL)) != EOF) {
+    while ((ch = getopt_long(argc, argv, "c:d::fhlNvqrt:s:", long_options, NULL)) != EOF) {
 	switch (ch) {
 	    case 'c':
 		config_file = optarg;
@@ -385,6 +398,14 @@ int main(int argc, char *argv[])
 		mrt_table_id = res;
 		break;
 
+	    case 's':
+		syslog_level = atoi(optarg);
+		if (syslog_level<LOG_ALERT || syslog_level>LOG_DEBUG) {
+		    fprintf(stderr, "Syslog level must be in range [1 ... 7]\n");
+		    return usage();
+		}
+		break;
+
 #if 0 /* XXX: TODO */
 	    case 'i':
 		return killshow(SIGUSR2, _PATH_PIMD_CACHE);
@@ -435,7 +456,7 @@ int main(int argc, char *argv[])
      */
 #ifdef LOG_DAEMON
     openlog("pimd", LOG_PID, LOG_DAEMON);
-    setlogmask(LOG_UPTO(LOG_NOTICE));
+    setlogmask(LOG_UPTO(syslog_level));
 #else
     openlog("pimd", LOG_PID);
 #endif /* LOG_DAEMON */
