@@ -569,6 +569,9 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *pim_message, 
 
     /* Check if I am the RP for that group */
     if ((local_address(reg_dst) == NO_VIF) || !check_mrtentry_rp(mrtentry, reg_dst)) {
+	IF_DEBUG(DEBUG_PIM_REGISTER) {
+	    logit(LOG_DEBUG, 0, "Not RP in address %s", inet_fmt(reg_dst, s1, sizeof(s1)));
+	}
 	send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
 
 	return TRUE;
@@ -584,6 +587,10 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *pim_message, 
 	    if (!is_null) {
 		calc_oifs(mrtentry, &oifs);
 		if (VIFM_ISEMPTY(oifs) && (mrtentry->incoming == reg_vif_num)) {
+		    IF_DEBUG(DEBUG_PIM_REGISTER) {
+			logit(LOG_DEBUG, 0, "No output intefaces found for group %s source %s",
+			      inet_fmt(inner_grp, s1, sizeof(s1)), inet_fmt(inner_src, s2, sizeof(s2)));
+		    }
 		    send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
 		    return TRUE;
 		}
@@ -601,6 +608,10 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *pim_message, 
 		 */
 		if (is_border) {
 		    if (mrtentry->pmbr_addr != reg_src) {
+			IF_DEBUG(DEBUG_PIM_REGISTER) {
+			    logit(LOG_DEBUG, 0, "pmbr_addr (%s) != reg_src (%s)",
+				  inet_fmt(mrtentry->pmbr_addr, s1, sizeof(s1)), inet_fmt(reg_src, s2, sizeof(s2)));
+			}
 			send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
 
 			return TRUE;
@@ -615,6 +626,10 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *pim_message, 
 	}
 	else {
 	    /* The SPT bit is set */
+	    IF_DEBUG(DEBUG_PIM_REGISTER) {
+		logit(LOG_DEBUG, 0, "SPT bit is set for group %s source %s",
+		      inet_fmt(inner_grp, s1, sizeof(s1)), inet_fmt(inner_src, s2, sizeof(s2)));
+	    }
 	    send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
 	    return TRUE;
 	}
@@ -644,6 +659,10 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *pim_message, 
 	/* (*,G) entry */
 	calc_oifs(mrtentry, &oifs);
 	if (VIFM_ISEMPTY(oifs)) {
+	    IF_DEBUG(DEBUG_PIM_REGISTER) {
+		logit(LOG_DEBUG, 0, "No output intefaces found for group %s source %s (*,G)",
+		      inet_fmt(inner_grp, s1, sizeof(s1)), inet_fmt(inner_src, s2, sizeof(s2)));
+	    }
 	    send_pim_register_stop(reg_dst, reg_src, inner_grp, INADDR_ANY_N);
 
 	    return FALSE;
@@ -705,6 +724,11 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *pim_message, 
 
     /* Shoudn't happen: invalid routing entry? */
     /* XXX: TODO: shoudn't be inner_src=INADDR_ANY? Not in the spec. */
+    IF_DEBUG(DEBUG_PIM_REGISTER) {
+	logit(LOG_DEBUG, 0, "Shoudn't happen: invalid routing entry? (%s, %s, %s, %s)",
+	      inet_fmt(reg_dst, s1, sizeof(s1)), inet_fmt(reg_src, s2, sizeof(s2)),
+	      inet_fmt(inner_grp, s3, sizeof(s3)), inet_fmt(inner_src, s4, sizeof(s4)));
+    }
     send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
 
     return TRUE;
@@ -913,6 +937,12 @@ send_pim_register_stop(uint32_t reg_src, uint32_t reg_dst, uint32_t inner_grp, u
 {
     char   *buf;
     uint8_t *data;
+
+    IF_DEBUG(DEBUG_PIM_REGISTER) {
+	logit(LOG_DEBUG, 0, "Sending register stop (%s, %s, %s, %s)",
+	      inet_fmt(reg_src, s1, sizeof(s1)), inet_fmt(reg_dst, s2, sizeof(s2)),
+	      inet_fmt(inner_grp, s3, sizeof(s3)), inet_fmt(inner_src, s4, sizeof(s4)));
+    }
 
     buf  = pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t);
     data = (uint8_t *)buf;
