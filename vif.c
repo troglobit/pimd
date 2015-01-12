@@ -40,6 +40,8 @@
 
 #include "defs.h"
 
+extern uint16_t pim_timer_hello_period;
+extern uint16_t pim_timer_hello_holdtime;
 
 /*
  * Exported variables.
@@ -300,7 +302,7 @@ static void start_vif(vifi_t vifi)
 #ifdef ADD_PIM_HELLO_GENID
 	v->uv_pim_hello_genid = RANDOM();
 #endif /* ADD_PIM_HELLO_GENID */
-	SET_TIMER(v->uv_pim_hello_timer, 1 + RANDOM() % PIM_TIMER_HELLO_PERIOD);
+	SET_TIMER(v->uv_pim_hello_timer, 1 + RANDOM() % pim_timer_hello_period);
 	SET_TIMER(v->uv_jp_timer, 1 + RANDOM() % PIM_JOIN_PRUNE_PERIOD);
 	/* TODO: CHECK THE TIMERS!!!!! Set or reset? */
 	RESET_TIMER(v->uv_gq_timer);
@@ -330,7 +332,7 @@ static void start_vif(vifi_t vifi)
 	query_groups(v);
 
 	/* Send a probe via the new vif to look for neighbors. */
-	send_pim_hello(v, PIM_TIMER_HELLO_HOLDTIME);
+	send_pim_hello(v, pim_timer_hello_holdtime);
     }
 #ifdef __linux__
     else {

@@ -53,6 +53,9 @@ static int compare_metrics         (uint32_t local_preference,
 build_jp_message_t *build_jp_message_pool;
 int build_jp_message_pool_counter;
 
+extern uint16_t pim_timer_hello_period;
+extern uint16_t pim_timer_hello_holdtime;
+
 /************************************************************************
  *                        PIM_HELLO
  ************************************************************************/
@@ -157,7 +160,7 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
     /* XXX: TODO: not in the spec,
      * but probably should send the message after a short random period?
      */
-    send_pim_hello(v, PIM_TIMER_HELLO_HOLDTIME);
+    send_pim_hello(v, pim_timer_hello_holdtime);
 
     if (v->uv_flags & VIFF_DR) {
 	/*
@@ -436,7 +439,7 @@ int send_pim_hello(struct uvif *v, uint16_t holdtime)
 
     len = data - (uint8_t *)buf;
     send_pim(pim_send_buf, v->uv_lcl_addr, allpimrouters_group, PIM_HELLO, len);
-    SET_TIMER(v->uv_pim_hello_timer, PIM_TIMER_HELLO_PERIOD);
+    SET_TIMER(v->uv_pim_hello_timer, pim_timer_hello_period);
 
     return TRUE;
 }
