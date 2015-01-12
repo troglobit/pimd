@@ -66,6 +66,9 @@ int             total_interfaces; /* Number of all interfaces: including the
 				   * capable interfaces.
 				   */
 
+/*
+ * Forward declarations
+ */
 static void start_vif      (vifi_t vifi);
 static void stop_vif       (vifi_t vifi);
 static void start_all_vifs (void);
@@ -309,7 +312,7 @@ static void start_vif(vifi_t vifi)
 #ifdef PIM_HELLO_GENID
 	v->uv_pim_hello_genid = RANDOM();
 #endif
-	SET_TIMER(v->uv_pim_hello_timer, 1 + RANDOM() % PIM_TIMER_HELLO_PERIOD);
+	SET_TIMER(v->uv_pim_hello_timer, 1 + RANDOM() % pim_timer_hello_period);
 	SET_TIMER(v->uv_jp_timer, 1 + RANDOM() % PIM_JOIN_PRUNE_PERIOD);
 	/* TODO: CHECK THE TIMERS!!!!! Set or reset? */
 	RESET_TIMER(v->uv_gq_timer);
@@ -339,7 +342,7 @@ static void start_vif(vifi_t vifi)
 	query_groups(v);
 
 	/* Send a probe via the new vif to look for neighbors. */
-	send_pim_hello(v, PIM_TIMER_HELLO_HOLDTIME);
+	send_pim_hello(v, pim_timer_hello_holdtime);
     }
 #ifdef __linux__
     else {

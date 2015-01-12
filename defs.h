@@ -280,6 +280,13 @@ typedef void (*ihfunc_t) (int, fd_set *);
 #define                 SO_RECV_BUF_SIZE_MAX (256*1024)
 #define                 SO_RECV_BUF_SIZE_MIN (48*1024)
 
+
+/*
+ * Global settings, from config.c
+ */
+extern uint16_t         pim_timer_hello_period;
+extern uint16_t         pim_timer_hello_holdtime;
+
 /* TODO: describe the variables and clean up */
 extern char		*igmp_recv_buf;
 extern char		*igmp_send_buf;

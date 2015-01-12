@@ -148,7 +148,7 @@ void age_vifs(void)
 
 	/* PIM_HELLO periodic */
 	IF_TIMEOUT(v->uv_pim_hello_timer)
-	    send_pim_hello(v, PIM_TIMER_HELLO_HOLDTIME);
+	    send_pim_hello(v, pim_timer_hello_holdtime);
 
 #ifdef TOBE_DELETED
 	/* PIM_JOIN_PRUNE periodic */

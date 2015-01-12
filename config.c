@@ -64,6 +64,13 @@
 #define CONF_SCOPED                             13
 #define CONF_DEFAULT_IGMP_QUERY_INTERVAL        14
 #define CONF_DEFAULT_IGMP_QUERIER_TIMEOUT       15
+#define CONF_HELLO_PERIOD                       16
+
+/*
+ * Global settings
+ */
+uint16_t pim_timer_hello_period   = PIM_TIMER_HELLO_PERIOD;
+uint16_t pim_timer_hello_holdtime = PIM_TIMER_HELLO_HOLDTIME;
 
 /*
  * Forward declarations.
@@ -382,6 +389,8 @@ static int parse_option(char *word)
 	return CONF_MASKLEN;
     if  (EQUAL(word, "scoped"))
 	return CONF_SCOPED;
+    if (EQUAL(word, "hello_period"))
+	return CONF_HELLO_PERIOD;
 
     return CONF_UNKNOWN;
 }
@@ -1015,6 +1024,55 @@ static int parse_compat_threshold(char *line)
 
 
 /**
+ * parse_hello_period - Parse and assign the hello period
+ * @s: Input data
+ *
+ * Syntax:
+ *	    hello_period <period length in secs>
+ *
+ * Returns:
+ * %TRUE if successful, otherwise %FALSE.
+ */
+int parse_hello_period(char *s)
+{
+    char *w;
+    u_int period;
+    u_int holdtime;
+
+    if (!EQUAL((w = next_word(&s)), "")) {
+	if (sscanf(w, "%u", &period) != 1) {
+	    logit(LOG_WARNING, 0,
+		  "Invalid hello_period value %s; set to default %u",
+		  w, PIM_TIMER_HELLO_PERIOD);
+	    period = PIM_TIMER_HELLO_PERIOD;
+	    holdtime = PIM_TIMER_HELLO_HOLDTIME;
+	} else {
+	    if (period <= (u_int)(UINT16_MAX / 3.5))
+		holdtime = period * 3.5;
+	    else
+		logit(LOG_WARNING, 0,
+		      "Too large hello_period value %s; set to default %u",
+		      w, PIM_TIMER_HELLO_PERIOD);
+		      period = PIM_TIMER_HELLO_PERIOD;
+		      holdtime = PIM_TIMER_HELLO_HOLDTIME;
+	}
+    } else {
+	logit(LOG_WARNING, 0,
+	      "Missing hello_period value; set to default %u",
+	      PIM_TIMER_HELLO_PERIOD);
+	period = PIM_TIMER_HELLO_PERIOD;
+	holdtime = PIM_TIMER_HELLO_HOLDTIME;
+    }
+
+    logit(LOG_INFO, 0, "hello_period is %u", period);
+    pim_timer_hello_period = period;
+    pim_timer_hello_holdtime = holdtime;
+
+    return TRUE;
+}
+
+
+/**
  * parse_spt_threshold - Parse spt_threshold option
  * @s: String token
  *
@@ -1401,6 +1459,10 @@ void config_vifs_from_file(void)
 
 	    case CONF_DEFAULT_IGMP_QUERIER_TIMEOUT:
 		parse_default_igmp_querier_timeout(s);
+		break;
+
+	    case CONF_HELLO_PERIOD:
+		parse_hello_period(s);
 		break;
 
 	    default:

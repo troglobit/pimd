@@ -152,6 +152,9 @@ There are eight different types of configuration commands:
 .Cm default_igmp_querier_timeout
 .Ar <SEC>
 .It
+.Cm hello_period
+.Ar <SEC>
+.It
 .Cm phyint
 .Ar <local-addr Ns | Ns ifname>
 .Oo
@@ -236,6 +239,12 @@ becomes the elected querier.  Obviously these settings must be handled
 with care. It is recommended that the querier timeout is set to at least
 twice the query interval.   The default querier timeout is 255 seconds
 and the default query interval is 125 seconds.
+.Pp
+The PIM Hello message interval can be changed by
+.Cm hello_period
+option. Changing the value also affects hold-time value included in Hello
+message. Hold-time value is 3.5 times hello_period. The default value for
+Hello interval is 30.
 .Pp
 The
 .Nm phyint
