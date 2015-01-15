@@ -480,6 +480,11 @@ static int parse_phyint(char *s)
 		continue;
 	    }
 
+	    if (EQUAL(w, "igmpv3")) {
+		v->uv_flags &= ~VIFF_IGMPV2;
+		continue;
+	    }
+
 	    if (EQUAL(w, "altnet")) {
 		if (EQUAL((w = next_word(&s)), "")) {
 		    WARN("Missing ALTNET for phyint %s", inet_fmt(local, s1, sizeof(s1)));
@@ -1470,6 +1475,12 @@ void config_vifs_from_file(void)
 		error_flag = TRUE;
 	}
     }
+
+    /* Because of internal design, static RP address is needed for SSM range.
+       Local-link address is used. It is not required to be really configured in any interface. */
+    strncpy(linebuf, "169.254.0.1 232.0.0.0/8\n", sizeof(linebuf));
+    s = linebuf;
+    parse_rp_address(s);
 
     if (error_flag)
 	logit(LOG_ERR, 0, "%s:%u - Syntax error", config_file, lineno);

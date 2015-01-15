@@ -60,6 +60,7 @@
 #include <sys/time.h>
 #include <net/if.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
 #include <netinet/igmp.h>
@@ -492,10 +493,10 @@ extern void	send_igmp		(char *buf, uint32_t src, uint32_t dst, int type, int cod
 
 /* igmp_proto.c */
 extern void	query_groups		(struct uvif *v);
-extern void	accept_membership_query	(uint32_t src, uint32_t dst, uint32_t group, int tmo);
+extern void	accept_membership_query	(uint32_t src, uint32_t dst, uint32_t group, int tmo, int igmp_version);
 extern void	accept_group_report	(uint32_t src, uint32_t dst, uint32_t group, int r_type);
 extern void	accept_leave_message	(uint32_t src, uint32_t dst, uint32_t group);
-extern void     accept_membership_report(uint32_t src, uint32_t dst, struct igmp_report *report);
+extern void     accept_membership_report(uint32_t src, uint32_t dst, struct igmpv3_report *report, ssize_t reportlen);
 
 /* inet.c */
 extern int	inet_cksum		(uint16_t *addr, u_int len);

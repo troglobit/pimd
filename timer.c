@@ -264,6 +264,9 @@ static void check_spt_threshold(mrtentry_t *mrt)
 	    continue;
 	}
 
+	// TODO: Why is this needed?
+	try_switch_to_spt(mrt, kc);
+
 	/* Check spt-threshold for forwarder and RP, should we switch to
 	 * source specific tree (SPT).  Need to check only when we have
 	 * (S,G)RPbit in the forwarder or the RP itself. */

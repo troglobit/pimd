@@ -477,6 +477,7 @@ int k_get_vif_count(vifi_t vifi, struct vif_count *retval)
 {
     struct sioc_vif_req vreq;
 
+    memset(&vreq, 0, sizeof(vreq));
     vreq.vifi = vifi;
     if (ioctl(udp_socket, SIOCGETVIFCNT, (char *)&vreq) < 0) {
 	logit(LOG_WARNING, errno, "Failed reading kernel packet count (SIOCGETVIFCNT) on vif %d", vifi);
@@ -506,6 +507,7 @@ int k_get_sg_cnt(int socket, uint32_t source, uint32_t group, struct sg_count *r
 {
     struct sioc_sg_req sgreq;
 
+    memset(&sgreq, 0, sizeof(sgreq));
     sgreq.src.s_addr = source;
     sgreq.grp.s_addr = group;
     if ((ioctl(socket, SIOCGETSGCNT, (char *)&sgreq) < 0) || (sgreq.wrong_if == 0xffffffff)) {

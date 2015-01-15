@@ -497,7 +497,12 @@ do {                                                                         \
             PUT_NETLONG((addr), (cp));          \
         } while(0)
 
+/* Check if group is in PIM-SSM range, x must be in network byte order */
+#define IN_PIM_SSM_RANGE(x) ((ntohl((unsigned)(x)) & 0xff000000) == 0xe8000000)
 
+/* Check if address is in link-local range, x must be in network byte order */
+#define IN_LINK_LOCAL_RANGE(x) ((ntohl((unsigned)(x)) & 0xffff0000) == 0xa9fe0000)
+ 
 /* TODO: Currently not used. Probably not need at all. Delete! */
 #if 0
 /* This is completely IGMP related stuff? */
