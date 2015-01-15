@@ -270,7 +270,8 @@ void send_pim(char *buf, uint32_t src, uint32_t dst, int type, size_t len)
 	k_set_if(pim_socket, src);
 	if ((dst == allhosts_group) ||
 	    (dst == allrouters_group) ||
-	    (dst == allpimrouters_group)) {
+	    (dst == allpimrouters_group) ||
+	    (dst == allreports_group)) {
 	    setloop = 1;
 	    k_set_loop(pim_socket, TRUE);
 	}

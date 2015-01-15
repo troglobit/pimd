@@ -245,7 +245,7 @@ int set_incoming(srcentry_t *src, int type)
  * TODO: XXX: currently `source` is not used. Will be used with IGMPv3 where
  * we have source-specific Join/Prune.
  */
-void add_leaf(vifi_t vifi, uint32_t source __attribute__((unused)), uint32_t group)
+void add_leaf(vifi_t vifi, uint32_t source, uint32_t group)
 {
     mrtentry_t *mrt;
     mrtentry_t *srcs;
@@ -279,7 +279,12 @@ void add_leaf(vifi_t vifi, uint32_t source __attribute__((unused)), uint32_t gro
      * The downside is that a last-hop router may delay the initiation
      * of the SPT switch. Sigh...
      */
-    if (uvifs[vifi].uv_flags & VIFF_DR)
+    if (IN_PIM_SSM_RANGE(group)) {
+	mrt = find_route(source, group, MRTF_SG, CREATE);
+	logit(LOG_DEBUG, 0, "Find Route (%s,%s)=%p", inet_fmt(source, s1, sizeof(s1)),
+	      inet_fmt(group, s2, sizeof(s2)), mrt);
+    }
+    else if (uvifs[vifi].uv_flags & VIFF_DR)
 	mrt = find_route(INADDR_ANY_N, group, MRTF_WC, CREATE);
     else
 	mrt = find_route(INADDR_ANY_N, group, MRTF_WC, DONT_CREATE);
@@ -342,7 +347,7 @@ void add_leaf(vifi_t vifi, uint32_t source __attribute__((unused)), uint32_t gro
  * TODO: XXX: currently `source` is not used. To be used with IGMPv3 where
  * we have source-specific joins/prunes.
  */
-void delete_leaf(vifi_t vifi, uint32_t source __attribute__((unused)), uint32_t group)
+void delete_leaf(vifi_t vifi, uint32_t source, uint32_t group)
 {
     mrtentry_t *mrt;
     mrtentry_t *srcs;
@@ -350,7 +355,13 @@ void delete_leaf(vifi_t vifi, uint32_t source __attribute__((unused)), uint32_t 
     vifbitmap_t old_oifs;
     vifbitmap_t new_leaves;
 
-    mrt = find_route(INADDR_ANY_N, group, MRTF_WC, DONT_CREATE);
+    if (IN_PIM_SSM_RANGE(group)) {
+	logit(LOG_DEBUG, 0, "delete_leaf: SSM, S=%s", inet_fmt(source, s1, sizeof(s1)));
+	mrt = find_route(source, group, MRTF_SG, DONT_CREATE);
+    } else {
+	mrt = find_route(INADDR_ANY_N, group, MRTF_WC, DONT_CREATE);
+    }
+
     if (!mrt)
 	return;
 
@@ -361,14 +372,18 @@ void delete_leaf(vifi_t vifi, uint32_t source __attribute__((unused)), uint32_t 
 	  inet_fmt(group, s1, sizeof(s1)));
 
     calc_oifs(mrt, &old_oifs);
-    VIFM_COPY(mrt->leaves, new_leaves);
-    VIFM_CLR(vifi, new_leaves);
-    change_interfaces(mrt,
-		      mrt->incoming,
-		      mrt->joined_oifs,
-		      mrt->pruned_oifs,
-		      new_leaves,
-		      mrt->asserted_oifs, 0);
+
+    /* For SSM, source must match */
+    if (!IN_PIM_SSM_RANGE(group) || (mrt->source->address==source)) {
+	VIFM_COPY(mrt->leaves, new_leaves);
+	VIFM_CLR(vifi, new_leaves);
+	change_interfaces(mrt,
+			  mrt->incoming,
+			  mrt->joined_oifs,
+			  mrt->pruned_oifs,
+			  new_leaves,
+			  mrt->asserted_oifs, 0);
+    }
     calc_oifs(mrt, &new_oifs);
 
     if ((!VIFM_ISEMPTY(old_oifs)) && VIFM_ISEMPTY(new_oifs)) {
@@ -856,6 +871,7 @@ static void process_cache_miss(struct igmpmsg *igmpctl)
 			  mrt->asserted_oifs, 0);
     } else {
 	mrt = find_route(source, group, MRTF_SG | MRTF_WC | MRTF_PMBR, DONT_CREATE);
+	switch_shortest_path(source, group);
 	if (!mrt)
 	    return;
     }
@@ -1036,12 +1052,14 @@ mrtentry_t *switch_shortest_path(uint32_t source, uint32_t group)
     if (mrt) {
 	if (mrt->flags & MRTF_NEW) {
 	    mrt->flags &= ~MRTF_NEW;
-	} else if (mrt->flags & MRTF_RP) {
+	} else if (mrt->flags & MRTF_RP || IN_PIM_SSM_RANGE(group)) {
 	    /* (S,G)RPbit with iif toward RP. Reset to (S,G) with iif
 	     * toward S. Delete the kernel cache (if any), because
 	     * change_interfaces() will reset it with iif toward S
 	     * and no data will arrive from RP before the switch
 	     * really occurs.
+             * For SSM, (S,G)RPbit entry does not exist but switch to
+             * SPT must be allowed right away.
 	     */
 	    mrt->flags &= ~MRTF_RP;
 	    mrt->incoming = mrt->source->incoming;

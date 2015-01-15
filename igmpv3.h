@@ -45,23 +45,37 @@
 #endif
 
 #ifndef IGMP_V3_REPORT_MINLEN
-struct igmp_grouprec {
-    uint8_t	    ig_type;	    /* record type */
-    uint8_t	    ig_datalen;	    /* length of auxiliary data */
-    uint16_t	    ig_numsrc;	    /* number of sources */
-    struct in_addr  ig_group;	    /* group address being reported */
-    /*struct in_addr  ig_sources[0];*/ /* source addresses */
+struct igmpv3_query {
+    __u8 type;
+    __u8 code;
+    __be16 csum;
+    __be32 group;
+    __u8 resv:4,
+         suppress:1,
+         qrv:3;
+    __u8 qqic;
+    __be16 nsrcs;
+    __be32 srcs[0];
+};
+
+struct igmpv3_grec {
+    __u8    grec_type;
+    __u8    grec_auxwords;
+    __be16  grec_nsrcs;
+   __be32  grec_mca;
+    __be32  grec_src[0];
 };
 
 #define IGMP_GRPREC_HDRLEN		8
+#define IGMP_V3_GROUP_RECORD_MIN_SIZE	8
 
-struct igmp_report {
-    uint8_t	    ir_type;	    /* record type */
-    uint8_t	    ir_rsv1;	    /* reserved */
-    uint16_t	    ir_cksum;	    /* checksum */
-    uint16_t	    ir_rsv2;	    /* reserved */
-    uint16_t	    ir_numgrps;	    /* number of group records */
-    /*struct	    igmp_grouprec ir_groups[0];*/ /* group records */
+struct igmpv3_report {
+    __u8 type;
+    __u8 resv1;
+    __be16 csum;
+    __be16 resv2;
+    __be16 ngrec;
+    struct igmpv3_grec grec[0];
 };
 
 #define IGMP_V3_REPORT_MINLEN		8

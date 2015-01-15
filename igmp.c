@@ -133,7 +133,6 @@ static void igmp_read(int i __attribute__((unused)), fd_set *rfd __attribute__((
     accept_igmp(len);
 }
 
-
 /*
  * Process a newly received IGMP packet that is sitting in the input
  * packet buffer.
@@ -144,9 +143,10 @@ static void accept_igmp(ssize_t recvlen)
     uint32_t src, dst, group;
     struct ip *ip;
     struct igmp *igmp;
+    int igmp_version = 3;
 
     if (recvlen < MIN_IP_HEADER_LEN) {
-	logit(LOG_WARNING, 0, "Received packet too short (%u bytes) for IP header", recvlen);
+	logit(LOG_INFO, 0, "Received packet too short (%u bytes) for IP header", recvlen);
 	return;
     }
 
@@ -174,16 +174,36 @@ static void accept_igmp(ssize_t recvlen)
 #endif
 
     if (iphdrlen + ipdatalen != recvlen) {
-	logit(LOG_WARNING, 0, "Received packet from %s shorter (%u bytes) than hdr+data length (%u+%u)",
+	logit(LOG_INFO, 0, "Received packet from %s shorter (%u bytes) than hdr+data length (%u+%u)",
 	    inet_fmt(src, s1, sizeof(s1)), recvlen, iphdrlen, ipdatalen);
 	return;
     }
 
     igmp	= (struct igmp *)(igmp_recv_buf + iphdrlen);
     group       = igmp->igmp_group.s_addr;
+    logit(LOG_DEBUG, 0, "igmp_packet length %u", recvlen);
+        logit(LOG_DEBUG, 0, "src0 %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u",
+                (unsigned char)(*(igmp_recv_buf + 20)),
+                (unsigned char)(*(igmp_recv_buf + 21)),
+                (unsigned char)(*(igmp_recv_buf + 22)),
+                (unsigned char)(*(igmp_recv_buf + 23)),
+                (unsigned char)(*(igmp_recv_buf + 24)),
+                (unsigned char)(*(igmp_recv_buf + 25)),
+                (unsigned char)(*(igmp_recv_buf + 26)),
+                (unsigned char)(*(igmp_recv_buf + 27)),
+                (unsigned char)(*(igmp_recv_buf + 28)),
+                (unsigned char)(*(igmp_recv_buf + 29)),
+                (unsigned char)(*(igmp_recv_buf + 30)),
+                (unsigned char)(*(igmp_recv_buf + 31)),
+                (unsigned char)(*(igmp_recv_buf + 32)),
+                (unsigned char)(*(igmp_recv_buf + 33)),
+                (unsigned char)(*(igmp_recv_buf + 34)),
+                (unsigned char)(*(igmp_recv_buf + 35))
+                );
     igmpdatalen = ipdatalen - IGMP_MINLEN;
+
     if (igmpdatalen < 0) {
-	logit(LOG_WARNING, 0, "Received IP data field too short (%u bytes) for IGMP, from %s",
+	logit(LOG_INFO, 0, "Received IP data field too short (%u bytes) for IGMP, from %s",
 	    ipdatalen, inet_fmt(src, s1, sizeof(s1)));
 	return;
     }
@@ -195,11 +215,26 @@ static void accept_igmp(ssize_t recvlen)
 
     switch (igmp->igmp_type) {
 	case IGMP_MEMBERSHIP_QUERY:
-	    accept_membership_query(src, dst, group, igmp->igmp_code);
+	    // RFC 3376:7.1
+	    if (ipdatalen==8) {
+		if (igmp->igmp_code==0) {
+		    igmp_version = 1;
+		} else {
+		    igmp_version = 2;
+		}
+	    } else if (ipdatalen>=12) {
+		igmp_version = 3;
+	    } else {
+		logit(LOG_DEBUG, 0, "Received invalid IGMP Membership query: Max Resp Code = %d, length = %d",
+		igmp->igmp_code, ipdatalen);
+	    }
+	    logit(LOG_DEBUG, 0, "Received IGMPv%d Membership query", igmp_version);
+	    accept_membership_query(src, dst, group, igmp->igmp_code, igmp_version);
 	    return;
 
 	case IGMP_V1_MEMBERSHIP_REPORT:
 	case IGMP_V2_MEMBERSHIP_REPORT:
+	    logit(LOG_DEBUG, 0, "Received IGMPv2 Membership Report from %s", inet_fmt(src, s1, sizeof(s1)));
 	    accept_group_report(src, dst, group, igmp->igmp_type);
 	    return;
 
@@ -208,7 +243,11 @@ static void accept_igmp(ssize_t recvlen)
 	    return;
 
 	case IGMP_V3_MEMBERSHIP_REPORT:
-	    accept_membership_report(src, dst, (struct igmp_report *)(igmp_recv_buf + iphdrlen));
+	    if (igmpdatalen < IGMP_V3_GROUP_RECORD_MIN_SIZE) {
+		logit(LOG_DEBUG, 0, "Too short IGMPv3 Membership report: igmpdatalen(%d) < MIN(%d)", igmpdatalen, IGMP_V3_GROUP_RECORD_MIN_SIZE);
+		return;
+	    }
+	    accept_membership_report(src, dst, (struct igmpv3_report *)(igmp_recv_buf + iphdrlen), recvlen - iphdrlen);
 	    return;
 
 	case IGMP_DVMRP:
@@ -362,14 +401,14 @@ static void send_ip_frame(uint32_t src, uint32_t dst, int type, int code, char *
 void send_igmp(char *buf, uint32_t src, uint32_t dst, int type, int code, uint32_t group, int datalen)
 {
     size_t len = IGMP_MINLEN + datalen;
-    struct igmp *igmp;
+    struct igmpv3_query *igmp;
 
-    igmp		    = (struct igmp *)(buf + IP_IGMP_HEADER_LEN);
-    igmp->igmp_type	    = type;
-    igmp->igmp_code	    = code;
-    igmp->igmp_group.s_addr = group;
-    igmp->igmp_cksum	    = 0;
-    igmp->igmp_cksum	    = inet_cksum((uint16_t *)igmp, len);
+    igmp              = (struct igmpv3_query *)(buf + IP_IGMP_HEADER_LEN);
+    igmp->type        = type;
+    igmp->code        = code;
+    igmp->group       = group;
+    igmp->csum        = 0;
+    igmp->csum        = inet_cksum((uint16_t *)igmp, len);
 
     send_ip_frame(src, dst, type, code, buf, len);
 }

@@ -413,6 +413,14 @@ rp_grp_entry_t *add_rp_grp_entry(cand_rp_t  **used_cand_rp_list,
     entry_new->rp = cand_rp_ptr;
     entry_new->grplink = NULL;
 
+    /* If I am BSR candidate and rp_addr is NOT hacked SSM address, then log it */
+    if( cand_bsr_flag && rp_addr != 0x0100fea9 ) {
+	uint32_t mask;
+	MASK_TO_MASKLEN(group_mask, mask);
+	logit(LOG_INFO, 0, "New RP candidate %s for group %s/%d, priority %d",
+	      inet_fmt(rp_addr, s1, sizeof(s1)), inet_fmt(group_addr, s2, sizeof(s2)), mask, rp_priority);
+    }
+
     mask_ptr->group_rp_number++;
 
     if (mask_ptr->grp_rp_next->priority == rp_priority) {
@@ -863,6 +871,9 @@ int create_pim_bootstrap_message(char *send_buff)
 
     /* TODO: XXX: No fragmentation support (yet) */
     for (mask_ptr = grp_mask_list; mask_ptr; mask_ptr = mask_ptr->next) {
+	if (IN_PIM_SSM_RANGE(mask_ptr->group_addr)) {
+	    continue;  /* Do not advertise internal virtual RP for SSM groups */
+	}
 	MASK_TO_MASKLEN(mask_ptr->group_mask, masklen);
 	PUT_EGADDR(mask_ptr->group_addr, masklen, 0, data_ptr);
 	PUT_BYTE(mask_ptr->group_rp_number, data_ptr);

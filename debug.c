@@ -150,6 +150,7 @@ int debug_kind(int proto, int type, int code)
 		case IGMP_MEMBERSHIP_QUERY:        return DEBUG_IGMP;
 		case IGMP_V1_MEMBERSHIP_REPORT:    return DEBUG_IGMP;
 		case IGMP_V2_MEMBERSHIP_REPORT:    return DEBUG_IGMP;
+		case IGMP_V3_MEMBERSHIP_REPORT:    return DEBUG_IGMP;
 		case IGMP_V2_LEAVE_GROUP:          return DEBUG_IGMP;
 		case IGMP_DVMRP:
 		    switch (code) {
@@ -307,6 +308,7 @@ void dump_vifs(FILE *fp)
     pim_nbr_entry_t *n;
     int width;
     int i;
+    struct listaddr *group, *source;
 
     fprintf(fp, "Virtual Interface Table ======================================================\n");
     fprintf(fp, "Vif  Local Address    Subnet              Thresh  Flags      Neighbors\n");
@@ -365,6 +367,20 @@ void dump_vifs(FILE *fp)
     }
 
     fprintf(fp, "\n");
+
+    // Dump groups and sources
+    fprintf(fp, " %-3s  %-15s  %-20s", "Vif", "SSM Group", "Sources");
+    for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
+	for (group = v->uv_groups; group != NULL; group = group->al_next) {
+	    if (IN_PIM_SSM_RANGE(group->al_addr)) {
+		fprintf(fp, "\n %3u  %-15s ", vifi, inet_fmt(group->al_addr, s1, sizeof(s1)));
+		for (source = group->al_sources; source != NULL; source = source->al_next) {
+		    fprintf(fp, "%s ", inet_fmt(source->al_addr, s1, sizeof(s1)));
+		}
+	    }
+	}
+    }
+    fprintf(fp, "\n\n");
 }
 
 
@@ -553,7 +569,8 @@ void dump_pim_mrt(FILE *fp)
 	    fprintf(fp, "---------------  ---------------  ---------------  ---------------------------\n");
 	    fprintf(fp, "%-15s  ", "INADDR_ANY");
 	    fprintf(fp, "%-15s  ", inet_fmt(g->group, s1, sizeof(s1)));
-	    fprintf(fp, "%-15s ", g->active_rp_grp ? inet_fmt(g->rpaddr, s2, sizeof(s2)) : "NULL");
+	    fprintf(fp, "%-15s ", IN_PIM_SSM_RANGE(g->group) ? "SSM" :
+		    (g->active_rp_grp ? inet_fmt(g->rpaddr, s2, sizeof(s2)) : "NULL"));
 
 	    dump_route(fp, r);
 	}
@@ -569,7 +586,8 @@ void dump_pim_mrt(FILE *fp)
 	    fprintf(fp, "---------------  ---------------  ---------------  ---------------------------\n");
 	    fprintf(fp, "%-15s  ", inet_fmt(r->source->address, s1, sizeof(s1)));
 	    fprintf(fp, "%-15s  ", inet_fmt(g->group, s2, sizeof(s2)));
-	    fprintf(fp, "%-15s ", g->active_rp_grp ? inet_fmt(g->rpaddr, s2, sizeof(s2)) : "NULL");
+	    fprintf(fp, "%-15s ", IN_PIM_SSM_RANGE(g->group) ? "SSM" :
+		    (g->active_rp_grp ? inet_fmt(g->rpaddr, s2, sizeof(s2)) : "NULL"));
 
 	    dump_route(fp, r);
 	}

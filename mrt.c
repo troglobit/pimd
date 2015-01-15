@@ -136,13 +136,18 @@ mrtentry_t *find_route(uint32_t source, uint32_t group, uint16_t flags, char cre
     rp_grp_entry_t *rp_grp = NULL;
 
     if (flags & (MRTF_SG | MRTF_WC)) {
-	if (!IN_MULTICAST(ntohl(group)))
+	if (!IN_MULTICAST(ntohl(group))) {
+	    logit(LOG_WARNING, 0, "Not a multicast addr....");
 	    return NULL;
+	}
     }
 
     if (flags & MRTF_SG) {
-	if (!inet_valid_host(source))
+	if (!inet_valid_host(source) && !IN_PIM_SSM_RANGE(group)) {
+	    logit(LOG_WARNING, 0, "Not a valid host (%s)....",
+		  inet_fmt(source, s1, sizeof(s1)));
 	    return NULL;
+	}
     }
 
     if (create == DONT_CREATE) {
@@ -151,23 +156,32 @@ mrtentry_t *find_route(uint32_t source, uint32_t group, uint16_t flags, char cre
 		/* Group not found. Return the (*,*,RP) entry */
 		if (flags & MRTF_PMBR) {
 		    rp = rp_match(group);
-		    if (rp)
+		    if (rp) {
+			logit(LOG_DEBUG, 0 , "find_route: Group not found. Return the (*,*,RP) entry");
 			return rp->mrtlink;
+		    }
 		}
 
+		logit(LOG_DEBUG, 0 , "find_route: Not PMBR, return NULL");
 		return NULL;
 	    }
 
 	    /* Search for the source */
 	    if (flags & MRTF_SG) {
-		if (search_grpmrtlink(grp, source, &mrt) == TRUE)
+		if (search_grpmrtlink(grp, source, &mrt) == TRUE) {
 		    /* Exact (S,G) entry found */
+		    logit(LOG_DEBUG, 0 , "find_route: exact (S,G) entry found");
 		    return mrt;
+		} else {
+		    logit(LOG_DEBUG, 0 , "find_route:(S,G) entry not found");
+		}
 	    }
 
 	    /* No (S,G) entry. Return the (*,G) entry (if exist) */
-	    if ((flags & MRTF_WC) && grp->grp_route)
+	    if ((flags & MRTF_WC) && grp->grp_route) {
+		logit(LOG_DEBUG, 0 , "find_route: No (S,G) entry. Return the (*,G) entry");
 		return grp->grp_route;
+	    }
 	}
 
 	/* Return the (*,*,RP) entry */
@@ -178,10 +192,13 @@ mrtentry_t *find_route(uint32_t source, uint32_t group, uint16_t flags, char cre
 	    else if (source != INADDR_ANY_N)
 		rp = rp_find(source);
 
-	    if (rp)
+	    if (rp) {
+		logit(LOG_DEBUG, 0 , "find_route: Return the (*,*,RP) entry");
 		return rp->mrtlink;
+	    }
 	}
 
+	logit(LOG_DEBUG, 0 , "find_route: No SG|WC, return NULL");
 	return NULL;
     }
 
@@ -192,6 +209,18 @@ mrtentry_t *find_route(uint32_t source, uint32_t group, uint16_t flags, char cre
 	grp = create_grpentry(group);
 	if (!grp)
 	    return NULL;
+
+	if (IN_PIM_SSM_RANGE(group)) {
+	    if (rp_match(group) == (rpentry_t *) NULL) {
+		/* For SSM, virtual RP entry has to be created. RP is at local link 169.254.0.1
+		   to be sure not to send any register messages outside, although sending them
+		   has been disabled for SSM also in PIM protocol.
+		   The address does not need to be really configured in any interface.
+		   TODO: Avoid need for virtual RP by implementing SSM-specific state structures */
+		add_rp_grp_entry(&cand_rp_list, &grp_mask_list, 0x0100fea9, 20, 90, group,
+				 0xffffffff, curr_bsr_hash_mask, curr_bsr_fragment_tag);
+	    }
+	}
 
 	if (!grp->active_rp_grp) {
 	    rp_grp = rp_grp_match(group);
@@ -910,6 +939,7 @@ void delete_mrtentry_all_kernel_cache(mrtentry_t *mrt)
 	prev = node;
 	node = node->next;
 
+	logit(LOG_DEBUG, 0, "delete_mrtentry_all_kernel_cache: SG");
 	k_del_mfc(igmp_socket, prev->source, prev->group);
 	free(prev);
     }
@@ -942,6 +972,7 @@ void delete_single_kernel_cache(mrtentry_t *mrt, kernel_cache_t *node)
 	      inet_fmt(node->group, s2, sizeof(s2)));
     }
 
+    logit(LOG_DEBUG, 0, "delete_single_kernel_cache: SG");
     k_del_mfc(igmp_socket, node->source, node->group);
     free(node);
 }
@@ -995,6 +1026,7 @@ void delete_single_kernel_cache_addr(mrtentry_t *mrt, uint32_t source, uint32_t 
 	      inet_fmt(node->group, s2, sizeof(s2)));
     }
 
+    logit(LOG_DEBUG, 0, "delete_single_kernel_cache_addr: SG");
     k_del_mfc(igmp_socket, node->source, node->group);
     free(node);
 }
@@ -1179,6 +1211,7 @@ static void move_kernel_cache(mrtentry_t *mrt, uint16_t flags)
     }
 
     if (mrt->flags & MRTF_SG) {
+	logit(LOG_DEBUG, 0, "move_kernel_cache: SG");
 	/* (S,G) entry. Move the whole group cache from (*,*,RP) to (*,G) and
 	 * then get the necessary entry from (*,G).
 	 * TODO: Not optimized! The particular entry is moved first to (*,G),

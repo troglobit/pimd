@@ -145,6 +145,7 @@ void init_vifs(void)
 void zero_vif(struct uvif *v, int t)
 {
     v->uv_flags		= 0;
+    v->uv_flags 	|= VIFF_IGMPV2;
     v->uv_metric	= DEFAULT_METRIC;
     v->uv_admetric	= 0;
     v->uv_threshold	= DEFAULT_THRESHOLD;
@@ -364,7 +365,7 @@ static void start_vif(vifi_t vifi)
 static void stop_vif(vifi_t vifi)
 {
     struct uvif *v;
-    struct listaddr *a;
+    struct listaddr *a, *b;
     pim_nbr_entry_t *n, *next;
     struct vif_acl *acl;
 
@@ -383,6 +384,11 @@ static void stop_vif(vifi_t vifi)
 	while (v->uv_groups != NULL) {
 	    a = v->uv_groups;
 	    v->uv_groups = a->al_next;
+	    while (a->al_sources != NULL) {
+		b = a->al_sources;
+		a->al_sources = a->al_next;
+		free((char *)b);
+	    }
 	    free((char *)a);
 	}
     }
