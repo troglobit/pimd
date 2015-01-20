@@ -898,7 +898,7 @@ int receive_pim_register_stop(uint32_t reg_src, uint32_t reg_dst, char *pim_mess
 {
     pim_encod_grp_addr_t egaddr;
     pim_encod_uni_addr_t eusaddr;
-    char *data;
+    uint8_t *data;
     mrtentry_t *mrtentry;
     vifbitmap_t pruned_oifs;
 
@@ -906,7 +906,7 @@ int receive_pim_register_stop(uint32_t reg_src, uint32_t reg_dst, char *pim_mess
     if (inet_cksum((uint16_t *)pim_message, len))
 	return FALSE;
 
-    data = pim_message + sizeof(pim_header_t);
+    data = (uint8_t *)(pim_message + sizeof(pim_header_t));
     GET_EGADDR(&egaddr,  data);
     GET_EUADDR(&eusaddr, data);
 
