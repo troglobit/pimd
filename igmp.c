@@ -181,25 +181,6 @@ static void accept_igmp(ssize_t recvlen)
 
     igmp	= (struct igmp *)(igmp_recv_buf + iphdrlen);
     group       = igmp->igmp_group.s_addr;
-    logit(LOG_DEBUG, 0, "igmp_packet length %u", recvlen);
-        logit(LOG_DEBUG, 0, "src0 %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u",
-                (unsigned char)(*(igmp_recv_buf + 20)),
-                (unsigned char)(*(igmp_recv_buf + 21)),
-                (unsigned char)(*(igmp_recv_buf + 22)),
-                (unsigned char)(*(igmp_recv_buf + 23)),
-                (unsigned char)(*(igmp_recv_buf + 24)),
-                (unsigned char)(*(igmp_recv_buf + 25)),
-                (unsigned char)(*(igmp_recv_buf + 26)),
-                (unsigned char)(*(igmp_recv_buf + 27)),
-                (unsigned char)(*(igmp_recv_buf + 28)),
-                (unsigned char)(*(igmp_recv_buf + 29)),
-                (unsigned char)(*(igmp_recv_buf + 30)),
-                (unsigned char)(*(igmp_recv_buf + 31)),
-                (unsigned char)(*(igmp_recv_buf + 32)),
-                (unsigned char)(*(igmp_recv_buf + 33)),
-                (unsigned char)(*(igmp_recv_buf + 34)),
-                (unsigned char)(*(igmp_recv_buf + 35))
-                );
     igmpdatalen = ipdatalen - IGMP_MINLEN;
 
     if (igmpdatalen < 0) {

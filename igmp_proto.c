@@ -575,16 +575,14 @@ void accept_membership_report(uint32_t src, uint32_t dst __attribute__((unused))
 	    uint8_t *report_pastend;
 
 	    logit(LOG_DEBUG, 0, "Received IGMPv3 Membership Report from %s", inet_fmt(src, s1, sizeof(s1)));
-	    logit(LOG_DEBUG, 0, "Type=0x%0x, numgroups=%d", report->type, ntohs(report->ngrec));
 
 	    report_pastend = (uint8_t *)report + reportlen;
 
 	    num_groups = ntohs(report->ngrec);
 	    if (num_groups < 0) {
-		logit(LOG_DEBUG, 0, "num_groups = %d", num_groups);
+		logit(LOG_DEBUG, 0, "Invalid Membership Report: num_groups = %d", num_groups);
 		return;
 	    }
-	    logit(LOG_DEBUG, 0, "num_groups %lu", num_groups);
 
 	    record = &report->grec[0];
 
@@ -601,7 +599,6 @@ void accept_membership_report(uint32_t src, uint32_t dst __attribute__((unused))
 		rec_num_sources = ntohs(record->grec_nsrcs);
 		rec_auxdatalen = record->grec_auxwords;
 		record_size = sizeof(struct igmpv3_grec) + sizeof(__be32)*rec_num_sources + rec_auxdatalen;
-		logit(LOG_DEBUG, 0, "grec[%d] size = %d", i, record_size);
 		if ((uint8_t *)record + record_size > report_pastend) {
 		    logit(LOG_INFO, 0, "Invalid group report %p > %p", (uint8_t *)record + record_size, report_pastend);
 		    return;
