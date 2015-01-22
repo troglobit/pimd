@@ -129,9 +129,10 @@ int k_req_incoming(uint32_t source, struct rpfctl *rpf)
     addr.nl_pid = 0;
     
     /* tracef(TRF_NETLINK, "NETLINK: ask path to %s", inet_fmt(rpf->source.s_addr, s1, sizeof(s1))); */
-    logit(LOG_DEBUG, 0, "NETLINK: ask path to %s",
-	inet_fmt(rpf->source.s_addr, s1, sizeof(s1)));
-    
+    if (!IN_LINK_LOCAL_RANGE(rpf->source.s_addr)) {
+	logit(LOG_DEBUG, 0, "NETLINK: ask path to %s",
+	      inet_fmt(rpf->source.s_addr, s1, sizeof(s1)));
+    }
     while ((rlen = sendto(routing_socket, buf, n->nlmsg_len, 0, (struct sockaddr *) &addr, sizeof(addr))) < 0) {
 	if (errno == EINTR)
 	    continue;		/* Received signal, retry syscall. */
@@ -152,12 +153,13 @@ int k_req_incoming(uint32_t source, struct rpfctl *rpf)
     } while (n->nlmsg_seq != seq || n->nlmsg_pid != pid);
     
     if (n->nlmsg_type != RTM_NEWROUTE) {
-	if (n->nlmsg_type != NLMSG_ERROR) {
-	    logit(LOG_WARNING, 0, "netlink: wrong answer type %d", n->nlmsg_type);
-	} else {
-	    logit(LOG_WARNING, -(*(int*)NLMSG_DATA(n)), "netlink get_route");
+	if (!IN_LINK_LOCAL_RANGE(rpf->source.s_addr)) {
+	    if (n->nlmsg_type != NLMSG_ERROR) {
+		logit(LOG_WARNING, 0, "netlink: wrong answer type %d", n->nlmsg_type);
+	    } else {
+		logit(LOG_WARNING, -(*(int*)NLMSG_DATA(n)), "netlink get_route");
+	    }
 	}
-
 	return FALSE;
     }
 

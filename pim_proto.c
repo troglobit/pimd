@@ -1209,7 +1209,6 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
     GET_EUADDR(&eutaddr, data);
     GET_BYTE(reserved, data);
     GET_BYTE(num_groups, data);
-    logit(LOG_DEBUG, 0, "NUM_GROUPS=%i", num_groups);
     if (num_groups == 0)
 	return FALSE;    /* No indication for groups in the message */
     GET_HOSTSHORT(holdtime, data);
@@ -1568,7 +1567,6 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
      *   forwarding on wrong interface.
      *   Hopefully, in the future will find a better way to implement it.
      */
-    logit(LOG_DEBUG, 0, "NUM_GROUPS2=%i", num_groups);
     num_groups_tmp = num_groups;
     data_start = data;
     star_star_rp_found = FALSE; /* Indicating whether we have (*,*,RP) join */

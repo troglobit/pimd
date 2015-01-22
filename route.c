@@ -192,9 +192,10 @@ int set_incoming(srcentry_t *src, int type)
 	k_req_incoming(src_addr, &rpfc);
 	if ((rpfc.iif == NO_VIF) || rpfc.rpfneighbor.s_addr == INADDR_ANY_N) {
 	    /* couldn't find a route */
-	    IF_DEBUG(DEBUG_PIM_MRT | DEBUG_RPF)
-		logit(LOG_DEBUG, 0, "NO ROUTE found for %s", inet_fmt(src_addr, s1, sizeof(s1)));
-
+	    if (!IN_LINK_LOCAL_RANGE(src_addr)) {
+		IF_DEBUG(DEBUG_PIM_MRT | DEBUG_RPF)
+		    logit(LOG_DEBUG, 0, "NO ROUTE found for %s", inet_fmt(src_addr, s1, sizeof(s1)));
+	    }
 	    return FALSE;
 	}
 
