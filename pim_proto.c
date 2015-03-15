@@ -53,6 +53,9 @@ static int compare_metrics         (uint32_t local_preference,
 build_jp_message_t *build_jp_message_pool;
 int build_jp_message_pool_counter;
 
+extern uint16_t pim_timer_hello_period;
+extern uint16_t pim_timer_hello_holdtime;
+
 /************************************************************************
  *                        PIM_HELLO
  ************************************************************************/
@@ -76,7 +79,7 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
 	 * non-directly connected router. Ignore it.
 	 */
 	if (local_address(src) == NO_VIF)
-	    logit(LOG_INFO, 0, "Ignoring PIM_HELLO from non-neighbor router %s",
+	    logit(LOG_DEBUG, 0, "Ignoring PIM_HELLO from non-neighbor router %s",
 		  inet_fmt(src, s1, sizeof(s1)));
 	return FALSE;
     }
@@ -131,6 +134,8 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
      * This is a new neighbor. Create a new entry for it.
      * It must be added right after `prev_nbr`
      */
+    logit(LOG_INFO, 0, "Received PIM HELLO from new neighbor %s",
+	  inet_fmt(src, s1, sizeof(s1)));
     new_nbr = calloc(1, sizeof(pim_nbr_entry_t));
     if (!new_nbr)
 	logit(LOG_ERR, 0, "Ran out of memory in receive_pim_hello()");
@@ -157,7 +162,7 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
     /* XXX: TODO: not in the spec,
      * but probably should send the message after a short random period?
      */
-    send_pim_hello(v, PIM_TIMER_HELLO_HOLDTIME);
+    send_pim_hello(v, pim_timer_hello_holdtime);
 
     if (v->uv_flags & VIFF_DR) {
 	/*
@@ -261,6 +266,7 @@ void delete_pim_nbr(pim_nbr_entry_t *nbr_delete)
 	     * at all, hence I cannot handle this source and have to
 	     * delete it.
 	     */
+	    logit(LOG_WARNING, 0, "Delete source entry for source %s", inet_fmt(src->address, s1, sizeof(s1)));
 	    delete_srcentry(src);
 	} else if (src->upstream) {
 	    /* Ignore the local or directly connected sources */
@@ -372,7 +378,7 @@ static int parse_pim_hello(char *pim_message, size_t len, uint32_t src, uint16_t
     uint16_t option_type;
     uint16_t option_length;
     int holdtime_received_ok = FALSE;
-    int option_total_length;
+    size_t option_total_length;
 
     pim_hello_message = (uint8_t *)(pim_message + sizeof(pim_header_t));
     len -= sizeof(pim_header_t);
@@ -409,6 +415,9 @@ static int parse_pim_hello(char *pim_message, size_t len, uint32_t src, uint16_t
 	option_total_length = (sizeof(pim_hello_t) + option_length);
 #endif /* BOUNDARY_32_BIT */
 
+	if (len < option_total_length) {
+	    return (FALSE);
+	}
 	len -= option_total_length;
 	pim_hello_message += option_total_length;
     }
@@ -428,10 +437,15 @@ int send_pim_hello(struct uvif *v, uint16_t holdtime)
     PUT_HOSTSHORT(PIM_MESSAGE_HELLO_HOLDTIME, data);
     PUT_HOSTSHORT(PIM_MESSAGE_HELLO_HOLDTIME_LENGTH, data);
     PUT_HOSTSHORT(holdtime, data);
+#ifdef ADD_PIM_HELLO_GENID
+    PUT_HOSTSHORT(PIM_MESSAGE_HELLO_GENID, data);
+    PUT_HOSTSHORT(PIM_MESSAGE_HELLO_GENID_LENGTH, data);
+    PUT_HOSTLONG(v->uv_pim_hello_genid, data);
+#endif /* ADD_PIM_HELLO_GENID */
 
     len = data - (uint8_t *)buf;
     send_pim(pim_send_buf, v->uv_lcl_addr, allpimrouters_group, PIM_HELLO, len);
-    SET_TIMER(v->uv_pim_hello_timer, PIM_TIMER_HELLO_PERIOD);
+    SET_TIMER(v->uv_pim_hello_timer, pim_timer_hello_period);
 
     return TRUE;
 }
@@ -454,6 +468,24 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *pim_message, 
     mrtentry_t *mrtentry;
     mrtentry_t *mrtentry2;
     vifbitmap_t oifs;
+
+    /*
+     * If instance specific multicast routing table is in use, check
+     * that we are the target of the register packet. Otherwise we
+     * might end up responding to register packet belonging to another
+     * pimd instance. If we are not an RP candidate, we shouldn't have
+     * pimreg interface and shouldn't receive register packets, but we'll
+     * check the cand_rp flag anyway, just to be on the safe side.
+     */
+    if (mrt_table_id!=0) {
+        if (!cand_rp_flag || my_cand_rp_address != reg_dst) {
+            IF_DEBUG(DEBUG_PIM_REGISTER) {
+                logit(LOG_DEBUG, 0, "PIM register: packet from %s to %s is not destined for us",
+                    inet_fmt(reg_src, s1, sizeof(s1)), inet_fmt(reg_dst, s2, sizeof(s2)));
+	        }
+            return FALSE;
+        }
+    }
 
     IF_DEBUG(DEBUG_PIM_REGISTER) {
         logit(LOG_INFO, 0, "Received PIM register: len = %d from %s",
@@ -515,8 +547,9 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *pim_message, 
     /*
      * inner_src and inner_grp must be valid IP unicast and multicast address
      * respectively. XXX: not in the spec.
+     * PIM-SSM support: inner_grp must not be in PIM-SSM range
      */
-    if ((!inet_valid_host(inner_src)) || (!IN_MULTICAST(ntohl(inner_grp)))) {
+    if ((!inet_valid_host(inner_src)) || (!IN_MULTICAST(ntohl(inner_grp))) || IN_PIM_SSM_RANGE(inner_grp)) {
 	if (!inet_valid_host(inner_src)) {
 	    logit(LOG_WARNING, 0, "Inner source address of register message by %s is invalid: %s",
 		  inet_fmt(reg_src, s1, sizeof(s1)), inet_fmt(inner_src, s2, sizeof(s2)));
@@ -546,6 +579,9 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *pim_message, 
 
     /* Check if I am the RP for that group */
     if ((local_address(reg_dst) == NO_VIF) || !check_mrtentry_rp(mrtentry, reg_dst)) {
+	IF_DEBUG(DEBUG_PIM_REGISTER) {
+	    logit(LOG_DEBUG, 0, "Not RP in address %s", inet_fmt(reg_dst, s1, sizeof(s1)));
+	}
 	send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
 
 	return TRUE;
@@ -561,6 +597,10 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *pim_message, 
 	    if (!is_null) {
 		calc_oifs(mrtentry, &oifs);
 		if (VIFM_ISEMPTY(oifs) && (mrtentry->incoming == reg_vif_num)) {
+		    IF_DEBUG(DEBUG_PIM_REGISTER) {
+			logit(LOG_DEBUG, 0, "No output intefaces found for group %s source %s",
+			      inet_fmt(inner_grp, s1, sizeof(s1)), inet_fmt(inner_src, s2, sizeof(s2)));
+		    }
 		    send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
 		    return TRUE;
 		}
@@ -578,6 +618,10 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *pim_message, 
 		 */
 		if (is_border) {
 		    if (mrtentry->pmbr_addr != reg_src) {
+			IF_DEBUG(DEBUG_PIM_REGISTER) {
+			    logit(LOG_DEBUG, 0, "pmbr_addr (%s) != reg_src (%s)",
+				  inet_fmt(mrtentry->pmbr_addr, s1, sizeof(s1)), inet_fmt(reg_src, s2, sizeof(s2)));
+			}
 			send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
 
 			return TRUE;
@@ -592,6 +636,10 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *pim_message, 
 	}
 	else {
 	    /* The SPT bit is set */
+	    IF_DEBUG(DEBUG_PIM_REGISTER) {
+		logit(LOG_DEBUG, 0, "SPT bit is set for group %s source %s",
+		      inet_fmt(inner_grp, s1, sizeof(s1)), inet_fmt(inner_src, s2, sizeof(s2)));
+	    }
 	    send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
 	    return TRUE;
 	}
@@ -618,9 +666,18 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *pim_message, 
     }
 
     if (mrtentry->flags & MRTF_WC) {
+
+	/* First PIM Register for this routing entry, log it */
+	logit(LOG_INFO, 0, "Received PIM REGISTER: src %s, group %s",
+	      inet_fmt(reg_src, s1, sizeof(s1)), inet_fmt(inner_grp, s2, sizeof(s2)));
+
 	/* (*,G) entry */
 	calc_oifs(mrtentry, &oifs);
 	if (VIFM_ISEMPTY(oifs)) {
+	    IF_DEBUG(DEBUG_PIM_REGISTER) {
+		logit(LOG_DEBUG, 0, "No output intefaces found for group %s source %s (*,G)",
+		      inet_fmt(inner_grp, s1, sizeof(s1)), inet_fmt(inner_src, s2, sizeof(s2)));
+	    }
 	    send_pim_register_stop(reg_dst, reg_src, inner_grp, INADDR_ANY_N);
 
 	    return FALSE;
@@ -682,6 +739,11 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *pim_message, 
 
     /* Shoudn't happen: invalid routing entry? */
     /* XXX: TODO: shoudn't be inner_src=INADDR_ANY? Not in the spec. */
+    IF_DEBUG(DEBUG_PIM_REGISTER) {
+	logit(LOG_DEBUG, 0, "Shoudn't happen: invalid routing entry? (%s, %s, %s, %s)",
+	      inet_fmt(reg_dst, s1, sizeof(s1)), inet_fmt(reg_src, s2, sizeof(s2)),
+	      inet_fmt(inner_grp, s3, sizeof(s3)), inet_fmt(inner_src, s4, sizeof(s4)));
+    }
     send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
 
     return TRUE;
@@ -704,6 +766,9 @@ int send_pim_register(char *packet)
     source = ip->ip_src.s_addr;
     group  = ip->ip_dst.s_addr;
 
+    if (IN_PIM_SSM_RANGE(group))
+	return FALSE; /* Group is in PIM-SSM range, don't send register. */
+
     if ((vifi = find_vif_direct_local(source)) == NO_VIF)
 	return FALSE;
 
@@ -724,7 +789,14 @@ int send_pim_register(char *packet)
 	return FALSE;		/* Cannot create (S,G) state */
 
     if (mrtentry->flags & MRTF_NEW) {
-	/* A new entry */
+	/* A new entry, log it */
+	reg_src = uvifs[vifi].uv_lcl_addr;
+	reg_dst = mrtentry->group->rpaddr;
+
+	logit(LOG_INFO, 0, "Send PIM REGISTER: src %s dst %s, group %s",
+	    inet_fmt(reg_src, s1, sizeof(s1)), inet_fmt(reg_dst, s2, sizeof(s2)),
+	    inet_fmt(group, s3, sizeof(s3)));
+
 	mrtentry->flags &= ~MRTF_NEW;
 	RESET_TIMER(mrtentry->rs_timer); /* Reset the Register-Suppression timer */
 	mrtentry2 = mrtentry->group->grp_route;
@@ -762,15 +834,6 @@ int send_pim_register(char *packet)
 	reg_mtu = uvifs[vifi].uv_mtu; /* XXX: Use PMTU to RP instead! */
 	reg_src = uvifs[vifi].uv_lcl_addr;
 	reg_dst = mrtentry->group->rpaddr;
-
-	IF_DEBUG(DEBUG_PIM_REGISTER) {
-	    logit(LOG_DEBUG, 0, "Composing PIM_REGISTER (%zd + %zd + %zd) %d bytes to RP %s for src = %s and group = %s",
-		  sizeof(struct ip), sizeof(pim_header_t) + sizeof(pim_register_t),
-		  htons(ip->ip_len), pktlen,
-		  inet_fmt(reg_dst, s1, sizeof(s1)),
-		  inet_fmt(reg_src, s2, sizeof(s2)),
-		  inet_fmt(group, s3, sizeof(s3)));
-	}
 
 	send_pim_unicast(pim_send_buf, reg_mtu, reg_src, reg_dst, PIM_REGISTER, pktlen);
 
@@ -838,7 +901,7 @@ int receive_pim_register_stop(uint32_t reg_src, uint32_t reg_dst, char *pim_mess
 {
     pim_encod_grp_addr_t egaddr;
     pim_encod_uni_addr_t eusaddr;
-    char *data;
+    uint8_t *data;
     mrtentry_t *mrtentry;
     vifbitmap_t pruned_oifs;
 
@@ -846,15 +909,13 @@ int receive_pim_register_stop(uint32_t reg_src, uint32_t reg_dst, char *pim_mess
     if (inet_cksum((uint16_t *)pim_message, len))
 	return FALSE;
 
-    data = pim_message + sizeof(pim_header_t);
+    data = (uint8_t *)(pim_message + sizeof(pim_header_t));
     GET_EGADDR(&egaddr,  data);
     GET_EUADDR(&eusaddr, data);
 
-    IF_DEBUG(DEBUG_PIM_REGISTER) {
-	logit(LOG_DEBUG, 0, "Received PIM_REGISTER_STOP from RP %s to %s for src = %s and group = %s", inet_fmt(reg_src, s1, sizeof(s1)), inet_fmt(reg_dst, s2, sizeof(s2)),
-	      inet_fmt(eusaddr.unicast_addr, s3, sizeof(s3)),
-	      inet_fmt(egaddr.mcast_addr, s4, sizeof(s4)));
-    }
+    logit(LOG_INFO, 0, "Received PIM_REGISTER_STOP from RP %s to %s for src = %s and group = %s", inet_fmt(reg_src, s1, sizeof(s1)), inet_fmt(reg_dst, s2, sizeof(s2)),
+	  inet_fmt(eusaddr.unicast_addr, s3, sizeof(s3)),
+	  inet_fmt(egaddr.mcast_addr, s4, sizeof(s4)));
 
     /* TODO: apply the group mask and do register_stop for all grp addresses */
     /* TODO: check for SourceAddress == 0 */
@@ -891,6 +952,14 @@ send_pim_register_stop(uint32_t reg_src, uint32_t reg_dst, uint32_t inner_grp, u
     char   *buf;
     uint8_t *data;
 
+    if (IN_PIM_SSM_RANGE(inner_grp)) {
+	return TRUE;
+    }
+
+    logit(LOG_INFO, 0, "Send PIM REGISTER STOP from %s to router %s for src = %s and group = %s",
+	  inet_fmt(reg_src, s1, sizeof(s1)), inet_fmt(reg_dst, s2, sizeof(s2)),
+	  inet_fmt(inner_src, s3, sizeof(s3)), inet_fmt(inner_grp, s4, sizeof(s4)));
+
     buf  = pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t);
     data = (uint8_t *)buf;
     PUT_EGADDR(inner_grp, SINGLE_GRP_MSKLEN, 0, data);
@@ -914,6 +983,10 @@ int join_or_prune(mrtentry_t *mrtentry, pim_nbr_entry_t *upstream_router)
 
     calc_oifs(mrtentry, &entry_oifs);
     if (mrtentry->flags & (MRTF_PMBR | MRTF_WC)) {
+	if (IN_PIM_SSM_RANGE(mrtentry->group->group)) {
+	    logit(LOG_DEBUG, 0, "No action for SSM (PMBR|WC)");
+	    return PIM_ACTION_NOTHING;
+	}
 	/* (*,*,RP) or (*,G) entry */
 	/* The (*,*,RP) or (*,G) J/P messages are sent only toward the RP */
 	if (upstream_router != mrtentry->upstream)
@@ -960,6 +1033,10 @@ int join_or_prune(mrtentry_t *mrtentry, pim_nbr_entry_t *upstream_router)
 		}
 	    }
 	    else {
+		if (IN_PIM_SSM_RANGE(mrtentry->group->group)) {
+		    logit(LOG_DEBUG, 0, "No action for SSM (RP)");
+		    return PIM_ACTION_NOTHING;
+		}
 		/* Upstream router toward RP */
 		if (VIFM_ISEMPTY(entry_oifs))
 		    return PIM_ACTION_PRUNE;
@@ -989,6 +1066,78 @@ int join_or_prune(mrtentry_t *mrtentry, pim_nbr_entry_t *upstream_router)
     return PIM_ACTION_NOTHING;
 }
 
+/*
+ * Log PIM Join/Prune message. Send log event for every join and prune separately.
+ * Format of the Join/Prune message starting from dataptr is following:
+   ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   |         Multicast Group Address 1 (Encoded-Group format)      |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |   Number of Joined Sources    |   Number of Pruned Sources    |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |        Joined Source Address 1 (Encoded-Source format)        |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                             .                                 |
+   |                             .                                 |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |        Joined Source Address n (Encoded-Source format)        |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |        Pruned Source Address 1 (Encoded-Source format)        |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                             .                                 |
+   |                             .                                 |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |        Pruned Source Address n (Encoded-Source format)        |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |         Multicast Group Address m (Encoded-Group format)      |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |   Number of Joined Sources    |   Number of Pruned Sources    |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |        Joined Source Address 1 (Encoded-Source format)        |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                             .                                 |
+   |                             .                                 |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |        Joined Source Address n (Encoded-Source format)        |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |        Pruned Source Address 1 (Encoded-Source format)        |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                             .                                 |
+   |                             .                                 |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |        Pruned Source Address n (Encoded-Source format)        |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ */
+void log_pim_join_prune(uint32_t src, uint8_t *data_ptr, int num_groups, char* ifname)
+{
+    pim_encod_grp_addr_t encod_group;
+    pim_encod_src_addr_t encod_src;
+    uint32_t group, source;
+    uint16_t num_j_srcs;
+    uint16_t num_p_srcs;
+
+    /* Message validity check is done by caller */
+    while (num_groups--) {
+
+	GET_EGADDR(&encod_group, data_ptr);
+	GET_HOSTSHORT(num_j_srcs, data_ptr);
+	GET_HOSTSHORT(num_p_srcs, data_ptr);
+	group = encod_group.mcast_addr;
+
+	while(num_j_srcs--) {
+	    GET_ESADDR(&encod_src, data_ptr);
+	    source = encod_src.src_addr;
+	    logit(LOG_INFO, 0, "Received PIM JOIN from %s to group %s for multicast source %s on %s",
+		inet_fmt(src, s1, sizeof(s1)), inet_fmt(group, s2, sizeof(s2)), inet_fmt(source, s3, sizeof(s3)), ifname);
+	}
+
+	while (num_p_srcs--) {
+	    GET_ESADDR(&encod_src, data_ptr);
+	    source = encod_src.src_addr;
+	    logit(LOG_INFO, 0, "Received PIM PRUNE from %s to group %s for multicast source %s on %s",
+		  inet_fmt(src, s1, sizeof(s1)), inet_fmt(group, s2, sizeof(s2)), inet_fmt(source, s3, sizeof(s3)), ifname);
+	}
+    }
+}
 
 /* TODO: when parsing, check if we go beyong message size */
 /* TODO: too long, simplify it! */
@@ -1034,7 +1183,7 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 	 * non-directly connected router. Ignore it.
 	 */
 	if (local_address(src) == NO_VIF) {
-	    logit(LOG_INFO, 0, "Ignoring PIM_JOIN_PRUNE from non-neighbor router %s",
+	    logit(LOG_DEBUG, 0, "Ignoring PIM_JOIN_PRUNE from non-neighbor router %s",
 		  inet_fmt(src, s1, sizeof(s1)));
 	}
 
@@ -1066,6 +1215,9 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
     if (num_groups == 0)
 	return FALSE;    /* No indication for groups in the message */
     GET_HOSTSHORT(holdtime, data);
+
+    logit(LOG_INFO, 0, "Received PIM JOIN/PRUNE from %s on %s",
+	  inet_fmt(src, s1, sizeof(s1)), v->uv_name);
 
     /* Sanity check for the message length through all the groups */
     num_groups_tmp = num_groups;
@@ -1101,6 +1253,8 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
     data = data_start;
     num_groups_tmp = num_groups;
 
+    /* Sanity check is done. Log the message */
+    log_pim_join_prune(src, data, num_groups, v->uv_name);
     if (eutaddr.unicast_addr != v->uv_lcl_addr) {
 	/* if I am not the targer of the join message */
 	/* Join/Prune suppression code. This either modifies the J/P timers
@@ -1943,6 +2097,13 @@ int send_periodic_pim_join_prune(vifi_t vifi, pim_nbr_entry_t *pim_nbr, uint16_t
 	    if (pim_nbr && mrt->upstream != pim_nbr)
 		continue;
 
+	    /* Don't send (*,G) or (S,G,rpt) Join/Prune */
+	    /* TODO: this handles (S,G,rpt) Join/Prune? */
+	    if (!(mrt->flags & MRTF_SG) && IN_PIM_SSM_RANGE(grp->group)) {
+		logit(LOG_DEBUG, 0, "Skip j/p for SSM (!SG)");
+		continue;
+	    }
+
 	    /* TODO: XXX: The J/P suppression timer is not in the spec! */
 	    if (!VIFM_ISEMPTY(mrt->joined_oifs) || (v->uv_flags & VIFF_DR)) {
 		add_jp_entry(mrt->upstream, holdtime,
@@ -1994,6 +2155,8 @@ int send_periodic_pim_join_prune(vifi_t vifi, pim_nbr_entry_t *pim_nbr, uint16_t
 				     mrt->source->address,
 				     SINGLE_SRC_MSKLEN, 0, PIM_ACTION_PRUNE);
 		} else {
+		    logit(LOG_DEBUG, 0 , "Joined not empty, group %s",
+			  inet_ntoa(*(struct in_addr *)&grp->group));
 		    /* TODO: XXX: TIMER implem. dependency! */
 		    if (mrt->incoming == vifi && mrt->jp_timer <= TIMER_INTERVAL)
 			add_jp_entry(mrt->upstream, holdtime,
@@ -2364,6 +2527,8 @@ static void send_jp_message(pim_nbr_entry_t *pim_nbr)
     vifi = pim_nbr->vifi;
     memcpy(pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t),
 	   pim_nbr->build_jp_message->jp_message, len);
+    logit(LOG_INFO, 0, "Send PIM JOIN/PRUNE from %s on %s",
+	  inet_fmt(uvifs[vifi].uv_lcl_addr, s1, sizeof(s1)), uvifs[vifi].uv_name);
     send_pim(pim_send_buf, uvifs[vifi].uv_lcl_addr, allpimrouters_group,
 	     PIM_JOIN_PRUNE, len);
     return_jp_working_buff(pim_nbr);
@@ -2397,7 +2562,7 @@ int receive_pim_assert(uint32_t src, uint32_t dst __attribute__((unused)), char 
 	 * non-directly connected router. Ignore it.
 	 */
 	if (local_address(src) == NO_VIF)
-	    logit(LOG_INFO, 0, "Ignoring PIM_ASSERT from non-neighbor router %s",
+	    logit(LOG_DEBUG, 0, "Ignoring PIM_ASSERT from non-neighbor router %s",
 		  inet_fmt(src, s1, sizeof(s1)));
 
 	return FALSE;
@@ -2424,6 +2589,11 @@ int receive_pim_assert(uint32_t src, uint32_t dst __attribute__((unused)), char 
 
     source = eusaddr.unicast_addr;
     group = egaddr.mcast_addr;
+
+    logit(LOG_INFO, 0, "Received PIM ASSERT from %s for group %s and source %s",
+	inet_fmt(src, s1, sizeof(s1)), inet_fmt(group, s2, sizeof(s2)),
+	inet_fmt(source, s3, sizeof(s3)));
+
     /* Find the longest "active" entry, i.e. the one with a kernel mirror */
     if (assert_rptbit) {
 	mrt = find_route(INADDR_ANY_N, group, MRTF_WC | MRTF_PMBR, DONT_CREATE);
@@ -2688,6 +2858,12 @@ int send_pim_assert(uint32_t source, uint32_t group, vifi_t vifi, mrtentry_t *mr
 	local_preference |= PIM_ASSERT_RPT_BIT;
     PUT_HOSTLONG(local_preference, data);
     PUT_HOSTLONG(local_metric, data);
+
+    logit(LOG_INFO, 0, "Send PIM ASSERT from %s for group %s and source %s",
+	  inet_fmt(uvifs[vifi].uv_lcl_addr, s1, sizeof(s1)),
+	  inet_fmt(group, s2, sizeof(s2)),
+	  inet_fmt(source, s3, sizeof(s3)));
+
     send_pim(pim_send_buf, uvifs[vifi].uv_lcl_addr, allpimrouters_group,
 	     PIM_ASSERT, data - data_start);
 
@@ -2768,7 +2944,7 @@ int receive_pim_bootstrap(uint32_t src, uint32_t dst, char *pim_message, size_t 
 	 * non-directly connected router. Ignore it.
 	 */
 	if (local_address(src) == NO_VIF)
-	    logit(LOG_INFO, 0, "Ignoring PIM_BOOTSTRAP from non-neighbor router %s",
+	    logit(LOG_DEBUG, 0, "Ignoring PIM_BOOTSTRAP from non-neighbor router %s",
 		  inet_fmt(src, s1, sizeof(s1)));
 
 	return FALSE;
@@ -2808,6 +2984,9 @@ int receive_pim_bootstrap(uint32_t src, uint32_t dst, char *pim_message, size_t 
 	/* The message's BSR is less preferred than the current BSR */
 	return FALSE;  /* Ignore the received BSR message */
     }
+
+    logit(LOG_INFO, 0, "Received PIM Bootstrap candidate %s, priority %d",
+	  inet_fmt(new_bsr_address, s1, sizeof(s1)), new_bsr_priority);
 
     /* Check the iif, if this was PIM-ROUTERS multicast */
     if (dst == allpimrouters_group) {
@@ -3121,11 +3300,14 @@ int receive_pim_cand_rp_adv(uint32_t src, uint32_t dst __attribute__((unused)), 
     while (prefix_cnt--) {
 	GET_EGADDR(&egaddr, data_ptr);
 	MASKLEN_TO_MASK(egaddr.masklen, grp_mask);
-	add_rp_grp_entry(&cand_rp_list, &grp_mask_list,
-			 euaddr.unicast_addr, priority, holdtime,
-			 egaddr.mcast_addr, grp_mask,
-			 my_bsr_hash_mask,
-			 curr_bsr_fragment_tag);
+	/* Do not advertise internal virtual RP for SSM groups */
+	if (!IN_PIM_SSM_RANGE(egaddr.mcast_addr)) {
+	    add_rp_grp_entry(&cand_rp_list, &grp_mask_list,
+			     euaddr.unicast_addr, priority, holdtime,
+			     egaddr.mcast_addr, grp_mask,
+			     my_bsr_hash_mask,
+			     curr_bsr_fragment_tag);
+	}
 	/* TODO: Check for len */
     }
 

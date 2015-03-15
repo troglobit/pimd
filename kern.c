@@ -51,6 +51,10 @@ int curttl = 0;
 #define MRT_PIM MRT_ASSERT
 #endif /* MRT_PIM */
 
+#ifndef MRT_TABLE
+#define MRT_TABLE       (MRT_BASE+9)    /* Specify mroute table ID              */
+#endif /* MRT_TABLE */
+
 /*
  * Open/init the multicast routing in the kernel and sets the
  * MRT_PIM (aka MRT_ASSERT) flag in the kernel.
@@ -58,6 +62,12 @@ int curttl = 0;
 void k_init_pim(int socket)
 {
     int v = 1;
+
+    if (mrt_table_id!=0) {
+        logit(LOG_INFO, 0, "Initializing multicast routing table id %u", mrt_table_id);
+        if (setsockopt(socket, IPPROTO_IP, MRT_TABLE, &mrt_table_id, sizeof(mrt_table_id)) < 0)
+            logit(LOG_ERR, errno, "Cannot set multicast routing table id. Make sure CONFIG_IP_MROUTE_MULTIPLE_TABLES=y is set in running kernel.");
+    }
 
     if (setsockopt(socket, IPPROTO_IP, MRT_INIT, (char *)&v, sizeof(int)) < 0) {
 	if (errno == EADDRINUSE)
@@ -406,11 +416,9 @@ int k_del_mfc(int socket, uint32_t source, uint32_t group)
 	return FALSE;
     }
 
-    IF_DEBUG(DEBUG_MFC) {
-	logit(LOG_DEBUG, 0, "Removed MFC entry src %s, grp %s",
-	      inet_fmt(mc.mfcc_origin.s_addr, s1, sizeof(s1)),
-	      inet_fmt(mc.mfcc_mcastgrp.s_addr, s2, sizeof(s2)));
-    }
+    logit(LOG_INFO, 0, "Removed MFC entry src %s, grp %s",
+	inet_fmt(mc.mfcc_origin.s_addr, s1, sizeof(s1)),
+	inet_fmt(mc.mfcc_mcastgrp.s_addr, s2, sizeof(s2)));
 
     return TRUE;
 }
@@ -453,6 +461,10 @@ int k_chg_mfc(int socket, uint32_t source, uint32_t group, vifi_t iif, vifbitmap
 	return FALSE;
     }
 
+    logit(LOG_INFO, 0, "Added kernel MFC entry src %s grp %s",
+	  inet_fmt(mc.mfcc_origin.s_addr, s1, sizeof(s1)),
+	  inet_fmt(mc.mfcc_mcastgrp.s_addr, s2, sizeof(s2)));
+
     return TRUE;
 }
 
@@ -465,6 +477,7 @@ int k_get_vif_count(vifi_t vifi, struct vif_count *retval)
 {
     struct sioc_vif_req vreq;
 
+    memset(&vreq, 0, sizeof(vreq));
     vreq.vifi = vifi;
     if (ioctl(udp_socket, SIOCGETVIFCNT, (char *)&vreq) < 0) {
 	logit(LOG_WARNING, errno, "Failed reading kernel packet count (SIOCGETVIFCNT) on vif %d", vifi);
@@ -494,6 +507,7 @@ int k_get_sg_cnt(int socket, uint32_t source, uint32_t group, struct sg_count *r
 {
     struct sioc_sg_req sgreq;
 
+    memset(&sgreq, 0, sizeof(sgreq));
     sgreq.src.s_addr = source;
     sgreq.grp.s_addr = group;
     if ((ioctl(socket, SIOCGETSGCNT, (char *)&sgreq) < 0) || (sgreq.wrong_if == 0xffffffff)) {

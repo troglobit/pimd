@@ -31,7 +31,11 @@
 #define SIOCGETSGCNT	(SIOCPROTOPRIVATE+1)
 #define SIOCGETRPF	(SIOCPROTOPRIVATE+2)
 
+#ifdef LINUX_MAX_VIFS_64
+#define MAXVIFS		64
+#else
 #define MAXVIFS		32	
+#endif /* LINUX_MAX_VIFS_64 */
 typedef unsigned long vifbitmap_t;	/* User mode code depends on this lot */
 typedef unsigned short vifi_t;
 #define ALL_VIFS	((vifi_t)(-1))

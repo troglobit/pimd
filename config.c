@@ -64,6 +64,7 @@
 #define CONF_SCOPED                             13
 #define CONF_DEFAULT_IGMP_QUERY_INTERVAL        14
 #define CONF_DEFAULT_IGMP_QUERIER_TIMEOUT       15
+#define CONF_HELLO_PERIOD                       16
 
 /*
  * Forward declarations.
@@ -190,13 +191,19 @@ void config_vifs_from_kernel(void)
 	}
 
 	subnet = addr & mask;
-	if ((!inet_valid_subnet(subnet, mask)) || (addr == subnet) || addr == (subnet | ~mask)) {
-	    if (!(inet_valid_host(addr) && ((mask == htonl(0xfffffffe)) || (flags & IFF_POINTOPOINT)))) {
-		logit(LOG_WARNING, 0, "Ignoring %s, has invalid address %s and/or netmask %s",
-		      ifr.ifr_name, inet_fmt(addr, s1, sizeof(s1)), inet_fmt(mask, s2, sizeof(s2)));
-		continue;
-	    }
+#ifdef ALLOW_VIF_MASK_32
+	if (mask != 0xffffffff) {
+#endif
+		if ((!inet_valid_subnet(subnet, mask)) || (addr == subnet) || addr == (subnet | ~mask)) {
+			if (!(inet_valid_host(addr) && ((mask == htonl(0xfffffffe)) || (flags & IFF_POINTOPOINT)))) {
+				logit(LOG_WARNING, 0, "Ignoring %s, has invalid address %s and/or netmask %s",
+				ifr.ifr_name, inet_fmt(addr, s1, sizeof(s1)), inet_fmt(mask, s2, sizeof(s2)));
+				continue;
+			}
+		}
+#ifdef ALLOW_VIF_MASK_32
 	}
+#endif
 
 	/*
 	 * Ignore any interface that is connected to the same subnet as
@@ -376,6 +383,8 @@ static int parse_option(char *word)
 	return CONF_MASKLEN;
     if  (EQUAL(word, "scoped"))
 	return CONF_SCOPED;
+    if (EQUAL(word, "hello_period"))
+	return CONF_HELLO_PERIOD;
 
     return CONF_UNKNOWN;
 }
@@ -462,6 +471,11 @@ static int parse_phyint(char *s)
 
 	    if (EQUAL(w, "enable")) {
 		v->uv_flags &= ~VIFF_DISABLED;
+		continue;
+	    }
+
+	    if (EQUAL(w, "igmpv3")) {
+		v->uv_flags &= ~VIFF_IGMPV2;
 		continue;
 	    }
 
@@ -1001,6 +1015,56 @@ static int parse_compat_threshold(char *line)
     return TRUE;
 }
 
+uint16_t pim_timer_hello_period = PIM_TIMER_HELLO_PERIOD;
+uint16_t pim_timer_hello_holdtime = PIM_TIMER_HELLO_HOLDTIME;
+
+/*
+ * function name: parse_hello_period
+ * input: char *s
+ * output: int (TRUE if successful, FALSE o.w.)
+ * operation: reads and assigns the hello period
+ *	      General form:
+ *		'hello_period <period length in secs>'.
+ */
+int parse_hello_period(char *s)
+{
+    char *w;
+    u_int period;
+    u_int holdtime;
+
+    if (!EQUAL((w = next_word(&s)), "")) {
+	if (sscanf(w, "%u", &period) != 1) {
+	    logit(LOG_WARNING, 0,
+		  "Invalid hello_period value %s; set to default %u",
+		  w, PIM_TIMER_HELLO_PERIOD);
+	    period = PIM_TIMER_HELLO_PERIOD;
+	    holdtime = PIM_TIMER_HELLO_HOLDTIME;
+	} else {
+	    if (period <= (u_int)(UINT16_MAX / 3.5)) {
+		holdtime = period * 3.5;
+	    } else {
+		logit(LOG_WARNING, 0,
+		      "Too large hello_period value %s; set to default %u",
+		      w, PIM_TIMER_HELLO_PERIOD);
+		      period = PIM_TIMER_HELLO_PERIOD;
+		      holdtime = PIM_TIMER_HELLO_HOLDTIME;
+	    }
+	}
+    } else {
+	logit(LOG_WARNING, 0,
+	      "Missing hello_period value; set to default %u",
+	PIM_TIMER_HELLO_PERIOD);
+	period = PIM_TIMER_HELLO_PERIOD;
+	holdtime = PIM_TIMER_HELLO_HOLDTIME;
+    }
+
+    logit(LOG_INFO, 0, "hello_period is %u", period);
+	pim_timer_hello_period = period;
+	pim_timer_hello_holdtime = holdtime;
+
+    return(TRUE);
+}
+
 
 /**
  * parse_spt_threshold - Parse spt_threshold option
@@ -1391,11 +1455,21 @@ void config_vifs_from_file(void)
 		parse_default_igmp_querier_timeout(s);
 		break;
 
+	    case CONF_HELLO_PERIOD:
+		parse_hello_period(s);
+		break;
+
 	    default:
 		logit(LOG_WARNING, 0, "%s:%u - Unknown command '%s'", config_file, lineno, w);
 		error_flag = TRUE;
 	}
     }
+
+    /* Because of internal design, static RP address is needed for SSM range.
+       Local-link address is used. It is not required to be really configured in any interface. */
+    strncpy(linebuf, "169.254.0.1 232.0.0.0/8\n", sizeof(linebuf));
+    s = linebuf;
+    parse_rp_address(s);
 
     if (error_flag)
 	logit(LOG_ERR, 0, "%s:%u - Syntax error", config_file, lineno);

@@ -152,6 +152,9 @@ struct uvif {
     struct phaddr   *uv_addrs;	    /* Additional subnets on this vif       */
     struct vif_filter *uv_filter;   /* Route filters on this vif	    */
     uint16_t	    uv_pim_hello_timer;/* timer for sending PIM hello msgs  */
+#ifdef ADD_PIM_HELLO_GENID
+    int         uv_pim_hello_genid; /* Random PIM Hello Generation Identifier */
+#endif /* ADD_PIM_HELLO_GENID */
     uint16_t	    uv_gq_timer;    /* Group Query timer        	    */
     uint16_t         uv_jp_timer;    /* The Join/Prune timer                 */
     int             uv_local_pref;  /* default local preference for assert  */
@@ -180,6 +183,7 @@ struct uvif {
 #define VIFF_POINT_TO_POINT     0x100000       /* point-to-point link       */
 #define VIFF_PIM_NBR            0x200000       /* PIM neighbor              */
 #define VIFF_DVMRP_NBR          0x400000       /* DVMRP neighbor            */
+#define VIFF_IGMPV2	        0x800000       /* Act as an IGMPv2 Router   */
 
 struct phaddr {
     struct phaddr   *pa_next;
@@ -215,6 +219,7 @@ struct vf_element {
 struct listaddr {
     struct listaddr *al_next;		/* link to next addr, MUST BE FIRST */
     uint32_t	     al_addr;		/* local group or neighbor address  */
+    struct listaddr *al_sources;	/* link to sources */
     uint32_t	     al_timer;		/* for timing out group or neighbor */
     time_t	     al_ctime;		/* entry creation time		    */
     union {
@@ -228,6 +233,7 @@ struct listaddr {
     uint32_t	     al_timerid;        /* timer for group membership	    */
     uint32_t	     al_query;		/* timer for repeated leave query   */
     uint16_t	     al_flags;		/* flags related to this neighbor   */
+    u_long	     al_versiontimer;	/* timer for version switch    */
 };
 #define	al_genid	al_alu.alu_genid
 #define	al_reporter	al_alu.alu_reporter

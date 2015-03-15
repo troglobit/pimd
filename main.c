@@ -50,8 +50,10 @@ char versionstring[100];
 int disable_all_by_default = 0;
 int haveterminal = 1;
 struct rp_hold *g_rp_hold = NULL;
+int mrt_table_id = 0;
 
 char *config_file = _PATH_PIMD_CONF;
+int syslog_level = LOG_NOTICE;
 
 extern char todaysversion[];
 
@@ -257,6 +259,8 @@ static int usage(void)
     /* fputs("  -p,--show-debug      Show debug dump, only if debug is enabled\n", stderr); */
     fputs("  -q, --quit-daemon    Send SIGTERM to a running pimd\n", stderr);
     fputs("  -r, --show-routes    Show state of VIFs and multicast routing tables\n", stderr);
+    fputs("  -t, --table-id       Set multicast routing table id. Allowed values are 0 ... 999999999. Default value is 0 (use default table).\n", stderr);
+    fputs("  -s, --syslog-level=LEVEL  Maximum syslog level to use, default LOG_NOTICE\n", stderr);
     fprintf(stderr, "  -v, --version        Show %s version\n", __progname);
     fputs("\n", stderr);
 
@@ -275,6 +279,16 @@ static int usage(void)
 	    j &= ~d->level;
 	}
     }
+    fputc('\n', stderr);
+
+    fputs("\nValid syslog levels:", stderr);
+    fputs("\n  1 - LOG_ALERT: action must be taken immediately", stderr);
+    fputs("\n  2 - LOG_CRIT: critical conditions", stderr);
+    fputs("\n  3 - LOG_ERR: error conditions", stderr);
+    fputs("\n  4 - LOG_WARNING: warning conditions", stderr);
+    fputs("\n  5 - LOG_NOTICE: normal but significant condition (DEFAULT)", stderr);
+    fputs("\n  6 - LOG_INFO: informational", stderr);
+    fputs("\n  7 - LOG_DEBUG: debug-level messages", stderr);
     fputc('\n', stderr);
 
     return 1;
@@ -298,6 +312,8 @@ int main(int argc, char *argv[])
 	{"quit-daemon", 0, 0, 'q'},
 	{"reload-config", 0, 0, 'l'},
 	{"show-routes", 0, 0, 'r'},
+	{"table-id", 3, 0, 't'},
+	{"syslog-level", 1, 0, 's'},
 	/* {"show-cache", 0, 0, 'i'}, */
 	/* {"show-debug", 0, 0, 'p'}, */
 	{0, 0, 0, 0}
@@ -305,7 +321,7 @@ int main(int argc, char *argv[])
 
     snprintf(versionstring, sizeof (versionstring), "pimd version %s", todaysversion);
 
-    while ((ch = getopt_long(argc, argv, "c:d::fhlNvqr", long_options, NULL)) != EOF) {
+    while ((ch = getopt_long(argc, argv, "c:d::fhlNvqrt:s:", long_options, NULL)) != EOF) {
 	switch (ch) {
 	    case 'c':
 		config_file = optarg;
@@ -364,6 +380,32 @@ int main(int argc, char *argv[])
 	    case 'r':
 		return killshow(SIGUSR1, _PATH_PIMD_DUMP);
 
+	    case 't':
+		errno = 0;
+		char *endptr;
+		int res = strtol(optarg, &endptr, 10);
+		if (endptr==optarg) {
+			fprintf(stderr, "Table ID must be number\n");
+			return usage();
+		}
+		if (errno!=0) {
+			fprintf(stderr, "Invalid Table ID: %s\n", strerror(errno));
+			return usage();
+		} else if (res<0 || res>999999999) {
+			fprintf(stderr, "Table ID must be in range [0 ... 999999999]\n");
+			return usage();
+		}
+		mrt_table_id = res;
+		break;
+
+	    case 's':
+		syslog_level = atoi(optarg);
+		if (syslog_level<LOG_ALERT || syslog_level>LOG_DEBUG) {
+		    fprintf(stderr, "Syslog level must be in range [1 ... 7]\n");
+		    return usage();
+		}
+		break;
+
 #if 0 /* XXX: TODO */
 	    case 'i':
 		return killshow(SIGUSR2, _PATH_PIMD_CACHE);
@@ -414,7 +456,7 @@ int main(int argc, char *argv[])
      */
 #ifdef LOG_DAEMON
     openlog("pimd", LOG_PID, LOG_DAEMON);
-    setlogmask(LOG_UPTO(LOG_NOTICE));
+    setlogmask(LOG_UPTO(syslog_level));
 #else
     openlog("pimd", LOG_PID);
 #endif /* LOG_DAEMON */
@@ -424,9 +466,6 @@ int main(int argc, char *argv[])
     do_randomize();
     time(&boottime);
 
-    /* Start up the log rate-limiter */
-    resetlogging(NULL);
-
     callout_init();
     init_igmp();
     init_pim();
@@ -435,6 +474,9 @@ int main(int argc, char *argv[])
 #endif /* HAVE_ROUTING_SOCKETS */
     init_pim_mrt();
     init_timers();
+
+    /* Start up the log rate-limiter */
+    resetlogging(NULL);
 
     /* TODO: check the kernel DVMRP/MROUTED/PIM support version */
 
@@ -782,12 +824,15 @@ static void resetlogging(void *arg)
     int nxttime = 60;
     void *narg = NULL;
 
-    if (arg == NULL && log_nmsgs > LOG_MAX_MSGS) {
+    if (arg == NULL && log_nmsgs >= LOG_MAX_MSGS) {
 	nxttime = LOG_SHUT_UP;
 	narg = (void *)&log_nmsgs;	/* just need some valid void * */
 	syslog(LOG_WARNING, "logging too fast, shutting up for %d minutes",
 	       LOG_SHUT_UP / 60);
     } else {
+	if (arg != NULL) {
+	    syslog(LOG_NOTICE, "logging enabled again after rate limiting");
+	}
 	log_nmsgs = 0;
     }
 

@@ -40,6 +40,8 @@
 
 #include "defs.h"
 
+extern uint16_t pim_timer_hello_period;
+extern uint16_t pim_timer_hello_holdtime;
 
 /*
  * Exported variables.
@@ -143,6 +145,7 @@ void init_vifs(void)
 void zero_vif(struct uvif *v, int t)
 {
     v->uv_flags		= 0;
+    v->uv_flags 	|= VIFF_IGMPV2;
     v->uv_metric	= DEFAULT_METRIC;
     v->uv_admetric	= 0;
     v->uv_threshold	= DEFAULT_THRESHOLD;
@@ -165,6 +168,9 @@ void zero_vif(struct uvif *v, int t)
     v->uv_addrs		= (struct phaddr *)NULL;
     v->uv_filter	= (struct vif_filter *)NULL;
     RESET_TIMER(v->uv_pim_hello_timer);
+#ifdef ADD_PIM_HELLO_GENID
+    v->uv_pim_hello_genid = 0;
+#endif /* ADD_PIM_HELLO_GENID */
     RESET_TIMER(v->uv_gq_timer);
     RESET_TIMER(v->uv_jp_timer);
     v->uv_pim_neighbors	= (struct pim_nbr_entry *)NULL;
@@ -294,7 +300,10 @@ static void start_vif(vifi_t vifi)
 	v->uv_flags = v->uv_flags & ~VIFF_DOWN;
     else {
 	v->uv_flags = (v->uv_flags | VIFF_DR | VIFF_NONBRS) & ~VIFF_DOWN;
-	SET_TIMER(v->uv_pim_hello_timer, 1 + RANDOM() % PIM_TIMER_HELLO_PERIOD);
+#ifdef ADD_PIM_HELLO_GENID
+	v->uv_pim_hello_genid = RANDOM();
+#endif /* ADD_PIM_HELLO_GENID */
+	SET_TIMER(v->uv_pim_hello_timer, 1 + RANDOM() % pim_timer_hello_period);
 	SET_TIMER(v->uv_jp_timer, 1 + RANDOM() % PIM_JOIN_PRUNE_PERIOD);
 	/* TODO: CHECK THE TIMERS!!!!! Set or reset? */
 	RESET_TIMER(v->uv_gq_timer);
@@ -324,7 +333,7 @@ static void start_vif(vifi_t vifi)
 	query_groups(v);
 
 	/* Send a probe via the new vif to look for neighbors. */
-	send_pim_hello(v, PIM_TIMER_HELLO_HOLDTIME);
+	send_pim_hello(v, pim_timer_hello_holdtime);
     }
 #ifdef __linux__
     else {
@@ -332,7 +341,12 @@ static void start_vif(vifi_t vifi)
 
 	memset(&ifr, 0, sizeof(struct ifreq));
 	/* strlcpy(ifr.ifr_name,v->uv_name, IFNAMSIZ); */
-	strlcpy(ifr.ifr_name, "pimreg", IFNAMSIZ);
+	if (mrt_table_id!=0) {
+	        logit(LOG_INFO, 0, "Initializing pimreg%u", mrt_table_id);
+		snprintf(ifr.ifr_name, IFNAMSIZ, "pimreg%u", mrt_table_id);
+	} else {
+		strlcpy(ifr.ifr_name, "pimreg", IFNAMSIZ);
+	}
 	if (ioctl(udp_socket, SIOGIFINDEX, (char *) &ifr) < 0) {
 	    logit(LOG_ERR, errno, "ioctl SIOGIFINDEX for %s", ifr.ifr_name);
 	    /* Not reached */
@@ -351,7 +365,7 @@ static void start_vif(vifi_t vifi)
 static void stop_vif(vifi_t vifi)
 {
     struct uvif *v;
-    struct listaddr *a;
+    struct listaddr *a, *b;
     pim_nbr_entry_t *n, *next;
     struct vif_acl *acl;
 
@@ -370,6 +384,11 @@ static void stop_vif(vifi_t vifi)
 	while (v->uv_groups != NULL) {
 	    a = v->uv_groups;
 	    v->uv_groups = a->al_next;
+	    while (a->al_sources != NULL) {
+		b = a->al_sources;
+		a->al_sources = a->al_next;
+		free((char *)b);
+	    }
 	    free((char *)a);
 	}
     }

@@ -34,6 +34,8 @@
 
 #include "defs.h"
 
+extern uint16_t pim_timer_hello_holdtime;
+
 /*
  * Global variables
  */
@@ -143,12 +145,15 @@ void age_vifs(void)
 	    IF_NOT_TIMEOUT(curr->timer)
 		continue;
 
+	    logit(LOG_INFO, 0, "Delete PIM neighbor %s on %s (holdtime timeout)",
+		  inet_fmt(curr->address, s2, sizeof(s2)), v->uv_name);
+
 	    delete_pim_nbr(curr);
 	}
 
 	/* PIM_HELLO periodic */
 	IF_TIMEOUT(v->uv_pim_hello_timer)
-	    send_pim_hello(v, PIM_TIMER_HELLO_HOLDTIME);
+	    send_pim_hello(v, pim_timer_hello_holdtime);
 
 #ifdef TOBE_DELETED
 	/* PIM_JOIN_PRUNE periodic */
@@ -260,6 +265,9 @@ static void check_spt_threshold(mrtentry_t *mrt)
 	    delete_single_kernel_cache(mrt, kc);
 	    continue;
 	}
+
+	// TODO: Why is this needed?
+	try_switch_to_spt(mrt, kc);
 
 	/* Check spt-threshold for forwarder and RP, should we switch to
 	 * source specific tree (SPT).  Need to check only when we have
@@ -789,8 +797,13 @@ void age_misc(void)
 	    rp_next = rp->grp_rp_next;
 
 	    if (rp->holdtime < 60000) {
-		IF_TIMEOUT(rp->holdtime)
+		IF_TIMEOUT(rp->holdtime) {
+		    if (rp->group!=NULL) {
+			logit(LOG_INFO, 0, "Delete RP group entry for group %s (holdtime timeout)",
+			      inet_fmt(rp->group->group_addr, s2, sizeof(s2)));
+		    }
 		    delete_rp_grp_entry(&cand_rp_list, &grp_mask_list, rp);
+		}
 	    }
 	}
     }

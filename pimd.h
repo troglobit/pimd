@@ -301,6 +301,10 @@ typedef struct pim_jp_encod_grp_ {
 #define PIM_MESSAGE_HELLO_HOLDTIME              1
 #define PIM_MESSAGE_HELLO_HOLDTIME_LENGTH       2
 #define PIM_MESSAGE_HELLO_HOLDTIME_FOREVER      0xffff
+#ifdef ADD_PIM_HELLO_GENID
+#define PIM_MESSAGE_HELLO_GENID                 20
+#define PIM_MESSAGE_HELLO_GENID_LENGTH          4
+#endif /* ADD_PIM_HELLO_GENID */
 
 /* PIM_REGISTER definitions */
 #define PIM_MESSAGE_REGISTER_BORDER_BIT         0x80000000
@@ -493,7 +497,12 @@ do {                                                                         \
             PUT_NETLONG((addr), (cp));          \
         } while(0)
 
+/* Check if group is in PIM-SSM range, x must be in network byte order */
+#define IN_PIM_SSM_RANGE(x) ((ntohl((unsigned)(x)) & 0xff000000) == 0xe8000000)
 
+/* Check if address is in link-local range, x must be in network byte order */
+#define IN_LINK_LOCAL_RANGE(x) ((ntohl((unsigned)(x)) & 0xffff0000) == 0xa9fe0000)
+ 
 /* TODO: Currently not used. Probably not need at all. Delete! */
 #if 0
 /* This is completely IGMP related stuff? */

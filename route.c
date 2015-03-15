@@ -192,9 +192,10 @@ int set_incoming(srcentry_t *src, int type)
 	k_req_incoming(src_addr, &rpfc);
 	if ((rpfc.iif == NO_VIF) || rpfc.rpfneighbor.s_addr == INADDR_ANY_N) {
 	    /* couldn't find a route */
-	    IF_DEBUG(DEBUG_PIM_MRT | DEBUG_RPF)
-		logit(LOG_DEBUG, 0, "NO ROUTE found for %s", inet_fmt(src_addr, s1, sizeof(s1)));
-
+	    if (!IN_LINK_LOCAL_RANGE(src_addr)) {
+		IF_DEBUG(DEBUG_PIM_MRT | DEBUG_RPF)
+		    logit(LOG_DEBUG, 0, "NO ROUTE found for %s", inet_fmt(src_addr, s1, sizeof(s1)));
+	    }
 	    return FALSE;
 	}
 
@@ -245,7 +246,7 @@ int set_incoming(srcentry_t *src, int type)
  * TODO: XXX: currently `source` is not used. Will be used with IGMPv3 where
  * we have source-specific Join/Prune.
  */
-void add_leaf(vifi_t vifi, uint32_t source __attribute__((unused)), uint32_t group)
+void add_leaf(vifi_t vifi, uint32_t source, uint32_t group)
 {
     mrtentry_t *mrt;
     mrtentry_t *srcs;
@@ -279,7 +280,12 @@ void add_leaf(vifi_t vifi, uint32_t source __attribute__((unused)), uint32_t gro
      * The downside is that a last-hop router may delay the initiation
      * of the SPT switch. Sigh...
      */
-    if (uvifs[vifi].uv_flags & VIFF_DR)
+    if (IN_PIM_SSM_RANGE(group)) {
+	mrt = find_route(source, group, MRTF_SG, CREATE);
+	logit(LOG_DEBUG, 0, "Find Route (%s,%s)=%p", inet_fmt(source, s1, sizeof(s1)),
+	      inet_fmt(group, s2, sizeof(s2)), mrt);
+    }
+    else if (uvifs[vifi].uv_flags & VIFF_DR)
 	mrt = find_route(INADDR_ANY_N, group, MRTF_WC, CREATE);
     else
 	mrt = find_route(INADDR_ANY_N, group, MRTF_WC, DONT_CREATE);
@@ -287,8 +293,7 @@ void add_leaf(vifi_t vifi, uint32_t source __attribute__((unused)), uint32_t gro
     if (!mrt)
 	return;
 
-    IF_DEBUG(DEBUG_MRT)
-	logit(LOG_DEBUG, 0, "Adding vif %d for group %s", vifi, inet_fmt(group, s1, sizeof(s1)));
+    logit(LOG_NOTICE, 0, "Adding vif %d for group %s", vifi, inet_fmt(group, s1, sizeof(s1)));
 
     if (VIFM_ISSET(vifi, mrt->leaves))
 	return;     /* Already a leaf */
@@ -343,7 +348,7 @@ void add_leaf(vifi_t vifi, uint32_t source __attribute__((unused)), uint32_t gro
  * TODO: XXX: currently `source` is not used. To be used with IGMPv3 where
  * we have source-specific joins/prunes.
  */
-void delete_leaf(vifi_t vifi, uint32_t source __attribute__((unused)), uint32_t group)
+void delete_leaf(vifi_t vifi, uint32_t source, uint32_t group)
 {
     mrtentry_t *mrt;
     mrtentry_t *srcs;
@@ -351,22 +356,35 @@ void delete_leaf(vifi_t vifi, uint32_t source __attribute__((unused)), uint32_t 
     vifbitmap_t old_oifs;
     vifbitmap_t new_leaves;
 
-    mrt = find_route(INADDR_ANY_N, group, MRTF_WC, DONT_CREATE);
+    if (IN_PIM_SSM_RANGE(group)) {
+	logit(LOG_DEBUG, 0, "delete_leaf: SSM, S=%s", inet_fmt(source, s1, sizeof(s1)));
+	mrt = find_route(source, group, MRTF_SG, DONT_CREATE);
+    } else {
+	mrt = find_route(INADDR_ANY_N, group, MRTF_WC, DONT_CREATE);
+    }
+
     if (!mrt)
 	return;
 
     if (!VIFM_ISSET(vifi, mrt->leaves))
 	return;      /* This interface wasn't leaf */
 
+    logit(LOG_NOTICE, 0, "Deleting vif %d for group %s", vifi,
+	  inet_fmt(group, s1, sizeof(s1)));
+
     calc_oifs(mrt, &old_oifs);
-    VIFM_COPY(mrt->leaves, new_leaves);
-    VIFM_CLR(vifi, new_leaves);
-    change_interfaces(mrt,
-		      mrt->incoming,
-		      mrt->joined_oifs,
-		      mrt->pruned_oifs,
-		      new_leaves,
-		      mrt->asserted_oifs, 0);
+
+    /* For SSM, source must match */
+    if (!IN_PIM_SSM_RANGE(group) || (mrt->source->address==source)) {
+	VIFM_COPY(mrt->leaves, new_leaves);
+	VIFM_CLR(vifi, new_leaves);
+	change_interfaces(mrt,
+			  mrt->incoming,
+			  mrt->joined_oifs,
+			  mrt->pruned_oifs,
+			  new_leaves,
+			  mrt->asserted_oifs, 0);
+    }
     calc_oifs(mrt, &new_oifs);
 
     if ((!VIFM_ISEMPTY(old_oifs)) && VIFM_ISEMPTY(new_oifs)) {
@@ -826,9 +844,8 @@ static void process_cache_miss(struct igmpmsg *igmpctl)
     source = mfc_source = igmpctl->im_src.s_addr;
     iif    = igmpctl->im_vif;
 
-    IF_DEBUG(DEBUG_MFC)
-	logit(LOG_DEBUG, 0, "Cache miss, src %s, dst %s, iif %d",
-	      inet_fmt(source, s1, sizeof(s1)), inet_fmt(group, s2, sizeof(s2)), iif);
+    logit(LOG_NOTICE, 0, "Cache miss, src %s, dst %s, iif %d",
+	  inet_fmt(source, s1, sizeof(s1)), inet_fmt(group, s2, sizeof(s2)), iif);
 
     /* TODO: XXX: check whether the kernel generates cache miss for the LAN scoped addresses */
     if (ntohl(group) <= INADDR_MAX_LOCAL_GROUP)
@@ -855,6 +872,7 @@ static void process_cache_miss(struct igmpmsg *igmpctl)
 			  mrt->asserted_oifs, 0);
     } else {
 	mrt = find_route(source, group, MRTF_SG | MRTF_WC | MRTF_PMBR, DONT_CREATE);
+	switch_shortest_path(source, group);
 	if (!mrt)
 	    return;
     }
@@ -968,6 +986,9 @@ static void process_wrong_iif(struct igmpmsg *igmpctl)
     source = igmpctl->im_src.s_addr;
     iif    = igmpctl->im_vif;
 
+    logit(LOG_NOTICE, 0, "Wrong iif: src %s, dst %s, iif %d",
+	  inet_fmt(source, s1, sizeof(s1)), inet_fmt(group, s2, sizeof(s2)), iif);
+
     /* Don't create routing entries for the LAN scoped addresses */
     if (ntohl(group) <= INADDR_MAX_LOCAL_GROUP)
 	return;
@@ -1024,17 +1045,22 @@ mrtentry_t *switch_shortest_path(uint32_t source, uint32_t group)
 {
     mrtentry_t *mrt;
 
+    logit(LOG_NOTICE, 0, "Switch shortest path (SPT): src %s, group %s",
+	  inet_fmt(source, s1, sizeof(s1)), inet_fmt(group, s2, sizeof(s2)));
+
     /* TODO: XXX: prepare and send immediately the (S,G) join? */
     mrt = find_route(source, group, MRTF_SG, CREATE);
     if (mrt) {
 	if (mrt->flags & MRTF_NEW) {
 	    mrt->flags &= ~MRTF_NEW;
-	} else if (mrt->flags & MRTF_RP) {
+	} else if (mrt->flags & MRTF_RP || IN_PIM_SSM_RANGE(group)) {
 	    /* (S,G)RPbit with iif toward RP. Reset to (S,G) with iif
 	     * toward S. Delete the kernel cache (if any), because
 	     * change_interfaces() will reset it with iif toward S
 	     * and no data will arrive from RP before the switch
 	     * really occurs.
+             * For SSM, (S,G)RPbit entry does not exist but switch to
+             * SPT must be allowed right away.
 	     */
 	    mrt->flags &= ~MRTF_RP;
 	    mrt->incoming = mrt->source->incoming;
