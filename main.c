@@ -477,12 +477,17 @@ int main(int argc, char *argv[])
 	haveterminal = 0;
 	if (fork())
 	    exit(0);
-	close(0);
-	close(1);
-	close(2);
-	open("/", 0);
-	dup2(0, 1);
-	dup2(0, 2);
+
+	close(STDIN_FILENO);
+	close(STDOUT_FILENO);
+	close(STDERR_FILENO);
+
+	n = open("/dev/null", O_RDWR, 0);
+	if (n >= 0) {
+	    dup2(n, STDIN_FILENO);
+	    dup2(n, STDOUT_FILENO);
+	    dup2(n, STDERR_FILENO);
+	}
 #ifdef SYSV
 	setpgrp();
 #else
@@ -499,9 +504,8 @@ int main(int argc, char *argv[])
 #endif /* SYSV */
     } /* End of child process code */
 
-    if (pidfile(NULL)) {
+    if (pidfile(NULL))
 	warn("Cannot create pidfile");
-    }
 
     /*
      * Main receive loop.
