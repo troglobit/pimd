@@ -543,6 +543,12 @@ static int parse_phyint(char *s)
 		    }
 		}
 
+		/* Invalid config. VAL_TO_MASK() also requires len > 0 or shift op will fail. */
+		if (!scoped_masklen) {
+		    WARN("Too small (0) scoped masklen for phyint %s", inet_fmt(local, s1, sizeof(s1)));
+		    continue;
+		}
+
 		v_acl = (struct vif_acl *)calloc(1, sizeof(struct vif_acl));
 		if (!v_acl)
 		    return FALSE;
@@ -550,7 +556,7 @@ static int parse_phyint(char *s)
 		VAL_TO_MASK(v_acl->acl_mask, scoped_masklen);
 		v_acl->acl_addr = scoped_addr & v_acl->acl_mask;
 		if (scoped_addr & ~v_acl->acl_mask)
-		    WARN("Boundary spec %s/%d has host bits set", inet_fmt(scoped_addr, s1, sizeof(s1)),scoped_masklen);
+		    WARN("Boundary spec %s/%d has host bits set", inet_fmt(scoped_addr, s1, sizeof(s1)), scoped_masklen);
 
 		v_acl->acl_next = v->uv_acl;
 		v->uv_acl = v_acl;
