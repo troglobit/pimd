@@ -2,6 +2,8 @@ Credits
 =======
 Apologies if your names is not included, please contact us to be included.
 
+ * PIM-SSM and IGMPv3 support added by Markus Veranen <markus.veranen@gmail.com>
+
  * The pimd maintainer until January 14, 2005, when the project was officially
    retired: Pavlin Ivanov Radoslavov <pavlin@catarina.usc.edu>
 

@@ -1,6 +1,10 @@
 #+TITLE:    pimd | Change Log
 #+AUTHOR:   Ahmed Helmy, George Edmond Eddy, Pavlin Ivanov Radoslavov
 
+* Version 2.3.0: UNRELEASED
+** Changes and New Features
+  - Support for PIM-SSM and IGMPv3, Markus Veranen <markus.veranen@gmail.com>
+
 * Version 2.2.1: April 20, 2015
 ** Bug Fixes
   - Fix another problem with issue #22 (reopened), as laid out in
