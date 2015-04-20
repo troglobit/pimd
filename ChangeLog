@@ -1,6 +1,18 @@
 #+TITLE:    pimd | Change Log
 #+AUTHOR:   Ahmed Helmy, George Edmond Eddy, Pavlin Ivanov Radoslavov
 
+* Version 2.2.1: April 20, 2015
+** Bug Fixes
+  - Fix another problem with issue #22 (reopened), as laid out in
+    issue #37.  This time the crash is induced when there is a link down
+    event.  Lot of help debugging the propblem by @mfspeer, who also
+    suggested the fix -- to call pim_proto.c:delete_pim_nbr() in
+    vif.c:stop_vif() instead of just calling free.
+  - Fix issue with not checking return value of open() in daemonizing
+    code in main(), found by Coverity Scan.
+  - Fix issue with scoped phyint in config.c, found by Coverity Scan.
+    The masklen may not be zero, config file problem, alert the user.
+
 * Version 2.2.0: December 28, 2014
 ** Changes & New Features
   - Add IP fragmentation support for PIM register messages,
