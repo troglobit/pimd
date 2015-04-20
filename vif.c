@@ -401,7 +401,7 @@ static void stop_vif(vifi_t vifi)
 
 	for (n = v->uv_pim_neighbors; n; n = next) {
 	    next = n->next;	/* Free the space for each neighbour */
-	    free(n);
+	    delete_pim_nbr(n);
 	}
 	v->uv_pim_neighbors = NULL;
     }
