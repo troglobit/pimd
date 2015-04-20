@@ -40,6 +40,14 @@
 
 #include "defs.h"
 
+/*
+ * Helper macros
+ */
+#define is_uv_subnet(src, v) \
+    (src & v->uv_subnetmask) == v->uv_subnet && ((v->uv_subnetmask == 0xffffffff) || (src != v->uv_subnetbcast))
+
+#define is_pa_subnet(src, v) \
+    (src & p->pa_subnetmask) == p->pa_subnet && ((p->pa_subnetmask == 0xffffffff) || (src != p->pa_subnetbcast))
 
 /*
  * Exported variables.
@@ -98,6 +106,7 @@ void init_vifs(void)
        for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v)
           v->uv_flags |= VIFF_DISABLED;
     }
+
     logit(LOG_INFO, 0, "Getting vifs from %s", config_file);
     config_vifs_from_file();
 
@@ -367,10 +376,10 @@ static void stop_vif(vifi_t vifi)
 
 	/* Discard all group addresses.  (No need to tell kernel;
 	 * the k_del_vif() call will clean up kernel state.) */
-	while (v->uv_groups != NULL) {
+	while (v->uv_groups) {
 	    a = v->uv_groups;
 	    v->uv_groups = a->al_next;
-	    free((char *)a);
+	    free(a);
 	}
     }
 
@@ -390,19 +399,19 @@ static void stop_vif(vifi_t vifi)
 	RESET_TIMER(v->uv_jp_timer);
 	RESET_TIMER(v->uv_gq_timer);
 
-	for (n = v->uv_pim_neighbors; n != NULL; n = next) {
+	for (n = v->uv_pim_neighbors; n; n = next) {
 	    next = n->next;	/* Free the space for each neighbour */
-	    free((char *)n);
+	    free(n);
 	}
 	v->uv_pim_neighbors = NULL;
     }
 
     /* TODO: currently not used */
    /* The Access Control List (list with the scoped addresses) */
-    while (v->uv_acl != NULL) {
+    while (v->uv_acl) {
 	acl = v->uv_acl;
 	v->uv_acl = acl->acl_next;
-	free((char *)acl);
+	free(acl);
     }
 
     vifs_down = TRUE;
@@ -558,17 +567,13 @@ vifi_t find_vif_direct(uint32_t src)
 	if (src == v->uv_lcl_addr)
 	    return NO_VIF;	/* src is one of our IP addresses */
 
-	if ((src & v->uv_subnetmask) == v->uv_subnet &&
-	    ((v->uv_subnetmask == 0xffffffff) ||
-	     (src != v->uv_subnetbcast)))
+	if (is_uv_subnet(src, v))
 	    return vifi;
 
 	/* Check the extra subnets for this vif */
 	/* TODO: don't think currently pimd can handle extra subnets */
 	for (p = v->uv_addrs; p; p = p->pa_next) {
-	    if ((src & p->pa_subnetmask) == p->pa_subnet &&
-		((p->pa_subnetmask == 0xffffffff) ||
-		 (src != p->pa_subnetbcast)))
+	    if (is_pa_subnet(src, v))
 		return vifi;
 	}
 
@@ -623,17 +628,13 @@ vifi_t find_vif_direct_local(uint32_t src)
 	if (src == v->uv_lcl_addr)
 	    return vifi;	/* src is one of our IP addresses */
 
-	if (((src & v->uv_subnetmask) == v->uv_subnet)
-	    && ((v->uv_subnetmask == 0xffffffff)
-		|| (src != v->uv_subnetbcast)))
+	if (is_uv_subnet(src, v))
 	    return vifi;
 
 	/* Check the extra subnets for this vif */
 	/* TODO: don't think currently pimd can handle extra subnets */
 	for (p = v->uv_addrs; p; p = p->pa_next) {
-	    if (((src & p->pa_subnetmask) == p->pa_subnet)
-		&& ((p->pa_subnetmask == 0xffffffff)
-		    || (src != p->pa_subnetbcast)))
+	    if (is_pa_subnet(src, v))
 		return vifi;
 	}
 
@@ -641,6 +642,7 @@ vifi_t find_vif_direct_local(uint32_t src)
 	if ((v->uv_flags & VIFF_POINT_TO_POINT) && (src == v->uv_rmt_addr))
 	    return vifi;
     }
+
     return NO_VIF;
 }
 
