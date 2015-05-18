@@ -83,11 +83,11 @@ static int scoped_addr(vifi_t vifi, uint32_t addr)
  * adapted from mrouted: check for scoped multicast addresses
  * install null oif if matched
  */
-#define APPLY_SCOPE(g,mp) {			\
+#define APPLY_SCOPE(g, mp) {			\
 	vifi_t i;				\
 	for (i = 0; i < numvifs; i++)		\
 	    if (scoped_addr(i, g))              \
-		(mp)->oifs = NULL;		\
+		(mp)->oifs = 0;			\
     }
 #endif  /* SCOPED_ACL */
 
@@ -903,7 +903,7 @@ static void process_cache_miss(struct igmpmsg *igmpctl)
 	    add_kernel_cache(mrt, mfc_source, group, MFC_MOVE_FORCE);
 
 #ifdef SCOPED_ACL
-	    APPLY_SCOPE(group,mrt);
+	    APPLY_SCOPE(group, mrt);
 #endif
 	    k_chg_mfc(igmp_socket, mfc_source, group, iif, mrt->oifs, rp_addr);
 
@@ -935,7 +935,7 @@ static void process_cache_miss(struct igmpmsg *igmpctl)
 
 #ifdef SCOPED_ACL
 		/* marian: not sure if we reach here with our scoped traffic? */
-		APPLY_SCOPE(group,mrt);
+		APPLY_SCOPE(group, mrt);
 #endif
 		k_chg_mfc(igmp_socket, mfc_source, group, iif,
 			  mrp->oifs, mrt->group->rpaddr);
