@@ -112,11 +112,7 @@ static void pim_read(int f __attribute__((unused)), fd_set *rfd __attribute__((u
 {
     ssize_t len;
     socklen_t dummy = 0;
-#if defined(SYSV) || defined(__USE_SVID)
     sigset_t block, oblock;
-#else
-    int omask;
-#endif
 
     while ((len = recvfrom(pim_socket, pim_recv_buf, RECV_BUF_SIZE, 0, NULL, &dummy)) < 0) {
 	if (errno == EINTR)
@@ -126,23 +122,14 @@ static void pim_read(int f __attribute__((unused)), fd_set *rfd __attribute__((u
 	return;
     }
 
-#if defined(SYSV) || defined(__USE_SVID)
-    (void)sigemptyset(&block);
-    (void)sigaddset(&block, SIGALRM);
+    sigemptyset(&block);
+    sigaddset(&block, SIGALRM);
     if (sigprocmask(SIG_BLOCK, &block, &oblock) < 0)
 	logit(LOG_ERR, errno, "sigprocmask");
-#else
-    /* Use of omask taken from main() */
-    omask = sigblock(sigmask(SIGALRM));
-#endif /* SYSV */
 
     accept_pim(len);
 
-#if defined(SYSV) || defined(__USE_SVID)
-    (void)sigprocmask(SIG_SETMASK, &oblock, (sigset_t *)NULL);
-#else
-    (void)sigsetmask(omask);
-#endif /* SYSV */
+    sigprocmask(SIG_SETMASK, &oblock, (sigset_t *)NULL);
 }
 
 static void accept_pim(ssize_t recvlen)
