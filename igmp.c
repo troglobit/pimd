@@ -379,6 +379,29 @@ static void send_ip_frame(uint32_t src, uint32_t dst, int type, int code, char *
     }
 }
 
+uint8_t igmp_msg_encode16to8(uint16_t value)
+{
+    uint8_t code;
+
+    if (value < 128) {
+        code = value;
+    }
+    else {
+        uint16_t mask = 0x4000;
+        uint8_t  exp;
+        uint16_t mant;
+        for (exp = 7; exp > 0; --exp) {
+            if (mask & value)
+	        break;
+            mask >>= 1;
+        }
+        mant = 0x000F & (value >> (exp + 3));
+        code = ((uint8_t) 1 << 7) | ((uint8_t) exp << 4) | (uint8_t) mant;
+    }
+
+    return code;
+}
+
 void send_igmp(char *buf, uint32_t src, uint32_t dst, int type, int code, uint32_t group, int datalen)
 {
     size_t len = IGMP_MINLEN + datalen;
@@ -390,6 +413,11 @@ void send_igmp(char *buf, uint32_t src, uint32_t dst, int type, int code, uint32
     igmp->group       = group;
     igmp->csum        = 0;
     igmp->csum        = inet_cksum((uint16_t *)igmp, len);
+
+    if (datalen >= 4) {
+        igmp->qrv = 2;
+        igmp->qqic = igmp_msg_encode16to8(default_igmp_query_interval);
+    }
 
     send_ip_frame(src, dst, type, code, buf, len);
 }
