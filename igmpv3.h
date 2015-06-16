@@ -50,9 +50,15 @@ struct igmpv3_query {
     __u8 code;
     __be16 csum;
     __be32 group;
+#if defined(BYTE_ORDER) && (BYTE_ORDER == LITTLE_ENDIAN)
+    __u8 qrv:3,
+         suppress:1,
+         resv:4;
+#else
     __u8 resv:4,
          suppress:1,
          qrv:3;
+#endif
     __u8 qqic;
     __be16 nsrcs;
     __be32 srcs[0];
