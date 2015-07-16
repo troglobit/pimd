@@ -172,8 +172,7 @@ void age_vifs(void)
 	    query_groups(v);
 
 	if (v->uv_querier &&
-	    (v->uv_querier->al_timer += TIMER_INTERVAL) >
-		default_igmp_querier_timeout) {
+	    (v->uv_querier->al_timer += TIMER_INTERVAL) > igmp_querier_timeout) {
 	    /*
 	     * The current querier has timed out.  We must become the
 	     * querier.

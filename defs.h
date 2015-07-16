@@ -363,8 +363,8 @@ extern uint32_t		default_source_metric;
 extern uint32_t		default_source_preference;
 
 /* igmp_proto.c */
-extern uint32_t		default_igmp_query_interval;
-extern uint32_t		default_igmp_querier_timeout;
+extern uint32_t		igmp_query_interval;
+extern uint32_t		igmp_querier_timeout;
 
 /* mrt.c */
 extern srcentry_t 	*srclist;

@@ -485,7 +485,7 @@ void send_igmp(char *buf, uint32_t src, uint32_t dst, int type, int code, uint32
 
     if (datalen >= 4) {
         igmp->qrv = 2;
-        igmp->qqic = igmp_floating_point(default_igmp_query_interval);
+        igmp->qqic = igmp_floating_point(igmp_query_interval);
     }
 
     send_ip_frame(src, dst, type, code, buf, len);

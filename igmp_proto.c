@@ -64,8 +64,8 @@ static int SetQueryTimer (struct listaddr *g, vifi_t vifi, int to_expire, int q_
 static uint32_t igmp_group_membership_timeout(void);
 
 /* The querier timeout depends on the configured query interval */
-uint32_t default_igmp_query_interval  = IGMP_QUERY_INTERVAL;
-uint32_t default_igmp_querier_timeout = IGMP_OTHER_QUERIER_PRESENT_INTERVAL;
+uint32_t igmp_query_interval  = IGMP_QUERY_INTERVAL;
+uint32_t igmp_querier_timeout = IGMP_OTHER_QUERIER_PRESENT_INTERVAL;
 
 
 /*
@@ -77,7 +77,7 @@ void query_groups(struct uvif *v)
     int code = IGMP_MAX_HOST_REPORT_DELAY * IGMP_TIMER_SCALE;
     struct listaddr *g;
 
-    v->uv_gq_timer = default_igmp_query_interval;
+    v->uv_gq_timer = igmp_query_interval;
 
     if (v->uv_flags & VIFF_QUERIER) {
 	/* IGMP version to use depends on the compatibility mode of the interface */
@@ -124,7 +124,7 @@ void accept_membership_query(uint32_t src, uint32_t dst __attribute__((unused)),
     /* Only v3 is allowed for SSM
      * TODO: Rate-limit messages?
      */
-    if (igmp_version!=3 && IN_PIM_SSM_RANGE(group)) {
+    if (igmp_version != 3 && IN_PIM_SSM_RANGE(group)) {
 	logit(LOG_WARNING, 0, "SSM addresses are not allowed in v%d query.", igmp_version);
 	return;
     }
@@ -696,8 +696,7 @@ void accept_membership_report(uint32_t src, uint32_t dst __attribute__((unused))
  */
 static uint32_t igmp_group_membership_timeout(void)
 {
-    return IGMP_ROBUSTNESS_VARIABLE * default_igmp_query_interval
-	+ IGMP_QUERY_RESPONSE_INTERVAL;
+    return IGMP_ROBUSTNESS_VARIABLE * igmp_query_interval + IGMP_QUERY_RESPONSE_INTERVAL;
 }
 
 /*
@@ -790,7 +789,7 @@ static int SetVersionTimer(vifi_t vifi, struct listaddr *g)
     cbk->vifi = vifi;
     cbk->g = g;
 
-    return timer_setTimer(IGMP_ROBUSTNESS_VARIABLE * IGMP_QUERY_INTERVAL + IGMP_QUERY_RESPONSE_INTERVAL,
+    return timer_setTimer(IGMP_ROBUSTNESS_VARIABLE * igmp_query_interval + IGMP_QUERY_RESPONSE_INTERVAL,
 			  SwitchVersion, cbk);
 }
 

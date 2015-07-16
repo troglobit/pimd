@@ -62,8 +62,8 @@
 #define CONF_ALTNET                             11
 #define CONF_MASKLEN                            12
 #define CONF_SCOPED                             13
-#define CONF_DEFAULT_IGMP_QUERY_INTERVAL        14
-#define CONF_DEFAULT_IGMP_QUERIER_TIMEOUT       15
+#define CONF_IGMP_QUERY_INTERVAL                14
+#define CONF_IGMP_QUERIER_TIMEOUT               15
 #define CONF_HELLO_PERIOD                       16
 
 /*
@@ -379,10 +379,14 @@ static int parse_option(char *word)
 	return CONF_DEFAULT_SOURCE_METRIC;
     if (EQUAL(word, "default_source_preference"))
 	return CONF_DEFAULT_SOURCE_PREFERENCE;
-    if (EQUAL(word, "default_igmp_query_interval"))
-	return CONF_DEFAULT_IGMP_QUERY_INTERVAL;
-    if (EQUAL(word, "default_igmp_querier_timeout"))
-	return CONF_DEFAULT_IGMP_QUERIER_TIMEOUT;
+    if (EQUAL(word, "default_igmp_query_interval"))  /* compat */
+	return CONF_IGMP_QUERY_INTERVAL;
+    if (EQUAL(word, "igmp_query_interval"))
+	return CONF_IGMP_QUERY_INTERVAL;
+    if (EQUAL(word, "default_igmp_querier_timeout")) /* compat */
+	return CONF_IGMP_QUERIER_TIMEOUT;
+    if (EQUAL(word, "igmp_querier_timeout"))
+	return CONF_IGMP_QUERIER_TIMEOUT;
     if (EQUAL(word, "altnet"))
 	return CONF_ALTNET;
     if  (EQUAL(word, "masklen"))
@@ -1282,40 +1286,40 @@ int parse_default_source_preference(char *s)
 }
 
 /**
- * parse_default_igmp_query_interval - Parse default_igmp_query_interval option
+ * parse_igmp_query_interval - Parse igmp_query_interval option
  * @s: String token
  *
  * Reads and assigns the default IGMP query interval.  If the argument
  * is missing or invalid the parser defaults to %IGMP_QUERY_INTERVAL
  *
  * Syntax:
- * default_igmp_query_interval <SEC>
+ * igmp_query_interval <SEC>
  *
  * Returns:
  * When parsing @s is successful this function returns %TRUE, otherwise %FALSE.
  */
-static int parse_default_igmp_query_interval(char *s)
+static int parse_igmp_query_interval(char *s)
 {
     char *w;
     uint32_t value = IGMP_QUERY_INTERVAL;
 
     if (EQUAL((w = next_word(&s)), "")) {
-	WARN("Missing argument to default_igmp_query_interval; defaulting to %u", IGMP_QUERY_INTERVAL);
+	WARN("Missing argument to igmp_query_interval; defaulting to %u", IGMP_QUERY_INTERVAL);
     } else if (sscanf(w, "%u", &value) != 1) {
-	WARN("Invalid default default_igmp_query_interval; defaulting to %u", IGMP_QUERY_INTERVAL);
+	WARN("Invalid default igmp_query_interval; defaulting to %u", IGMP_QUERY_INTERVAL);
 	value = IGMP_QUERY_INTERVAL;
     }
 
-    default_igmp_query_interval = value;
+    igmp_query_interval = value;
 
     /* Calculate new querier timeout, or expect config option after this. */
-    default_igmp_querier_timeout = 0;
+    igmp_querier_timeout = 0;
 
     return TRUE;
 }
 
 /**
- * parse_default_igmp_querier_timeout - Parse default_igmp_querier_timeout option
+ * parse_igmp_querier_timeout - Parse igmp_querier_timeout option
  * @s: String token
  *
  * Reads and assigns default querier timeout for an active IGMP querier.
@@ -1324,21 +1328,21 @@ static int parse_default_igmp_query_interval(char *s)
  * will calculate a fallback based on the query interval.
  *
  * Syntax:
- * default_igmp_querier_timeout <SEC>
+ * igmp_querier_timeout <SEC>
  *
  * Returns:
  * When parsing @s is successful this function returns %TRUE, otherwise %FALSE.
  */
-static int parse_default_igmp_querier_timeout(char *s)
+static int parse_igmp_querier_timeout(char *s)
 {
     char *w;
     uint32_t value = 0;
-    uint32_t recommended = QUERIER_TIMEOUT(default_igmp_query_interval);
+    uint32_t recommended = QUERIER_TIMEOUT(igmp_query_interval);
 
     if (EQUAL((w = next_word(&s)), "")) {
-	WARN("Missing argument to default_igmp_querier_timeout!");
+	WARN("Missing argument to igmp_querier_timeout!");
     } else if (sscanf(w, "%u", &value) != 1) {
-	WARN("Invalid default default_igmp_querier_timeout!");
+	WARN("Invalid default igmp_querier_timeout!");
 	value = 0;
     }
 
@@ -1346,9 +1350,9 @@ static int parse_default_igmp_querier_timeout(char *s)
      * better settings, see GitHub issue troglobit/pimd#31 for details. */
     if (value != 0) {
 	/* 1) Prevent invalid configuration */
-	if (value <= default_igmp_query_interval) {
+	if (value <= igmp_query_interval) {
 	    WARN("IGMP querier timeout %d must be larger than the query interval %d, forcing default!",
-		 value, default_igmp_query_interval);
+		 value, igmp_query_interval);
 	    value = recommended;
 	}
 
@@ -1358,10 +1362,10 @@ static int parse_default_igmp_querier_timeout(char *s)
 		 value, recommended);
 
 	logit(LOG_WARNING, 0, "Recommended querier timeout = Robustness x query-interval + response-time / 2 = %d x %d + %d / 2 = %d",
-	      IGMP_ROBUSTNESS_VARIABLE, default_igmp_query_interval, IGMP_QUERY_RESPONSE_INTERVAL, recommended);
+	      IGMP_ROBUSTNESS_VARIABLE, igmp_query_interval, IGMP_QUERY_RESPONSE_INTERVAL, recommended);
     }
 
-    default_igmp_querier_timeout = value;
+    igmp_querier_timeout = value;
 
     return TRUE;
 }
@@ -1458,12 +1462,12 @@ void config_vifs_from_file(void)
 		parse_default_source_preference(s);
 		break;
 
-	    case CONF_DEFAULT_IGMP_QUERY_INTERVAL:
-		parse_default_igmp_query_interval(s);
+	    case CONF_IGMP_QUERY_INTERVAL:
+		parse_igmp_query_interval(s);
 		break;
 
-	    case CONF_DEFAULT_IGMP_QUERIER_TIMEOUT:
-		parse_default_igmp_querier_timeout(s);
+	    case CONF_IGMP_QUERIER_TIMEOUT:
+		parse_igmp_querier_timeout(s);
 		break;
 
 	    case CONF_HELLO_PERIOD:
@@ -1498,12 +1502,12 @@ void config_vifs_from_file(void)
     }
 
     /* If no IGMP querier timeout was set, calculate from query interval */
-    if (!default_igmp_querier_timeout)
-	default_igmp_querier_timeout = QUERIER_TIMEOUT(default_igmp_query_interval);
+    if (!igmp_querier_timeout)
+	igmp_querier_timeout = QUERIER_TIMEOUT(igmp_query_interval);
 
     IF_DEBUG(DEBUG_IGMP) {
-	logit(LOG_INFO, 0, "IGMP query interval  : %u sec", default_igmp_query_interval);
-	logit(LOG_INFO, 0, "IGMP querier timeout : %u sec", default_igmp_querier_timeout);
+	logit(LOG_INFO, 0, "IGMP query interval  : %u sec", igmp_query_interval);
+	logit(LOG_INFO, 0, "IGMP querier timeout : %u sec", igmp_querier_timeout);
     }
 
     fclose(f);
