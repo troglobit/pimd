@@ -285,7 +285,7 @@ typedef void (*ihfunc_t) (int, fd_set *);
 /*
  * Global settings, from config.c
  */
-extern uint16_t         pim_timer_hello_period;
+extern uint16_t         pim_timer_hello_interval;
 extern uint16_t         pim_timer_hello_holdtime;
 
 /* TODO: describe the variables and clean up */

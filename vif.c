@@ -311,7 +311,7 @@ static void start_vif(vifi_t vifi)
 #ifdef PIM_HELLO_GENID
 	v->uv_pim_hello_genid = RANDOM();
 #endif
-	SET_TIMER(v->uv_pim_hello_timer, 1 + RANDOM() % pim_timer_hello_period);
+	SET_TIMER(v->uv_pim_hello_timer, 1 + RANDOM() % pim_timer_hello_interval);
 	SET_TIMER(v->uv_jp_timer, 1 + RANDOM() % PIM_JOIN_PRUNE_PERIOD);
 	/* TODO: CHECK THE TIMERS!!!!! Set or reset? */
 	RESET_TIMER(v->uv_gq_timer);

@@ -59,7 +59,7 @@
 #define PIM_REGISTER_PROBE_TIME	          5 /* Used to send NULL_REGISTER */
 #define PIM_DATA_TIMEOUT                210
 
-#define PIM_TIMER_HELLO_PERIOD 	         30
+#define PIM_TIMER_HELLO_INTERVAL         30
 #define PIM_JOIN_PRUNE_PERIOD	         60
 #define PIM_JOIN_PRUNE_HOLDTIME        (3.5 * PIM_JOIN_PRUNE_PERIOD)
 #define PIM_RANDOM_DELAY_JOIN_TIMEOUT   4.5
@@ -75,7 +75,7 @@
 #define PIM_BOOTSTRAP_PERIOD             30
 
 #define PIM_BOOTSTRAP_TIMEOUT	       (2.5 * PIM_BOOTSTRAP_PERIOD + 10)
-#define PIM_TIMER_HELLO_HOLDTIME       (3.5 * PIM_TIMER_HELLO_PERIOD)
+#define PIM_TIMER_HELLO_HOLDTIME       (3.5 * PIM_TIMER_HELLO_INTERVAL)
 #define PIM_ASSERT_TIMEOUT              180
 
 /* Misc definitions */

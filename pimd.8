@@ -194,7 +194,7 @@ Here are the different configuration settings:
 .Cm igmp_querier_timeout
 .Ar <SEC>
 .It
-.Cm hello_period
+.Cm hello_interval
 .Ar <SEC>
 .It
 .Cm phyint
@@ -290,11 +290,11 @@ response time is 10 sec.  Since pimd v2.3.0 the default query interval
 is 12 sec, which makes the querier timeut default to 41 sec, but this is
 rounded off to 42 to honor the late Douglas Adams.
 .Pp
-The PIM Hello message interval can be changed by
-.Cm hello_period
-option.  Changing the value also affects hold-time value included in
-Hello message.  Hold-time value is 3.5 times hello_period.  The default
-value for Hello interval is 30.
+The PIM Hello message interval can be tuned by changing the
+.Cm hello_interval
+setting.  Changing the value also affects hold-time value included in
+Hello message.  Hold-time value is 3.5 times hello_interval.  The
+default value for the Hello interval is 30 sec.
 .Pp
 The
 .Nm phyint

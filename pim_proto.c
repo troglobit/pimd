@@ -442,7 +442,7 @@ int send_pim_hello(struct uvif *v, uint16_t holdtime)
 
     len = data - (uint8_t *)buf;
     send_pim(pim_send_buf, v->uv_lcl_addr, allpimrouters_group, PIM_HELLO, len);
-    SET_TIMER(v->uv_pim_hello_timer, pim_timer_hello_period);
+    SET_TIMER(v->uv_pim_hello_timer, pim_timer_hello_interval);
 
     return TRUE;
 }
