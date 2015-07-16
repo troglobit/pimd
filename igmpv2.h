@@ -14,8 +14,8 @@
  * Constants for IGMP Version 2.  Several of these, especially the
  * robustness variable, should be variables and not constants.
  */
-#define	IGMP_ROBUSTNESS_VARIABLE		2
-#define	IGMP_QUERY_INTERVAL			125
+#define	IGMP_ROBUSTNESS_VARIABLE		3
+#define	IGMP_QUERY_INTERVAL			12
 #define	IGMP_QUERY_RESPONSE_INTERVAL		10
 #define	IGMP_GROUP_MEMBERSHIP_INTERVAL		(IGMP_ROBUSTNESS_VARIABLE * \
 					IGMP_QUERY_INTERVAL + \

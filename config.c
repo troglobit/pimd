@@ -430,7 +430,8 @@ static void validate_prefix_len(uint32_t *len)
  * @s: String token
  *
  * Syntax:
- * phyint <local-addr | ifname> [disable|enable]
+ * phyint <local-addr | ifname> [disable | enable]
+ *                              [igmpv2  | igmpv3]
  *                              [threshold <t>] [preference <p>] [metric <m>]
  *                              [altnet <net-addr>/<masklen>]
  *                              [altnet <net-addr> masklen <masklen>]
@@ -484,7 +485,14 @@ static int parse_phyint(char *s)
 		continue;
 	    }
 
+	    if (EQUAL(w, "igmpv2")) {
+		v->uv_flags &= ~VIFF_IGMPV1;
+		v->uv_flags |=  VIFF_IGMPV2;
+		continue;
+	    }
+
 	    if (EQUAL(w, "igmpv3")) {
+		v->uv_flags &= ~VIFF_IGMPV1;
 		v->uv_flags &= ~VIFF_IGMPV2;
 		continue;
 	    }

@@ -97,9 +97,8 @@ void init_vifs(void)
 #endif
 
     /* Clean up all vifs */
-    for (vifi = 0, v = uvifs; vifi < MAXVIFS; ++vifi, ++v) {
+    for (vifi = 0, v = uvifs; vifi < MAXVIFS; ++vifi, ++v)
 	zero_vif(v, FALSE);
-    }
 
     logit(LOG_INFO, 0, "Getting vifs from kernel");
     config_vifs_from_kernel();
@@ -154,8 +153,7 @@ void init_vifs(void)
  */
 void zero_vif(struct uvif *v, int t)
 {
-    v->uv_flags		= 0;
-    v->uv_flags 	|= VIFF_IGMPV2;
+    v->uv_flags		= 0;	/* Default to IGMPv3 */
     v->uv_metric	= DEFAULT_METRIC;
     v->uv_admetric	= 0;
     v->uv_threshold	= DEFAULT_THRESHOLD;
