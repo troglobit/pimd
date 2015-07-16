@@ -8,44 +8,47 @@
 .Os
 .Sh NAME
 .Nm pimd
-.Nd PIM-SM v2 dynamic multicast routing daemon
+.Nd PIM-SM/SSM v2 dynamic multicast routing daemon
 .Sh SYNOPSIS
 .Nm pimd
 .Op Fl fhlNqr
 .Op Fl c Ar FILE
-.Op Fl d Op Ar [LEVEL[,LEVEL,...]
+.Op Fl d Ar [LEVEL[,LEVEL,...]
+.Op Fl s Ar LEVEL
 .Sh DESCRIPTION
 .Nm
-is a lightweight stand-alone PIM-SM v2 multicast routing daemon.  This is the
-original USC (netweb/catarina) implementation of the protocol, which nowadays is
-fully free to use under the 3-clause BSD license.
+is a lightweight stand-alone PIM-SM/SSM v2 multicast routing daemon.
+This is the original USC (netweb/catarina) implementation of the
+protocol, free to use under the 3-clause (simplified) BSD license.
 .Pp
 Protocol Independent Multicast - Sparse Mode (PIM-SM):
-.Bl -bullet -compact
+.Bl -bullet -width 1n -compact
 .It
-maintains the traditional IP multicast service model of receiver-initiated membership;
+maintains the traditional IP multicast service model of
+receiver-initiated membership;
 .It
-uses explicit joins that propagate hop-by-hop from members' directly connected
-routers toward the distribution tree.
+uses explicit joins that propagate hop-by-hop from members' directly
+connected routers toward the distribution tree.
 .It
-builds a shared multicast distribution tree centered at a Rendezvous Point, and then
-builds source-specific trees for those sources whose data traffic warrants it.
+builds a shared multicast distribution tree centered at a Rendezvous
+Point, and then builds source-specific trees for those sources whose
+data traffic warrants it.
 .It
 is not dependent on a specific unicast routing protocol; and
 .It
-uses soft-state mechanisms to adapt to underlying network conditions and group
-dynamics.
+uses soft-state mechanisms to adapt to underlying network conditions and
+group dynamics.
 .El
 .Pp
-The robustness, flexibility, and scaling properties of this architecture make it well
-suited to large heterogeneous internetworks.
+The robustness, flexibility, and scaling properties of this architecture
+make it well suited to large heterogeneous internetworks.
 .Pp
 .Nm
-implements RFC 2362, which has been obsoleted by RFC 4601.  Please see the TODO file
-for more information on this.
+implements RFC2362, which has been obsoleted by RFC4601.  Please see the
+TODO file for more information on this.
 .Sh OPTIONS
-This program follows the usual UNIX command line syntax, with long options starting
-with two dashes (`-').  The options are as follows:
+This program follows the usual UNIX command line syntax, with long
+options starting with two dashes (`-').  The options are as follows:
 .Bl -tag -width Ds
 .It Fl h, -help
 Print a help message and exit.
@@ -55,10 +58,14 @@ Specify an alternative configuration file, instead of the default
 .It Fl d, -debug[=LEVEL[,LEVEL...]
 By default,
 .Nm
-detaches from the invoking terminal.
-If this option is specified,
+daemonizes itself by detaching from the invoking terminal and forking to
+the background.  However, if
+.Fl d, -debug
+or
+.Fl f, -foreground
+is specified,
 .Nm
-it runs in foreground of the starting terminal and responds to signals.
+runs in the foreground of the starting terminal and responds to signals.
 If
 .Fl d
 is given with no argument, the debug level defaults to
@@ -108,21 +115,37 @@ Detailed PIM debug
 Debug hello messages to/from neighbors
 .El
 .It Fl f, -foreground
-Run in foreground, do not detach from calling terminal
+Run in the foreground, do not detach from calling terminal and do not
+fork to background.  Useful not only when debugging (above) but also
+when running under a process monitor like daemontools, runit, finit, or
+systemd.
 .It Fl l, -reload-config
 Tell a running pimd to reload its configuration.  This is done by sending
 a SIGHUP to the PID listed in
 .Pa /var/run/pimd.pid .
+Depending on the capabilities of your user, you may need to be root to
+do this.
 .It Fl N, -disable-vifs
 This prevents
 .Nm
-from being activated on all interfaces by default.  Use `phyint enable` to selectively
-activate it.
+from being activated on all interfaces by default.  When this command
+line option is given, use `phyint IFNAME enable` to selectively activate
+PIM services on an interface.
 .It Fl q, -quit-daemon
-Tell a running pimd to quit.  Similar to --reload-config but this command sends SIGTERM.
+Tell a running
+.Nm
+to quit.  Similar to
+.Fl l, -reload-config
+but this command sends SIGTERM.  Depending on the capabilities of your
+user, you may need to be root to do this.
 .It Fl r, -show-routes
-Show state of VIFs and multicast routing tables. This is command sends SIGUSR1 to a
-running pimd, similar to --reload-config.
+Show state of VIFs and multicast routing tables. This is command sends
+SIGUSR1 to a running
+.Nm ,
+similar to
+.Fl l -reload-config.
+Depending on the capabilities of your user, you may need to be root to
+do this.
 .It Fl v, -version
 Show
 .Nm
@@ -130,53 +153,58 @@ version
 .It Fl s, -loglevel=LEVEL
 Set syslog level to one of the following:
 .Pp
-.Bl -tag -width TERM -compact -offset indent
-.It Cm 1
-LOG_ALERT - Action must be taken immediately
-.It Cm 2
-LOG_CRIT - Critical conditions
-.It Cm 3
-LOG_ERR - Error conditions
-.It Cm 4
-LOG_WARNING - Warning conditions
-.It Cm 5
-LOG_NOTICE - Normal but significant condition (Default)
-.It Cm 6
-LOG_INFO - Informational
-.It Cm 7
-LOG_DEBUG - Debug-level messages
+.Bl -tag -width 1_LOG_WARNING -compact -offset indent
+.It Cm 1 LOG_ALERT
+Action must be taken immediately
+.It Cm 2 LOG_CRIT
+Critical conditions
+.It Cm 3 LOG_ERR
+Error conditions
+.It Cm 4 LOG_WARNING
+Warning conditions
+.It Cm 5 LOG_NOTICE
+Normal but significant condition (Default)
+.It Cm 6 LOG_INFO
+Informational
+.It Cm 7 LOG_DEBUG
+Debug-level messages
 .El
 .Sh CONFIGURATION
 The configuration is kept in the file
 .Pa /etc/pimd.conf .
-The file format is free-form: whitespace (including newlines) is not
-significant.
+The file format is relatively free-form: whitespace (including newlines) is not
+significant.  However, the order of some statements are important, see
+more below.
 .Pp
 All <masklen> arguments to an IPv4 address, group or network can also be
 given in the alternative /CIDR format.  E.g., <group>/<masklen>.
 .Pp
-There are eight different types of configuration commands:
+Here are the different configuration settings:
 .Bl -item -offset indent
 .It
 .Cm default_source_preference
-.Ar <preference>
+.Ar <distance>
 .It
 .Cm default_source_metric
 .Ar <metric>
 .It
-.Cm default_igmp_query_interval
+.Cm igmp_query_interval
 .Ar <SEC>
 .It
-.Cm default_igmp_querier_timeout
+.Cm igmp_querier_timeout
 .Ar <SEC>
 .It
 .Cm hello_period
 .Ar <SEC>
 .It
 .Cm phyint
-.Ar <local-addr Ns | Ns ifname>
+.Ar <address Ns | Ns ifname>
 .Oo
 .Cm disable Ns | Ns Cm enable
+.Oc
+.Bl -item -offset indent
+.Oo
+.Cm igmpv2 Ns | Ns Cm igmpv3
 .Oc
 .br
 .Oo
@@ -190,16 +218,17 @@ There are eight different types of configuration commands:
 .Op Cm threshold Ar thr
 .Op Cm preference Ar pref
 .Op Cm metric Ar cost
+.El
 .It
 .Cm rp_address Ar <rp-addr> [<group-addr>[/<masklen> | masklen <masklen]
 .It
 .Cm cand_rp
-.Op Ar local-addr | Ar ifname
+.Op Ar address | Ar ifname
 .Op Cm priority Ar <0-255>
 .Op Cm time Ar <10-16384>
 .It
 .Cm cand_bootstrap_router
-.Op Ar local-addr | Ar ifname
+.Op Ar address | Ar ifname
 .Op Cm priority Ar <number>
 .It
 .Cm group_prefix Ar <group-addr>[/<masklen> | Cm masklen Ar <masklen>]
@@ -220,10 +249,10 @@ By default,
 will be activated on all multicast capable interfaces.  The
 .Cm phyint
 setting and the
-.Fl N
-command line option control this behaviour.  More on
+.Fl N, -disable-vifs
+command line option control this behaviour.  More on the
 .Cm phyint
-below.
+interface configuration setting below.
 .Pp
 The
 .Cm default_source_preference
@@ -254,28 +283,31 @@ the elected querier -- before
 .Nm pimd
 decides to take over.  In IGMP the lowest numerical address in a LAN
 becomes the elected querier.  Obviously these settings must be handled
-with care. It is recommended that the querier timeout is set to at least
-twice the query interval.   The default querier timeout is 255 seconds
-and the default query interval is 125 seconds.
+with care.  The RFC recommends that the querier timeout is set to a
+robustness value times the query interval, plus have the query response
+time.  The pimd robustness value for IGMP is 3 and the default query
+response time is 10 sec.  Since pimd v2.3.0 the default query interval
+is 12 sec, which makes the querier timeut default to 41 sec, but this is
+rounded off to 42 to honor the late Douglas Adams.
 .Pp
 The PIM Hello message interval can be changed by
 .Cm hello_period
-option. Changing the value also affects hold-time value included in Hello
-message. Hold-time value is 3.5 times hello_period. The default value for
-Hello interval is 30.
+option.  Changing the value also affects hold-time value included in
+Hello message.  Hold-time value is 3.5 times hello_period.  The default
+value for Hello interval is 30.
 .Pp
 The
 .Nm phyint
 option refers to a physical interface and must come after
 .Cm default_source_metric .
-Select the interface either by its IP address
-.Ar local-addr
+Select the interface either by its IP
+.Ar address
 or interface name
 .Ar ifname
-(e.g. le0).  If you just want to activate this interface with default values,
-you don't need to put anything else on the line.  However, there are some 
-additional settings:
-.Bl -bullet -compact
+(e.g. eth0).  If you just want to activate this interface with default
+values, you don't need to put anything else on the line.  However, there
+are some additional settings:
+.Bl -bullet -offset indent -width 1n -compact
 .It
 .Nm disable :
 Do not send PIM-SM traffic through this interface nor listen for PIM-SM traffic
@@ -285,6 +317,11 @@ Selectively enable which interfaces to send PIM-SM traffic through.  Useful with
 the
 .Fl N
 command line option.
+.It
+.Nm igmpv2 :
+Force interface to use IGMPv2, or
+.Nm igmpv3 :
+Use IGMPv3, this is the default.
 .It
 .Nm preference pref :
 This interface's value in an election. It will have the
@@ -329,11 +366,13 @@ The
 .Nm cand_rp
 setting refers to Candidate Rendezvous Point (CRP).  It specifies which
 interface on this machine should be included in RP elections.
-.Bl -bullet -compact
+.Bl -bullet -offset indent -width 1n -compact
 .It
-.Nm local-addr | ifname :
-Local IPv4 address, or interface name to acquire address from.  The
-default is the highest active IP address.
+.Nm address | ifname :
+Optional local IPv4 address, or interface name to acquire address from.
+If both address and ifname is left out,
+.Nm
+will default to the highest active IP address.
 .It
 .Nm priority <0-255> :
 How important this CRP is compared to others. The lower the value here,
@@ -347,7 +386,9 @@ is 60 seconds.
 .Pp
 The
 .Nm cand_bootstrap_router
-setting is similar to CRP.  Only difference is the lack of an interval
+setting is similar to
+.Nm cand_rp .
+Only difference is the lack of an interval
 .Nm time
 option.
 .Pp
@@ -355,7 +396,7 @@ The
 .Nm group_prefix
 statement outlines the set of multicast addresses that the CRP, if it wins an
 election, will advertise to other routers.
-.Bl -bullet -compact
+.Bl -bullet -offset indent -width 1n -compact
 .It
 .Nm group-addr :
 A specific multicast group or network range this router will handle.
@@ -398,7 +439,9 @@ The same as TERM.
 .It USR1
 Dumps the internal state of VIFs and multicast routing tables to
 .Pa /var/run/pimd/pimd.dump .
-See also the --show-routes option above.
+See also the
+.Fl r, -show-routes
+option above.
 .\" Not implemented yet, still TODO
 .\" .It USR2
 .\" Dumps the internal cache tables to
@@ -427,16 +470,19 @@ upon startup.
 .Xr smcroute 8 ,
 .Xr /usr/share/doc/pimd/
 .Pp
-PIM-SM is described in, the now obsolete RFC 2362, and the current RFC 4601, with
-additions in RFC 5059 and RFC 5796.
+PIM-SM is described in, the now obsolete RFC2362, and the current
+RFC4601, with additions in RFC5059 and RFC5796.
 .Pp
-The pages at USC, http://netweb.usc.edu/pim/, are unfortunately no longer available.
-The wiki pages at http://github.com/troglobit/pimd/, the new GitHub project, are an
-attempt to gather as much info as possible.
+The pages at USC, http://netweb.usc.edu/pim/, are unfortunately no
+longer available.  The wiki pages at http://github.com/troglobit/pimd/,
+the new GitHub project, are an attempt to gather as much info as
+possible.
 .Sh AUTHORS
 .Nm
-was written by Ahmed Helmy, George Edmond "Rusty" Eddy, and Pavlin Ivanov
-Radoslavov.  With contributions by many others.
+was written by Ahmed Helmy, George Edmond "Rusty" Eddy, and Pavlin
+Ivanov Radoslavov.  PIM-SSM, including full IGMPv3 support, added by
+Markus Veranen.  With contributions by many others.
 .Pp
-This manual page was initially written by Antonín Král for the Debian GNU/Linux
-system, and then updated by Joachim Nilsson for the GitHub pimd project.
+This manual page was initially written by Antonín Král for the Debian
+GNU/Linux system, and then updated by Joachim Nilsson for the GitHub
+pimd project.
