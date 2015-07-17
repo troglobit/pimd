@@ -1,4 +1,5 @@
 # Travis CI integration
+sudo: false
 language: c
 compiler:
   - gcc
