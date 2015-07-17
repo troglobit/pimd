@@ -92,7 +92,7 @@ clean:
 	-@$(RM) $(OBJS) $(EXEC)
 
 distclean:
-	-@$(RM) $(OBJS) core $(EXEC) vers.c tags TAGS *.o *.map .*.d *.out tags TAGS
+	-@$(RM) $(OBJS) core $(EXEC) vers.c config.mk tags TAGS *.o *.map .*.d *.out tags
 
 dist:
 	@echo "Building bzip2 tarball of $(PKG) in parent dir..."
