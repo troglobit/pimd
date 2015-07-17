@@ -156,7 +156,7 @@ settings are still supported, for compatibility reasons and documented
 in the man-page, but it is strongly recommended to change to the new
 syntax instead:
 
-    spt_threshold [rate <KBPS> | packets <NUM> | infinity] [interval <5-60>]
+    spt-threshold [rate <KBPS> | packets <NUM> | infinity] [interval <5-60>]
 
 Only slightly different from the Cisco `ip pim spt-threshold` setting,
 pimd can trigger a switch to SPT on a rate or number of packets and you
@@ -186,7 +186,7 @@ Example
     bsr-candidate eth1
     
     # This is the built-in defaults, switch to SPT on first packet
-    spt_threshold packets 0 interval 100
+    spt-threshold packets 0 interval 100
 
 
 Starting

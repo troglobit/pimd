@@ -369,11 +369,7 @@ static int parse_option(char *word)
 	return CONF_RP_ADDRESS;
     if (EQUAL(word, "group-prefix"))
 	return CONF_GROUP_PREFIX;
-    if (EQUAL(word, "switch_register_threshold"))
-	return deprecated(word, "spt_threshold", CONF_COMPAT_THRESHOLD);
-    if (EQUAL(word, "switch_data_threshold"))
-	return deprecated(word, "spt_threshold", CONF_COMPAT_THRESHOLD);
-    if (EQUAL(word, "spt_threshold"))
+    if (EQUAL(word, "spt-threshold"))
 	return CONF_SPT_THRESHOLD;
     if (EQUAL(word, "default_source_metric"))
 	return CONF_DEFAULT_SOURCE_METRIC;
@@ -401,6 +397,12 @@ static int parse_option(char *word)
 	return CONF_GROUP_PREFIX;
     if (EQUAL(word, "rp_address"))
 	return CONF_RP_ADDRESS;
+    if (EQUAL(word, "switch_register_threshold"))
+	return deprecated(word, "spt-threshold", CONF_COMPAT_THRESHOLD);
+    if (EQUAL(word, "switch_data_threshold"))
+	return deprecated(word, "spt-threshold", CONF_COMPAT_THRESHOLD);
+    if (EQUAL(word, "spt_threshold"))
+	return CONF_SPT_THRESHOLD;
     if (EQUAL(word, "default_igmp_query_interval"))  /* compat */
 	return CONF_IGMP_QUERY_INTERVAL;
     if (EQUAL(word, "default_igmp_querier_timeout")) /* compat */
@@ -990,7 +992,7 @@ int parse_rp_address(char *s)
  * This is a backwards compatible parser for the two older threshold
  * settings used in pimd prior to v2.2.0.  The switchover mechanism has
  * been completely changed, however, so we simply read the settings as
- * if they where the same as the new spt_threshold, only converting the
+ * if they where the same as the new spt-threshold, only converting the
  * rate argument differently (bps vs kbps).  Last line to be read is
  * what is activated in pimd as spt-threshold.
  *
@@ -1102,7 +1104,7 @@ int parse_hello_interval(char *s)
 
 
 /**
- * parse_spt_threshold - Parse spt_threshold option
+ * parse_spt_threshold - Parse spt-threshold option
  * @s: String token
  *
  * This configuration setting replaces the switch_register_threshold and
@@ -1114,7 +1116,7 @@ int parse_hello_interval(char *s)
  * target the same backend.
  *
  * Syntax:
- * spt_threshold [rate <KBPS> | packets <NUM> | infinity] [interval <SEC>]
+ * spt-threshold [rate <KBPS> | packets <NUM> | infinity] [interval <SEC>]
  *
  * Returns:
  * When parsing @s is successful this function returns %TRUE, otherwise %FALSE.

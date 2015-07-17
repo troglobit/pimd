@@ -243,7 +243,7 @@ static void check_spt_threshold(mrtentry_t *mrt)
     uint32_t prev_bytecnt, prev_pktcnt;
     kernel_cache_t *kc, *kc_next;
 
-    /* XXX: TODO: When we add group-list support to spt_threshold we need
+    /* XXX: TODO: When we add group-list support to spt-threshold we need
      * to move this infinity check to inside the for-loop ... obviously. */
     if (!rate_flag || spt_threshold.mode == SPT_INF)
 	return;
