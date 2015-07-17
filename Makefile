@@ -6,7 +6,9 @@ VERSION      ?= 2.3.0-dev
 EXEC          = pimd
 CONFIG        = $(EXEC).conf
 PKG           = $(EXEC)-$(VERSION)
-ARCHIVE       = $(PKG).tar.bz2
+ARCHTOOL      = `which git-archive-all`
+ARCHIVE       = $(PKG).tar
+ARCHIVEZ      = ../$(ARCHIVE).xz
 
 ROOTDIR      ?= $(dir $(shell pwd))
 RM           ?= rm -f
@@ -95,9 +97,18 @@ distclean:
 	-@$(RM) $(OBJS) core $(EXEC) vers.c config.mk tags TAGS *.o *.map .*.d *.out tags
 
 dist:
-	@echo "Building bzip2 tarball of $(PKG) in parent dir..."
-	git archive --format=tar --prefix=$(PKG)/ $(VERSION) | bzip2 >../$(ARCHIVE)
-	@(cd ..; md5sum $(ARCHIVE) | tee $(ARCHIVE).md5)
+	@if [ x"$(ARCHTOOL)" = x"" ]; then \
+		echo "Missing git-archive-all from https://github.com/Kentzo/git-archive-all"; \
+		exit 1; \
+	fi
+	@if [ -e $(ARCHIVEZ) ]; then \
+		echo "Distribution already exists."; \
+		exit 1; \
+	fi
+	@echo "Building xz tarball of $(PKG) in parent dir ..."
+	@$(ARCHTOOL) ../$(ARCHIVE)
+	@xz ../$(ARCHIVE)
+	@md5sum $(ARCHIVEZ) | tee $(ARCHIVEZ).md5
 
 build-deb:
 	@echo "Building .deb if $(PKG)..."
