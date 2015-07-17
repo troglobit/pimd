@@ -385,7 +385,7 @@ static int parse_option(char *word)
 	return CONF_MASKLEN;
     if  (EQUAL(word, "scoped"))
 	return CONF_SCOPED;
-    if (EQUAL(word, "hello_interval"))
+    if (EQUAL(word, "hello-interval"))
 	return CONF_HELLO_INTERVAL;
 
     /* Compatibility with old config files that use _ instead of - */
@@ -1064,7 +1064,7 @@ static int parse_compat_threshold(char *line)
  * @s: Input data
  *
  * Syntax:
- *	    hello_interval <SEC>
+ *	    hello-interval <SEC>
  *
  * Returns:
  * %TRUE if successful, otherwise %FALSE.
@@ -1078,7 +1078,7 @@ int parse_hello_interval(char *s)
     if (!EQUAL((w = next_word(&s)), "")) {
 	if (sscanf(w, "%u", &period) != 1) {
 	    logit(LOG_WARNING, 0,
-		  "Invalid hello_interval value %s; set to default %u",
+		  "Invalid hello-interval value %s; set to default %u",
 		  w, PIM_TIMER_HELLO_INTERVAL);
 	    period = PIM_TIMER_HELLO_INTERVAL;
 	    holdtime = PIM_TIMER_HELLO_HOLDTIME;
@@ -1087,20 +1087,20 @@ int parse_hello_interval(char *s)
 		holdtime = period * 3.5;
 	    else
 		logit(LOG_WARNING, 0,
-		      "Too large hello_interval value %s; set to default %u",
+		      "Too large hello-interval value %s; set to default %u",
 		      w, PIM_TIMER_HELLO_INTERVAL);
 		      period = PIM_TIMER_HELLO_INTERVAL;
 		      holdtime = PIM_TIMER_HELLO_HOLDTIME;
 	}
     } else {
 	logit(LOG_WARNING, 0,
-	      "Missing hello_interval value; set to default %u",
+	      "Missing hello-interval value; set to default %u",
 	      PIM_TIMER_HELLO_INTERVAL);
 	period = PIM_TIMER_HELLO_INTERVAL;
 	holdtime = PIM_TIMER_HELLO_HOLDTIME;
     }
 
-    logit(LOG_INFO, 0, "hello_interval is %u", period);
+    logit(LOG_INFO, 0, "hello-interval is %u", period);
     pim_timer_hello_interval = period;
     pim_timer_hello_holdtime = holdtime;
 
