@@ -138,6 +138,7 @@ static void accept_pim(ssize_t recvlen)
     struct ip *ip;
     pim_header_t *pim;
     int iphdrlen, pimlen;
+    char source[20], dest[20];
 
     if (recvlen < (ssize_t)sizeof(struct ip)) {
 	logit(LOG_WARNING, 0, "packet too short (%u bytes) for IP header", recvlen);
@@ -155,7 +156,7 @@ static void accept_pim(ssize_t recvlen)
     /* Sanity check packet length */
     if (pimlen < (ssize_t)sizeof(*pim)) {
 	logit(LOG_WARNING, 0, "IP data field too short (%d bytes) for PIM header, from %s to %s",
-	      pimlen, inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
+	      pimlen, inet_fmt(src, source, sizeof(source)), inet_fmt(dst, dest, sizeof(dest)));
 	return;
     }
 
@@ -163,7 +164,7 @@ static void accept_pim(ssize_t recvlen)
 	IF_DEBUG(DEBUG_PIM) {
 	    logit(LOG_DEBUG, 0, "RECV %5d bytes %s from %-15s to %s ", recvlen,
 		  packet_kind(IPPROTO_PIM, pim->pim_type, 0),
-		  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
+		  inet_fmt(src, source, sizeof(source)), inet_fmt(dst, dest, sizeof(dest)));
 	}
     }
 
@@ -199,9 +200,8 @@ static void accept_pim(ssize_t recvlen)
 
 	case PIM_GRAFT:
 	case PIM_GRAFT_ACK:
-	    logit(LOG_INFO, 0, "ignore %s from %s to %s",
-		  packet_kind(IPPROTO_PIM, pim->pim_type, 0), inet_fmt(src, s1, sizeof(s1)),
-		  inet_fmt(dst, s2, sizeof(s2)));
+	    logit(LOG_INFO, 0, "ignore %s from %s to %s", packet_kind(IPPROTO_PIM, pim->pim_type, 0),
+		  inet_fmt(src, source, sizeof(source)), inet_fmt(dst, dest, sizeof(dest)));
 	    break;
 
 	case PIM_CAND_RP_ADV:
@@ -209,9 +209,8 @@ static void accept_pim(ssize_t recvlen)
 	    break;
 
 	default:
-	    logit(LOG_INFO, 0,
-		  "ignore unknown PIM message code %u from %s to %s",
-		  pim->pim_type, inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
+	    logit(LOG_INFO, 0, "ignore unknown PIM message code %u from %s to %s", pim->pim_type,
+		  inet_fmt(src, source, sizeof(source)), inet_fmt(dst, dest, sizeof(dest)));
 	    break;
     }
 }
@@ -228,6 +227,7 @@ void send_pim(char *buf, uint32_t src, uint32_t dst, int type, size_t len)
     pim_header_t *pim;
     int sendlen = sizeof(struct ip) + sizeof(pim_header_t) + len;
     int setloop = 0;
+    char source[20], dest[20];
 
     /* Prepare the IP header */
     ip                 = (struct ip *)buf;
@@ -288,10 +288,10 @@ void send_pim(char *buf, uint32_t src, uint32_t dst, int type, size_t len)
 #endif
 		  " related problem."
 		  ,
-		  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
+		  inet_fmt(src, source, sizeof(source)), inet_fmt(dst, dest, sizeof(dest)));
 	else
 	    logit(LOG_WARNING, errno, "sendto from %s to %s",
-		  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
+		  inet_fmt(src, source, sizeof(source)), inet_fmt(dst, dest, sizeof(dest)));
 	if (setloop)
 	    k_set_loop(pim_socket, FALSE);
 	return;
@@ -305,7 +305,7 @@ void send_pim(char *buf, uint32_t src, uint32_t dst, int type, size_t len)
 	    logit(LOG_DEBUG, 0, "SENT %5d bytes %s from %-15s to %s",
 		  sendlen, packet_kind(IPPROTO_PIM, type, 0),
 		  src == INADDR_ANY_N ? "INADDR_ANY" :
-		  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
+		  inet_fmt(src, source, sizeof(source)), inet_fmt(dst, dest, sizeof(dest)));
 	}
     }
 }
@@ -322,6 +322,7 @@ void send_pim_unicast(char *buf, int mtu, uint32_t src, uint32_t dst, int type, 
     struct ip *ip;
     pim_header_t *pim;
     int result, sendlen = sizeof(struct ip) + sizeof(pim_header_t) + len;
+    char source[20], dest[20];
 
     /* Prepare the IP header */
     ip                 = (struct ip *)buf;
@@ -373,15 +374,15 @@ void send_pim_unicast(char *buf, int mtu, uint32_t src, uint32_t dst, int type, 
 	IF_DEBUG(DEBUG_PIM) {
 	    logit(LOG_DEBUG, 0, "SENDING %5d bytes %s from %-15s to %s ...",
 		  sendlen, packet_kind(IPPROTO_PIM, type, 0),
-		  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
+		  inet_fmt(src, source, sizeof(source)), inet_fmt(dst, dest, sizeof(dest)));
 	}
     }
 
     result = send_frame(buf, sendlen, 0, mtu, (struct sockaddr *)&sin, sizeof(sin));
     if (result) {
 	logit(LOG_WARNING, errno, "sendto from %s to %s",
-	      inet_fmt(ip->ip_src.s_addr, s1, sizeof(s1)),
-	      inet_fmt(ip->ip_dst.s_addr, s2, sizeof(s2)));
+	      inet_fmt(ip->ip_src.s_addr, source, sizeof(source)),
+	      inet_fmt(ip->ip_dst.s_addr, dest, sizeof(dest)));
 	return;
     }
 
@@ -392,12 +393,12 @@ void send_pim_unicast(char *buf, int mtu, uint32_t src, uint32_t dst, int type, 
 		pim_send_cnt = 0;
 		logit(LOG_DEBUG, 0, "SENT %5d bytes %s from %-15s to %s",
 		      sendlen, packet_kind(IPPROTO_PIM, type, 0),
-		      inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
+		      inet_fmt(src, source, sizeof(source)), inet_fmt(dst, dest, sizeof(dest)));
 	    }
 #endif
 	    logit(LOG_DEBUG, 0, "SENT %5d bytes %s from %-15s to %s",
 		  sendlen, packet_kind(IPPROTO_PIM, type, 0),
-		  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
+		  inet_fmt(src, source, sizeof(source)), inet_fmt(dst, dest, sizeof(dest)));
 	}
     }
 }
@@ -415,10 +416,11 @@ void send_pim_unicast(char *buf, int mtu, uint32_t src, uint32_t dst, int type, 
 static int send_frame(char *buf, size_t len, size_t frag, size_t mtu, struct sockaddr *dst, size_t salen)
 {
     struct ip *ip = (struct ip *)buf;
+    char source[20], dest[20];
 
     IF_DEBUG(DEBUG_PIM_REGISTER) {
 	logit(LOG_INFO, 0, "Sending unicast: len = %d, frag %zd, mtu %zd, to %s",
-	      len, frag, mtu, inet_fmt(ip->ip_dst.s_addr, s1, sizeof(s1)));
+	      len, frag, mtu, inet_fmt(ip->ip_dst.s_addr, source, sizeof(source)));
 	dump_frame(NULL, buf, len);
     }
 
@@ -459,8 +461,8 @@ static int send_frame(char *buf, size_t len, size_t frag, size_t mtu, struct soc
 
 	    default:
 		logit(LOG_WARNING, errno, "sendto from %s to %s",
-		      inet_fmt(ip->ip_src.s_addr, s1, sizeof(s1)),
-		      inet_fmt(ip->ip_dst.s_addr, s2, sizeof(s2)));
+		      inet_fmt(ip->ip_src.s_addr, source, sizeof(source)),
+		      inet_fmt(ip->ip_dst.s_addr, dest, sizeof(dest)));
 		return -1;
 	}
     }
@@ -484,6 +486,7 @@ static int send_frame(char *buf, size_t len, size_t frag, size_t mtu, struct soc
 {
     struct ip *next, *ip = (struct ip *)buf;
     size_t xferlen, offset;
+    char source[20], dest[20];
 
     if (!mtu)
 	mtu = IP_MSS;
@@ -504,7 +507,7 @@ static int send_frame(char *buf, size_t len, size_t frag, size_t mtu, struct soc
     IF_DEBUG(DEBUG_PIM_REGISTER) {
 	logit(LOG_INFO, 0, "Sending %-4d bytes %sunicast (MTU %-4d, offset %zd) to %s",
 	      xferlen, len ? "fragmented " : "", mtu, offset,
-	      inet_fmt(ip->ip_dst.s_addr, s1, sizeof(s1)));
+	      inet_fmt(ip->ip_dst.s_addr, source, sizeof(source)));
 	dump_frame(NULL, buf, xferlen);
     }
 
