@@ -134,7 +134,7 @@ feature called *Bootstrap Router*.  The elected BSR in a PIM-SM domain
 periodically announces the RP set in Bootstrap messages.  For details on
 PIM BSR operation, see [RFC 5059](http://tools.ietf.org/search/rfc5059).
 
-    cand_bootstrap_router [address | ifname] [priority <0-255>]
+    bsr-candidate [address | ifname] [priority <0-255>]
 
 The configuration of a Candidate BootStrap Router (CBSR) is very similar
 to that of CRP, except for the interval time.  If either the address or
@@ -183,7 +183,7 @@ Example
     group-prefix 224.0.0.0 masklen 4
     
     # Partake in BSR elections as well
-    cand_bootstrap_router eth1
+    bsr-candidate eth1
     
     # This is the built-in defaults, switch to SPT on first packet
     spt_threshold packets 0 interval 100

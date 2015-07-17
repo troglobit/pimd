@@ -361,14 +361,14 @@ static int parse_option(char *word)
 	return CONF_EMPTY;
     if (EQUAL(word, "phyint"))
 	return CONF_PHYINT;
+    if (EQUAL(word, "bsr-candidate"))
+	return CONF_BOOTSTRAP_RP;
     if (EQUAL(word, "rp-candidate"))
 	return CONF_CANDIDATE_RP;
     if (EQUAL(word, "rp_address"))
 	return CONF_RP_ADDRESS;
     if (EQUAL(word, "group-prefix"))
 	return CONF_GROUP_PREFIX;
-    if (EQUAL(word, "cand_bootstrap_router"))
-	return CONF_BOOTSTRAP_RP;
     if (EQUAL(word, "switch_register_threshold"))
 	return deprecated(word, "spt_threshold", CONF_COMPAT_THRESHOLD);
     if (EQUAL(word, "switch_data_threshold"))
@@ -393,6 +393,8 @@ static int parse_option(char *word)
 	return CONF_HELLO_INTERVAL;
 
     /* Compatibility with old config files that use _ instead of - */
+    if (EQUAL(word, "cand_bootstrap_router"))
+	return CONF_BOOTSTRAP_RP;
     if (EQUAL(word, "cand_rp"))
 	return CONF_CANDIDATE_RP;
     if (EQUAL(word, "group_prefix"))
@@ -816,13 +818,13 @@ int parse_group_prefix(char *s)
 
 
 /**
- * parseBSR - Parse the candidate BSR configured information.
+ * parse_bsr_candidate - Parse the candidate BSR configured information.
  * @s: String token
  *
  * Syntax:
- * cand_bootstrap_router [address | ifname] [priority <0-255>]
+ * bsr-candidate [address | ifname] [priority <0-255>]
  */
-int parseBSR(char *s)
+int parse_bsr_candidate(char *s)
 {
     char *w;
     uint32_t local    = INADDR_ANY_N;
@@ -1459,7 +1461,7 @@ void config_vifs_from_file(void)
 		break;
 
 	    case CONF_BOOTSTRAP_RP:
-		parseBSR(s);
+		parse_bsr_candidate(s);
 		break;
 
 	    case CONF_COMPAT_THRESHOLD:
