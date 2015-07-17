@@ -1077,25 +1077,20 @@ int parse_hello_interval(char *s)
 
     if (!EQUAL((w = next_word(&s)), "")) {
 	if (sscanf(w, "%u", &period) != 1) {
-	    logit(LOG_WARNING, 0,
-		  "Invalid hello-interval value %s; set to default %u",
-		  w, PIM_TIMER_HELLO_INTERVAL);
+	    logit(LOG_WARNING, 0, "Invalid hello-interval %s; defaulting to %u", w, PIM_TIMER_HELLO_INTERVAL);
 	    period = PIM_TIMER_HELLO_INTERVAL;
 	    holdtime = PIM_TIMER_HELLO_HOLDTIME;
 	} else {
-	    if (period <= (u_int)(UINT16_MAX / 3.5))
+	    if (period <= (u_int)(UINT16_MAX / 3.5)) {
 		holdtime = period * 3.5;
-	    else
-		logit(LOG_WARNING, 0,
-		      "Too large hello-interval value %s; set to default %u",
-		      w, PIM_TIMER_HELLO_INTERVAL);
-		      period = PIM_TIMER_HELLO_INTERVAL;
-		      holdtime = PIM_TIMER_HELLO_HOLDTIME;
+	    } else {
+		logit(LOG_WARNING, 0, "Too large hello-interval %s; defaulting to %u", w, PIM_TIMER_HELLO_INTERVAL);
+		period = PIM_TIMER_HELLO_INTERVAL;
+		holdtime = PIM_TIMER_HELLO_HOLDTIME;
+	    }
 	}
     } else {
-	logit(LOG_WARNING, 0,
-	      "Missing hello-interval value; set to default %u",
-	      PIM_TIMER_HELLO_INTERVAL);
+	logit(LOG_WARNING, 0, "Missing hello-interval value; defaulting to %u", PIM_TIMER_HELLO_INTERVAL);
 	period = PIM_TIMER_HELLO_INTERVAL;
 	holdtime = PIM_TIMER_HELLO_HOLDTIME;
     }
