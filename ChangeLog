@@ -12,10 +12,10 @@ in this release are courtesy of Markus Veranen
   - IGMPv3 is now default, use =phyint ifname igmpv2= for old behavior
   - Default IGMP query interval  has changed from 125 sec to 12 sec
 
-    In =pimd.conf: igmp_query_interval <SEC>=
+    In =pimd.conf: igmp-query-interval <SEC>=
   - Default IGMP querier timeout has changed from 255 sec to 42 sec
 
-    In =pimd.conf: igmp_querier_timeout <SEC>=
+    In =pimd.conf: igmp-querier-timeout <SEC>=
   - Built in IGMP robustness value changed from 2 to 3
   - Support for changing the PIM Hello interval.  By Markus Veranen
 

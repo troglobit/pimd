@@ -188,10 +188,10 @@ Here are the different configuration settings:
 .Cm default-route-metric
 .Ar <1-1024>
 .It
-.Cm igmp_query_interval
+.Cm igmp-query-interval
 .Ar <SEC>
 .It
-.Cm igmp_querier_timeout
+.Cm igmp-querier-timeout
 .Ar <SEC>
 .It
 .Cm hello_interval
@@ -280,9 +280,9 @@ recommended to prevent accidental usage.  The preferred default value is
 PIM Asserts use the phyint's values.
 .Pp
 Two settings for IGMP behavior are available:
-.Cm igmp_query_interval
+.Cm igmp-query-interval
 and
-.Cm igmp_querier_timeout
+.Cm igmp-querier-timeout
 which are similar, but very different.  The former controls the interval between
 IGMP querys when elected as querier, the latter controls the timeout for
 the elected querier -- before

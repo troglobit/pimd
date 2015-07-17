@@ -375,9 +375,9 @@ static int parse_option(char *word)
 	return CONF_DEFAULT_ROUTE_METRIC;
     if (EQUAL(word, "default-route-distance"))
 	return CONF_DEFAULT_ROUTE_DISTANCE;
-    if (EQUAL(word, "igmp_query_interval"))
+    if (EQUAL(word, "igmp-query-interval"))
 	return CONF_IGMP_QUERY_INTERVAL;
-    if (EQUAL(word, "igmp_querier_timeout"))
+    if (EQUAL(word, "igmp-querier-timeout"))
 	return CONF_IGMP_QUERIER_TIMEOUT;
     if (EQUAL(word, "altnet"))
 	return CONF_ALTNET;
@@ -1315,14 +1315,14 @@ int parse_default_route_distance(char *s)
 }
 
 /**
- * parse_igmp_query_interval - Parse igmp_query_interval option
+ * parse_igmp_query_interval - Parse igmp-query-interval option
  * @s: String token
  *
  * Reads and assigns the default IGMP query interval.  If the argument
  * is missing or invalid the parser defaults to %IGMP_QUERY_INTERVAL
  *
  * Syntax:
- * igmp_query_interval <SEC>
+ * igmp-query-interval <SEC>
  *
  * Returns:
  * When parsing @s is successful this function returns %TRUE, otherwise %FALSE.
@@ -1333,9 +1333,9 @@ static int parse_igmp_query_interval(char *s)
     uint32_t value = IGMP_QUERY_INTERVAL;
 
     if (EQUAL((w = next_word(&s)), "")) {
-	WARN("Missing argument to igmp_query_interval; defaulting to %u", IGMP_QUERY_INTERVAL);
+	WARN("Missing argument to igmp-query-interval; defaulting to %u", IGMP_QUERY_INTERVAL);
     } else if (sscanf(w, "%u", &value) != 1) {
-	WARN("Invalid default igmp_query_interval; defaulting to %u", IGMP_QUERY_INTERVAL);
+	WARN("Invalid default igmp-query-interval; defaulting to %u", IGMP_QUERY_INTERVAL);
 	value = IGMP_QUERY_INTERVAL;
     }
 
@@ -1348,7 +1348,7 @@ static int parse_igmp_query_interval(char *s)
 }
 
 /**
- * parse_igmp_querier_timeout - Parse igmp_querier_timeout option
+ * parse_igmp_querier_timeout - Parse igmp-querier-timeout option
  * @s: String token
  *
  * Reads and assigns default querier timeout for an active IGMP querier.
@@ -1357,7 +1357,7 @@ static int parse_igmp_query_interval(char *s)
  * will calculate a fallback based on the query interval.
  *
  * Syntax:
- * igmp_querier_timeout <SEC>
+ * igmp-querier-timeout <SEC>
  *
  * Returns:
  * When parsing @s is successful this function returns %TRUE, otherwise %FALSE.
@@ -1369,9 +1369,9 @@ static int parse_igmp_querier_timeout(char *s)
     uint32_t recommended = QUERIER_TIMEOUT(igmp_query_interval);
 
     if (EQUAL((w = next_word(&s)), "")) {
-	WARN("Missing argument to igmp_querier_timeout!");
+	WARN("Missing argument to igmp-querier-timeout!");
     } else if (sscanf(w, "%u", &value) != 1) {
-	WARN("Invalid default igmp_querier_timeout!");
+	WARN("Invalid default igmp-querier-timeout!");
 	value = 0;
     }
 
