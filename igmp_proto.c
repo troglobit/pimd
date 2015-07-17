@@ -708,8 +708,6 @@ static void DelVif(void *arg)
     vifi_t vifi = cbk->vifi;
     struct uvif *v = &uvifs[vifi];
     struct listaddr *a, **anp, *g = cbk->g;
-
-    struct listaddr *s = g->al_sources;
     struct listaddr *curr_src, *prev_src = NULL;
 
     if (IN_PIM_SSM_RANGE(g->al_addr)) {
@@ -730,7 +728,7 @@ static void DelVif(void *arg)
 	}
 	logit(LOG_DEBUG, 0, "DelVif: %s sources left", g->al_sources==NULL ? "No" : "Still");
 	if (g->al_sources!=NULL) {
-	    logit(LOG_DEBUG, 0, "DelVif: Not last source, S=%s", inet_fmt(s->al_addr, s1, sizeof(s1)));
+	    logit(LOG_DEBUG, 0, "DelVif: Not last source, S=%s", inet_fmt(g->al_sources->al_addr, s1, sizeof(s1)));
 	    delete_leaf(vifi, cbk->source, g->al_addr);
 	    free(cbk);
 	    /* This was not last source for this interface */
