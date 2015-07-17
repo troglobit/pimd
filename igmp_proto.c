@@ -95,6 +95,7 @@ void query_groups(struct uvif *v)
 		  IGMP_MEMBERSHIP_QUERY,
 		  code, 0, datalen);
     }
+
     /*
      * Decrement the old-hosts-present timer for each
      * active group on that vif.
@@ -167,7 +168,7 @@ void accept_membership_query(uint32_t src, uint32_t dst __attribute__((unused)),
 	}
     }
 
-    if ((v->uv_querier == NULL) || (v->uv_querier->al_addr != src)) {
+    if (!v->uv_querier || v->uv_querier->al_addr != src) {
 	/*
 	 * This might be:
 	 * - A query from a new querier, with a lower source address
@@ -176,14 +177,17 @@ void accept_membership_query(uint32_t src, uint32_t dst __attribute__((unused)),
 	 *   know who the querier is.
 	 * - A query from the current querier
 	 */
-	if (ntohl(src) < (v->uv_querier ? ntohl(v->uv_querier->al_addr)
+	if (ntohl(src) < (v->uv_querier
+			  ? ntohl(v->uv_querier->al_addr)
 			  : ntohl(v->uv_lcl_addr))) {
-	    IF_DEBUG(DEBUG_IGMP)
+	    IF_DEBUG(DEBUG_IGMP) {
 		logit(LOG_DEBUG, 0, "new querier %s (was %s) on vif %d",
 		      inet_fmt(src, s1, sizeof(s1)),
 		      v->uv_querier
 		      ? inet_fmt(v->uv_querier->al_addr, s2, sizeof(s2))
 		      : "me", vifi);
+	    }
+
 	    if (!v->uv_querier) {
 		v->uv_querier = (struct listaddr *) calloc(1, sizeof(struct listaddr));
 		if (!v->uv_querier) {
@@ -357,14 +361,14 @@ void accept_group_report(uint32_t igmp_src, uint32_t ssm_src, uint32_t group, in
     /*
      * If not found, add it to the list and update kernel cache.
      */
-    if (g == NULL) {
+    if (!g) {
 	g = (struct listaddr *)calloc(1, sizeof(struct listaddr));
 	if (!g) {
 	    logit(LOG_ERR, 0, "Ran out of memory");    /* fatal */
 	    return;
 	}
 
-	g->al_addr   = group;
+	g->al_addr = group;
 	if (!IN_PIM_SSM_RANGE(group) && igmp_report_type == IGMP_V1_MEMBERSHIP_REPORT) {
 	    g->al_old = DVMRP_OLD_AGE_THRESHOLD;
 	    logit(LOG_DEBUG, 0, "Change IGMP compatibility mode to v1 for group %s", s3);
@@ -376,7 +380,7 @@ void accept_group_report(uint32_t igmp_src, uint32_t ssm_src, uint32_t group, in
 	    g->al_pv = 3;
 	}
 
-	// Add new source
+	/* Add new source */
 	if (IN_PIM_SSM_RANGE(group)) {
 	    s = (struct listaddr *)calloc(1, sizeof(struct listaddr));
 	    if (!s) {
@@ -456,7 +460,7 @@ void accept_leave_message(uint32_t src, uint32_t dst __attribute__((unused)), ui
      * Look for the group in our group list in order to set up a short-timeout
      * query.
      */
-    for (g = v->uv_groups; g != NULL; g = g->al_next) {
+    for (g = v->uv_groups; g; g = g->al_next) {
 	if (group == g->al_addr) {
 	    IF_DEBUG(DEBUG_IGMP)
 		logit(LOG_DEBUG, 0, "accept_leave_message(): old=%d query=%d", g->al_old, g->al_query);
@@ -524,9 +528,9 @@ static void SwitchVersion(void *arg)
 {
     cbk_t *cbk = (cbk_t *)arg;
 
-    if (cbk->g->al_pv < 3) {
+    if (cbk->g->al_pv < 3)
 	cbk->g->al_pv += 1;
-    }
+
     logit(LOG_DEBUG, 0, "Switch IGMP compatibility mode back to v%d for group %s",
 	  cbk->g->al_pv, inet_fmt(cbk->g->al_addr, s1, sizeof(s1)));
 }
@@ -547,19 +551,22 @@ static void SwitchVersion(void *arg)
 int accept_sources(int igmp_report_type, uint32_t igmp_src, uint32_t group, uint8_t *sources,
     uint8_t *report_pastend, int rec_num_sources) {
     int j;
-    uint8_t *src_;
+    uint8_t *src;
     char src_str[200];
-    for (j = 0, src_ = sources; j < rec_num_sources; ++j, src_ += 4) {
-        if ((src_ + 4) > report_pastend) {
-            logit(LOG_DEBUG, 0, "src_+4>report_pastend");
+
+    for (j = 0, src = sources; j < rec_num_sources; ++j, src += 4) {
+        if ((src + 4) > report_pastend) {
+            logit(LOG_DEBUG, 0, "src+4>report_pastend");
             return 0;
         }
-        inet_ntop(AF_INET, src_, src_str , sizeof(src_str));
+
+        inet_ntop(AF_INET, src, src_str , sizeof(src_str));
         logit(LOG_DEBUG, 0, "Add source (%s,%s)", src_str, inet_fmt(group, s1, sizeof(s1)));
-        accept_group_report(igmp_src, ((struct in_addr*)src_)->s_addr, group, igmp_report_type);
+        accept_group_report(igmp_src, ((struct in_addr*)src)->s_addr, group, igmp_report_type);
         logit(LOG_DEBUG, 0, "Accepted, switch SPT (%s,%s)", src_str, inet_fmt(group, s1, sizeof(s1)));
-        switch_shortest_path(((struct in_addr*)src_)->s_addr, group);
+        switch_shortest_path(((struct in_addr*)src)->s_addr, group);
     }
+
     return 1;
 }
 
@@ -584,7 +591,7 @@ void accept_membership_report(uint32_t src, uint32_t dst __attribute__((unused))
 
 	    record = &report->grec[0];
 
-	    for (i=0;i<num_groups;i++) {
+	    for (i = 0; i < num_groups; i++) {
 		struct in_addr  rec_group;
 		uint8_t        *sources;
 		int             rec_type;
@@ -708,31 +715,33 @@ static void DelVif(void *arg)
     vifi_t vifi = cbk->vifi;
     struct uvif *v = &uvifs[vifi];
     struct listaddr *a, **anp, *g = cbk->g;
-    struct listaddr *curr_src, *prev_src = NULL;
+    struct listaddr *curr, *prev = NULL;
 
     if (IN_PIM_SSM_RANGE(g->al_addr)) {
-	for (curr_src = g->al_sources; curr_src != NULL;
-	    prev_src = curr_src, curr_src = curr_src->al_next) {
-	    logit(LOG_DEBUG, 0, "DelVif: Seek source %s, curr=%s (%p)", inet_fmt(cbk->source, s1, sizeof(s1)),
-		  inet_fmt(curr_src->al_addr, s2, sizeof(s2)), curr_src);
-	    if (curr_src->al_addr==cbk->source) {
-		if (prev_src == NULL) {
-		    /* Remove from beginning */
-		    g->al_sources = curr_src->al_next;
-		} else {
-		    prev_src->al_next = curr_src->al_next;
-		}
-		free(curr_src);
+	for (curr = g->al_sources; curr; prev = curr, curr = curr->al_next) {
+	    inet_fmt(cbk->source, s1, sizeof(s1));
+	    inet_fmt(curr->al_addr, s2, sizeof(s2));
+	    logit(LOG_DEBUG, 0, "DelVif: Seek source %s, curr=%s (%p)", s1, s2, curr);
+
+	    if (curr->al_addr == cbk->source) {
+		if (!prev)
+		    g->al_sources = curr->al_next; /* Remove from beginning */
+		else
+		    prev->al_next = curr->al_next;
+
+		free(curr);
 		break;
 	    }
 	}
-	logit(LOG_DEBUG, 0, "DelVif: %s sources left", g->al_sources==NULL ? "No" : "Still");
-	if (g->al_sources!=NULL) {
-	    logit(LOG_DEBUG, 0, "DelVif: Not last source, S=%s", inet_fmt(g->al_sources->al_addr, s1, sizeof(s1)));
+
+	logit(LOG_DEBUG, 0, "DelVif: %s sources left", g->al_sources ? "Still" : "No");
+	if (g->al_sources) {
+	    logit(LOG_DEBUG, 0, "DelVif: Not last source, g->al_sources --> %s",
+		  inet_fmt(g->al_sources->al_addr, s1, sizeof(s1)));
 	    delete_leaf(vifi, cbk->source, g->al_addr);
 	    free(cbk);
-	    /* This was not last source for this interface */
-	    return;
+
+	    return;    /* This was not last source for this interface */
 	}
     }
 
@@ -750,6 +759,7 @@ static void DelVif(void *arg)
 	inet_fmt(g->al_addr, s1, sizeof(s1));
 	inet_fmt(cbk->source, s2, sizeof(s2));
 	logit(LOG_DEBUG, 0, "SSM range, source specific delete");
+
 	/* delete (S,G) entry */
 	logit(LOG_DEBUG, 0, "DelVif: vif:%d(%s), (S=%s,G=%s)", vifi, v->uv_name, s2, s1);
 	delete_leaf(vifi, cbk->source, g->al_addr);
@@ -758,11 +768,11 @@ static void DelVif(void *arg)
     }
 
     anp = &(v->uv_groups);
-    while ((a = *anp) != NULL) {
+    while ((a = *anp)) {
 	if (a == g) {
 	    *anp = a->al_next;
 	    free(a->al_sources);
-	    free((char *)a);
+	    free(a);
 	} else {
 	    anp = &a->al_next;
 	}
@@ -778,7 +788,7 @@ static int SetVersionTimer(vifi_t vifi, struct listaddr *g)
 {
     cbk_t *cbk;
 
-    cbk = (cbk_t *) calloc(1, sizeof(cbk_t));
+    cbk = (cbk_t *)calloc(1, sizeof(cbk_t));
     if (!cbk) {
 	logit(LOG_ERR, 0, "Failed calloc() in SetVersionTimer()\n");
 	return -1;
@@ -842,7 +852,7 @@ static void SendQuery(void *arg)
 {
     cbk_t *cbk = (cbk_t *)arg;
 
-    logit(LOG_DEBUG, 0, "SendQuery: Send IGMPv%s query", cbk->q_len==4?"3":"2");
+    logit(LOG_DEBUG, 0, "SendQuery: Send IGMPv%s query", cbk->q_len == 4 ? "3" : "2");
     send_query(&uvifs[cbk->vifi], cbk->g->al_addr, cbk->q_time);
     cbk->g->al_query = 0;
     free(cbk);
