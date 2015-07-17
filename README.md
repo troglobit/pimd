@@ -93,12 +93,12 @@ the full details.
 The most notable feature of PIM-SM is that multicast is distributed from
 so called Rendezvous Points (RP).  Each RP handles distribution of one
 or more multicast groups, pimd can be configured to advertise itself as
-a candidate RP `rp-candidate`, and request to be static RP `rp_address`
+a candidate RP `rp-candidate`, and request to be static RP `rp-address`
 for one or more multicast groups.
 
-    rp_address <address> [<group>[/<LENGTH> | masklen <LENGTH]
+    rp-address <address> [<group>[/<LENGTH> | masklen <LENGTH]
 
-The `rp_address` setting is the same as the Cisco `ip pim rp-address`
+The `rp-address` setting is the same as the Cisco `ip pim rp-address`
 setting to configure static Rendezvous Points.  The first argument can
 be an IPv4 address or a multicast group address.  The default group and
 prefix length is 224.0.0.0/16.  Static RP's always have priority 1.

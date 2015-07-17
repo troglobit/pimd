@@ -365,7 +365,7 @@ static int parse_option(char *word)
 	return CONF_BOOTSTRAP_RP;
     if (EQUAL(word, "rp-candidate"))
 	return CONF_CANDIDATE_RP;
-    if (EQUAL(word, "rp_address"))
+    if (EQUAL(word, "rp-address"))
 	return CONF_RP_ADDRESS;
     if (EQUAL(word, "group-prefix"))
 	return CONF_GROUP_PREFIX;
@@ -399,6 +399,8 @@ static int parse_option(char *word)
 	return CONF_CANDIDATE_RP;
     if (EQUAL(word, "group_prefix"))
 	return CONF_GROUP_PREFIX;
+    if (EQUAL(word, "rp_address"))
+	return CONF_RP_ADDRESS;
     if (EQUAL(word, "default_igmp_query_interval"))  /* compat */
 	return CONF_IGMP_QUERY_INTERVAL;
     if (EQUAL(word, "default_igmp_querier_timeout")) /* compat */
@@ -886,7 +888,7 @@ int parse_bsr_candidate(char *s)
 }
 
 /**
- * parse_rp_address - Parse rp_address config option.
+ * parse_rp_address - Parse rp-address config option.
  * @s: String token.
  *
  * This is an extension to the original pimd to add pimd.conf support for static
@@ -896,7 +898,7 @@ int parse_bsr_candidate(char *s)
  * multicast group addresses as well.
  *
  * Syntax:
- * rp_address <ADDRESS> [<GROUP>[</LENGTH> masklen <LENGTH>]
+ * rp-address <ADDRESS> [<GROUP>[</LENGTH> masklen <LENGTH>]
  *
  * Returns:
  * When parsing @s is successful this function returns %TRUE, otherwise %FALSE.
@@ -912,13 +914,13 @@ int parse_rp_address(char *s)
     /* next is RP addr */
     w = next_word(&s);
     if (EQUAL(w, "")) {
-	logit(LOG_WARNING, 0, "Missing rp_address argument");
+	logit(LOG_WARNING, 0, "Missing rp-address argument");
 	return FALSE;
     }
 
     local = inet_parse(w, 4);
     if (local == 0xffffff) {
-	WARN("Invalid rp_address %s", w);
+	WARN("Invalid rp-address %s", w);
 	return FALSE;
     }
 

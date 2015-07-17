@@ -21,7 +21,7 @@ and start AutoRP. For more details see the manpage and program documentation.
 Support for staticRP is available since pimd_2.1.0-alpha29.17-4. Patch provided
 by Peter Mann <Peter.Mann@tuke.sk>. There is new configuratation parameter:
 
-rp_address
+rp-address
 
 The future of pimd
 ------------------
@@ -37,6 +37,6 @@ Other implementations of PIM
   http://netweb.usc.edu/pim/ has a list. And http://www.xorp.org/ looks
 promising.
  
- -- Antonin Kral <A.Kral@sh.cvut.cz>, Thu, 27 Mar 2003 10:12:47 +0100
+ -- Troglobit <Joachim Nilsson <troglobit@gmail.com>>, Fri, 17 Jul 2015 12:07:35 +0200
  -- Antonin Kral <A.Kral@sh.cvut.cz>, Tue, 10 Aug 2004 10:51:12 +0100
  -- Antonin Kral <A.Kral@sh.cvut.cz>, Mon, 18 Jan 2010 22:28:01 +0100
