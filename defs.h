@@ -79,19 +79,26 @@
 #else
 #include <netinet/ip_mroute.h>
 #endif /* __linux__ */
+
+/* If using any of the *BSD or BSD compatible C libraries */
 #if defined(HAVE_STRLCPY)
-#include <string.h>
+# include <string.h>
 #endif
 #if defined(HAVE_STRTONUM)
-#include <stdlib.h>
+# include <stdlib.h>
 #endif
 #if defined(HAVE_PIDFILE)
-#if defined(OpenBSD) || defined(NetBSD)
-#include <util.h>
-#else
-#include <libutil.h>
+# if defined(OpenBSD) || defined(NetBSD)
+#  include <util.h>
+# else
+#   include <libutil.h>
+# endif
 #endif
-#endif
+
+/* For platforms with none of the *BSD/OpenBSD APIs we use libite.  it
+ * has other goodies we want as well, so we always include it. */
+#include "libite/lite.h"
+
 #include <strings.h>
 #ifdef RSRR
 #include <sys/un.h>
@@ -662,13 +669,6 @@ struct rp_hold {
 	uint32_t	mask;
 	uint8_t	priority;
 };
-
-#ifndef HAVE_STRLCPY
-size_t strlcpy(char *dst, const char *src, size_t siz);
-#endif
-#ifndef HAVE_PIDFILE
-int pidfile(const char *basename);
-#endif
 
 #endif /* __PIMD_DEFS_H__ */
 

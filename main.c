@@ -324,12 +324,12 @@ int main(int argc, char *argv[])
     snprintf(versionstring, sizeof (versionstring), "pimd version %s", todaysversion);
 
     while ((ch = getopt_long(argc, argv, "c:d::fhlNvqrt:s:", long_options, NULL)) != EOF) {
-	int res;
-	char *endptr;
+	const char *errstr;
 
 	switch (ch) {
 	    case 'c':
-		config_file = optarg;
+		if (optarg)
+		    config_file = optarg;
 		break;
 
 	    case 'd':
@@ -367,7 +367,6 @@ int main(int argc, char *argv[])
 
 	    case 'h':
 		return usage();
-
 	    case 'l':
 		return killshow(SIGHUP, NULL);
 
@@ -386,32 +385,29 @@ int main(int argc, char *argv[])
 		return killshow(SIGUSR1, _PATH_PIMD_DUMP);
 
 	    case 's':
-		syslog_level = atoi(optarg);
-		if (syslog_level < LOG_ALERT || syslog_level > LOG_DEBUG) {
-		    fprintf(stderr, "Syslog level must be in range [1 ... 7]\n");
+		if (!optarg) {
+			fprintf(stderr, "Missing syslog level argument!\n");
+			return usage();
+		}
+
+		syslog_level = strtonum(optarg, LOG_ALERT, LOG_DEBUG, &errstr);
+		if (errstr) {
+		    fprintf(stderr, "Syslog level %s is %s!\n", optarg, errstr);
 		    return usage();
 		}
 		break;
 
 	    case 't':
-		errno = 0;
-		res = strtol(optarg, &endptr, 10);
-		if (endptr == optarg) {
-			fprintf(stderr, "Table ID must be a number!\n");
+		if (!optarg) {
+			fprintf(stderr, "Missing Table ID argument!\n");
 			return usage();
 		}
 
-		if (errno != 0) {
-			fprintf(stderr, "Invalid Table ID: %s\n", strerror(errno));
-			return usage();
+		mrt_table_id = strtonum(optarg, 0, 999999999, &errstr);
+		if (errstr) {
+		    fprintf(stderr, "Table ID %s!\n", errstr);
+		    return usage();
 		}
-
-		if (res < 0 || res > 999999999) {
-			fprintf(stderr, "Table ID must be in range [0 ... 999999999]\n");
-			return usage();
-		}
-
-		mrt_table_id = res;
 		break;
 
 #if 0 /* XXX: TODO */
@@ -427,7 +423,6 @@ int main(int argc, char *argv[])
     }
 
     argc -= optind;
-    argv += optind;
     if (argc > 0)
 	return usage();
 
