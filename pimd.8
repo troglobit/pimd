@@ -220,18 +220,24 @@ Here are the different configuration settings:
 .Op Cm metric Ar cost
 .El
 .It
-.Cm rp_address Ar <rp-addr> [<group-addr>[/<masklen> | masklen <masklen]
-.It
-.Cm cand_rp
-.Op Ar address | Ar ifname
-.Op Cm priority Ar <0-255>
-.Op Cm time Ar <10-16384>
-.It
 .Cm cand_bootstrap_router
 .Op Ar address | Ar ifname
 .Op Cm priority Ar <number>
 .It
-.Cm group_prefix Ar <group-addr>[/<masklen> | Cm masklen Ar <masklen>]
+.Cm rp-candidate
+.Op Ar address | Ar ifname
+.Op Cm priority Ar <0-255>
+.Op Cm time Ar <10-16384>
+.Bl -item -offset indent -compact
+.It
+.Cm group-prefix Ar <group>[/<masklen> | Cm masklen Ar <masklen>]
+.It
+ ...
+.It
+.Cm group-prefix ...
+.El
+.It
+.Cm rp_address Ar <rp-addr> [<group-addr>[/<masklen> | masklen <masklen]
 .It
 .Cm switch_data_threshold
 .Op Cm rate Ar <number> Cm interval Ar <number>
@@ -356,16 +362,17 @@ command line option), or simply assume that you want it to utilize all interface
 using default settings.
 .Pp
 The
-.Nm rp_address
-setting is for static Rendezvous Point configurations.  The argument can
-either be a unicast address or a multicast group, with an optional group
-address and netmask.  Default group and netmask is 224.0.0.0/16.  Note,
-all static RP's are announced with priority 1.
+.Nm cand_bootstrap_router
+setting is similar to
+.Nm rp-candidate .
+Only difference is the lack of an interval
+.Nm time
+option.
 .Pp
 The
-.Nm cand_rp
+.Nm rp-candidate
 setting refers to Candidate Rendezvous Point (CRP).  It specifies which
-interface on this machine should be included in RP elections.
+interface on this machine should be included in RP elections:
 .Bl -bullet -offset indent -width 1n -compact
 .It
 .Nm address | ifname :
@@ -374,31 +381,27 @@ If both address and ifname is left out,
 .Nm
 will default to the highest active IP address.
 .It
-.Nm priority <0-255> :
+.Nm priority Ar <0-255> :
 How important this CRP is compared to others. The lower the value here,
 the more important the CRP.  Default is 0 for pimd and Cisco IOS, but
 the standard says 192.
 .It
-.Nm time <10-16383> :
-The number of seconds to wait between advertising this CRP. The default value
-is 60 seconds.
+.Nm time Ar <10-16383> :
+The number of seconds to wait between advertising this CRP.  The default
+value is 60 seconds.
 .El
 .Pp
+.Bl -item -offset indent -compact
+.It
 The
-.Nm cand_bootstrap_router
-setting is similar to
-.Nm cand_rp .
-Only difference is the lack of an interval
-.Nm time
-option.
-.Pp
-The
-.Nm group_prefix
-statement outlines the set of multicast addresses that the CRP, if it wins an
-election, will advertise to other routers.
+.Nm group-prefix
+sub-setting to
+.Nm rp-candidate
+outlines the set of multicast groups that the CRP will advertise to
+other routers, if it wins an election:
 .Bl -bullet -offset indent -width 1n -compact
 .It
-.Nm group-addr :
+.Nm group :
 A specific multicast group or network range this router will handle.
 .It
 .Nm masklen :
@@ -407,9 +410,17 @@ multicast address is a Class D and has a netmask of 240.0.0.0, which
 means its length is 4.
 .El
 .Pp
-Max
-.Nm group_prefix
-multicast addresses supported in pimd is 255.
+Multiple lines of
+.Nm group-prefix
+may be given, but max number of records supported in pimd is 255.
+.El
+.Pp
+The
+.Nm rp_address
+setting is for static Rendezvous Point configurations.  The argument can
+either be a unicast address or a multicast group, with an optional group
+address and netmask.  Default group and netmask is 224.0.0.0/16.  Note,
+all static RP's are announced with priority 1.
 .Pp
 The 
 .Nm switch_data_threshold

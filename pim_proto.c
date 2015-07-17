@@ -3190,8 +3190,8 @@ int receive_pim_bootstrap(uint32_t src, uint32_t dst, char *pim_message, size_t 
     }
 
     /* Garbage collection. Check all group prefixes and if the
-     * fragment_tag for a group_prefix is the same as curr_bsr_fragment_tag,
-     * then remove all RPs for this group_prefix which have different
+     * fragment_tag for a group-prefix is the same as curr_bsr_fragment_tag,
+     * then remove all RPs for this group-prefix which have different
      * fragment tag.
      */
     for (grp_mask = grp_mask_list; grp_mask; grp_mask = grp_mask_next) {
@@ -3323,7 +3323,7 @@ int send_pim_cand_rp_adv(void)
 	return FALSE;  /* No BSR yet */
 
     if (curr_bsr_address == my_bsr_address) {
-	/* I am the BSR and have to include my own group_prefix stuff */
+	/* I am the BSR and have to include my own group-prefix stuff */
 	prefix_cnt = *cand_rp_adv_message.prefix_cnt_ptr;
 	if (prefix_cnt == 0) {
 	    /* The default 224.0.0.0 and masklen of 4 */

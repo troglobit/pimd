@@ -361,11 +361,11 @@ static int parse_option(char *word)
 	return CONF_EMPTY;
     if (EQUAL(word, "phyint"))
 	return CONF_PHYINT;
-    if (EQUAL(word, "cand_rp"))
+    if (EQUAL(word, "rp-candidate"))
 	return CONF_CANDIDATE_RP;
     if (EQUAL(word, "rp_address"))
 	return CONF_RP_ADDRESS;
-    if (EQUAL(word, "group_prefix"))
+    if (EQUAL(word, "group-prefix"))
 	return CONF_GROUP_PREFIX;
     if (EQUAL(word, "cand_bootstrap_router"))
 	return CONF_BOOTSTRAP_RP;
@@ -393,6 +393,10 @@ static int parse_option(char *word)
 	return CONF_HELLO_INTERVAL;
 
     /* Compatibility with old config files that use _ instead of - */
+    if (EQUAL(word, "cand_rp"))
+	return CONF_CANDIDATE_RP;
+    if (EQUAL(word, "group_prefix"))
+	return CONF_GROUP_PREFIX;
     if (EQUAL(word, "default_igmp_query_interval"))  /* compat */
 	return CONF_IGMP_QUERY_INTERVAL;
     if (EQUAL(word, "default_igmp_querier_timeout")) /* compat */
@@ -660,16 +664,16 @@ static int parse_phyint(char *s)
 
 
 /**
- * parse_candidateRP - Parse candidate Rendez-Vous Point information.
+ * parse_rp_candidate - Parse candidate Rendez-Vous Point information.
  * @s: String token
  *
  * Syntax:
- * cand_rp [address | ifname] [priority <0-255>] [time <10-16383>]
+ * rp-candidate [address | ifname] [priority <0-255>] [time <10-16383>]
  *
  * Returns:
  * %TRUE if the parsing was successful, o.w. %FALSE
  */
-int parse_candidateRP(char *s)
+int parse_rp_candidate(char *s)
 {
     u_int time = PIM_DEFAULT_CAND_RP_ADV_PERIOD;
     u_int priority = PIM_DEFAULT_CAND_RP_PRIORITY;
@@ -754,12 +758,12 @@ int parse_candidateRP(char *s)
 
 
 /**
- * parse_group_prefix - Parse group_prefix configured information.
+ * parse_group_prefix - Parse group-prefix configured information.
  * @s: String token
 
  * Syntax:
- * group_prefix <group-addr>[/<masklen>]
- *              <group-addr> [masklen <masklen>]
+ * group-prefix <group>[/<masklen>]
+ *              <group> [masklen <masklen>]
  *
  * Returns:
  * %TRUE if the parsing was successful, o.w. %FALSE
@@ -772,7 +776,7 @@ int parse_group_prefix(char *s)
 
     w = next_word(&s);
     if (EQUAL(w, "")) {
-	WARN("Missing group_prefix address");
+	WARN("Missing group-prefix address");
 	return FALSE;
     }
 
@@ -1409,8 +1413,8 @@ void config_vifs_from_file(void)
 	logit(LOG_ERR, errno, "Ran out of memory in config_vifs_from_file()");
 
     cand_rp_adv_message.prefix_cnt_ptr  = cand_rp_adv_message.buffer;
-    /* By default, if no group_prefix configured, then prefix_cnt == 0
-     * implies group_prefix = 224.0.0.0 and masklen = 4.
+    /* By default, if no group-prefix configured, then prefix_cnt == 0
+     * implies group-prefix = 224.0.0.0 and masklen = 4.
      */
     *cand_rp_adv_message.prefix_cnt_ptr = 0;
     cand_rp_adv_message.insert_data_ptr = cand_rp_adv_message.buffer;
@@ -1443,7 +1447,7 @@ void config_vifs_from_file(void)
 		break;
 
 	    case CONF_CANDIDATE_RP:
-		parse_candidateRP(s);
+		parse_rp_candidate(s);
 		break;
 
 	    case CONF_RP_ADDRESS:

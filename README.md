@@ -93,8 +93,8 @@ the full details.
 The most notable feature of PIM-SM is that multicast is distributed from
 so called Rendezvous Points (RP).  Each RP handles distribution of one
 or more multicast groups, pimd can be configured to advertise itself as
-a candidate RP `cand_rp`, and request to be static RP `rp_address` for
-one or more multicast groups.
+a candidate RP `rp-candidate`, and request to be static RP `rp_address`
+for one or more multicast groups.
 
     rp_address <address> [<group>[/<LENGTH> | masklen <LENGTH]
 
@@ -103,7 +103,7 @@ setting to configure static Rendezvous Points.  The first argument can
 be an IPv4 address or a multicast group address.  The default group and
 prefix length is 224.0.0.0/16.  Static RP's always have priority 1.
 
-    cand_rp [address | ifname] [time <10-16383>] [priority <0-255>]
+    rp-candidate [address | ifname] [time <10-16383>] [priority <0-255>]
 
 The Rendezvous Point candidate, or CRP, setting is the same as the Cisco
 `ip pim rp-candidate` setting.  Use it to control which interface that
@@ -123,9 +123,9 @@ should be used in RP elections.
 In the CRP messages sent out by pimd, one or more multicast groups can
 be advertised using the following syntax.
 
-    group_prefix <group>[</LENGTH> | masklen <LENGTH>]
+    group-prefix <group>[</LENGTH> | masklen <LENGTH>]
 
-Each `group_prefix` setting defines one multicast group and an optional
+Each `group-prefix` setting defines one multicast group and an optional
 mask length, which defaults to 16 if left out.  A maximum of 255
 multicast group prefix records is possible for the CRP.
 
@@ -179,8 +179,8 @@ Example
     phyint eth3 preference 251
     
     # Offer to be an RP for all of 224.0.0.0/4
-    cand_rp eth1
-    group_prefix 224.0.0.0 masklen 4
+    rp-candidate eth1
+    group-prefix 224.0.0.0 masklen 4
     
     # Partake in BSR elections as well
     cand_bootstrap_router eth1

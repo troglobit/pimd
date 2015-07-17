@@ -106,7 +106,7 @@ route add -net 44.44.44.0 netmask 255.255.255.0 gw 22.22.22.33 gre1
 
 2.1. pimd が Cand-RP にならないようにするには?
 
-     "cand_rp" と "group_prefix" の行をコメントアウトしてください.
+     "rp-candidate" と "group-prefix" の行をコメントアウトしてください.
 
 2.2. pimd が Cand-BSR にならないようにするには?
 

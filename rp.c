@@ -788,7 +788,7 @@ rp_grp_entry_t *rp_grp_match(uint32_t group)
 	return NULL;
 
     for (mask_ptr = grp_mask_list; mask_ptr; mask_ptr = mask_ptr->next) {
-	/* Search the grp_mask (group_prefix) list */
+	/* Search the grp_mask (group-prefix) list */
 	if ((group_h & ntohl(mask_ptr->group_mask))
 	    != ntohl(mask_ptr->group_mask & mask_ptr->group_addr))
 	    continue;
