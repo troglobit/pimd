@@ -66,6 +66,9 @@ int             total_interfaces; /* Number of all interfaces: including the
 				   * capable interfaces.
 				   */
 
+uint32_t	default_route_metric   = UCAST_DEFAULT_ROUTE_METRIC;
+uint32_t	default_route_distance = UCAST_DEFAULT_ROUTE_DISTANCE;
+
 /*
  * Forward declarations
  */
@@ -182,8 +185,8 @@ void zero_vif(struct uvif *v, int t)
     RESET_TIMER(v->uv_gq_timer);
     RESET_TIMER(v->uv_jp_timer);
     v->uv_pim_neighbors	= (struct pim_nbr_entry *)NULL;
-    v->uv_local_pref	= default_source_preference;
-    v->uv_local_metric	= default_source_metric;
+    v->uv_local_pref	= default_route_distance;
+    v->uv_local_metric	= default_route_metric;
 #ifdef __linux__
     v->uv_ifindex	= -1;
 #endif /* __linux__ */

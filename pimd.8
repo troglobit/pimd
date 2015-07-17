@@ -182,11 +182,11 @@ given in the alternative /CIDR format.  E.g., <group>/<masklen>.
 Here are the different configuration settings:
 .Bl -item -offset indent
 .It
-.Cm default_source_preference
-.Ar <distance>
+.Cm default-route-distance
+.Ar <1-255>
 .It
-.Cm default_source_metric
-.Ar <metric>
+.Cm default-route-metric
+.Ar <1-1024>
 .It
 .Cm igmp_query_interval
 .Ar <SEC>
@@ -216,8 +216,8 @@ Here are the different configuration settings:
 .Oc
 .br
 .Op Cm threshold Ar thr
-.Op Cm preference Ar pref
-.Op Cm metric Ar cost
+.Op Cm distance Ar <1-255>
+.Op Cm metric Ar <1-1024>
 .El
 .It
 .Cm bsr-candidate
@@ -255,23 +255,29 @@ command line option control this behaviour.  More on the
 interface configuration setting below.
 .Pp
 The
-.Cm default_source_preference
-option, or admin distance as it is more commonly known today, is used by
-PIM Assert elections to determine upstream routers.  Currently pimd
-cannot reliably obtain preferences and metrics from the unicast routing
-protocols, so a default preference (distance) may be configured.  In a
-PIM Assert election, the router advertising the lowest assert preference
+.Cm default-route-distance
+option has nothing to do with the system default route, it is rather the
+default value for the unicast routing protocol's administrative
+distance.  It is used in PIM Assert elections to determine upstream
+routers.  Currently
+.Nm
+cannot obtain the admin distance and metric from the unicast routing
+protocols, so a default routing protocol distance (the RFC confusingly
+refers to this as *metric prefererence*) may be configured.  In a PIM
+Assert election, the router advertising the lowest assert preference
 will be selected as the forwarder and upstream router for the LAN.
 Setting 101 should be sufficiently high so that asserts from Cisco or
 GateD routers are prefered over poor-little pimd.
 .Pp
-It is reccommended that preferences (distance) be set such that metrics
-are never consulted.  However, default metrics may also be set using the
-.Cm default_source_metric
-option.  This item sets the cost for sending data through this router.
-You want only PIM-SM data to go to this daemon; so once again, a high
-value is recommended to prevent accidental usage.  The preferred default
-value is 1024.
+It is reccommended that distances be set such that metrics are never
+consulted.  However, default routing metrics may also be set using the
+.Cm default-route-metric
+option.  (Again, this has nothing to do with the system default route.)
+This item sets the cost for sending data through this router.  You want
+only PIM-SM data to go to this daemon; so once again, a high value is
+recommended to prevent accidental usage.  The preferred default value is
+1024.  Both defaults can be overridden per phyint, so learned routes, or
+PIM Asserts use the phyint's values.
 .Pp
 Two settings for IGMP behavior are available:
 .Cm igmp_query_interval
@@ -299,7 +305,9 @@ default value for the Hello interval is 30 sec.
 The
 .Nm phyint
 option refers to a physical interface and must come after
-.Cm default_source_metric .
+.Cm default-route-metric
+and
+.Cm default-route-distance .
 Select the interface either by its IP
 .Ar address
 or interface name
@@ -323,23 +331,24 @@ Force interface to use IGMPv2, or
 .Nm igmpv3 :
 Use IGMPv3, this is the default.
 .It
-.Nm preference pref :
-This interface's value in an election. It will have the
-.Nm
-default_source_preference
+.Cm distance Ar <1-255> :
+Use this to override the
+.Nm default-route-distance
+on this
+.Nm phyint
+in PIM Assert elections.
+.It
+.Cm metric Ar <1-1024> :
+The cost of sending data through this interface.  Defaults to
+.Nm default-route-metric
 if not assigned.
 .It
-.Nm metric cost :
-The cost of sending data through this interface. It will have the
-.Nm default_source_metric
-if not assigned.
-.It
-.Nm altnet network/len :
+.Cm altnet Ar <network/len> :
 Alternative host(s)/network(s) to accept as locally attached multicast
 sources on a given interface. If a phyint is attached to multiple IP
 subnets, describe each additional subnet with the altnet keyword.
 .It
-.Nm scoped network/len :
+.Cm scoped Ar <network/len> :
 Optional scoping of multicast groups. This allows interfaces to be
 configured as an administrative boundary for the specified
 group(s). Multicast streams belonging to the scoped groups will not be

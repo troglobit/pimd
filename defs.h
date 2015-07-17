@@ -240,8 +240,8 @@ typedef void (*ihfunc_t) (int, fd_set *);
 #define DEFAULT_THRESHOLD	1	/* default subnet/tunnel threshold  */
 
 /* Used if no relaible unicast routing information available */
-#define UCAST_DEFAULT_SOURCE_METRIC     1024
-#define UCAST_DEFAULT_SOURCE_PREFERENCE 101
+#define UCAST_DEFAULT_ROUTE_DISTANCE   101
+#define UCAST_DEFAULT_ROUTE_METRIC     1024
 
 #define TIMER_INTERVAL		5	/* 5 sec virtual timer granularity  */
 
@@ -359,8 +359,8 @@ extern uint32_t          rp_my_ipv4_hashmask;
 extern uint16_t          pim_cand_rp_adv_timer;
 
 /* route.c */
-extern uint32_t		default_source_metric;
-extern uint32_t		default_source_preference;
+extern uint32_t		default_route_metric;
+extern uint32_t		default_route_distance;
 
 /* igmp_proto.c */
 extern uint32_t		igmp_query_interval;

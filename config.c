@@ -57,8 +57,8 @@
 #define CONF_BOOTSTRAP_RP                       6
 #define CONF_COMPAT_THRESHOLD                   7
 #define CONF_SPT_THRESHOLD                      8
-#define CONF_DEFAULT_SOURCE_METRIC              9
-#define CONF_DEFAULT_SOURCE_PREFERENCE          10
+#define CONF_DEFAULT_ROUTE_METRIC               9
+#define CONF_DEFAULT_ROUTE_DISTANCE             10
 #define CONF_ALTNET                             11
 #define CONF_MASKLEN                            12
 #define CONF_SCOPED                             13
@@ -371,10 +371,10 @@ static int parse_option(char *word)
 	return CONF_GROUP_PREFIX;
     if (EQUAL(word, "spt-threshold"))
 	return CONF_SPT_THRESHOLD;
-    if (EQUAL(word, "default_source_metric"))
-	return CONF_DEFAULT_SOURCE_METRIC;
-    if (EQUAL(word, "default_source_preference"))
-	return CONF_DEFAULT_SOURCE_PREFERENCE;
+    if (EQUAL(word, "default-route-metric"))
+	return CONF_DEFAULT_ROUTE_METRIC;
+    if (EQUAL(word, "default-route-distance"))
+	return CONF_DEFAULT_ROUTE_DISTANCE;
     if (EQUAL(word, "igmp_query_interval"))
 	return CONF_IGMP_QUERY_INTERVAL;
     if (EQUAL(word, "igmp_querier_timeout"))
@@ -403,6 +403,10 @@ static int parse_option(char *word)
 	return deprecated(word, "spt-threshold", CONF_COMPAT_THRESHOLD);
     if (EQUAL(word, "spt_threshold"))
 	return CONF_SPT_THRESHOLD;
+    if (EQUAL(word, "default_source_metric"))
+	return CONF_DEFAULT_ROUTE_METRIC;
+    if (EQUAL(word, "default_source_preference"))
+	return CONF_DEFAULT_ROUTE_DISTANCE;
     if (EQUAL(word, "default_igmp_query_interval"))  /* compat */
 	return CONF_IGMP_QUERY_INTERVAL;
     if (EQUAL(word, "default_igmp_querier_timeout")) /* compat */
@@ -624,14 +628,14 @@ static int parse_phyint(char *s)
 		continue;
 	    } /* threshold */
 
-	    if (EQUAL(w, "preference")) {
+	    if (EQUAL(w, "distance") || EQUAL(w, "preference")) {
 		if (EQUAL((w = next_word(&s)), "")) {
-		    WARN("Missing preference for phyint %s", inet_fmt(local, s1, sizeof(s1)));
+		    WARN("Missing distance value for phyint %s", inet_fmt(local, s1, sizeof(s1)));
 		    continue;
 		}
 
 		if (sscanf(w, "%u%c", &n, &c) != 1 || n < 1 || n > 255 ) {
-		    WARN("Invalid preference '%s' for phyint %s", w, inet_fmt(local, s1, sizeof(s1)));
+		    WARN("Invalid distance value '%s' for phyint %s", w, inet_fmt(local, s1, sizeof(s1)));
 		    continue;
 		}
 
@@ -642,14 +646,15 @@ static int parse_phyint(char *s)
 		v->uv_local_pref = n;
 		continue;
 	    }
+
 	    if (EQUAL(w, "metric")) {
 		if (EQUAL((w = next_word(&s)), "")) {
-		    WARN("Missing metric for phyint %s", inet_fmt(local, s1, sizeof(s1)));
+		    WARN("Missing metric value for phyint %s", inet_fmt(local, s1, sizeof(s1)));
 		    continue;
 		}
 
 		if (sscanf(w, "%u%c", &n, &c) != 1 || n < 1 || n > 1024 ) {
-		    WARN("Invalid metric '%s' for phyint %s", w, inet_fmt(local, s1, sizeof(s1)));
+		    WARN("Invalid metric value '%s' for phyint %s", w, inet_fmt(local, s1, sizeof(s1)));
 		    continue;
 		}
 
@@ -1228,81 +1233,83 @@ static int parse_spt_threshold(char *s)
 
 
 /**
- * parse_default_source_metric - Parse default_source_metric option
+ * parse_default_route_metric - Parse default-route-metric option
  * @s: String token
  *
- * Reads and assigns the default source metric, if no reliable
- * unicast routing information available.
+ * Reads and assigns the route metric used for PIM Asserts by default.
+ * This is used if pimd cannot read unicast route metrics from the
+ * OS/kernel.
  *
  * Syntax:
- * default_source_metric <number>
+ * default-route-metric <1-1024>
  *
- * Default pref and metric statements should precede all phyint
- * statements in the config file.
+ * Default routing protocol distance and route metric statements should
+ * precede all phyint statements in the config file.
  *
  * Returns:
  * When parsing @s is successful this function returns %TRUE, otherwise %FALSE.
  */
-int parse_default_source_metric(char *s)
+int parse_default_route_metric(char *s)
 {
     char *w;
     u_int value;
     vifi_t vifi;
     struct uvif *v;
 
-    value = UCAST_DEFAULT_SOURCE_METRIC;
+    value = UCAST_DEFAULT_ROUTE_METRIC;
     if (EQUAL((w = next_word(&s)), "")) {
-	WARN("Missing default source metric; defaulting to %u", UCAST_DEFAULT_SOURCE_METRIC);
+	WARN("Missing route metric default; defaulting to %u", UCAST_DEFAULT_ROUTE_METRIC);
     } else if (sscanf(w, "%u", &value) != 1) {
-	WARN("Invalid default source metric; defaulting to %u", UCAST_DEFAULT_SOURCE_METRIC);
-	value = UCAST_DEFAULT_SOURCE_METRIC;
+	WARN("Invalid route metric default; defaulting to %u", UCAST_DEFAULT_ROUTE_METRIC);
+	value = UCAST_DEFAULT_ROUTE_METRIC;
     }
 
-    default_source_metric = value;
-    logit(LOG_INFO, 0, "default_source_metric is %u", value);
+    default_route_metric = value;
+    logit(LOG_INFO, 0, "default-route-metric is %u", value);
 
     for (vifi = 0, v = uvifs; vifi < MAXVIFS; ++vifi, ++v)
-	v->uv_local_metric = default_source_metric;
+	v->uv_local_metric = default_route_metric;
 
     return TRUE;
 }
 
 
 /**
- * parse_default_source_preference - Parse default_source_preference option
+ * parse_default_route_distance - Parse default-route-distance option
  * @s: String token
  *
- * Reads and assigns the default source preference, if no reliable
- * unicast routing information available.
+ * Reads and assigns the default source metric preference, i.e. routing
+ * protocol distance.  This is used if pimd cannot read unicast routing
+ * protocol information from the OS/kernel.
  *
  * Syntax:
- * default_source_preference <number>
+ * default-route-distance <1-255>
  *
- * Default pref and metric statements should precede all phyint
- * statements in the config file.
+ * Default routing protocol distance and route metric statements should
+ * precede all phyint statements in the config file.
  *
  * Returns:
  * When parsing @s is successful this function returns %TRUE, otherwise %FALSE.
  */
-int parse_default_source_preference(char *s)
+int parse_default_route_distance(char *s)
 {
     char *w;
     u_int value;
     vifi_t vifi;
     struct uvif *v;
 
-    value = UCAST_DEFAULT_SOURCE_PREFERENCE;
+    value = UCAST_DEFAULT_ROUTE_DISTANCE;
     if (EQUAL((w = next_word(&s)), "")) {
-	WARN("Missing default source preference; defaulting to %u", UCAST_DEFAULT_SOURCE_PREFERENCE);
+	WARN("Missing default routing protocol distance; defaulting to %u", UCAST_DEFAULT_ROUTE_DISTANCE);
     } else if (sscanf(w, "%u", &value) != 1) {
-	WARN("Invalid default source preference; defaulting to %u", UCAST_DEFAULT_SOURCE_PREFERENCE);
-	value = UCAST_DEFAULT_SOURCE_PREFERENCE;
+	WARN("Invalid default routing protocol distance; defaulting to %u", UCAST_DEFAULT_ROUTE_DISTANCE);
+	value = UCAST_DEFAULT_ROUTE_DISTANCE;
     }
 
-    default_source_preference = value;
-    logit(LOG_INFO, 0, "default_source_preference is %u", value);
+    default_route_distance = value;
+    logit(LOG_INFO, 0, "default-route-distance is %u", value);
     for (vifi = 0, v = uvifs; vifi < MAXVIFS; ++vifi, ++v)
-	v->uv_local_pref = default_source_preference;
+	v->uv_local_pref = default_route_distance;
 
     return TRUE;
 }
@@ -1476,12 +1483,12 @@ void config_vifs_from_file(void)
 		parse_spt_threshold(s);
 		break;
 
-	    case CONF_DEFAULT_SOURCE_METRIC:
-		parse_default_source_metric(s);
+	    case CONF_DEFAULT_ROUTE_METRIC:
+		parse_default_route_metric(s);
 		break;
 
-	    case CONF_DEFAULT_SOURCE_PREFERENCE:
-		parse_default_source_preference(s);
+	    case CONF_DEFAULT_ROUTE_DISTANCE:
+		parse_default_route_distance(s);
 		break;
 
 	    case CONF_IGMP_QUERY_INTERVAL:

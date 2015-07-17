@@ -51,12 +51,12 @@ Configuration
 The configuration is kept in the file `/etc/pimd.conf`, the order of
 the statements are in some cases important.
 
-PIM-SM is a designed to be a _protocol independent_ multicast routing
-protocol.  As such it relies on protocols like, e.g, OSPF, RIP, or
-static routing entries, to figure out the path to all multicast capable
-neighboring routers.  This information is necessary in setups with more
-than one route between a multicast sender and a receiver to figure out
-which PIM router should be the active forwarder.
+PIM-SM is a designed to be a *protocol independent* multicast routing
+protocol.  As such it relies on unicast protocols like, e.g, OSPF, RIP,
+or static routing entries, to figure out the path to all multicast
+capable neighboring routers.  This information is necessary in setups
+with more than one route between a multicast sender and a receiver to
+figure out which PIM router should be the active forwarder.
 
 However, pimd currently cannot retrieve the unicast routing distance
 (preference) and metric of routes from the system, not from the kernel
@@ -65,8 +65,8 @@ statically on each router using the desired distance and metric for each
 active interface.  If either the distance and/or the metric is missing
 in an interface configuration, the following two defaults will be used:
 
-    default_source_preference <1-255>     default: 101   (distance)
-    default_source_metric     <1-1024>    default: 1024
+    default-route-distance   <1-255>     default: 101   (preference)
+    default-route-metric     <1-1024>    default: 1024
 
 By default pimd starts up on all interfaces it can find, using the above
 defaults.  To configure individual interfaces use:
@@ -79,13 +79,13 @@ its name, e.g., eth0.  Some common interface settings are:
    * `disable`: Disable pimd on this interface, i.e., do not send or
      listen for PIM-SM traffic
 
-   * `preference <1-255>`: The interface's distance value (also
-     confusingly referred to as metric preference) in PIM Assert
-     messages.  Used with `metric` to elect the active multicast
-     forwarding router.  Defaults to `default_source_preference`
+   * `distance <1-255>`: The interface's distance value (also
+     confusingly referred to as *metric preference* in the RFC) in PIM
+     Assert messages.  Used with `metric` to elect the active multicast
+     forwarding router.  Defaults to `default-route-distance`
 
    * `metric <1-1024>`: The cost for traversing this router.  Used with
-     the `preference` value above. Defaults to `default_source_metric`
+     the `preference` value above. Defaults to `default-route-metric`
 
 More interface settings are available, see the pimd(8) manual page for
 the full details.

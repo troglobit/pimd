@@ -62,9 +62,6 @@ static void   process_cache_miss  (struct igmpmsg *igmpctl);
 static void   process_wrong_iif   (struct igmpmsg *igmpctl);
 static void   process_whole_pkt   (char *buf);
 
-uint32_t		default_source_metric     = UCAST_DEFAULT_SOURCE_METRIC;
-uint32_t		default_source_preference = UCAST_DEFAULT_SOURCE_PREFERENCE;
-
 #ifdef SCOPED_ACL
 /* from mrouted. Contributed by Marian Stagarescu <marian@bile.cidera.com>*/
 static int scoped_addr(vifi_t vifi, uint32_t addr)
