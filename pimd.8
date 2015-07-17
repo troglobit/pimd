@@ -189,13 +189,13 @@ Here are the different configuration settings:
 .Ar <1-1024>
 .It
 .Cm igmp-query-interval
-.Ar <SEC>
+.Ar <1-65535>
 .It
 .Cm igmp-querier-timeout
-.Ar <SEC>
+.Ar <8-65535>
 .It
 .Cm hello-interval
-.Ar <SEC>
+.Ar <30-18724>
 .It
 .Cm phyint
 .Cm <address | ifname>
@@ -283,9 +283,9 @@ Two settings for IGMP behavior are available:
 .Cm igmp-query-interval
 and
 .Cm igmp-querier-timeout
-which are similar, but very different.  The former controls the interval between
-IGMP querys when elected as querier, the latter controls the timeout for
-the elected querier -- before
+which are similar, but very different.  The former controls the interval
+between IGMP querys when elected as querier, the latter controls the
+timeout for the elected querier -- before
 .Nm pimd
 decides to take over.  In IGMP the lowest numerical address in a LAN
 becomes the elected querier.  Obviously these settings must be handled
@@ -301,7 +301,7 @@ The PIM Hello message interval can be tuned by changing the
 setting.  Changing this value also affects the hold-time value included
 in Hello messages.  The hold-time value is 3.5 times hello-interval.
 The default value for the Hello interval is 30 sec.  Anything less than
-30 sec is considered an "aggressive" setting and is unsupported. 
+30 sec is considered an "aggressive" setting and is unsupported.
 .Pp
 The
 .Nm phyint
@@ -329,8 +329,9 @@ command line option.
 .It
 .Nm igmpv2 :
 Force interface to use IGMPv2, or
+.It
 .Nm igmpv3 :
-Use IGMPv3, this is the default.
+Use IGMPv3, this is the default since v2.3.0.
 .It
 .Cm distance Ar <1-255> :
 Use this to override the
@@ -401,8 +402,8 @@ The
 .Nm group-prefix
 sub-setting to
 .Nm rp-candidate
-outlines the set of multicast groups that the CRP will advertise to
-other routers, if it wins an election:
+is the set of multicast groups that the CRP will advertise to other
+routers, if it wins an election:
 .Bl -bullet -offset indent -width 1n -compact
 .It
 .Nm group :

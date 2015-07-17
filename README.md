@@ -1,6 +1,6 @@
 README
 ======
-[![Build Status](https://travis-ci.org/troglobit/pimd.png?branch=master)](https://travis-ci.org/troglobit/pimd)[![Coverity Scan Status](https://scan.coverity.com/projects/3319/badge.svg)](https://scan.coverity.com/projects/3319)
+[![Travis Status][]][Travis] [![Coverity Status][]][Coverity Scan]
 
 pimd is a lightweight, stand-alone implementation of RFC 2362, available
 under the 3-clause BSD license.  This is the restored original version
@@ -65,7 +65,7 @@ statically on each router using the desired distance and metric for each
 active interface.  If either the distance and/or the metric is missing
 in an interface configuration, the following two defaults will be used:
 
-    default-route-distance   <1-255>     default: 101   (preference)
+    default-route-distance   <1-255>     default: 101
     default-route-metric     <1-1024>    default: 1024
 
 By default pimd starts up on all interfaces it can find, using the above
@@ -79,7 +79,7 @@ its name, e.g., eth0.  Some common interface settings are:
    * `disable`: Disable pimd on this interface, i.e., do not send or
      listen for PIM-SM traffic
 
-   * `distance <1-255>`: The interface's distance value (also
+   * `distance <1-255>`: The interface's admin distance value (also
      confusingly referred to as *metric preference* in the RFC) in PIM
      Assert messages.  Used with `metric` to elect the active multicast
      forwarding router.  Defaults to `default-route-distance`
@@ -174,16 +174,16 @@ Example
     # The default interface preference 101 has been changed on all
     # the other interfaces.
     phyint eth0 disable
-    phyint eth1 preference 255
-    phyint eth2 preference 250
-    phyint eth3 preference 251
+    phyint eth1 distance 255
+    phyint eth2 distance 250
+    phyint eth3 distance 251
+    
+    # Partake in BSR elections on eth1
+    bsr-candidate eth1
     
     # Offer to be an RP for all of 224.0.0.0/4
     rp-candidate eth1
     group-prefix 224.0.0.0 masklen 4
-    
-    # Partake in BSR elections as well
-    bsr-candidate eth1
     
     # This is the built-in defaults, switch to SPT on first packet
     spt-threshold packets 0 interval 100
@@ -229,3 +229,13 @@ or to watch it continually:
 In addition, pimd logs important events to the system logfile, in
 particular at startup when parsing the `pimd.conf` configuration file.
 
+[Travis]:          https://travis-ci.org/troglobit/pimd
+[Travis Status]:   https://travis-ci.org/troglobit/pimd.png?branch=master
+[Coverity Scan]:   https://scan.coverity.com/projects/3319
+[Coverity Status]: https://scan.coverity.com/projects/3319/badge.svg
+
+<!--
+  -- Local Variables:
+  -- mode: markdown
+  -- End:
+  -->
