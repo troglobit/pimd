@@ -1,5 +1,8 @@
 # -*-Makefile-*-
 #
+# Note: We use .gz for distribution archives for the sake of
+#       OpenBSD not having bzip2 in the base distribution.
+#
 
 # VERSION      ?= $(shell git tag -l | tail -1)
 VERSION      ?= 2.3.0-dev
@@ -8,7 +11,7 @@ CONFIG        = $(EXEC).conf
 PKG           = $(EXEC)-$(VERSION)
 ARCHTOOL      = `which git-archive-all`
 ARCHIVE       = $(PKG).tar
-ARCHIVEZ      = ../$(ARCHIVE).xz
+ARCHIVEZ      = ../$(ARCHIVE).gz
 
 ROOTDIR      ?= $(dir $(shell pwd))
 RM           ?= rm -f
@@ -101,12 +104,12 @@ dist:
 		exit 1; \
 	fi
 	@if [ -e $(ARCHIVEZ) ]; then \
-		echo "Distribution already exists."; \
+		echo "Distribution $(ARCHIVEZ) already exists."; \
 		exit 1; \
 	fi
 	@echo "Building xz tarball of $(PKG) in parent dir ..."
 	@$(ARCHTOOL) ../$(ARCHIVE)
-	@xz ../$(ARCHIVE)
+	@gzip ../$(ARCHIVE)
 	@md5sum $(ARCHIVEZ) | tee $(ARCHIVEZ).md5
 
 build-deb:
