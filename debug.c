@@ -404,8 +404,8 @@ void logit(int severity, int syserr, const char *format, ...)
     msg = (severity == LOG_WARNING) ? fmt : &fmt[10];
 
     /*
-     * Log to stderr if we haven't forked yet and it's a warning or worse,
-     * or if we're debugging.
+     * Log to stderr if we haven't forked yet and it's a warning or
+     * worse, or if we're debugging.
      */
     if (haveterminal && (debug || severity <= LOG_WARNING)) {
 	gettimeofday(&now, NULL);
@@ -425,10 +425,10 @@ void logit(int severity, int syserr, const char *format, ...)
     /*
      * Always log things that are worse than warnings, no matter what
      * the log_nmsgs rate limiter says.
-     * Only count things worse than debugging in the rate limiter
-     * (since if you put daemon.debug in syslog.conf you probably
-     * actually want to log the debugging messages so they shouldn't
-     * be rate-limited)
+     *
+     * Only count things worse than debugging in the rate limiter (since
+     * if you put daemon.debug in syslog.conf you probably actually want
+     * to log the debugging messages so they shouldn't be rate-limited)
      */
     if ((severity < LOG_WARNING) || (log_nmsgs < LOG_MAX_MSGS)) {
 	if (severity < LOG_DEBUG)
@@ -440,8 +440,10 @@ void logit(int severity, int syserr, const char *format, ...)
 	    syslog(severity, "%s", msg);
 	}
     }
+
 #ifndef CONTINUE_ON_ERROR
-    if (severity <= LOG_ERR) exit(-1);
+    if (severity <= LOG_ERR)
+	exit(-1);		/* Exit status: 255 */
 #endif /* CONTINUE_ON_ERROR */
 }
 
