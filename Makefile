@@ -39,9 +39,8 @@ OBJS          = $(IGMP_OBJS) $(ROUTER_OBJS) $(PIM_OBJS) $(DVMRP_OBJS) $(EXTRA_OB
 SRCS          = $(OBJS:.o=.c)
 DEPS          = $(addprefix .,$(SRCS:.c=.d))
 MANS          = $(addsuffix .8,$(EXEC))
-DISTFILES     = README.md README README.config README.config.jp README.debug \
-		ChangeLog INSTALL LICENSE LICENSE.mrouted \
-		TODO CREDITS FAQ AUTHORS
+DISTFILES     = README README.config README.config.jp README.debug ChangeLog \
+		INSTALL LICENSE LICENSE.mrouted TODO CREDITS FAQ AUTHORS
 
 LINT          = splint
 LINTFLAGS     = $(MCAST_INCLUDE) $(filter-out -W -Wall -Werror, $(CFLAGS)) -posix-lib -weak -skipposixheaders
