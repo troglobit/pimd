@@ -1,31 +1,43 @@
 #+TITLE:    pimd | Change Log
 #+AUTHOR:   Ahmed Helmy, George Edmond Eddy, Pavlin Ivanov Radoslavov, Markus Veranen
+#+OPTIONS: toc:nil
+#+OPTIONS: H:3 num:0
+#+LaTeX_HEADER: \usepackage{parskip}
+#+LaTeX_CLASS_OPTIONS: [twoside, colorlinks=true, linkcolor=blue, urlcolor=blue]
 
 * Version 2.3.0: UNRELEASED
 
-The PIM-SSM and IGMPv3 release, with major change to the =pimd.conf=
-syntax!  Most, if not all, of the new features in this release are
-courtesy of Markus Veranen <mailto:markus.veranen@gmail.com>!
+** /The PIM-SSM and IGMPv3 release!/
+
+The significant new features in this release would not have been
+possible if not for the hard work of Markus Veranen
+<mailto:markus.veranen@gmail.com>
 
 ** Changes and New Features
   - Support for PIM-SSM and IGMPv3.  By Markus Veranen
-  - IGMPv3 is now default, use =phyint ifname igmpv2= for old behavior
+  - IGMPv3 is now default, use =phyint ifname igmpv2= for old behaviour
   - Default IGMP query interval has changed from 125 sec to 12 sec
 
     In =pimd.conf: igmp-query-interval <SEC>=
+
   - Default IGMP querier timeout has changed from 255 sec to 42 sec
 
     In =pimd.conf: igmp-querier-timeout <SEC>=
-    - Built in IGMP /robustness value/ changed from 2 to 3
+
+  - The built-in IGMP /robustness value/ changed from 2 to 3
   - Support for changing the PIM Hello interval.  By Markus Veranen
 
     In =pimd.conf: hello-interval <SEC>=
+
   - Support for multiple multicast routing tables, and running multiple
     pimd instances.  By Markus Veranen.  (Only supported on Linux atm.)
 
-Major change in the =pimd.conf= syntax, still backwards compatible with
-the old syntax.  Most of the change is to use dashes '-' instead of the
-old underscore '_' as word separators:
+** New syntax in pimd.conf
+
+The =pimd.conf= syntax has undergone a major syntax change in this
+release.  Mainly, the change is to use dashes =-= instead of underscore
+=_= as word separators.  However several settings have been renamed to
+be more familiar to commands used by major router vendors:
 
    - =bsr-candidate= replaces =cand_bootstrap_router=
    - =rp-candidate= replaces =cand_rp=
@@ -36,22 +48,29 @@ old underscore '_' as word separators:
    - =hello-interval= replaces =hello_period=
 
 Also, the =default-route-distance= replaces =default_source_preference=
-and =default-route-metric= replaces =default-source-metric=.  Actually
+and =default-route-metric= replaces =default-source-metric=.  Actually,
 the =preference= sub-option to =phyint= has also been renamed to
 =distance=.  See the README or the man page for more information on the
-metric preference and admin distance confusion.  Again, the parser is
-backwards compatible with the old syntax.
+metric preference and admin distance confusion.
+
+/*Note:* The =pimd.conf= parser remains backwards compatible with the
+old syntax!/
+
+
+** Compile Time Features
 
 The following are new features that must be enabled at compile time,
 using the =configure= script.  For details, see =./configure --help=
 
-  - Support for adding a "generationd ID" field to PIM Hello messages
-  - Allow /32 for VIFs,
-  - Allow pimd to continue running, despite encountering errors
+  - Support for adding a generation ID field to PIM Hello messages
+  - Allow pimd to continue running despite encountering errors
   - Raise max number of VIFs to 64
+  - Allow /32 for VIFs
+
 
 ** Bug Fixes
   - Fix issue #40: FTBS with =./configure --enable-scoped-acls=
+
 
 * Version 2.2.1: April 20, 2015
 ** Bug Fixes
