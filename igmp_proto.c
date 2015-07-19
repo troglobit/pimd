@@ -603,7 +603,7 @@ void accept_membership_report(uint32_t src, uint32_t dst __attribute__((unused))
 
 		rec_num_sources = ntohs(record->grec_nsrcs);
 		rec_auxdatalen = record->grec_auxwords;
-		record_size = sizeof(struct igmpv3_grec) + sizeof(__be32)*rec_num_sources + rec_auxdatalen;
+		record_size = sizeof(struct igmpv3_grec) + sizeof(uint32_t) * rec_num_sources + rec_auxdatalen;
 		if ((uint8_t *)record + record_size > report_pastend) {
 		    logit(LOG_INFO, 0, "Invalid group report %p > %p", (uint8_t *)record + record_size, report_pastend);
 		    return;

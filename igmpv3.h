@@ -46,41 +46,41 @@
 
 #ifndef IGMP_V3_REPORT_MINLEN
 struct igmpv3_query {
-    __u8 type;
-    __u8 code;
-    __be16 csum;
-    __be32 group;
+    uint8_t  type;
+    uint8_t  code;
+    uint16_t csum;
+    uint32_t group;
 #if defined(BYTE_ORDER) && (BYTE_ORDER == LITTLE_ENDIAN)
-    __u8 qrv:3,
-         suppress:1,
-         resv:4;
+    uint8_t  qrv:3,
+             suppress:1,
+             resv:4;
 #else
-    __u8 resv:4,
-         suppress:1,
-         qrv:3;
+    uint8_t  resv:4,
+	     suppress:1,
+	     qrv:3;
 #endif
-    __u8 qqic;
-    __be16 nsrcs;
-    __be32 srcs[0];
+    uint8_t  qqic;
+    uint16_t nsrcs;
+    uint32_t srcs[0];
 };
 
 struct igmpv3_grec {
-    __u8    grec_type;
-    __u8    grec_auxwords;
-    __be16  grec_nsrcs;
-   __be32  grec_mca;
-    __be32  grec_src[0];
+    uint8_t  grec_type;
+    uint8_t  grec_auxwords;
+    uint16_t grec_nsrcs;
+    uint32_t grec_mca;
+    uint32_t grec_src[0];
 };
 
 #define IGMP_GRPREC_HDRLEN		8
 #define IGMP_V3_GROUP_RECORD_MIN_SIZE	8
 
 struct igmpv3_report {
-    __u8 type;
-    __u8 resv1;
-    __be16 csum;
-    __be16 resv2;
-    __be16 ngrec;
+    uint8_t  type;
+    uint8_t  resv1;
+    uint16_t csum;
+    uint16_t resv2;
+    uint16_t ngrec;
     struct igmpv3_grec grec[0];
 };
 
