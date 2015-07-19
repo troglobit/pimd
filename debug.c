@@ -467,15 +467,15 @@ void dump_frame(char *desc, void *dump, size_t len)
 
     while (i < length) {
 	if (!(i % 16))
-	    sprintf(buf, "%03X: ", i);
+	    snprintf(buf, sizeof(buf), "%03X: ", i);
 
-	sprintf(tmp, "%02X ", data[i++]);
-	strcat(buf, tmp);
+	snprintf(tmp, sizeof(tmp), "%02X ", data[i++]);
+	strlcat(buf, tmp, sizeof(buf));
 
 	if (i > 0 && !(i % 16))
 	    logit(LOG_DEBUG, 0, "%s", buf);
 	else if (i > 0 && !(i % 8))
-	    strcat(buf, ":: ");
+	    strlcat(buf, ":: ", sizeof(buf));
     }
     logit(LOG_DEBUG, 0, "%s", buf);
 }

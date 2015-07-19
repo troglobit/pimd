@@ -84,23 +84,9 @@
 #include <netinet/ip_mroute.h>
 #endif /* __linux__ */
 
-/* If using any of the *BSD or BSD compatible C libraries */
-#if defined(HAVE_STRLCPY)
-# include <string.h>
-#endif
-#if defined(HAVE_STRTONUM)
-# include <stdlib.h>
-#endif
-#if defined(HAVE_PIDFILE)
-# if defined(OpenBSD) || defined(NetBSD)
-#  include <util.h>
-# else
-#   include <libutil.h>
-# endif
-#endif
-
-/* For platforms with none of the *BSD/OpenBSD APIs we use libite.  it
- * has other goodies we want as well, so we always include it. */
+/* If using any of the BSD distributions of UNIX the configure script
+ * links with -lutil, but on Linux we link with -lite.  All required
+ * APIs are forward declared in lite.h, so we can use it everywhere. */
 #include "libite/lite.h"
 
 #include <strings.h>
@@ -176,7 +162,10 @@ typedef void (*ihfunc_t) (int, fd_set *);
 
 /* Versions of Solaris older than 2.6 don't have routing sockets. */
 /* XXX TODO: check FreeBSD version and add all other platforms */
-#if defined(__linux__) || (defined(SunOS) && SunOS >=56) || defined (__FreeBSD__) || defined(__FreeBSD_kernel__) || defined (IRIX) || defined (__bsdi__) || defined(NetBSD) || defined(OpenBSD)
+#if defined(__linux__)    || (defined(SunOS) && SunOS >=56) || \
+    defined (IRIX)        || defined (__bsdi__)             || \
+    defined (__FreeBSD__) || defined(__FreeBSD_kernel__)    || \
+    defined(NetBSD)       || defined(OpenBSD)
 #define HAVE_ROUTING_SOCKETS	1
 #endif
 

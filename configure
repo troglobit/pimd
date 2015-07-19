@@ -190,16 +190,16 @@ done
 case $OS in
         Linux)
                 heading
-	        echo "INCLUDES      = -Iinclude" >> $CFG
-	        echo "DEFS         += -DRAW_OUTPUT_IS_RAW -DIOCTL_OK_ON_RAW_SOCKET" >> $CFG
-	        echo "EXTRA_OBJS    = libite/strlcpy.o libite/pidfile.o libite/strtonum.o" >> $CFG
+	        echo "INCLUDES     = -Iinclude" >> $CFG
+	        echo "DEFS        += -DRAW_OUTPUT_IS_RAW -DIOCTL_OK_ON_RAW_SOCKET" >> $CFG
+	        echo "EXTRA_OBJS   = libite/strlcpy.o libite/strlcat.o" >> $CFG
+	        echo "EXTRA_OBJS  += libite/pidfile.o libite/strtonum.o" >> $CFG
 	        echo "EXTRA_LIBS   =" >> $CFG
 	        ;;
 
         FreeBSD)
                 heading
 	        echo "INCLUDES     =" >> $CFG
-	        echo "DEFS        += -DHAVE_STRTONUM -DHAVE_STRLCPY" >> $CFG
 	        echo "EXTRA_OBJS   = libite/pidfile.o" >> $CFG
 	        echo "EXTRA_LIBS   =" >> $CFG
 	        ;;
@@ -207,7 +207,6 @@ case $OS in
         NetBSD)
                 heading
 	        echo "INCLUDES     =" >> $CFG
-	        echo "DEFS        += -DHAVE_STRTONUM -DHAVE_STRLCPY -DHAVE_PIDFILE" >> $CFG
 	        echo "EXTRA_OBJS   =" >> $CFG
 	        echo "EXTRA_LIBS   = -lutil" >> $CFG
 	        ;;
@@ -215,7 +214,6 @@ case $OS in
         OpenBSD)
                 heading
 	        echo "INCLUDES     =" >> $CFG
-	        echo "DEFS        += -DHAVE_STRTONUM -DHAVE_STRLCPY -DHAVE_PIDFILE" >> $CFG
 	        echo "EXTRA_OBJS   =" >> $CFG
 	        echo "EXTRA_LIBS   = -lutil" >> $CFG
 	        ;;
