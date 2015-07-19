@@ -90,7 +90,7 @@ void query_groups(struct uvif *v)
 	    datalen = 0;
 	    code = 0;
 	}
-	logit(LOG_DEBUG, 0, "query_groups: Send IGMPv%s query", datalen == 4 ? "3" : "2");
+	logit(LOG_DEBUG, 0, "query_groups: Send IGMP v%s query", datalen == 4 ? "3" : "2");
 	send_igmp(igmp_send_buf, v->uv_lcl_addr, allhosts_group,
 		  IGMP_MEMBERSHIP_QUERY,
 		  code, 0, datalen);
@@ -101,7 +101,6 @@ void query_groups(struct uvif *v)
      * active group on that vif.
      */
     for (g = v->uv_groups; g != NULL; g = g->al_next) {
-	logit(LOG_DEBUG, 0, "Sending igmp, al_pv=%d", g->al_pv);
 	if (g->al_old > TIMER_INTERVAL)
 	    g->al_old -= TIMER_INTERVAL;
 	else
@@ -156,8 +155,8 @@ void accept_membership_query(uint32_t src, uint32_t dst __attribute__((unused)),
 	    while (i && !(i & 1)) {
 		i >>= 1;
 		if (i == 1) {
-		    logit(LOG_WARNING, 0, "Received IGMPv%d query from %s on vif %d,"
-			  " but I am configured for IGMPv%d network compatibility mode",
+		    logit(LOG_WARNING, 0, "Received IGMP v%d query from %s on vif %d,"
+			  " but I am configured for IGMP v%d network compatibility mode",
 			  igmp_version,
 			  inet_fmt(src, s1, sizeof(s1)),
 			  vifi,
@@ -503,8 +502,8 @@ void accept_leave_message(uint32_t src, uint32_t dst __attribute__((unused)), ui
 		    code = 0;
 		}
 
-		logit(LOG_DEBUG, 0, "accept_leave_message: Send IGMPv%s query", datalen==4?"3":"2");
-		logit(LOG_DEBUG, 0, "Sending igmp, al_pv=%d", g->al_pv);
+		logit(LOG_DEBUG, 0, "accept_leave_message(): Sending IGMP v%s query (al_pv=%d)",
+		      datalen == 4 ? "3" : "2", g->al_pv);
 		send_igmp(igmp_send_buf, v->uv_lcl_addr, g->al_addr,
 			  IGMP_MEMBERSHIP_QUERY,
 			  code,
@@ -579,7 +578,7 @@ void accept_membership_report(uint32_t src, uint32_t dst __attribute__((unused))
 	    int num_groups, i;
 	    uint8_t *report_pastend;
 
-	    logit(LOG_DEBUG, 0, "Received IGMPv3 Membership Report from %s", inet_fmt(src, s1, sizeof(s1)));
+	    logit(LOG_DEBUG, 0, "Received IGMP v3 Membership Report from %s", inet_fmt(src, s1, sizeof(s1)));
 
 	    report_pastend = (uint8_t *)report + reportlen;
 
@@ -852,7 +851,7 @@ static void SendQuery(void *arg)
 {
     cbk_t *cbk = (cbk_t *)arg;
 
-    logit(LOG_DEBUG, 0, "SendQuery: Send IGMPv%s query", cbk->q_len == 4 ? "3" : "2");
+    logit(LOG_DEBUG, 0, "SendQuery: Send IGMP v%s query", cbk->q_len == 4 ? "3" : "2");
     send_query(&uvifs[cbk->vifi], cbk->g->al_addr, cbk->q_time);
     cbk->g->al_query = 0;
     free(cbk);

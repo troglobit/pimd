@@ -183,25 +183,6 @@ static void accept_igmp(ssize_t recvlen)
     group       = igmp->igmp_group.s_addr;
     igmpdatalen = ipdatalen - IGMP_MINLEN;
 
-    logit(LOG_DEBUG, 0, "igmp_packet length %u", recvlen);
-    logit(LOG_DEBUG, 0, "src0 %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u",
-	  (unsigned char)(*(igmp_recv_buf + 20)),
-	  (unsigned char)(*(igmp_recv_buf + 21)),
-	  (unsigned char)(*(igmp_recv_buf + 22)),
-	  (unsigned char)(*(igmp_recv_buf + 23)),
-	  (unsigned char)(*(igmp_recv_buf + 24)),
-	  (unsigned char)(*(igmp_recv_buf + 25)),
-	  (unsigned char)(*(igmp_recv_buf + 26)),
-	  (unsigned char)(*(igmp_recv_buf + 27)),
-	  (unsigned char)(*(igmp_recv_buf + 28)),
-	  (unsigned char)(*(igmp_recv_buf + 29)),
-	  (unsigned char)(*(igmp_recv_buf + 30)),
-	  (unsigned char)(*(igmp_recv_buf + 31)),
-	  (unsigned char)(*(igmp_recv_buf + 32)),
-	  (unsigned char)(*(igmp_recv_buf + 33)),
-	  (unsigned char)(*(igmp_recv_buf + 34)),
-	  (unsigned char)(*(igmp_recv_buf + 35)));
-
     if (igmpdatalen < 0) {
 	logit(LOG_INFO, 0, "Received IP data field too short (%u bytes) for IGMP, from %s",
 	      ipdatalen, inet_fmt(src, s1, sizeof(s1)));
@@ -227,13 +208,11 @@ static void accept_igmp(ssize_t recvlen)
 		logit(LOG_DEBUG, 0, "Received invalid IGMP Membership query: Max Resp Code = %d, length = %d",
 		      igmp->igmp_code, ipdatalen);
 	    }
-	    logit(LOG_DEBUG, 0, "Received IGMPv%d Membership query", igmp_version);
 	    accept_membership_query(src, dst, group, igmp->igmp_code, igmp_version);
 	    return;
 
 	case IGMP_V1_MEMBERSHIP_REPORT:
 	case IGMP_V2_MEMBERSHIP_REPORT:
-	    logit(LOG_DEBUG, 0, "Received IGMPv2 Membership Report from %s", inet_fmt(src, s1, sizeof(s1)));
 	    accept_group_report(src, dst, group, igmp->igmp_type);
 	    return;
 
@@ -243,7 +222,7 @@ static void accept_igmp(ssize_t recvlen)
 
 	case IGMP_V3_MEMBERSHIP_REPORT:
 	    if (igmpdatalen < IGMP_V3_GROUP_RECORD_MIN_SIZE) {
-		logit(LOG_DEBUG, 0, "Too short IGMPv3 Membership report: igmpdatalen(%d) < MIN(%d)", igmpdatalen, IGMP_V3_GROUP_RECORD_MIN_SIZE);
+		logit(LOG_DEBUG, 0, "Too short IGMP v3 Membership report: igmpdatalen(%d) < MIN(%d)", igmpdatalen, IGMP_V3_GROUP_RECORD_MIN_SIZE);
 		return;
 	    }
 	    accept_membership_report(src, dst, (struct igmpv3_report *)(igmp_recv_buf + iphdrlen), recvlen - iphdrlen);

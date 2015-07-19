@@ -63,11 +63,11 @@ char *packet_kind(int proto, int type, int code)
     switch (proto) {
 	case IPPROTO_IGMP:
 	    switch (type) {
-		case IGMP_MEMBERSHIP_QUERY:    return "IGMP Membership Query    ";
-		case IGMP_V1_MEMBERSHIP_REPORT:return "IGMP v1 Member Report    ";
-		case IGMP_V2_MEMBERSHIP_REPORT:return "IGMP v2 Member Report    ";
-		case IGMP_V3_MEMBERSHIP_REPORT:return "IGMP v3 Member Report    ";
-		case IGMP_V2_LEAVE_GROUP:      return "IGMP Leave message       ";
+		case IGMP_MEMBERSHIP_QUERY:     return "IGMP Membership Query    ";
+		case IGMP_V1_MEMBERSHIP_REPORT: return "IGMP v1 Membership Report";
+		case IGMP_V2_MEMBERSHIP_REPORT: return "IGMP v2 Membership Report";
+		case IGMP_V3_MEMBERSHIP_REPORT: return "IGMP v3 Membership Report";
+		case IGMP_V2_LEAVE_GROUP:       return "IGMP Leave message       ";
 		case IGMP_DVMRP:
 		    switch (code) {
 			case DVMRP_PROBE:          return "DVMRP Neighbor Probe     ";
