@@ -153,7 +153,7 @@ struct uvif {
     struct vif_filter *uv_filter;   /* Route filters on this vif	    */
     uint16_t	    uv_pim_hello_timer;/* timer for sending PIM hello msgs  */
 #ifdef PIM_HELLO_GENID
-    int             uv_pim_hello_genid; /* Random PIM Hello Generation ID   */
+    uint32_t        uv_pim_hello_genid; /* Random PIM Hello Generation ID   */
 #endif
     uint16_t	    uv_gq_timer;    /* Group Query timer        	    */
     uint16_t        uv_jp_timer;    /* The Join/Prune timer                 */

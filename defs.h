@@ -39,6 +39,10 @@
 #ifndef __PIMD_DEFS_H__
 #define __PIMD_DEFS_H__
 
+#ifndef __linux__
+# include <sys/cdefs.h>	/* Defines __BSD_VISIBLE, needed for arc4random() etc. */
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -269,12 +273,11 @@ typedef void (*ihfunc_t) (int, fd_set *);
 #define BIT_TST(X,n)		((X) & 1 << (n))
 #endif /* RSRR */
 
-#ifdef SYSV
-#define setlinebuf(s)		setvbuf((s), (NULL), (_IOLBF), 0)
-#define RANDOM()                lrand48()
+#ifndef __linux__
+#define RANDOM()                arc4random()
 #else
-#define RANDOM()                random()
-#endif /* SYSV */
+#define RANDOM()                (uint32_t)random()
+#endif
 
 /*
  * External declarations for global variables and functions.
