@@ -44,16 +44,18 @@ int curttl = 0;
 #endif
 
 /*
- * XXX: in *BSD there is only MRT_ASSERT, but in Linux there are
- * both MRT_ASSERT and MRT_PIM
+ * XXX: in Some BSD's there is only MRT_ASSERT, but in Linux there are
+ *      both MRT_ASSERT and MRT_PIM
  */
 #ifndef MRT_PIM
 #define MRT_PIM MRT_ASSERT
-#endif /* MRT_PIM */
+#endif
 
-#ifndef MRT_TABLE
-#define MRT_TABLE       (MRT_BASE+9)    /* Specify mroute table ID              */
-#endif /* MRT_TABLE */
+#ifdef __linux__ /* Currently only available on Linux  */
+# ifndef MRT_TABLE
+#  define MRT_TABLE       (MRT_BASE + 9)
+# endif
+#endif
 
 /*
  * Open/init the multicast routing in the kernel and sets the
@@ -63,11 +65,15 @@ void k_init_pim(int socket)
 {
     int v = 1;
 
+#ifdef MRT_TABLE /* Currently only available on Linux  */
     if (mrt_table_id != 0) {
         logit(LOG_INFO, 0, "Initializing multicast routing table id %u", mrt_table_id);
-        if (setsockopt(socket, IPPROTO_IP, MRT_TABLE, &mrt_table_id, sizeof(mrt_table_id)) < 0)
-            logit(LOG_ERR, errno, "Cannot set multicast routing table id. Make sure CONFIG_IP_MROUTE_MULTIPLE_TABLES=y is set in running kernel.");
+        if (setsockopt(socket, IPPROTO_IP, MRT_TABLE, &mrt_table_id, sizeof(mrt_table_id)) < 0) {
+            logit(LOG_WARNING, errno, "Cannot set multicast routing table id");
+	    logit(LOG_ERR, 0, "Make sure your kernel has CONFIG_IP_MROUTE_MULTIPLE_TABLES=y");
+	}
     }
+#endif
 
     if (setsockopt(socket, IPPROTO_IP, MRT_INIT, (char *)&v, sizeof(int)) < 0) {
 	if (errno == EADDRINUSE)
