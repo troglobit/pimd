@@ -279,10 +279,10 @@ void send_pim(char *buf, uint32_t src, uint32_t dst, int type, size_t len)
     while (sendto(pim_socket, buf, sendlen, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
 	if (errno == EINTR)
 	    continue;		/* Received signal, retry syscall. */
-	else if (errno == ENETDOWN)
+	if (errno == ENETDOWN || errno == ENODEV)
 	    check_vif_state();
-	else if (errno == EPERM)
-	    logit(LOG_WARNING, 0, "Not allowed (EPERM) to send PIM message from %s to %s, possibly firewall"
+	else if (errno == EPERM || errno == EHOSTUNREACH)
+	    logit(LOG_WARNING, 0, "Not allowed to send PIM message from %s to %s, possibly firewall"
 #ifdef __linux__
 		  ", or SELinux policy violation,"
 #endif

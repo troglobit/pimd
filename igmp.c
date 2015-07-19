@@ -308,6 +308,7 @@ static void send_ip_frame(uint32_t src, uint32_t dst, int type, int code, char *
     int setloop = 0;
     struct ip *ip;
     struct sockaddr_in sin;
+    char source[20], dest[20];
 
     /* Prepare the IP header */
     len		     += IP_IGMP_HEADER_LEN;
@@ -351,8 +352,16 @@ static void send_ip_frame(uint32_t src, uint32_t dst, int type, int code, char *
     while (sendto(igmp_socket, buf, len, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
 	if (errno == EINTR)
 	    continue;		/* Received signal, retry syscall. */
-	else if (errno == ENETDOWN || errno == ENODEV)
+	if (errno == ENETDOWN || errno == ENODEV)
 	    check_vif_state();
+	else if (errno == EPERM || errno == EHOSTUNREACH)
+	    logit(LOG_WARNING, 0, "Not allowed to send IGMP message from %s to %s, possibly firewall"
+#ifdef __linux__
+		  ", or SELinux policy violation,"
+#endif
+		  " related problem."
+		  ,
+		  inet_fmt(src, source, sizeof(source)), inet_fmt(dst, dest, sizeof(dest)));
 	else
 	    logit(log_level(IPPROTO_IGMP, type, code), errno, "Sendto to %s on %s",
 		  inet_fmt(dst, s1, sizeof(s1)), inet_fmt(src, s2, sizeof(s2)));
