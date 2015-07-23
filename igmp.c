@@ -99,7 +99,8 @@ void init_igmp(void)
     ip->ip_p   = IPPROTO_IGMP;
     ip->ip_sum = 0;			/* let kernel fill in */
 
-    /* Enable RFC2113 IP Router Alert */
+    /* Enable RFC2113 IP Router Alert.  Per spec this is required to
+     * force certain routers/switches to inspect this frame. */
     router_alert    = igmp_send_buf + sizeof(struct ip);
     router_alert[0] = IPOPT_RA;
     router_alert[1] = 4;
