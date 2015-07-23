@@ -33,7 +33,7 @@
 
 OS=`uname`
 CFG=config.mk
-TMP=`mktemp`
+TMP=`mktemp /tmp/XXXXXX`
 
 heading()
 {
