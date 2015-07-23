@@ -207,7 +207,7 @@ case $OS in
         NetBSD)
                 heading
 	        echo "INCLUDES     =" >> $CFG
-	        echo "EXTRA_OBJS   =" >> $CFG
+	        echo "EXTRA_OBJS   = libite/strtonum.o" >> $CFG
 	        echo "EXTRA_LIBS   = -lutil" >> $CFG
 	        ;;
 
