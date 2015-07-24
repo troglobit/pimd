@@ -587,12 +587,10 @@ extern void	process_kernel_call	(void);
 extern int	delete_vif_from_mrt	(vifi_t vifi);
 extern mrtentry_t *switch_shortest_path	(uint32_t source, uint32_t group);
 
-/* routesock.c */
+/* routesock.c and netlink.c */
 extern int	k_req_incoming		(uint32_t source, struct rpfctl *rpfp);
-#ifdef HAVE_ROUTING_SOCKETS
 extern int	init_routesock		(void);
 extern int	routing_socket;
-#endif /* HAVE_ROUTING_SOCKETS */
 
 /* rp.c */
 extern void	init_rp_and_bsr		(void);

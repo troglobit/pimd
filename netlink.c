@@ -8,8 +8,6 @@
  * (until proven otherwise).
  */
 
-#ifdef __linux__
-
 #include <sys/param.h>
 #include <sys/file.h>
 #include <sys/socket.h>
@@ -226,8 +224,6 @@ static int getmsg(struct rtmsg *rtm, int msglen, struct rpfctl *rpf)
 
     return TRUE;
 }
-
-#endif /* __linux__ */
 
 /**
  * Local Variables:

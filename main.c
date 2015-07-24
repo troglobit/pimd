@@ -472,9 +472,7 @@ int main(int argc, char *argv[])
     callout_init();
     init_igmp();
     init_pim();
-#ifdef HAVE_ROUTING_SOCKETS
-    init_routesock();
-#endif /* HAVE_ROUTING_SOCKETS */
+    init_routesock(); /* Both for Linux netlink and BSD routing socket */
     init_pim_mrt();
     init_timers();
 
@@ -805,9 +803,9 @@ static void restart(int i __attribute__((unused)))
 #ifndef IOCTL_OK_ON_RAW_SOCKET
     close(udp_socket);
 #endif
-#ifdef HAVE_ROUTING_SOCKETS
+
+    /* Both for Linux netlink and BSD routing socket */
     close(routing_socket);
-#endif /* HAVE_ROUTING_SOCKETS */
 
     /*
      * start processing again
@@ -815,9 +813,7 @@ static void restart(int i __attribute__((unused)))
 
     init_igmp();
     init_pim();
-#ifdef HAVE_ROUTING_SOCKETS
-    init_routesock();
-#endif /* HAVE_ROUTING_SOCKETS */
+    init_routesock(); /* Both for Linux netlink and BSD routing socket */
     init_pim_mrt();
     init_vifs();
 

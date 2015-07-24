@@ -37,7 +37,6 @@
  *
  */
 
-#ifndef __linux__	/* XXX: netlink.c is for Linux; both files will merge in the future */
 #include <sys/param.h>
 #include <sys/file.h>
 #include "defs.h"
@@ -50,6 +49,10 @@
 #include <netdb.h>
 #include <stdlib.h>
 
+/* All the BSDs have routing sockets (not Netlink), but only Linux seems
+ * to have SIOCGETRPF, which is used in the #else below ... the original
+ * authors wanted to merge routesock.c and netlink.c, but I don't know
+ * anymore. --Joachim */
 #ifdef HAVE_ROUTING_SOCKETS
 union sockunion {
     struct  sockaddr sa;
@@ -284,7 +287,7 @@ static void find_sockaddrs(struct rt_msghdr *rtm, struct sockaddr **dst, struct 
 /*
  * Returns TRUE on success, FALSE otherwise. rpfinfo contains the result.
  */
-int getmsg(struct rt_msghdr *rtm, int msglen __attribute__((unused)), struct rpfctl *rpfinfop)
+static int getmsg(struct rt_msghdr *rtm, int msglen __attribute__((unused)), struct rpfctl *rpfinfop)
 {
     struct sockaddr *dst = NULL, *gate = NULL, *mask = NULL;
     struct sockaddr_dl *ifp = NULL;
@@ -357,8 +360,13 @@ int getmsg(struct rt_msghdr *rtm, int msglen __attribute__((unused)), struct rpf
 }
 
 
-#else	/* !HAVE_ROUTING_SOCKETS */
+#else /* !HAVE_ROUTING_SOCKETS -- if we want to run on Linux without Netlink */
 
+/* API compat dummy. */
+int init_routesock(void)
+{
+    return dup(udp_socket);
+}
 
 /*
  * Return in rpfcinfo the incoming interface and the next hop router
@@ -380,9 +388,6 @@ int k_req_incoming(uint32_t source, struct rpfctl *rpfcinfo)
     return TRUE;
 }
 #endif /* HAVE_ROUTING_SOCKETS */
-#else  /* Linux */
-static int dummy __attribute__((unused));
-#endif /* !__linux__ */
 
 /**
  * Local Variables:
