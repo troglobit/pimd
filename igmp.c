@@ -301,8 +301,7 @@ static void accept_igmp(ssize_t recvlen)
 	    return;    /* TODO: implement it */
 
 	case IGMP_MTRACE:
-	    accept_mtrace(src, dst, group, (char *)(igmp+1), igmp->igmp_code,
-			  igmpdatalen);
+	    accept_mtrace(src, dst, group, (char *)(igmp+1), igmp->igmp_code, igmpdatalen);
 	    return;
 
 	default:
