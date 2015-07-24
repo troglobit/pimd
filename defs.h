@@ -203,7 +203,7 @@ typedef void (*ihfunc_t) (int, fd_set *);
 #define MINTTL			1  /* min TTL in the packets send locally */
 
 #define MAX_IP_PACKET_LEN       576
-#define MIN_IP_HEADER_LEN       20
+#define MIN_IP_HEADER_LEN       20 /* sizeof(struct ip) */
 #define IP_IGMP_HEADER_LEN      24 /* MIN + Router Alert */
 #define MAX_IP_HEADER_LEN       60
 
