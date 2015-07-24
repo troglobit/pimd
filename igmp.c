@@ -168,11 +168,19 @@ static void accept_igmp(ssize_t recvlen)
     }
 
     iphdrlen  = ip->ip_hl << 2;
+#if 0
 #ifdef HAVE_IP_HDRINCL_BSD_ORDER
+#ifdef __NetBSD__
+    ipdatalen = ip->ip_len; /* The NetBSD kernel subtracts hlen for us, unfortunately. */
+#else
     ipdatalen = ip->ip_len - iphdrlen;
+#endif
 #else
     ipdatalen = ntohs(ip->ip_len) - iphdrlen;
 #endif
+#else   /* !0 */
+    ipdatalen = recvlen - iphdrlen;
+#endif	/* O */
 
     if (iphdrlen + ipdatalen != recvlen) {
 	logit(LOG_INFO, 0, "Received packet from %s shorter (%u bytes) than hdr+data length (%u+%u)",
