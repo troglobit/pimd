@@ -52,7 +52,7 @@ static int parse_rtattr(struct rtattr *tb[], int max, struct rtattr *rta, int le
     }
 
     if (len)
-	logit(LOG_WARNING, 0, "NETLINK: Deficit in rtattr %d\n", len);
+	logit(LOG_WARNING, 0, "NETLINK: Deficit in rtattr %d", len);
 
     return 0;
 }
@@ -73,23 +73,23 @@ int init_routesock(void)
     local.nl_family = AF_NETLINK;
     local.nl_groups = 0;
     if (bind(routing_socket, (struct sockaddr *)&local, sizeof(local)) < 0) {
-	logit(LOG_ERR, errno, "netlink bind");
+	logit(LOG_ERR, errno, "Failed binding to netlink socket");
 	return -1;
     }
 
     addr_len = sizeof(local);
     if (getsockname(routing_socket, (struct sockaddr *)&local, &addr_len) < 0) {
-	logit(LOG_ERR, errno, "netlink getsockname");
+	logit(LOG_ERR, errno, "Failed netlink getsockname");
 	return -1;
     }
 
     if (addr_len != sizeof(local)) {
-	logit(LOG_ERR, 0, "netlink wrong addr len");
+	logit(LOG_ERR, 0, "Invalid netlink addr len.");
 	return -1;
     }
 
     if (local.nl_family != AF_NETLINK) {
-	logit(LOG_ERR, 0, "netlink wrong addr family");
+	logit(LOG_ERR, 0, "Invalid netlink addr family.");
 	return -1;
     }
 
@@ -129,10 +129,9 @@ int k_req_incoming(uint32_t source, struct rpfctl *rpf)
     addr.nl_groups = 0;
     addr.nl_pid = 0;
     
-    /* tracef(TRF_NETLINK, "NETLINK: ask path to %s", inet_fmt(rpf->source.s_addr, s1, sizeof(s1))); */
     if (!IN_LINK_LOCAL_RANGE(rpf->source.s_addr)) {
-	logit(LOG_DEBUG, 0, "NETLINK: ask path to %s",
-	      inet_fmt(rpf->source.s_addr, s1, sizeof(s1)));
+	IF_DEBUG(DEBUG_RPF)
+	    logit(LOG_DEBUG, 0, "NETLINK: ask path to %s", inet_fmt(rpf->source.s_addr, s1, sizeof(s1)));
     }
 
     while ((rlen = sendto(routing_socket, buf, n->nlmsg_len, 0, (struct sockaddr *)&addr, sizeof(addr))) < 0) {
@@ -172,13 +171,23 @@ int k_req_incoming(uint32_t source, struct rpfctl *rpf)
 
 static int getmsg(struct rtmsg *rtm, int msglen, struct rpfctl *rpf)
 {
+    int ifindex;
     vifi_t vifi;
     struct uvif *v;
     struct rtattr *rta[RTA_MAX + 1];
     
+    if (!rpf) {
+	logit(LOG_WARNING, 0, "Missing rpf pointer to netlink.c:getmsg()!");
+	return FALSE;
+    }
+
+    rpf->iif = NO_VIF;
+    rpf->rpfneighbor.s_addr = INADDR_ANY;
+
     if (rtm->rtm_type == RTN_LOCAL) {
-	/* tracef(TRF_NETLINK, "NETLINK: local address"); */
-	logit(LOG_DEBUG, 0, "NETLINK: local address");
+	IF_DEBUG(DEBUG_RPF)
+	    logit(LOG_DEBUG, 0, "NETLINK: local address");
+
 	if ((rpf->iif = local_address(rpf->source.s_addr)) != MAXVIFS) {
 	    rpf->rpfneighbor.s_addr = rpf->source.s_addr;
 
@@ -188,48 +197,48 @@ static int getmsg(struct rtmsg *rtm, int msglen, struct rpfctl *rpf)
 	return FALSE;
     }
     
-    rpf->rpfneighbor.s_addr = 0;
     if (rtm->rtm_type != RTN_UNICAST) {
-	/* tracef(TRF_NETLINK, "NETLINK: route type is %d", rtm->rtm_type); */
-	logit(LOG_DEBUG, 0, "NETLINK: route type is %d", rtm->rtm_type);
+	IF_DEBUG(DEBUG_RPF)
+	    logit(LOG_DEBUG, 0, "NETLINK: route type is %d", rtm->rtm_type);
 	return FALSE;
     }
     
     memset(rta, 0, sizeof(rta));
-    
     parse_rtattr(rta, RTA_MAX, RTM_RTA(rtm), msglen - sizeof(*rtm));
     
-    if (rta[RTA_OIF]) {
-	int ifindex = *(int *)RTA_DATA(rta[RTA_OIF]);
-	
-	for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
-	    if (v->uv_ifindex == ifindex)
-		break;
-	}
-
-	if (vifi >= numvifs) {
-	    logit(LOG_WARNING, 0, "NETLINK: ifindex=%d, but no vif", ifindex);
-
-	    return FALSE;
-	}
-
-	/* tracef(TRF_NETLINK, "NETLINK: vif %d, ifindex=%d", vifi, ifindex);*/
-	logit(LOG_DEBUG, 0, "NETLINK: vif %d, ifindex=%d", vifi, ifindex);
-    } else {
-	logit(LOG_WARNING, 0, "NETLINK: no interface");
+    if (!rta[RTA_OIF]) {
+	logit(LOG_WARNING, 0, "NETLINK: no outbound interface");
 	return FALSE;
     }
+
+    /* Get ifindex of outbound interface */
+    ifindex = *(int *)RTA_DATA(rta[RTA_OIF]);
+
+    for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
+	if (v->uv_ifindex == ifindex)
+	    break;
+    }
+
+    if (vifi >= numvifs) {
+	logit(LOG_WARNING, 0, "NETLINK: ifindex=%d, but no vif", ifindex);
+	return FALSE;
+    }
+
+    /* Found inbound interface in vifi */
+    rpf->iif = vifi;
+
+    IF_DEBUG(DEBUG_RPF)
+	logit(LOG_DEBUG, 0, "NETLINK: vif %d, ifindex=%d", vifi, ifindex);
 
     if (rta[RTA_GATEWAY]) {
 	uint32_t gw = *(uint32_t *)RTA_DATA(rta[RTA_GATEWAY]);
 
-	/* tracef(TRF_NETLINK, "NETLINK: gateway is %s", inet_fmt(gw, s1, sizeof(s1))); */
-	logit(LOG_DEBUG, 0, "NETLINK: gateway is %s", inet_fmt(gw, s1, sizeof(s1)));
+	IF_DEBUG(DEBUG_RPF)
+	    logit(LOG_DEBUG, 0, "NETLINK: gateway is %s", inet_fmt(gw, s1, sizeof(s1)));
 	rpf->rpfneighbor.s_addr = gw;
     } else {
 	rpf->rpfneighbor.s_addr = rpf->source.s_addr;
     }
-    rpf->iif = vifi;
 
     return TRUE;
 }
