@@ -90,7 +90,9 @@ void query_groups(struct uvif *v)
 	    datalen = 0;
 	    code = 0;
 	}
-	logit(LOG_DEBUG, 0, "query_groups: Send IGMP v%s query", datalen == 4 ? "3" : "2");
+
+	IF_DEBUG(DEBUG_IGMP)
+	    logit(LOG_DEBUG, 0, "query_groups: Send IGMP v%s query", datalen == 4 ? "3" : "2");
 	send_igmp(igmp_send_buf, v->uv_lcl_addr, allhosts_group,
 		  IGMP_MEMBERSHIP_QUERY,
 		  code, 0, datalen);
@@ -132,8 +134,7 @@ void accept_membership_query(uint32_t src, uint32_t dst __attribute__((unused)),
     /* TODO: modify for DVMRP?? */
     if ((vifi = find_vif_direct(src)) == NO_VIF) {
 	IF_DEBUG(DEBUG_IGMP)
-	    logit(LOG_INFO, 0,
-		  "ignoring group membership query from non-adjacent host %s",
+	    logit(LOG_INFO, 0, "Ignoring group membership query from non-adjacent host %s",
 		  inet_fmt(src, s1, sizeof(s1)));
 	return;
     }
@@ -276,8 +277,9 @@ void accept_group_report(uint32_t igmp_src, uint32_t ssm_src, uint32_t group, in
     inet_fmt(igmp_src, s1, sizeof(s1));
     inet_fmt(ssm_src, s2, sizeof(s2));
     inet_fmt(group, s3, sizeof(s3));
-    logit(LOG_INFO, 0, "accept_group_report igmp_src %s ssm_src %s group %s report_type %i",
-          s1, s2, s3, igmp_report_type);
+    IF_DEBUG(DEBUG_IGMP)
+	logit(LOG_DEBUG, 0, "accept_group_report(): igmp_src %s ssm_src %s group %s report_type %i",
+	      s1, s2, s3, igmp_report_type);
 
     v = &uvifs[vifi];
 
@@ -289,13 +291,16 @@ void accept_group_report(uint32_t igmp_src, uint32_t ssm_src, uint32_t group, in
 	    if (igmp_report_type == IGMP_V1_MEMBERSHIP_REPORT) {
 		g->al_old = DVMRP_OLD_AGE_THRESHOLD;
 		if (!IN_PIM_SSM_RANGE(group) && g->al_pv>1) {
-		    logit(LOG_DEBUG, 0, "Change IGMP compatibility mode to v1 for group %s", s3);
+		    IF_DEBUG(DEBUG_IGMP)
+			logit(LOG_DEBUG, 0, "Change IGMP compatibility mode to v1 for group %s", s3);
 		    g->al_pv = 1;
 		}
 	    } else if (!IN_PIM_SSM_RANGE(group) && igmp_report_type == IGMP_V2_MEMBERSHIP_REPORT) {
-		logit(LOG_DEBUG,0, "agr: al_pv=%d", g->al_pv);
-		if (g->al_pv>2) {
-		    logit(LOG_DEBUG, 0, "Change IGMP compatibility mode to v2 for group %s", s3);
+		IF_DEBUG(DEBUG_IGMP)
+		    logit(LOG_DEBUG,0, "accept_group_report(): al_pv=%d", g->al_pv);
+		if (g->al_pv > 2) {
+		    IF_DEBUG(DEBUG_IGMP)
+			logit(LOG_DEBUG, 0, "Change IGMP compatibility mode to v2 for group %s", s3);
 		    g->al_pv = 2;
 		}
 	    }
@@ -324,10 +329,13 @@ void accept_group_report(uint32_t igmp_src, uint32_t ssm_src, uint32_t group, in
 	    /* Find source */
 	    if (IN_PIM_SSM_RANGE(group)) {
 		for (s = g->al_sources; s; s = s->al_next) {
-		    logit(LOG_DEBUG, 0, "agr: Seek source %s, curr=%s", inet_fmt(ssm_src, s1, sizeof(s1)),
-			  inet_fmt(s->al_addr, s2, sizeof(s2)));
+		    IF_DEBUG(DEBUG_IGMP)
+			logit(LOG_DEBUG, 0, "accept_group_report(): Seek source %s, curr=%s",
+			      inet_fmt(ssm_src, s1, sizeof(s1)),
+			      inet_fmt(s->al_addr, s2, sizeof(s2)));
 		    if (ssm_src == s->al_addr) {
-			logit(LOG_DEBUG, 0, "agr: Source found");
+			IF_DEBUG(DEBUG_IGMP)
+			    logit(LOG_DEBUG, 0, "accept_group_report(): Source found");
 			break;
 		    }
 		}
@@ -335,20 +343,23 @@ void accept_group_report(uint32_t igmp_src, uint32_t ssm_src, uint32_t group, in
 		    /* Add new source */
 		    s = (struct listaddr *)calloc(1, sizeof(struct listaddr));
 		    if (!s) {
-			logit(LOG_ERR, 0, "Ran out of memory");    /* fatal */
+			logit(LOG_ERR, errno, "accept_group_report(): Ran out of memory");
 			return;
 		    }
 		    s->al_addr = ssm_src;
 		    s->al_next = g->al_sources;
 		    g->al_sources = s;
-		    logit(LOG_DEBUG, 0, "agr: Source %s added to g:%p", s2, g);
+
+		    IF_DEBUG(DEBUG_IGMP)
+			logit(LOG_DEBUG, 0, "accept_group_report(): Source %s added to g:%p", s2, g);
 		}
 	    }
 
 	    /* TODO: might need to add a check if I am the forwarder??? */
 	    /* if (v->uv_flags & VIFF_DR) */
 	    if (IN_PIM_SSM_RANGE(group)) {
-		logit(LOG_INFO, 0, "Add leaf (%s,%s)", s1, s3);
+		IF_DEBUG(DEBUG_IGMP)
+		    logit(LOG_INFO, 0, "Add leaf (%s,%s)", s1, s3);
 		add_leaf(vifi, ssm_src, group);
 	    } else {
 		add_leaf(vifi, INADDR_ANY_N, group);
@@ -363,17 +374,19 @@ void accept_group_report(uint32_t igmp_src, uint32_t ssm_src, uint32_t group, in
     if (!g) {
 	g = (struct listaddr *)calloc(1, sizeof(struct listaddr));
 	if (!g) {
-	    logit(LOG_ERR, 0, "Ran out of memory");    /* fatal */
+	    logit(LOG_ERR, errno, "accept_group_report(): Ran out of memory");
 	    return;
 	}
 
 	g->al_addr = group;
 	if (!IN_PIM_SSM_RANGE(group) && igmp_report_type == IGMP_V1_MEMBERSHIP_REPORT) {
 	    g->al_old = DVMRP_OLD_AGE_THRESHOLD;
-	    logit(LOG_DEBUG, 0, "Change IGMP compatibility mode to v1 for group %s", s3);
+	    IF_DEBUG(DEBUG_IGMP)
+		logit(LOG_DEBUG, 0, "Change IGMP compatibility mode to v1 for group %s", s3);
 	    g->al_pv = 1;
 	} else if (!IN_PIM_SSM_RANGE(group) && igmp_report_type == IGMP_V2_MEMBERSHIP_REPORT) {
-	    logit(LOG_DEBUG, 0, "Change IGMP compatibility mode to v2 for group %s", s3);
+	    IF_DEBUG(DEBUG_IGMP)
+		logit(LOG_DEBUG, 0, "Change IGMP compatibility mode to v2 for group %s", s3);
 	    g->al_pv = 2;
 	} else {
 	    g->al_pv = 3;
@@ -383,13 +396,14 @@ void accept_group_report(uint32_t igmp_src, uint32_t ssm_src, uint32_t group, in
 	if (IN_PIM_SSM_RANGE(group)) {
 	    s = (struct listaddr *)calloc(1, sizeof(struct listaddr));
 	    if (!s) {
-		logit(LOG_ERR, 0, "Ran out of memory");    /* fatal */
+		logit(LOG_ERR, errno, "accept_group_report(): Ran out of memory");
 		return;
 	    }
 	    s->al_addr = ssm_src;
 	    s->al_next = g->al_sources;
 	    g->al_sources = s;
-	    logit(LOG_DEBUG, 0, "agr: Source %s added to new g:%p", s2, g);
+	    IF_DEBUG(DEBUG_IGMP)
+		logit(LOG_DEBUG, 0, "accept_group_report(): Source %s added to new g:%p", s2, g);
 	}
 
 	/** set a timer for expiration **/
@@ -410,10 +424,12 @@ void accept_group_report(uint32_t igmp_src, uint32_t ssm_src, uint32_t group, in
 	/* TODO: might need to add a check if I am the forwarder??? */
 	/* if (v->uv_flags & VIFF_DR) */
 	if (IN_PIM_SSM_RANGE(group)) {
-	    logit(LOG_INFO, 0, "SSM group order from  %s (%s,%s)", s1, s2, s3);
+	    IF_DEBUG(DEBUG_IGMP)
+		logit(LOG_INFO, 0, "SSM group order from  %s (%s,%s)", s1, s2, s3);
 	    add_leaf(vifi, ssm_src, group);
 	} else {
-	    logit(LOG_INFO, 0, "SM group order from  %s (*,%s)", s1, s3);
+	    IF_DEBUG(DEBUG_IGMP)
+		logit(LOG_INFO, 0, "SM group order from  %s (*,%s)", s1, s3);
 	    add_leaf(vifi, INADDR_ANY_N, group);
 	}
     }
@@ -432,18 +448,17 @@ void accept_leave_message(uint32_t src, uint32_t dst __attribute__((unused)), ui
 
     /* TODO: modify for DVMRP ??? */
     if ((vifi = find_vif_direct_local(src)) == NO_VIF) {
-	IF_DEBUG(DEBUG_IGMP) {
+	IF_DEBUG(DEBUG_IGMP)
 	    logit(LOG_INFO, 0, "ignoring group leave report from non-adjacent host %s",
 		  inet_fmt(src, s1, sizeof(s1)));
-	}
 	return;
     }
 
     inet_fmt(src, s1, sizeof(s1));
     inet_fmt(dst, s2, sizeof(s2));
     inet_fmt(group, s3, sizeof(s3));
-    logit(LOG_INFO, 0, "accept_leave_message src %s dst %s group %s",
-	  s1, s2, s3);
+    IF_DEBUG(DEBUG_IGMP)
+	logit(LOG_DEBUG, 0, "accept_leave_message(): src %s dst %s group %s", s1, s2, s3);
     v = &uvifs[vifi];
 
 #if 0
@@ -502,8 +517,9 @@ void accept_leave_message(uint32_t src, uint32_t dst __attribute__((unused)), ui
 		    code = 0;
 		}
 
-		logit(LOG_DEBUG, 0, "accept_leave_message(): Sending IGMP v%s query (al_pv=%d)",
-		      datalen == 4 ? "3" : "2", g->al_pv);
+		IF_DEBUG(DEBUG_IGMP)
+		    logit(LOG_DEBUG, 0, "accept_leave_message(): Sending IGMP v%s query (al_pv=%d)",
+			  datalen == 4 ? "3" : "2", g->al_pv);
 		send_igmp(igmp_send_buf, v->uv_lcl_addr, g->al_addr,
 			  IGMP_MEMBERSHIP_QUERY,
 			  code,
@@ -530,7 +546,7 @@ static void SwitchVersion(void *arg)
     if (cbk->g->al_pv < 3)
 	cbk->g->al_pv += 1;
 
-    logit(LOG_DEBUG, 0, "Switch IGMP compatibility mode back to v%d for group %s",
+    logit(LOG_INFO, 0, "Switch IGMP compatibility mode back to v%d for group %s",
 	  cbk->g->al_pv, inet_fmt(cbk->g->al_addr, s1, sizeof(s1)));
 }
 
@@ -555,14 +571,17 @@ int accept_sources(int igmp_report_type, uint32_t igmp_src, uint32_t group, uint
 
     for (j = 0, src = sources; j < rec_num_sources; ++j, src += 4) {
         if ((src + 4) > report_pastend) {
-            logit(LOG_DEBUG, 0, "src+4>report_pastend");
+	    IF_DEBUG(DEBUG_IGMP)
+		logit(LOG_DEBUG, 0, "src +4 > report_pastend");
             return 0;
         }
 
         inet_ntop(AF_INET, src, src_str , sizeof(src_str));
-        logit(LOG_DEBUG, 0, "Add source (%s,%s)", src_str, inet_fmt(group, s1, sizeof(s1)));
+	IF_DEBUG(DEBUG_IGMP)
+	    logit(LOG_DEBUG, 0, "Add source (%s,%s)", src_str, inet_fmt(group, s1, sizeof(s1)));
         accept_group_report(igmp_src, ((struct in_addr*)src)->s_addr, group, igmp_report_type);
-        logit(LOG_DEBUG, 0, "Accepted, switch SPT (%s,%s)", src_str, inet_fmt(group, s1, sizeof(s1)));
+	IF_DEBUG(DEBUG_IGMP)
+	    logit(LOG_DEBUG, 0, "Accepted, switch SPT (%s,%s)", src_str, inet_fmt(group, s1, sizeof(s1)));
         switch_shortest_path(((struct in_addr*)src)->s_addr, group);
     }
 
@@ -574,127 +593,140 @@ int accept_sources(int igmp_report_type, uint32_t igmp_src, uint32_t group, uint
  */
 void accept_membership_report(uint32_t src, uint32_t dst __attribute__((unused)), struct igmpv3_report *report, ssize_t reportlen)
 {
-	    struct igmpv3_grec *record;
-	    int num_groups, i;
-	    uint8_t *report_pastend;
+    struct igmpv3_grec *record;
+    int num_groups, i;
+    uint8_t *report_pastend;
 
-	    logit(LOG_DEBUG, 0, "Received IGMP v3 Membership Report from %s", inet_fmt(src, s1, sizeof(s1)));
+    IF_DEBUG(DEBUG_IGMP)
+	logit(LOG_DEBUG, 0, "Received IGMP v3 Membership Report from %s", inet_fmt(src, s1, sizeof(s1)));
 
-	    report_pastend = (uint8_t *)report + reportlen;
+    report_pastend = (uint8_t *)report + reportlen;
 
-	    num_groups = ntohs(report->ngrec);
-	    if (num_groups < 0) {
-		logit(LOG_DEBUG, 0, "Invalid Membership Report: num_groups = %d", num_groups);
-		return;
-	    }
+    num_groups = ntohs(report->ngrec);
+    if (num_groups < 0) {
+	logit(LOG_INFO, 0, "Invalid Membership Report from %s: num_groups = %d",
+	      inet_fmt(src, s1, sizeof(s1)), num_groups);
+	return;
+    }
 
-	    record = &report->grec[0];
+    record = &report->grec[0];
 
-	    for (i = 0; i < num_groups; i++) {
-		struct in_addr  rec_group;
-		uint8_t        *sources;
-		int             rec_type;
-		int             rec_auxdatalen;
-		int             rec_num_sources;
-		int             j;
-		char src_str[200];
-		int record_size = 0;
+    for (i = 0; i < num_groups; i++) {
+	struct in_addr  rec_group;
+	uint8_t        *sources;
+	int             rec_type;
+	int             rec_auxdatalen;
+	int             rec_num_sources;
+	int             j;
+	char src_str[200];
+	int record_size = 0;
 
-		rec_num_sources = ntohs(record->grec_nsrcs);
-		rec_auxdatalen = record->grec_auxwords;
-		record_size = sizeof(struct igmpv3_grec) + sizeof(uint32_t) * rec_num_sources + rec_auxdatalen;
-		if ((uint8_t *)record + record_size > report_pastend) {
-		    logit(LOG_INFO, 0, "Invalid group report %p > %p", (uint8_t *)record + record_size, report_pastend);
+	rec_num_sources = ntohs(record->grec_nsrcs);
+	rec_auxdatalen = record->grec_auxwords;
+	record_size = sizeof(struct igmpv3_grec) + sizeof(uint32_t) * rec_num_sources + rec_auxdatalen;
+	if ((uint8_t *)record + record_size > report_pastend) {
+	    logit(LOG_INFO, 0, "Invalid group report %p > %p",
+		  (uint8_t *)record + record_size, report_pastend);
+	    return;
+	}
+
+	rec_type = record->grec_type;
+	rec_group.s_addr = (in_addr_t)record->grec_mca;
+	IF_DEBUG(DEBUG_IGMP)
+	    logit(LOG_DEBUG, 0, "Group Record %i: Group %s, numsources %i",
+		  i, inet_ntoa(rec_group), rec_num_sources);
+
+	sources = (u_int8_t *)record->grec_src;
+
+	switch (rec_type) {
+	    case IGMP_MODE_IS_EXCLUDE:
+		IF_DEBUG(DEBUG_IGMP)
+		    logit(LOG_DEBUG, 0, "EXCLUDE");
+		/* RFC 4604: A router SHOULD ignore a group record of
+		   type MODE_IS_EXCLUDE if it refers to an SSM destination address */
+		if (!IN_PIM_SSM_RANGE(rec_group.s_addr)) {
+		    if (rec_num_sources==0) {
+			/* RFC 5790: EXCLUDE (*,G) join can be interpreted by the router
+			   as a request to include all sources. */
+			accept_group_report(src, 0 /*dst*/, rec_group.s_addr, report->type);
+		    } else {
+			/* RFC 5790: LW-IGMPv3 does not use EXCLUDE filter-mode with a non-null source address list.*/
+			logit(LOG_INFO, 0, "Record type MODE_IS_EXCLUDE with non-null source list is currently unsupported.");
+		    }
+		}
+		break;
+
+	    case IGMP_CHANGE_TO_EXCLUDE_MODE:
+		IF_DEBUG(DEBUG_IGMP)
+		    logit(LOG_DEBUG, 0, "TO_EXCLUDE");
+		/* RFC 4604: A router SHOULD ignore a group record of
+		   type CHANGE_TO_EXCLUDE_MODE if it refers to an SSM destination address */
+		if (!IN_PIM_SSM_RANGE(rec_group.s_addr)) {
+		    if (rec_num_sources==0) {
+			/* RFC 5790: EXCLUDE (*,G) join can be interpreted by the router
+			   as a request to include all sources. */
+			accept_group_report(src, 0 /*dst*/, rec_group.s_addr, report->type);
+		    } else {
+			/* RFC 5790: LW-IGMPv3 does not use EXCLUDE filter-mode with a non-null source address list.*/
+			logit(LOG_DEBUG, 0, "Record type MODE_TO_EXCLUDE with non-null source list is currently unsupported.");
+		    }
+		}
+		break;
+
+	    case IGMP_MODE_IS_INCLUDE:
+		IF_DEBUG(DEBUG_IGMP)
+		    logit(LOG_DEBUG, 0, "MODE_IS_INCLUDE");
+		if (!accept_sources(report->type, src, rec_group.s_addr, sources, report_pastend, rec_num_sources)) {
+		    IF_DEBUG(DEBUG_IGMP)
+			logit(LOG_DEBUG, 0, "Accept sources failed.");
 		    return;
 		}
+		break;
 
-		rec_type = record->grec_type;
-		rec_group.s_addr = (in_addr_t)record->grec_mca;
-		logit(LOG_DEBUG, 0, "Group Record %i: Group %s, numsources %i",
-		      i, inet_ntoa(rec_group), rec_num_sources);
+	    case IGMP_CHANGE_TO_INCLUDE_MODE:
+		IF_DEBUG(DEBUG_IGMP)
+		    logit(LOG_DEBUG, 0, "CHANGE_TO_INCLUDE_MODE");
+		if (!accept_sources(report->type, src, rec_group.s_addr, sources, report_pastend, rec_num_sources)) {
+		    IF_DEBUG(DEBUG_IGMP)
+			logit(LOG_DEBUG, 0, "Accept sources failed.");
+		    return;
+		}
+		break;
 
-		sources = (u_int8_t *)record->grec_src;
+	    case IGMP_ALLOW_NEW_SOURCES:
+		logit(LOG_DEBUG, 0, "ALLOW_NEW_SOURCES");
+		if (!accept_sources(report->type, src, rec_group.s_addr, sources, report_pastend, rec_num_sources)) {
+		    logit(LOG_DEBUG, 0, "Accept sources failed.");
+		    return;
+		}
+		break;
 
-		switch (rec_type) {
-		    case IGMP_MODE_IS_EXCLUDE:
-			logit(LOG_DEBUG, 0, "EXCLUDE");
-			/* RFC 4604: A router SHOULD ignore a group record of
-			type MODE_IS_EXCLUDE if it refers to an SSM destination address */
-			if (!IN_PIM_SSM_RANGE(rec_group.s_addr)) {
-			    if (rec_num_sources==0) {
-				/* RFC 5790: EXCLUDE (*,G) join can be interpreted by the router
-				as a request to include all sources. */
-				accept_group_report(src, 0 /*dst*/, rec_group.s_addr, report->type);
-			    } else {
-				/* RFC 5790: LW-IGMPv3 does not use EXCLUDE filter-mode with a non-null source address list.*/
-				logit(LOG_DEBUG, 0, "Record type MODE_IS_EXCLUDE with non-null source list is not currently supported.");
-			    }
-			}
-			break;
+	    case IGMP_BLOCK_OLD_SOURCES:
+		logit(LOG_DEBUG, 0, "BLOCK_OLD_SOURCES");
+		for (j = 0; j < rec_num_sources; j++) {
+		    uint32_t *gsrc = (uint32_t *)&record->grec_src[j];
 
-		    case IGMP_CHANGE_TO_EXCLUDE_MODE:
-			logit(LOG_DEBUG, 0, "TO_EXCLUDE");
-			/* RFC 4604: A router SHOULD ignore a group record of
-			type CHANGE_TO_EXCLUDE_MODE if it refers to an SSM destination address */
-			if (!IN_PIM_SSM_RANGE(rec_group.s_addr)) {
-			    if (rec_num_sources==0) {
-				/* RFC 5790: EXCLUDE (*,G) join can be interpreted by the router
-				as a request to include all sources. */
-				accept_group_report(src, 0 /*dst*/, rec_group.s_addr, report->type);
-			    } else {
-				/* RFC 5790: LW-IGMPv3 does not use EXCLUDE filter-mode with a non-null source address list.*/
-				logit(LOG_DEBUG, 0, "Record type MODE_TO_EXCLUDE with non-null source list is not currently supported.");
-			    }
-			}
-			break;
+		    if ((uint8_t *)gsrc > report_pastend) {
+			logit(LOG_INFO, 0, "Invalid group record");
+			return;
+		    }
 
-		    case IGMP_MODE_IS_INCLUDE:
-			logit(LOG_DEBUG, 0, "MODE_IS_INCLUDE");
-			if (!accept_sources(report->type, src, rec_group.s_addr, sources, report_pastend, rec_num_sources)) {
-			    logit(LOG_DEBUG, 0, "Accept sources failed.");
-			    return;
-			}
-			break;
+		    inet_ntop(AF_INET, gsrc, src_str , sizeof(src_str));
+		    IF_DEBUG(DEBUG_IGMP)
+			logit(LOG_DEBUG, 0, "Remove source[%d] (%s,%s)", j, src_str, inet_ntoa(rec_group));
+		    accept_leave_message(src, *gsrc, rec_group.s_addr);
+		    IF_DEBUG(DEBUG_IGMP)
+			logit(LOG_DEBUG, 0, "Accepted");
+		}
+		break;
 
-		    case IGMP_CHANGE_TO_INCLUDE_MODE:
-			logit(LOG_DEBUG, 0, "CHANGE_TO_INCLUDE_MODE");
-			if (!accept_sources(report->type, src, rec_group.s_addr, sources, report_pastend, rec_num_sources)) {
-			    logit(LOG_DEBUG, 0, "Accept sources failed.");
-			    return;
-			}
-			break;
+	    default:
+		//  RFC3376: Unrecognized Record Type values MUST be silently ignored.
+		break;
+	}
 
-		    case IGMP_ALLOW_NEW_SOURCES:
-			logit(LOG_DEBUG, 0, "ALLOW_NEW_SOURCES");
-			if (!accept_sources(report->type, src, rec_group.s_addr, sources, report_pastend, rec_num_sources)) {
-			    logit(LOG_DEBUG, 0, "Accept sources failed.");
-			    return;
-			}
-			break;
-
-		    case IGMP_BLOCK_OLD_SOURCES:
-			logit(LOG_DEBUG, 0, "BLOCK_OLD_SOURCES");
-			for (j = 0; j < rec_num_sources; j++) {
-			    uint32_t *gsrc = (uint32_t *)&record->grec_src[j];
-			    if ((uint8_t *)gsrc > report_pastend) {
-				logit(LOG_INFO, 0, "Invalid group record");
-				return;
-			    }
-			    inet_ntop(AF_INET, gsrc, src_str , sizeof(src_str));
-			    logit(LOG_DEBUG, 0, "Remove source[%d] (%s,%s)", j, src_str, inet_ntoa(rec_group));
-			    accept_leave_message(src, *gsrc, rec_group.s_addr);
-			    logit(LOG_DEBUG, 0, "Accepted");
-			}
-			break;
-
-		    default:
-			//  RFC3376: Unrecognized Record Type values MUST be silently ignored.
-			break;
-		} /* switch (rec_type) */
-
-		record = (struct igmpv3_grec *)((uint8_t *)record + record_size);
-	    }
-	    return;
+	record = (struct igmpv3_grec *)((uint8_t *)record + record_size);
+    }
 }
 
 /*
@@ -720,7 +752,8 @@ static void DelVif(void *arg)
 	for (curr = g->al_sources; curr; prev = curr, curr = curr->al_next) {
 	    inet_fmt(cbk->source, s1, sizeof(s1));
 	    inet_fmt(curr->al_addr, s2, sizeof(s2));
-	    logit(LOG_DEBUG, 0, "DelVif: Seek source %s, curr=%s (%p)", s1, s2, curr);
+	    IF_DEBUG(DEBUG_IGMP)
+		logit(LOG_DEBUG, 0, "DelVif: Seek source %s, curr=%s (%p)", s1, s2, curr);
 
 	    if (curr->al_addr == cbk->source) {
 		if (!prev)
@@ -733,10 +766,12 @@ static void DelVif(void *arg)
 	    }
 	}
 
-	logit(LOG_DEBUG, 0, "DelVif: %s sources left", g->al_sources ? "Still" : "No");
+	IF_DEBUG(DEBUG_IGMP)
+	    logit(LOG_DEBUG, 0, "DelVif: %s sources left", g->al_sources ? "Still" : "No");
 	if (g->al_sources) {
-	    logit(LOG_DEBUG, 0, "DelVif: Not last source, g->al_sources --> %s",
-		  inet_fmt(g->al_sources->al_addr, s1, sizeof(s1)));
+	    IF_DEBUG(DEBUG_IGMP)
+		logit(LOG_DEBUG, 0, "DelVif: Not last source, g->al_sources --> %s",
+		      inet_fmt(g->al_sources->al_addr, s1, sizeof(s1)));
 	    delete_leaf(vifi, cbk->source, g->al_addr);
 	    free(cbk);
 
@@ -757,10 +792,12 @@ static void DelVif(void *arg)
     if (IN_PIM_SSM_RANGE(g->al_addr)) {
 	inet_fmt(g->al_addr, s1, sizeof(s1));
 	inet_fmt(cbk->source, s2, sizeof(s2));
-	logit(LOG_DEBUG, 0, "SSM range, source specific delete");
+	IF_DEBUG(DEBUG_IGMP)
+	    logit(LOG_DEBUG, 0, "SSM range, source specific delete");
 
 	/* delete (S,G) entry */
-	logit(LOG_DEBUG, 0, "DelVif: vif:%d(%s), (S=%s,G=%s)", vifi, v->uv_name, s2, s1);
+	IF_DEBUG(DEBUG_IGMP)
+	    logit(LOG_DEBUG, 0, "DelVif: vif:%d(%s), (S=%s,G=%s)", vifi, v->uv_name, s2, s1);
 	delete_leaf(vifi, cbk->source, g->al_addr);
     } else {
 	delete_leaf(vifi, INADDR_ANY_N, g->al_addr);
@@ -817,7 +854,9 @@ static int SetTimer(vifi_t vifi, struct listaddr *g, uint32_t source)
     cbk->g = g;
     cbk->source = source;
 
-    logit(LOG_DEBUG, 0, "Set delete timer for group: %s", inet_ntoa(*((struct in_addr *)&g->al_addr)));
+    IF_DEBUG(DEBUG_IGMP)
+	logit(LOG_DEBUG, 0, "Set delete timer for group: %s", inet_ntoa(*((struct in_addr *)&g->al_addr)));
+
     return timer_setTimer(g->al_timer, DelVif, cbk);
 }
 
@@ -851,7 +890,8 @@ static void SendQuery(void *arg)
 {
     cbk_t *cbk = (cbk_t *)arg;
 
-    logit(LOG_DEBUG, 0, "SendQuery: Send IGMP v%s query", cbk->q_len == 4 ? "3" : "2");
+    IF_DEBUG(DEBUG_IGMP)
+	logit(LOG_DEBUG, 0, "SendQuery: Send IGMP v%s query", cbk->q_len == 4 ? "3" : "2");
     send_query(&uvifs[cbk->vifi], cbk->g->al_addr, cbk->q_time);
     cbk->g->al_query = 0;
     free(cbk);

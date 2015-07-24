@@ -147,7 +147,7 @@ static void accept_igmp(ssize_t recvlen)
     int igmp_version = 3;
 
     if (recvlen < (ssize_t)sizeof(struct ip)) {
-	logit(LOG_INFO, 0, "Received IGMP packet too short (%u bytes) for IP header", recvlen);
+	logit(LOG_WARNING, 0, "Received IGMP packet too short (%u bytes) for IP header", recvlen);
 	return;
     }
 
@@ -183,7 +183,7 @@ static void accept_igmp(ssize_t recvlen)
 #endif	/* O */
 
     if (iphdrlen + ipdatalen != recvlen) {
-	logit(LOG_INFO, 0, "Received packet from %s shorter (%u bytes) than hdr+data length (%u+%u)",
+	logit(LOG_WARNING, 0, "Received packet from %s shorter (%u bytes) than hdr+data length (%u+%u)",
 	    inet_fmt(src, s1, sizeof(s1)), recvlen, iphdrlen, ipdatalen);
 	return;
     }
@@ -193,15 +193,15 @@ static void accept_igmp(ssize_t recvlen)
     igmpdatalen = ipdatalen - IGMP_MINLEN;
 
     if (igmpdatalen < 0) {
-	logit(LOG_INFO, 0, "Received IP data field too short (%u bytes) for IGMP, from %s",
+	logit(LOG_WARNING, 0, "Received IP data field too short (%u bytes) for IGMP, from %s",
 	      ipdatalen, inet_fmt(src, s1, sizeof(s1)));
 	return;
     }
 
-    /* TODO: rate-limit logging? */
-    logit(LOG_INFO, 0, "Received %s from %s to %s",
-	  packet_kind(IPPROTO_IGMP, igmp->igmp_type, igmp->igmp_code),
-	  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
+    IF_DEBUG(DEBUG_IGMP)
+	logit(LOG_DEBUG, 0, "Received %s from %s to %s",
+	      packet_kind(IPPROTO_IGMP, igmp->igmp_type, igmp->igmp_code),
+	      inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
 
     switch (igmp->igmp_type) {
 	case IGMP_MEMBERSHIP_QUERY:
@@ -351,11 +351,11 @@ static void send_ip_frame(uint32_t src, uint32_t dst, int type, int code, char *
     sin.sin_len = sizeof(sin);
 #endif
 
-    /* Todo: rate-limit logging? */
-    logit(LOG_INFO, 0, "Send %s from %s to %s",
-	  packet_kind(IPPROTO_IGMP, type, code),
-	  src == INADDR_ANY_N ? "INADDR_ANY" :
-	  inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
+    IF_DEBUG(DEBUG_IGMP)
+	logit(LOG_DEBUG, 0, "Send %s from %s to %s",
+	      packet_kind(IPPROTO_IGMP, type, code),
+	      src == INADDR_ANY_N ? "INADDR_ANY" :
+	      inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
 
     while (sendto(igmp_socket, buf, len, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
 	if (errno == EINTR)
