@@ -249,7 +249,8 @@ int k_req_incoming(uint32_t source, struct rpfctl *rpfp)
     return TRUE;
 }
 
-static void find_sockaddrs(struct rt_msghdr *rtm, struct sockaddr **dst, struct sockaddr **gate, struct sockaddr **mask, struct sockaddr_dl **ifp)
+static void find_sockaddrs(struct rt_msghdr *rtm, struct sockaddr **dst, struct sockaddr **gate,
+			   struct sockaddr **mask, struct sockaddr_dl **ifp)
 {
     int i;
     char *cp = (char *)(rtm + 1);
@@ -287,7 +288,7 @@ static void find_sockaddrs(struct rt_msghdr *rtm, struct sockaddr **dst, struct 
 /*
  * Returns TRUE on success, FALSE otherwise. rpfinfo contains the result.
  */
-static int getmsg(struct rt_msghdr *rtm, int msglen __attribute__((unused)), struct rpfctl *rpfinfop)
+static int getmsg(struct rt_msghdr *rtm, int msglen __attribute__((unused)), struct rpfctl *rpf)
 {
     struct sockaddr *dst = NULL, *gate = NULL, *mask = NULL;
     struct sockaddr_dl *ifp = NULL;
@@ -295,22 +296,23 @@ static int getmsg(struct rt_msghdr *rtm, int msglen __attribute__((unused)), str
     vifi_t vifi;
     struct uvif *v;
 
-    if (rpfinfop == (struct rpfctl *)NULL)
+    if (!rpf) {
+	logit(LOG_WARNING, 0, "Missing rpf pointer to routesock.c:getmsg()!");
 	return FALSE;
+    }
+
+    rpf->iif = NO_VIF;
+    rpf->rpfneighbor.s_addr = INADDR_ANY;
 
     in = ((struct sockaddr_in *)&so_dst)->sin_addr;
-    IF_DEBUG(DEBUG_RPF) {
+    IF_DEBUG(DEBUG_RPF)
 	logit(LOG_DEBUG, 0, "route to: %s", inet_fmt(in.s_addr, s1, sizeof(s1)));
-    }
 
     find_sockaddrs(rtm, &dst, &gate, &mask, &ifp);
 
     if (!ifp) {			/* No incoming interface */
-	IF_DEBUG(DEBUG_RPF) {
-	    logit(LOG_DEBUG, 0,
-		  "No incoming interface for destination %s",
-		  inet_fmt(in.s_addr, s1, sizeof(s1)));
-	}
+	IF_DEBUG(DEBUG_RPF)
+	    logit(LOG_DEBUG, 0, "No incoming interface for destination %s", inet_fmt(in.s_addr, s1, sizeof(s1)));
 
 	return FALSE;
     }
@@ -320,19 +322,16 @@ static int getmsg(struct rt_msghdr *rtm, int msglen __attribute__((unused)), str
 
     if (dst) {
 	in = ((struct sockaddr_in *)dst)->sin_addr;
-	IF_DEBUG(DEBUG_RPF) {
-	    logit(LOG_DEBUG, 0, " destination is: %s",
-		  inet_fmt(in.s_addr, s1, sizeof(s1)));
-	}
+	IF_DEBUG(DEBUG_RPF)
+	    logit(LOG_DEBUG, 0, " destination is: %s", inet_fmt(in.s_addr, s1, sizeof(s1)));
     }
 
     if (gate && (rtm->rtm_flags & RTF_GATEWAY)) {
 	in = ((struct sockaddr_in *)gate)->sin_addr;
-	IF_DEBUG(DEBUG_RPF) {
-	    logit(LOG_DEBUG, 0, " gateway is: %s",
-		  inet_fmt(in.s_addr, s1, sizeof(s1)));
-	}
-	rpfinfop->rpfneighbor = in;
+	IF_DEBUG(DEBUG_RPF)
+	    logit(LOG_DEBUG, 0, " gateway is: %s", inet_fmt(in.s_addr, s1, sizeof(s1)));
+
+	rpf->rpfneighbor = in;
     }
 
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
@@ -342,16 +341,16 @@ static int getmsg(struct rt_msghdr *rtm, int msglen __attribute__((unused)), str
 	    break;
     }
 
-    IF_DEBUG(DEBUG_RPF) {
+    /* Found inbound interface in vifi */
+    rpf->iif = vifi;
+
+    IF_DEBUG(DEBUG_RPF)
 	logit(LOG_DEBUG, 0, " iif is %d", vifi);
-    }
-    rpfinfop->iif = vifi;
 
     if (vifi >= numvifs) {
-	IF_DEBUG(DEBUG_RPF) {
+	IF_DEBUG(DEBUG_RPF)
 	    logit(LOG_DEBUG, 0, "Invalid incoming interface for destination %s, because of invalid virtual interface",
 		  inet_fmt(in.s_addr, s1, sizeof(s1)));
-	}
 
 	return FALSE;		/* invalid iif */
     }
@@ -375,13 +374,12 @@ int init_routesock(void)
 /* TODO: check whether next hop router address is in network or host order */
 int k_req_incoming(uint32_t source, struct rpfctl *rpfcinfo)
 {
-    rpfcinfo->source.s_addr = source;
-    rpfcinfo->iif = NO_VIF;     /* just initialized, will be */
-    /* changed in kernel */
-    rpfcinfo->rpfneighbor.s_addr = INADDR_ANY;   /* initialized */
+    rpfcinfo->source.s_addr      = source;
+    rpfcinfo->iif                = NO_VIF;     /* Initialize, will be changed in kernel */
+    rpfcinfo->rpfneighbor.s_addr = INADDR_ANY; /* Initialize */
 
     if (ioctl(udp_socket, SIOCGETRPF, (char *) rpfcinfo) < 0) {
-	logit(LOG_ERR, errno, "ioctl SIOCGETRPF k_req_incoming");
+	logit(LOG_WARNING, errno, "Failed ioctl SIOCGETRPF in k_req_incoming()");
 	return FALSE;
     }
 
