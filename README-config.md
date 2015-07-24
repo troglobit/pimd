@@ -122,3 +122,8 @@ For a complete list of all available options, see `pimd.conf` and the man page.
 
 [jp]: https://github.com/troglobit/pimd/blob/master/README.config.jp
 
+<!--
+  -- Local Variables:
+  -- mode: markdown
+  -- End:
+  -->
