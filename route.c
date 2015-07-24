@@ -290,7 +290,8 @@ void add_leaf(vifi_t vifi, uint32_t source, uint32_t group)
     if (!mrt)
 	return;
 
-    logit(LOG_NOTICE, 0, "Adding vif %d for group %s", vifi, inet_fmt(group, s1, sizeof(s1)));
+    IF_DEBUG(DEBUG_MRT)
+	logit(LOG_DEBUG, 0, "Adding vif %d for group %s", vifi, inet_fmt(group, s1, sizeof(s1)));
 
     if (VIFM_ISSET(vifi, mrt->leaves))
 	return;     /* Already a leaf */
@@ -366,8 +367,9 @@ void delete_leaf(vifi_t vifi, uint32_t source, uint32_t group)
     if (!VIFM_ISSET(vifi, mrt->leaves))
 	return;      /* This interface wasn't leaf */
 
-    logit(LOG_NOTICE, 0, "Deleting vif %d for group %s", vifi,
-	  inet_fmt(group, s1, sizeof(s1)));
+    IF_DEBUG(DEBUG_MRT)
+	logit(LOG_DEBUG, 0, "Deleting vif %d for group %s", vifi,
+	      inet_fmt(group, s1, sizeof(s1)));
 
     calc_oifs(mrt, &old_oifs);
 
@@ -841,8 +843,9 @@ static void process_cache_miss(struct igmpmsg *igmpctl)
     source = mfc_source = igmpctl->im_src.s_addr;
     iif    = igmpctl->im_vif;
 
-    logit(LOG_NOTICE, 0, "Cache miss, src %s, dst %s, iif %d",
-	  inet_fmt(source, s1, sizeof(s1)), inet_fmt(group, s2, sizeof(s2)), iif);
+    IF_DEBUG(DEBUG_MRT)
+	logit(LOG_DEBUG, 0, "Cache miss, src %s, dst %s, iif %d",
+	      inet_fmt(source, s1, sizeof(s1)), inet_fmt(group, s2, sizeof(s2)), iif);
 
     /* TODO: XXX: check whether the kernel generates cache miss for the LAN scoped addresses */
     if (ntohl(group) <= INADDR_MAX_LOCAL_GROUP)
@@ -983,8 +986,9 @@ static void process_wrong_iif(struct igmpmsg *igmpctl)
     source = igmpctl->im_src.s_addr;
     iif    = igmpctl->im_vif;
 
-    logit(LOG_NOTICE, 0, "Wrong iif: src %s, dst %s, iif %d",
-	  inet_fmt(source, s1, sizeof(s1)), inet_fmt(group, s2, sizeof(s2)), iif);
+    IF_DEBUG(DEBUG_MRT)
+	logit(LOG_DEBUG, 0, "Wrong iif: src %s, dst %s, iif %d",
+	      inet_fmt(source, s1, sizeof(s1)), inet_fmt(group, s2, sizeof(s2)), iif);
 
     /* Don't create routing entries for the LAN scoped addresses */
     if (ntohl(group) <= INADDR_MAX_LOCAL_GROUP)
@@ -1042,8 +1046,9 @@ mrtentry_t *switch_shortest_path(uint32_t source, uint32_t group)
 {
     mrtentry_t *mrt;
 
-    logit(LOG_NOTICE, 0, "Switch shortest path (SPT): src %s, group %s",
-	  inet_fmt(source, s1, sizeof(s1)), inet_fmt(group, s2, sizeof(s2)));
+    IF_DEBUG(DEBUG_MRT)
+	logit(LOG_DEBUG, 0, "Switch shortest path (SPT): src %s, group %s",
+	      inet_fmt(source, s1, sizeof(s1)), inet_fmt(group, s2, sizeof(s2)));
 
     /* TODO: XXX: prepare and send immediately the (S,G) join? */
     mrt = find_route(source, group, MRTF_SG, CREATE);
