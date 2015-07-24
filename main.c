@@ -245,7 +245,8 @@ static int killshow(int signo, char *file)
 
 static int usage(void)
 {
-    size_t i, j, k;
+    size_t i;
+    char line[76] = "  ";
     struct debugname *d;
 
     fprintf(stderr, "Usage: %s [-fhlNqrv] [-c FILE] [-d [LEVEL][,LEVEL...]]\n\n", __progname);
@@ -265,31 +266,36 @@ static int usage(void)
     fprintf(stderr, "  -v, --version        Show %s version\n", __progname);
     fputs("\n", stderr);
 
-    j = 0xffffffff;
-    k = 0;
-    fputs("Valid debug levels:\n  ", stderr);
+    /* From pimd v2.3.0 we show *all* the debug levels again */
+    fputs("Valid debug levels:\n", stderr);
     for (i = 0, d = debugnames; i < ARRAY_LEN(debugnames); i++, d++) {
-	if ((j & d->level) == d->level) {
-	    if (k++) {
-		if (!(k % 5))
-		    fputs("\n  ", stderr);
-		else
-		    fputs(", ", stderr);
-	    }
-	    fputs(d->name, stderr);
-	    j &= ~d->level;
+	if (strlen(line) + strlen(d->name) + 3 >= sizeof(line)) {
+	    /* Finish this line and send to console */
+	    strlcat(line, "\n", sizeof(line));
+	    fputs(line, stderr);
+
+	    /* Prepare for next line */
+	    strlcpy(line, "  ", sizeof(line));
 	}
+
+	strlcat(line, d->name, sizeof(line));
+
+	if (i + 1 < ARRAY_LEN(debugnames))
+	    strlcat(line, ", ", sizeof(line));
     }
-    fputc('\n', stderr);
+    /* Flush remaining line. */
+    strlcat(line, "\n", sizeof(line));
+    fputs(line, stderr);
+
 
     fputs("\nValid system log levels:", stderr);
-    fputs("\n  1 - LOG_ALERT: action must be taken immediately", stderr);
-    fputs("\n  2 - LOG_CRIT: critical conditions", stderr);
-    fputs("\n  3 - LOG_ERR: error conditions", stderr);
-    fputs("\n  4 - LOG_WARNING: warning conditions", stderr);
-    fputs("\n  5 - LOG_NOTICE: normal but significant condition (DEFAULT)", stderr);
-    fputs("\n  6 - LOG_INFO: informational", stderr);
-    fputs("\n  7 - LOG_DEBUG: debug-level messages", stderr);
+    fputs("\n  1 - LOG_ALERT   : action must be taken immediately", stderr);
+    fputs("\n  2 - LOG_CRIT    : critical conditions", stderr);
+    fputs("\n  3 - LOG_ERR     : error conditions", stderr);
+    fputs("\n  4 - LOG_WARNING : warning conditions", stderr);
+    fputs("\n  5 - LOG_NOTICE  : normal but significant condition (DEFAULT)", stderr);
+    fputs("\n  6 - LOG_INFO    : informational", stderr);
+    fputs("\n  7 - LOG_DEBUG   : debug-level messages", stderr);
     fputs("\n", stderr);
 
     return 1;
