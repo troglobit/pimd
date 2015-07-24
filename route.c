@@ -217,8 +217,7 @@ int set_incoming(srcentry_t *src, int type)
 	     * We are safe! */
 	    src->upstream = nbr;
 	    IF_DEBUG(DEBUG_RPF)
-		logit(LOG_DEBUG, 0,
-		      "For src %s, iif is %d, next hop router is %s",
+		logit(LOG_DEBUG, 0, "For src %s, iif is %d, next hop router is %s",
 		      inet_fmt(src_addr, s1, sizeof(s1)), src->incoming,
 		      inet_fmt(nbr_addr, s2, sizeof(s2)));
 
@@ -229,8 +228,7 @@ int set_incoming(srcentry_t *src, int type)
     }
 
     /* TODO: control the number of messages! */
-    logit(LOG_INFO, 0,
-	  "For src %s, iif is %d, next hop router is %s: NOT A PIM ROUTER",
+    logit(LOG_INFO, 0, "For src %s, iif is %d, next hop router is %s: NOT A PIM ROUTER",
 	  inet_fmt(src_addr, s1, sizeof(s1)), src->incoming,
 	  inet_fmt(nbr_addr, s2, sizeof(s2)));
     src->upstream = NULL;
@@ -253,10 +251,9 @@ void add_leaf(vifi_t vifi, uint32_t source, uint32_t group)
 
     /* Don't create routing entries for the LAN scoped addresses */
     if (ntohl(group) <= INADDR_MAX_LOCAL_GROUP) { /* group <= 224.0.0.255? */
-	IF_DEBUG(DEBUG_IGMP) {
+	IF_DEBUG(DEBUG_IGMP)
 	    logit(LOG_DEBUG, 0, "Not creating routing entry for LAN scoped group %s",
 		  inet_fmt(group, s1, sizeof(s1)));
-	}
 	return;
     }
 
@@ -277,11 +274,8 @@ void add_leaf(vifi_t vifi, uint32_t source, uint32_t group)
      * The downside is that a last-hop router may delay the initiation
      * of the SPT switch. Sigh...
      */
-    if (IN_PIM_SSM_RANGE(group)) {
+    if (IN_PIM_SSM_RANGE(group))
 	mrt = find_route(source, group, MRTF_SG, CREATE);
-	logit(LOG_DEBUG, 0, "Find Route (%s,%s)=%p", inet_fmt(source, s1, sizeof(s1)),
-	      inet_fmt(group, s2, sizeof(s2)), mrt);
-    }
     else if (uvifs[vifi].uv_flags & VIFF_DR)
 	mrt = find_route(INADDR_ANY_N, group, MRTF_WC, CREATE);
     else
@@ -354,12 +348,10 @@ void delete_leaf(vifi_t vifi, uint32_t source, uint32_t group)
     vifbitmap_t old_oifs;
     vifbitmap_t new_leaves;
 
-    if (IN_PIM_SSM_RANGE(group)) {
-	logit(LOG_DEBUG, 0, "delete_leaf: SSM, S=%s", inet_fmt(source, s1, sizeof(s1)));
+    if (IN_PIM_SSM_RANGE(group))
 	mrt = find_route(source, group, MRTF_SG, DONT_CREATE);
-    } else {
+    else
 	mrt = find_route(INADDR_ANY_N, group, MRTF_WC, DONT_CREATE);
-    }
 
     if (!mrt)
 	return;
@@ -368,8 +360,7 @@ void delete_leaf(vifi_t vifi, uint32_t source, uint32_t group)
 	return;      /* This interface wasn't leaf */
 
     IF_DEBUG(DEBUG_MRT)
-	logit(LOG_DEBUG, 0, "Deleting vif %d for group %s", vifi,
-	      inet_fmt(group, s1, sizeof(s1)));
+	logit(LOG_DEBUG, 0, "Deleting vif %d for group %s", vifi, inet_fmt(group, s1, sizeof(s1)));
 
     calc_oifs(mrt, &old_oifs);
 
