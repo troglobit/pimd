@@ -31,8 +31,8 @@ uses explicit joins that propagate hop-by-hop from members' directly
 connected routers toward the distribution tree.
 .It
 builds a shared multicast distribution tree centered at a Rendezvous
-Point, and then builds source-specific trees for those sources whose
-data traffic warrants it.
+Point (RP), and then builds source-specific trees for those sources
+whose data traffic warrants it.
 .It
 is not dependent on a specific unicast routing protocol; and
 .It
@@ -44,8 +44,8 @@ The robustness, flexibility, and scaling properties of this architecture
 make it well suited to large heterogeneous internetworks.
 .Pp
 .Nm
-implements RFC2362, which has been obsoleted by RFC4601.  Please see the
-TODO file for more information on this.
+originally only implemented RFC2362, but since v2.3.0 is supporting more
+and more of RFC4601.
 .Sh OPTIONS
 This program follows the usual UNIX command line syntax, with long
 options starting with two dashes (`-').  The options are as follows:
@@ -199,13 +199,15 @@ Here are the different configuration settings:
 .It
 .Cm phyint
 .Cm <address | ifname>
-.Oo
-.Cm disable | enable
-.Oc
 .Bl -item -offset indent
-.Oo
-.Cm igmpv2 Ns | Ns Cm igmpv3
-.Oc
+.Op Cm disable | enable
+.Op Cm igmpv2 | igmpv3
+.br
+.Op Cm dr-priority Ar <1-4294967294>
+.br
+.Op Cm ttl-threshold Ar <1-255>
+.Op Cm distance Ar <1-255>
+.Op Cm metric Ar <1-1024>
 .br
 .Oo
 .Cm altnet Ar <network> Op Cm /<masklen> | Cm masklen <masklen>
@@ -214,10 +216,6 @@ Here are the different configuration settings:
 .Oo
 .Cm scoped Ar <network> Op Cm /<masklen> | Cm masklen <masklen>
 .Oc
-.br
-.Op Cm threshold Ar thr
-.Op Cm distance Ar <1-255>
-.Op Cm metric Ar <1-1024>
 .El
 .It
 .Cm bsr-candidate
@@ -263,11 +261,12 @@ routers.  Currently
 .Nm
 cannot obtain the admin distance and metric from the unicast routing
 protocols, so a default routing protocol distance (the RFC confusingly
-refers to this as *metric prefererence*) may be configured.  In a PIM
-Assert election, the router advertising the lowest assert preference
-will be selected as the forwarder and upstream router for the LAN.
-Setting 101 should be sufficiently high so that asserts from Cisco or
-GateD routers are prefered over poor-little pimd.
+refers to this as
+.Em metric prefererence )
+may be configured.  In a PIM Assert election, the router advertising the
+lowest assert preference will be selected as the forwarder and upstream
+router for the LAN.  Setting 101 should be sufficiently high so that
+asserts from Cisco or GateD routers are prefered over poor-little pimd.
 .Pp
 It is reccommended that distances be set such that metrics are never
 consulted.  However, default routing metrics may also be set using the
@@ -278,6 +277,10 @@ only PIM-SM data to go to this daemon; so once again, a high value is
 recommended to prevent accidental usage.  The preferred default value is
 1024.  Both defaults can be overridden per phyint, so learned routes, or
 PIM Asserts use the phyint's values.
+.Pp
+Please also note that PIM Assert elections are not the same as the DR
+election.  The PIM Assert election determines the active multicast
+forwarder, whereas the DR election determines the active PIM router.
 .Pp
 Two settings for IGMP behavior are available:
 .Cm igmp-query-interval
@@ -333,17 +336,33 @@ Force interface to use IGMPv2, or
 .Nm igmpv3 :
 Use IGMPv3, this is the default since v2.3.0.
 .It
+.Cm dr-priority Ar <1-4294967294> :
+When there are multiple PIM routers on the same LAN the DR is usually
+elected based on the highest numerical IP address.  This setting can be
+used to control the DR Priority option in PIM Hellow messages, which by
+default otherwise is 1.  When the DR Priority option is advertised by
+.Em all
+PIM routers on the same LAN the highest priority router wins the DR
+election, regardless of its IP.  If any router does
+.Em not
+advertise the DR Priority option, or the same priority is advertised by
+more than one router, the protocol falls back to using the IP address.
+.It
+.Cm ttl-threshold Ar <1-255> :
+The TTL threshold for multicast frames to be forwarded from this
+interface.  Default: 1
+.It
 .Cm distance Ar <1-255> :
 Use this to override the
 .Nm default-route-distance
-on this
+(101) on this
 .Nm phyint
 in PIM Assert elections.
 .It
 .Cm metric Ar <1-1024> :
 The cost of sending data through this interface.  Defaults to
 .Nm default-route-metric
-if not assigned.
+(1024) if not assigned.
 .It
 .Cm altnet Ar <network/len> :
 Alternative host(s)/network(s) to accept as locally attached multicast

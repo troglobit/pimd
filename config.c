@@ -451,7 +451,8 @@ static void validate_prefix_len(uint32_t *len)
  * phyint <local-addr | ifname> [disable | enable]
  *                              [igmpv2  | igmpv3]
  *                              [dr-priority <1-4294967294>]
- *                              [threshold <t>] [preference <p>] [metric <m>]
+ *                              [ttl-threshold <1-255>]
+ *                              [distance <1-255>] [metric <1-1024>]
  *                              [altnet <net-addr>/<masklen>]
  *                              [altnet <net-addr> masklen <masklen>]
  *                              [scoped <net-addr>/<masklen>]
@@ -614,7 +615,7 @@ static int parse_phyint(char *s)
 		logit(LOG_DEBUG, 0, "SCOPED %s/%x", inet_fmt(v_acl->acl_addr, s1, sizeof(s1)), v_acl->acl_mask);
 	    } /* scoped */
 
-	    if (EQUAL(w, "threshold")) {
+	    if (EQUAL(w, "ttl-threshold") || EQUAL(w, "threshold")) {
 		if (EQUAL((w = next_word(&s)), "")) {
 		    WARN("Missing threshold for phyint %s", inet_fmt(local, s1, sizeof(s1)));
 		    continue;

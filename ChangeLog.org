@@ -32,6 +32,10 @@ possible if not for the hard work of Markus Veranen
   - Support for multiple multicast routing tables, and running multiple
     pimd instances.  By Markus Veranen.  (Only supported on Linux atm.)
 
+  - Support for advertising the /DR Priority/ option in PIM Hello
+    messages.  A priority that can also be configured per =phyint=.
+    This closes the long-standing issue #5.
+
 ** New syntax in pimd.conf
 
 The =pimd.conf= syntax has undergone a major syntax change in this
@@ -50,8 +54,9 @@ be more familiar to commands used by major router vendors:
 Also, the =default-route-distance= replaces =default_source_preference=
 and =default-route-metric= replaces =default-source-metric=.  Actually,
 the =preference= sub-option to =phyint= has also been renamed to
-=distance=.  See the README or the man page for more information on the
-metric preference and admin distance confusion.
+=distance=, and the =threshold= sub-option to =ttl-threshold=.  See the
+README or the man page for more information on the metric preference and
+admin distance confusion.
 
 /*Note:* The =pimd.conf= parser remains backwards compatible with the
 old syntax!/
@@ -62,7 +67,9 @@ old syntax!/
 The following are new features that must be enabled at compile time,
 using the =configure= script.  For details, see =./configure --help=
 
-  - Support for adding a generation ID field to PIM Hello messages
+  - Support for the PIM Hello generation ID (/GenID/) option.  Still
+    relatively untested, so at the moment it must be enabled with
+    =configure --enable-pim-hello-genid= before it can be used.
   - Allow pimd to continue running despite encountering errors
   - Raise max number of VIFs to 64
   - Allow /32 for VIFs
