@@ -2,24 +2,21 @@ README
 ======
 [![Travis Status][]][Travis] [![Coverity Status][]][Coverity Scan]
 
-pimd is a lightweight, stand-alone implementation of RFC 2362, available
-under the 3-clause BSD license.  This is the restored original version
-from University of Southern California, by Ahmed Helmy, Rusty Eddy and
-Pavlin Ivanov Radoslavov.
+pimd is a lightweight, stand-alone PIM-SM/SSM multicast routing daemon
+available under the free 3-clause BSD license.  This is the restored
+original version from University of Southern California, by Ahmed Helmy,
+Rusty Eddy and Pavlin Ivanov Radoslavov.
 
-pimd is maintained at GitHub.  Use its facilities to access the source,
-report bugs, feature requests, send patches and for GIT pull requests:
-
-  http://github.com/troglobit/pimd
-
-pimd also has a homepage, mainly to distribute releases:
-
-  http://troglobit.com/pimd.html
+Today pimd is [maintained at GitHub][github].  Use its facilities to
+access the source, report bugs and feature requests, and send patches or
+pull requests.  Official release tarballs at [the homepage][homepage].
 
 pimd is primarily developed on Linux and should work as-is out of the
-box on all major distributions.  Other UNIX variants should also work,
-but are not as thoroughly tested.  For some tips and details, see the
-`configure` script.
+box on all major distributions.  Other UNIX variants (OpenBSD, NetBSD,
+and FreeBSD) should also work, but are not as thoroughly tested.  For
+some tips and details, see the `configure` script.
+
+For a summary of changes for each release, see the [ChangeLog][changes].
 
 
 Building
@@ -42,7 +39,7 @@ The Makefile supports de facto standard environment variables such as
 to `/usr` instead of the default `/usr/local`, but redirect to a binary
 package directory in `/tmp`:
 
-    VERSION=2.2.0-1 prefix=/usr DESTDIR=/tmp/pimd-2.2.0-1 make clean install
+    VERSION=2.3.0-1 prefix=/usr DESTDIR=/tmp/pimd-2.3.0-1 make clean install
 
 
 Configuration
@@ -232,6 +229,9 @@ or to watch it continually:
 In addition, pimd logs important events to the system logfile, in
 particular at startup when parsing the `pimd.conf` configuration file.
 
+[github]:          http://github.com/troglobit/pimd
+[homepage]:        http://troglobit.com/pimd.html
+[changes]:         https://github.com/troglobit/pimd/blob/dev/ChangeLog.org
 [Travis]:          https://travis-ci.org/troglobit/pimd
 [Travis Status]:   https://travis-ci.org/troglobit/pimd.png?branch=master
 [Coverity Scan]:   https://scan.coverity.com/projects/3319
