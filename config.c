@@ -641,9 +641,8 @@ static int parse_phyint(char *s)
 		    continue;
 		}
 
-		IF_DEBUG(DEBUG_ASSERT) {
+		IF_DEBUG(DEBUG_ASSERT)
 		    logit(LOG_DEBUG, 0, "Config setting default local preference on %s to %d", inet_fmt(local, s1, sizeof(s1)), n);
-		}
 
 		v->uv_local_pref = n;
 		continue;
@@ -660,9 +659,8 @@ static int parse_phyint(char *s)
 		    continue;
 		}
 
-		IF_DEBUG(DEBUG_ASSERT) {
+		IF_DEBUG(DEBUG_ASSERT)
 		    logit(LOG_DEBUG, 0, "Setting default local metric on %s to %d", inet_fmt(local, s1, sizeof(s1)), n);
-		}
 
 		v->uv_local_metric = n;
 		continue;
@@ -679,9 +677,8 @@ static int parse_phyint(char *s)
 		    continue;
 		}
 
-		IF_DEBUG(DEBUG_ASSERT) {
+		IF_DEBUG(DEBUG_PIM_HELLO)
 		    logit(LOG_DEBUG, 0, "Setting dr-priority on %s to %d", inet_fmt(local, s1, sizeof(s1)), n);
-		}
 
 		v->uv_dr_prio = n;
 		continue;

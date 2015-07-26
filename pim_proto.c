@@ -139,7 +139,9 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
      * This is a new neighbor. Create a new entry for it.
      * It must be added right after `prev_nbr`
      */
-    logit(LOG_INFO, 0, "Received PIM HELLO from new neighbor %s", inet_fmt(src, s1, sizeof(s1)));
+    IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER)
+	logit(LOG_INFO, 0, "Received PIM HELLO from new neighbor %s", inet_fmt(src, s1, sizeof(s1)));
+
     new_nbr = calloc(1, sizeof(pim_nbr_entry_t));
     if (!new_nbr)
 	logit(LOG_ERR, 0, "Ran out of memory in receive_pim_hello()");
@@ -229,6 +231,9 @@ void delete_pim_nbr(pim_nbr_entry_t *nbr_delete)
     rp_grp_entry_t *rp_grp;
     rpentry_t  *rp;
     struct uvif *v;
+
+    IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER)
+	logit(LOG_INFO, 0, "Deleting PIM neighbor %s", inet_fmt(nbr_delete->address, s1, sizeof(s1)));
 
     v = &uvifs[nbr_delete->vifi];
 
@@ -449,10 +454,10 @@ static int parse_pim_hello(char *msg, size_t len, uint32_t src, uint16_t *holdti
 
 	if (option_type == PIM_MESSAGE_HELLO_HOLDTIME) {
 	    if (PIM_MESSAGE_HELLO_HOLDTIME_LENGTH != option_length) {
-		IF_DEBUG(DEBUG_PIM_HELLO) {
+		IF_DEBUG(DEBUG_PIM_HELLO)
 		    logit(LOG_DEBUG, 0, "PIM HELLO Holdtime from %s: invalid OptionLength = %u",
 			  inet_fmt(src, s1, sizeof(s1)), option_length);
-		}
+
 		return FALSE;
 	    }
 
@@ -460,10 +465,10 @@ static int parse_pim_hello(char *msg, size_t len, uint32_t src, uint16_t *holdti
 	    holdtime_ok = TRUE;
 	} else if (option_type == PIM_MESSAGE_HELLO_DR_PRIO) {
 	    if (PIM_MESSAGE_HELLO_DR_PRIO_LENGTH != option_length) {
-		IF_DEBUG(DEBUG_PIM_HELLO) {
+		IF_DEBUG(DEBUG_PIM_HELLO)
 		    logit(LOG_DEBUG, 0, "PIM HELLO DR Priority from %s: invalid OptionLength = %u",
 			  inet_fmt(src, s1, sizeof(s1)), option_length);
-		}
+
 		return FALSE;
 	    }
 	    GET_HOSTLONG(*dr_prio, data);
@@ -483,9 +488,9 @@ static int parse_pim_hello(char *msg, size_t len, uint32_t src, uint16_t *holdti
 	option_total_length = (sizeof(pim_hello_t) + option_length);
 #endif /* BOUNDARY_32_BIT */
 
-	if (len < option_total_length) {
-	    return (FALSE);
-	}
+	if (len < option_total_length)
+	    return FALSE;
+
 	len -= option_total_length;
 	pim_hello_message += option_total_length;
     }
@@ -552,18 +557,17 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
      */
     if (mrt_table_id != 0) {
         if (!cand_rp_flag || my_cand_rp_address != reg_dst) {
-            IF_DEBUG(DEBUG_PIM_REGISTER) {
+            IF_DEBUG(DEBUG_PIM_REGISTER)
                 logit(LOG_DEBUG, 0, "PIM register: packet from %s to %s is not destined for us",
-                    inet_fmt(reg_src, s1, sizeof(s1)), inet_fmt(reg_dst, s2, sizeof(s2)));
-	        }
+		      inet_fmt(reg_src, s1, sizeof(s1)), inet_fmt(reg_dst, s2, sizeof(s2)));
+
             return FALSE;
         }
     }
 
-    IF_DEBUG(DEBUG_PIM_REGISTER) {
+    IF_DEBUG(DEBUG_PIM_REGISTER)
         logit(LOG_INFO, 0, "Received PIM register: len = %d from %s",
               len, inet_fmt(reg_src, s1, sizeof(s1)));
-    }
 
     /*
      * Message length validation.
@@ -571,10 +575,9 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
      * versions do not pefrorm the check for the NULL register messages.
      */
     if (len < sizeof(pim_header_t) + sizeof(pim_register_t) + sizeof(struct ip)) {
-	IF_DEBUG(DEBUG_PIM_REGISTER) {
+	IF_DEBUG(DEBUG_PIM_REGISTER)
 	    logit(LOG_INFO, 0, "PIM register: short packet (len = %d) from %s",
 		  len, inet_fmt(reg_src, s1, sizeof(s1)));
-	}
 
 	return FALSE;
     }
@@ -588,10 +591,9 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
      */
     if ((inet_cksum((uint16_t *)msg, sizeof(pim_header_t) + sizeof(pim_register_t)))
 	&& (inet_cksum((uint16_t *)msg, len))) {
-	IF_DEBUG(DEBUG_PIM_REGISTER) {
+	IF_DEBUG(DEBUG_PIM_REGISTER)
 	    logit(LOG_DEBUG, 0, "PIM REGISTER from DR %s: invalid PIM header checksum",
 		  inet_fmt(reg_src, s1, sizeof(s1)));
-	}
 
 	return FALSE;
     }
@@ -639,10 +641,9 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
     mrtentry = find_route(inner_src, inner_grp, MRTF_SG | MRTF_WC | MRTF_PMBR, DONT_CREATE);
     if (!mrtentry) {
 	/* No routing entry. Send REGISTER_STOP and return. */
-	IF_DEBUG(DEBUG_PIM_REGISTER) {
+	IF_DEBUG(DEBUG_PIM_REGISTER)
 	    logit(LOG_DEBUG, 0, "No routing entry for source %s and/or group %s" ,
 		  inet_fmt(inner_src, s1, sizeof(s1)), inet_fmt(inner_grp, s2, sizeof(s2)));
-	}
 
 	/* TODO: XXX: shouldn't it be inner_src=INADDR_ANY? Not in the spec. */
 	send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
@@ -652,9 +653,9 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
 
     /* Check if I am the RP for that group */
     if ((local_address(reg_dst) == NO_VIF) || !check_mrtentry_rp(mrtentry, reg_dst)) {
-	IF_DEBUG(DEBUG_PIM_REGISTER) {
+	IF_DEBUG(DEBUG_PIM_REGISTER)
 	    logit(LOG_DEBUG, 0, "Not RP in address %s", inet_fmt(reg_dst, s1, sizeof(s1)));
-	}
+
 	send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
 
 	return TRUE;
@@ -670,11 +671,12 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
 	    if (!is_null) {
 		calc_oifs(mrtentry, &oifs);
 		if (VIFM_ISEMPTY(oifs) && (mrtentry->incoming == reg_vif_num)) {
-		    IF_DEBUG(DEBUG_PIM_REGISTER) {
+		    IF_DEBUG(DEBUG_PIM_REGISTER)
 			logit(LOG_DEBUG, 0, "No output intefaces found for group %s source %s",
 			      inet_fmt(inner_grp, s1, sizeof(s1)), inet_fmt(inner_src, s2, sizeof(s2)));
-		    }
+
 		    send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
+
 		    return TRUE;
 		}
 
@@ -691,10 +693,10 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
 		 */
 		if (is_border) {
 		    if (mrtentry->pmbr_addr != reg_src) {
-			IF_DEBUG(DEBUG_PIM_REGISTER) {
+			IF_DEBUG(DEBUG_PIM_REGISTER)
 			    logit(LOG_DEBUG, 0, "pmbr_addr (%s) != reg_src (%s)",
 				  inet_fmt(mrtentry->pmbr_addr, s1, sizeof(s1)), inet_fmt(reg_src, s2, sizeof(s2)));
-			}
+
 			send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
 
 			return TRUE;
@@ -709,11 +711,12 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
 	}
 	else {
 	    /* The SPT bit is set */
-	    IF_DEBUG(DEBUG_PIM_REGISTER) {
+	    IF_DEBUG(DEBUG_PIM_REGISTER)
 		logit(LOG_DEBUG, 0, "SPT bit is set for group %s source %s",
 		      inet_fmt(inner_grp, s1, sizeof(s1)), inet_fmt(inner_src, s2, sizeof(s2)));
-	    }
+
 	    send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
+
 	    return TRUE;
 	}
     }
@@ -747,23 +750,22 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
 	/* (*,G) entry */
 	calc_oifs(mrtentry, &oifs);
 	if (VIFM_ISEMPTY(oifs)) {
-	    IF_DEBUG(DEBUG_PIM_REGISTER) {
+	    IF_DEBUG(DEBUG_PIM_REGISTER)
 		logit(LOG_DEBUG, 0, "No output intefaces found for group %s source %s (*,G)",
 		      inet_fmt(inner_grp, s1, sizeof(s1)), inet_fmt(inner_src, s2, sizeof(s2)));
-	    }
+
 	    send_pim_register_stop(reg_dst, reg_src, inner_grp, INADDR_ANY_N);
 
 	    return FALSE;
-	}
-	/* XXX: TODO: check with the spec again */
-	else {
+	} else { /* XXX: TODO: check with the spec again */
 	    if (!is_null) {
+		uint32_t mfc_source = inner_src;
+
 		/* Install cache entry in the kernel */
 		/* TODO: XXX: probably redundant here, because the
 		 * decapsulated mcast packet in the kernel will
 		 * result in CACHE_MISS
 		 */
-		uint32_t mfc_source = inner_src;
 #ifdef KERNEL_MFC_WC_G
 		if (!(mrtentry->flags & MRTF_MFC_CLONE_SG))
 		    mfc_source = INADDR_ANY_N;
@@ -784,18 +786,21 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
 	/* (*,*,RP) entry */
 	if (!is_null) {
 	    uint32_t mfc_source = inner_src;
+
 	    /* XXX: have to create either (S,G) or (*,G).
 	     * The choice below is (*,G)
 	     */
 	    mrtentry2 = find_route(INADDR_ANY_N, inner_grp, MRTF_WC, CREATE);
 	    if (!mrtentry2)
 		return FALSE;
+
 	    if (mrtentry2->flags & MRTF_NEW) {
 		/* TODO: something else? Have the feeling sth is missing */
 		mrtentry2->flags &= ~MRTF_NEW;
 		/* TODO: XXX: copy the timer from the (*,*,RP) entry? */
 		COPY_TIMER(mrtentry->timer, mrtentry2->timer);
 	    }
+
 	    /* Install cache entry in the kernel */
 #ifdef KERNEL_MFC_WC_G
 	    if (!(mrtentry->flags & MRTF_MFC_CLONE_SG))
@@ -812,11 +817,11 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
 
     /* Shoudn't happen: invalid routing entry? */
     /* XXX: TODO: shoudn't be inner_src=INADDR_ANY? Not in the spec. */
-    IF_DEBUG(DEBUG_PIM_REGISTER) {
+    IF_DEBUG(DEBUG_PIM_REGISTER)
 	logit(LOG_DEBUG, 0, "Shoudn't happen: invalid routing entry? (%s, %s, %s, %s)",
 	      inet_fmt(reg_dst, s1, sizeof(s1)), inet_fmt(reg_src, s2, sizeof(s2)),
 	      inet_fmt(inner_grp, s3, sizeof(s3)), inet_fmt(inner_src, s4, sizeof(s4)));
-    }
+
     send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
 
     return TRUE;
@@ -3119,7 +3124,9 @@ int receive_pim_bootstrap(uint32_t src, uint32_t dst, char *msg, size_t len)
 	if (incoming == NO_VIF) {
 	    /* Cannot find the receiving iif toward that DR */
 	    IF_DEBUG(DEBUG_RPF | DEBUG_PIM_BOOTSTRAP)
-		logit(LOG_DEBUG, 0, "Unicast boostrap message from %s to ignored: cannot find iif", inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
+		logit(LOG_DEBUG, 0, "Unicast boostrap message from %s to ignored: cannot find iif",
+		      inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
+
 	    return FALSE;
 	}
 	/* TODO: check the sender is directly connected and I am really the DR */
@@ -3128,9 +3135,8 @@ int receive_pim_bootstrap(uint32_t src, uint32_t dst, char *msg, size_t len)
     if (cand_rp_flag == TRUE) {
 	/* If change in the BSR address, schedule immediate Cand-RP-Adv */
 	/* TODO: use some random delay? */
-	if (new_bsr_address != curr_bsr_address) {
+	if (new_bsr_address != curr_bsr_address)
 	    SET_TIMER(pim_cand_rp_adv_timer, 0);
-	}
     }
 
     /* Forward the BSR Message first and then update the RP-set list */
@@ -3310,6 +3316,7 @@ void send_pim_bootstrap(void)
 	for (vifi = 0; vifi < numvifs; vifi++) {
 	    if (uvifs[vifi].uv_flags & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER))
 		continue;
+
 	    send_pim(pim_send_buf, uvifs[vifi].uv_lcl_addr,
 		     allpimrouters_group, PIM_BOOTSTRAP, len);
 	}
@@ -3345,8 +3352,8 @@ int receive_pim_cand_rp_adv(uint32_t src, uint32_t dst __attribute__((unused)), 
 
     /* sanity check for the minimum length */
     if (len < PIM_CAND_RP_ADV_MINLEN) {
-	logit(LOG_NOTICE, 0, "receive_pim_cand_rp_adv: cand_RP message size(%u) is too short from %s",
-	      len, inet_fmt(src, s1, sizeof(s1)));
+	logit(LOG_NOTICE, 0, "%s(): cand_RP message size(%u) is too short from %s",
+	      __func__, len, inet_fmt(src, s1, sizeof(s1)));
 
 	return FALSE;
     }
