@@ -14,7 +14,7 @@ possible if not for the hard work of Markus Veranen
 <mailto:markus.veranen@gmail.com>
 
 ** Changes and New Features
-  - Support for PIM-SSM and IGMPv3.  By Markus Veranen
+  - Support for PIM-SSM and IGMPv3, by Markus Veranen
   - IGMPv3 is now default, use =phyint ifname igmpv2= for old behaviour
   - Default IGMP query interval has changed from 125 sec to 12 sec
 
@@ -25,16 +25,19 @@ possible if not for the hard work of Markus Veranen
     In =pimd.conf: igmp-querier-timeout <SEC>=
 
   - The built-in IGMP /robustness value/ changed from 2 to 3
-  - Support for changing the PIM Hello interval.  By Markus Veranen
+  - Support for changing the PIM Hello interval, by Markus Veranen
 
     In =pimd.conf: hello-interval <SEC>=
 
   - Support for multiple multicast routing tables, and running multiple
-    pimd instances.  By Markus Veranen.  (Only supported on Linux atm.)
+    pimd instances, by Markus Veranen.  (Only supported on Linux atm.)
+  - Support for advertising, and acting upon changes to, Generation ID
+    in PIM Hello messages, by Markus Veranen
+  - Support for advertising /DR Priority/ option in PIM Hello messages.
+    If all routers on a LAN send this option this value is used in the
+    DR election rather than the IP address.  The priority is configured
+    per =phyint=.  This closes the long-standing issue #5.
 
-  - Support for advertising the /DR Priority/ option in PIM Hello
-    messages.  A priority that can also be configured per =phyint=.
-    This closes the long-standing issue #5.
 
 ** New syntax in pimd.conf
 
@@ -43,20 +46,20 @@ release.  Mainly, the change is to use dashes =-= instead of underscore
 =_= as word separators.  However several settings have been renamed to
 be more familiar to commands used by major router vendors:
 
-   - =bsr-candidate= replaces =cand_bootstrap_router=
-   - =rp-candidate= replaces =cand_rp=
-   - =group-prefix= replaces =group_prefix=
-   - =rp-address= replaces =rp_address=
-   - =switch_register_threshold= and =switch_data_threshold= have now
-     been completely deprecated in favour of =spt-threshold=
-   - =hello-interval= replaces =hello_period=
+   - =bsr-candidate= :: replaces =cand_bootstrap_router=
+   - =rp-candidate= :: replaces =cand_rp=
+   - =group-prefix= :: replaces =group_prefix=
+   - =rp-address= :: replaces =rp_address=
+   - =spt-threshold= :: replaces the two deprecated
+        =switch_register_threshold= and =switch_data_threshold= settings
+   - =hello-interval= :: replaces =hello_period=
+   - =default-route-distance= :: replaces =default_source_preference=
+   - =default-route-metric= :: replaces =default-source-metric= 
 
-Also, the =default-route-distance= replaces =default_source_preference=
-and =default-route-metric= replaces =default-source-metric=.  Actually,
-the =preference= sub-option to =phyint= has also been renamed to
-=distance=, and the =threshold= sub-option to =ttl-threshold=.  See the
-README or the man page for more information on the metric preference and
-admin distance confusion.
+Also, for =phyint= the =preference= setting has been replaced with the
+less confusing =distance= and =ttl-threshold= replaces =threshold=.  See
+the README or the man page for more information on the metric preference
+and admin distance confusion.
 
 /*Note:* The =pimd.conf= parser remains backwards compatible with the
 old syntax!/
@@ -67,17 +70,18 @@ old syntax!/
 The following are new features that must be enabled at compile time,
 using the =configure= script.  For details, see =./configure --help=
 
-  - Support for the PIM Hello generation ID (/GenID/) option.  Still
-    relatively untested, so at the moment it must be enabled with
-    =configure --enable-pim-hello-genid= before it can be used.
-  - Allow pimd to continue running despite encountering errors
-  - Raise max number of VIFs to 64
-  - Allow /32 for VIFs
+  - =--disable-exit-on-error= :: Allow pimd to continue running despite
+       encountering errors.
+  - =--with-max-vifs=MAXVIFS= :: Raise max number of VIFs to MAXVIFS.
+
+       *Note:* this requires raising MAXVIFS in the kernel as well!
+       Most kernels cannot handle >255, if this is a problem, try using
+       multiple multicast routing tables instead.
+  - =--disable-masklen-check= :: Allow tunctl VIFs with masklen 32.
 
 
 ** Bug Fixes
   - Fix issue #40: FTBS with =./configure --enable-scoped-acls=
-
 
 * Version 2.2.1: April 20, 2015
 ** Bug Fixes
