@@ -456,7 +456,7 @@ int send_pim_hello(struct uvif *v, uint16_t holdtime)
  * AND AT THE SAME TIME IGNORE ANY CACHE_MISS
  * SIGNALS FROM THE KERNEL.
  */
-int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *pim_message, size_t len)
+int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t len)
 {
     uint32_t inner_src, inner_grp;
     pim_register_t *reg;
@@ -510,8 +510,8 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *pim_message, 
      * verify the checksum over the first 8 bytes, and if fails,
      * then over the whole Register
      */
-    if ((inet_cksum((uint16_t *)pim_message, sizeof(pim_header_t) + sizeof(pim_register_t)))
-	&& (inet_cksum((uint16_t *)pim_message, len))) {
+    if ((inet_cksum((uint16_t *)msg, sizeof(pim_header_t) + sizeof(pim_register_t)))
+	&& (inet_cksum((uint16_t *)msg, len))) {
 	IF_DEBUG(DEBUG_PIM_REGISTER) {
 	    logit(LOG_DEBUG, 0, "PIM REGISTER from DR %s: invalid PIM header checksum",
 		  inet_fmt(reg_src, s1, sizeof(s1)));
@@ -521,7 +521,7 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *pim_message, 
     }
 
     /* Lookup register message flags */
-    reg = (pim_register_t *)(pim_message + sizeof(pim_header_t));
+    reg = (pim_register_t *)(msg + sizeof(pim_header_t));
     is_border = ntohl(reg->reg_flags) & PIM_MESSAGE_REGISTER_BORDER_BIT;
     is_null   = ntohl(reg->reg_flags) & PIM_MESSAGE_REGISTER_NULL_REGISTER_BIT;
 
@@ -894,7 +894,7 @@ int send_pim_null_register(mrtentry_t *mrtentry)
 /************************************************************************
  *                        PIM_REGISTER_STOP
  ************************************************************************/
-int receive_pim_register_stop(uint32_t reg_src, uint32_t reg_dst, char *pim_message, size_t len)
+int receive_pim_register_stop(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t len)
 {
     pim_encod_grp_addr_t egaddr;
     pim_encod_uni_addr_t eusaddr;
@@ -903,10 +903,10 @@ int receive_pim_register_stop(uint32_t reg_src, uint32_t reg_dst, char *pim_mess
     vifbitmap_t pruned_oifs;
 
     /* Checksum */
-    if (inet_cksum((uint16_t *)pim_message, len))
+    if (inet_cksum((uint16_t *)msg, len))
 	return FALSE;
 
-    data = (uint8_t *)(pim_message + sizeof(pim_header_t));
+    data = (uint8_t *)(msg + sizeof(pim_header_t));
     GET_EGADDR(&egaddr,  data);
     GET_EUADDR(&eusaddr, data);
 
@@ -1139,7 +1139,7 @@ void log_pim_join_prune(uint32_t src, uint8_t *data_ptr, int num_groups, char* i
 /* TODO: when parsing, check if we go beyong message size */
 /* TODO: too long, simplify it! */
 #define PIM_JOIN_PRUNE_MINLEN (4 + PIM_ENCODE_UNI_ADDR_LEN + 4)
-int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), char *pim_message, size_t len)
+int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), char *msg, size_t len)
 {
     vifi_t vifi;
     struct uvif *v;
@@ -1188,7 +1188,7 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
     }
 
     /* Checksum */
-    if (inet_cksum((uint16_t *)pim_message, len))
+    if (inet_cksum((uint16_t *)msg, len))
 	return FALSE;
 
     v = &uvifs[vifi];
@@ -1204,7 +1204,7 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
     }
 
     len -= PIM_JOIN_PRUNE_MINLEN;
-    data = (uint8_t *)(pim_message + sizeof(pim_header_t));
+    data = (uint8_t *)(msg + sizeof(pim_header_t));
     /* Get the target address */
     GET_EUADDR(&eutaddr, data);
     GET_BYTE(reserved, data);
@@ -2535,7 +2535,7 @@ static void send_jp_message(pim_nbr_entry_t *pim_nbr)
 /************************************************************************
  *                        PIM_ASSERT
  ************************************************************************/
-int receive_pim_assert(uint32_t src, uint32_t dst __attribute__((unused)), char *pim_message, size_t len)
+int receive_pim_assert(uint32_t src, uint32_t dst __attribute__((unused)), char *msg, size_t len)
 {
     vifi_t vifi;
     pim_encod_uni_addr_t eusaddr;
@@ -2566,14 +2566,14 @@ int receive_pim_assert(uint32_t src, uint32_t dst __attribute__((unused)), char 
     }
 
     /* Checksum */
-    if (inet_cksum((uint16_t *)pim_message, len))
+    if (inet_cksum((uint16_t *)msg, len))
 	return FALSE;
 
     v = &uvifs[vifi];
     if (uvifs[vifi].uv_flags & (VIFF_DOWN | VIFF_DISABLED | VIFF_NONBRS | VIFF_REGISTER))
 	return FALSE;    /* Shoudn't come on this interface */
 
-    data = (uint8_t *)(pim_message + sizeof(pim_header_t));
+    data = (uint8_t *)(msg + sizeof(pim_header_t));
 
     /* Get the group and source addresses */
     GET_EGADDR(&egaddr, data);
@@ -2903,7 +2903,7 @@ static int compare_metrics(uint32_t local_preference, uint32_t local_metric, uin
  *                        PIM_BOOTSTRAP
  ************************************************************************/
 #define PIM_BOOTSTRAP_MINLEN (PIM_MINLEN + PIM_ENCODE_UNI_ADDR_LEN)
-int receive_pim_bootstrap(uint32_t src, uint32_t dst, char *pim_message, size_t len)
+int receive_pim_bootstrap(uint32_t src, uint32_t dst, char *msg, size_t len)
 {
     uint8_t               *data;
     uint8_t               *max_data;
@@ -2933,7 +2933,7 @@ int receive_pim_bootstrap(uint32_t src, uint32_t dst, char *pim_message, size_t 
     rp_grp_entry_t       *grp_rp_next;
 
     /* Checksum */
-    if (inet_cksum((uint16_t *)pim_message, len))
+    if (inet_cksum((uint16_t *)msg, len))
 	return FALSE;
 
     if (find_vif_direct(src) == NO_VIF) {
@@ -2955,7 +2955,7 @@ int receive_pim_bootstrap(uint32_t src, uint32_t dst, char *pim_message, size_t 
 	return FALSE;
     }
 
-    data = (uint8_t *)(pim_message + sizeof(pim_header_t));
+    data = (uint8_t *)(msg + sizeof(pim_header_t));
 
     /* Parse the PIM_BOOTSTRAP message */
     GET_HOSTSHORT(new_bsr_fragment_tag, data);
@@ -3066,12 +3066,12 @@ int receive_pim_bootstrap(uint32_t src, uint32_t dst, char *pim_message, size_t 
 	if (uvifs[vifi].uv_flags & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER | VIFF_NONBRS))
 	    continue;
 
-	memcpy(pim_send_buf + sizeof(struct ip), pim_message, len);
+	memcpy(pim_send_buf + sizeof(struct ip), msg, len);
 	send_pim(pim_send_buf, uvifs[vifi].uv_lcl_addr, allpimrouters_group,
 		 PIM_BOOTSTRAP, len - sizeof(pim_header_t));
     }
 
-    max_data = (uint8_t *)pim_message + len;
+    max_data = (uint8_t *)msg + len;
     /* TODO: XXX: this 22 is HARDCODING!!! Do a bunch of definitions
      * and make it stylish!
      */
@@ -3249,7 +3249,7 @@ void send_pim_bootstrap(void)
  * ignore it.
  */
 #define PIM_CAND_RP_ADV_MINLEN (PIM_MINLEN + PIM_ENCODE_UNI_ADDR_LEN)
-int receive_pim_cand_rp_adv(uint32_t src, uint32_t dst __attribute__((unused)), char *pim_message, size_t len)
+int receive_pim_cand_rp_adv(uint32_t src, uint32_t dst __attribute__((unused)), char *msg, size_t len)
 {
     uint8_t prefix_cnt;
     uint8_t priority;
@@ -3260,7 +3260,7 @@ int receive_pim_cand_rp_adv(uint32_t src, uint32_t dst __attribute__((unused)), 
     uint32_t grp_mask;
 
     /* Checksum */
-    if (inet_cksum((uint16_t *)pim_message, len))
+    if (inet_cksum((uint16_t *)msg, len))
 	return FALSE;
 
     /* if I am not the bootstrap RP, then do not accept the message */
@@ -3275,7 +3275,7 @@ int receive_pim_cand_rp_adv(uint32_t src, uint32_t dst __attribute__((unused)), 
 	return FALSE;
     }
 
-    data_ptr = (uint8_t *)(pim_message + sizeof(pim_header_t));
+    data_ptr = (uint8_t *)(msg + sizeof(pim_header_t));
     /* Parse the CAND_RP_ADV message */
     /* TODO: XXX: check len whether it is at least the minimum */
     GET_BYTE(prefix_cnt, data_ptr);

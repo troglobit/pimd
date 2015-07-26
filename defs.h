@@ -552,23 +552,23 @@ extern void	send_pim		(char *buf, uint32_t src, uint32_t dst, int type, size_t l
 extern void	send_pim_unicast	(char *buf, int mtu, uint32_t src, uint32_t dst, int type, size_t len);
 
 /* pim_proto.c */
-extern int	receive_pim_hello	(uint32_t src, uint32_t dst, char *pim_message, size_t len);
+extern int	receive_pim_hello	(uint32_t src, uint32_t dst, char *msg, size_t len);
 extern int	send_pim_hello		(struct uvif *v, uint16_t holdtime);
 extern void	delete_pim_nbr		(pim_nbr_entry_t *nbr_delete);
-extern int	receive_pim_register	(uint32_t src, uint32_t dst, char *pim_message, size_t len);
+extern int	receive_pim_register	(uint32_t src, uint32_t dst, char *msg, size_t len);
 extern int	send_pim_null_register	(mrtentry_t *r);
-extern int	receive_pim_register_stop (uint32_t src, uint32_t dst, char *pim_message, size_t len);
+extern int	receive_pim_register_stop (uint32_t src, uint32_t dst, char *msg, size_t len);
 extern int	send_pim_register	(char *pkt);
-extern int	receive_pim_join_prune	(uint32_t src, uint32_t dst, char *pim_message, size_t len);
+extern int	receive_pim_join_prune	(uint32_t src, uint32_t dst, char *msg, size_t len);
 extern int	join_or_prune		(mrtentry_t *mrtentry_ptr, pim_nbr_entry_t *upstream_router);
-extern int	receive_pim_assert	(uint32_t src, uint32_t dst, char *pim_message, size_t len);
+extern int	receive_pim_assert	(uint32_t src, uint32_t dst, char *msg, size_t len);
 extern int	send_pim_assert		(uint32_t source, uint32_t group, vifi_t vifi, mrtentry_t *mrtentry_ptr);
 extern int	send_periodic_pim_join_prune (vifi_t vifi, pim_nbr_entry_t *pim_nbr, uint16_t holdtime);
 extern int	add_jp_entry		(pim_nbr_entry_t *pim_nbr, uint16_t holdtime, uint32_t group, uint8_t grp_msklen,
                                          uint32_t source, uint8_t src_msklen,  uint16_t addr_flags, uint8_t join_prune);
 extern void	pack_and_send_jp_message (pim_nbr_entry_t *pim_nbr);
-extern int	receive_pim_cand_rp_adv	(uint32_t src, uint32_t dst, char *pim_message, size_t len);
-extern int	receive_pim_bootstrap	(uint32_t src, uint32_t dst, char *pim_message, size_t len);
+extern int	receive_pim_cand_rp_adv	(uint32_t src, uint32_t dst, char *msg, size_t len);
+extern int	receive_pim_bootstrap	(uint32_t src, uint32_t dst, char *msg, size_t len);
 extern int	send_pim_cand_rp_adv	(void);
 extern void	send_pim_bootstrap	(void);
 
