@@ -75,6 +75,14 @@ Mini FAQ
 
   See the file [README-config.md][config] for details.
 
+* Q: I have set the `phyint dr-priority` to 10, but another router is
+  still elected as DR, why?
+
+  This happens when not all routers on a LAN advertise the *DR Priority*
+  option in PIM Hello messages.  Check with tcpdump or wireshark to find
+  the culprit.  Versions of pimd older than v2.3.0 did not support the
+  *DR Priority* option.
+
 * Q: How do I configure pimd to do FOO?
 
   See file [README-config.md][config].  If the answer is not there, send

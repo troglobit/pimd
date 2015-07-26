@@ -79,6 +79,11 @@ its name, e.g., eth0.  Some common interface settings are:
    * `disable`: Disable pimd on this interface, i.e., do not send or
      listen for PIM-SM traffic
 
+   * `dr-priority <1-4294967294>`: The DR Priority option, sent in all
+     all PIM Hello messages.  Used instead of the IP address in all DR
+     elections, if all PIM routers in LAN advertise it.  The higher, the
+     better, default 1.
+
    * `distance <1-255>`: The interface's admin distance value (also
      confusingly referred to as *metric preference* in the RFC) in PIM
      Assert messages.  Used with `metric` to elect the active multicast
@@ -169,14 +174,12 @@ the first multicast packet is received.
 Example
 -------
 
-    # This pimd.conf example assumes a router with four interfaces.
     # Interface eth0 is disabled, i.e., pimd will not run there.
-    # The default interface preference 101 has been changed on all
-    # the other interfaces.
     phyint eth0 disable
-    phyint eth1 distance 255
-    phyint eth2 distance 250
-    phyint eth3 distance 251
+    
+    # On this LAN we have a lower numeric IP than other PIM routers
+    # but we want to take care of forwarding all PIM messages.
+    phyint eth1 dr-priority 10
     
     # Partake in BSR elections on eth1
     bsr-candidate eth1
