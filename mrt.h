@@ -109,6 +109,7 @@ typedef struct pim_nbr_entry {
     struct pim_nbr_entry *next;		  /* link to next neighbor	    */
     struct pim_nbr_entry *prev;		  /* link to prev neighbor	    */
     uint32_t		  address;	  /* neighbor address		    */
+    uint32_t              dr_prio;	  /* DR priority: 0 (none), 1 (default) */
     vifi_t		  vifi;		  /* which interface		    */
     uint16_t		  timer;	  /* for timing out neighbor	    */
     build_jp_message_t *build_jp_message; /* A structure for fairly

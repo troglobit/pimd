@@ -179,6 +179,7 @@ void zero_vif(struct uvif *v, int t)
     v->uv_addrs		= (struct phaddr *)NULL;
     v->uv_filter	= (struct vif_filter *)NULL;
     RESET_TIMER(v->uv_pim_hello_timer);
+    v->uv_dr_prio       = PIM_MESSAGE_HELLO_DR_PRIO_DEFAULT;
 #ifdef PIM_HELLO_GENID
     v->uv_pim_hello_genid = 0;
 #endif

@@ -151,7 +151,8 @@ struct uvif {
     int		     uv_leaf_timer; /* time until this vif is considrd leaf */
     struct phaddr   *uv_addrs;	    /* Additional subnets on this vif       */
     struct vif_filter *uv_filter;   /* Route filters on this vif	    */
-    uint16_t	    uv_pim_hello_timer;/* timer for sending PIM hello msgs  */
+    uint16_t	    uv_pim_hello_timer; /* Timer for sending PIM hello msgs */
+    uint32_t        uv_dr_prio;     /* PIM Hello DR Priority                */
 #ifdef PIM_HELLO_GENID
     uint32_t        uv_pim_hello_genid; /* Random PIM Hello Generation ID   */
 #endif

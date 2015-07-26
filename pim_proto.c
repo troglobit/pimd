@@ -37,7 +37,8 @@
 /*
  * Local functions definitions.
  */
-static int parse_pim_hello         (char *pim_message, size_t len, uint32_t src, uint16_t *holdtime);
+static int restart_dr_election     (struct uvif *v);
+static int parse_pim_hello         (char *msg, size_t len, uint32_t src, uint16_t *holdtime, uint32_t *dr_prio);
 static int send_pim_register_stop  (uint32_t reg_src, uint32_t reg_dst, uint32_t inner_source, uint32_t inner_grp);
 static build_jp_message_t *get_jp_working_buff (void);
 static void return_jp_working_buff (pim_nbr_entry_t *pim_nbr);
@@ -56,28 +57,28 @@ int build_jp_message_pool_counter;
 /************************************************************************
  *                        PIM_HELLO
  ************************************************************************/
-int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *pim_message, size_t len)
+int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *msg, size_t len)
 {
     vifi_t vifi;
     struct uvif *v;
     pim_nbr_entry_t *nbr, *prev_nbr, *new_nbr;
     uint16_t holdtime = 0;
+    uint32_t dr_prio = 0;	/* 0: None */
     int     bsr_length;
-    uint8_t  *data __attribute__((unused));
     srcentry_t *srcentry;
     mrtentry_t *mrtentry;
 
-    /* Checksum */
-    if (inet_cksum((uint16_t *)pim_message, len))
+    if (inet_cksum((uint16_t *)msg, len))
 	return FALSE;
 
-    if ((vifi = find_vif_direct(src)) == NO_VIF) {
+    vifi = find_vif_direct(src);
+    if (vifi == NO_VIF) {
 	/* Either a local vif or somehow received PIM_HELLO from
-	 * non-directly connected router. Ignore it.
-	 */
+	 * non-directly connected router. Ignore it. */
 	if (local_address(src) == NO_VIF)
 	    logit(LOG_DEBUG, 0, "Ignoring PIM_HELLO from non-neighbor router %s",
 		  inet_fmt(src, s1, sizeof(s1)));
+
 	return FALSE;
     }
 
@@ -85,16 +86,17 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
     if (v->uv_flags & (VIFF_DOWN | VIFF_DISABLED | VIFF_REGISTER))
 	return FALSE;    /* Shoudn't come on this interface */
 
-    data = (uint8_t *)(pim_message + sizeof(pim_header_t));
-
-    /* Get the Holdtime (in seconds) from the message. Return if error. */
-    if (parse_pim_hello(pim_message, len, src, &holdtime) == FALSE)
+    /* Get the Holdtime (in seconds) and any DR priority from the message. Return if error. */
+    if (parse_pim_hello(msg, len, src, &holdtime, &dr_prio) == FALSE)
 	return FALSE;
 
-    IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER) {
+    IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER)
 	logit(LOG_DEBUG, 0, "PIM HELLO holdtime from %s is %u",
 	      inet_fmt(src, s1, sizeof(s1)), holdtime);
-    }
+
+    IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER)
+	logit(LOG_DEBUG, 0, "PIM DR PRIORITY from %s is %u",
+	      inet_fmt(src, s1, sizeof(s1)), dr_prio);
 
     for (prev_nbr = NULL, nbr = v->uv_pim_neighbors; nbr; prev_nbr = nbr, nbr = nbr->next) {
 	/* The PIM neighbors are sorted in decreasing order of the
@@ -117,22 +119,27 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
 
 		return TRUE;
 	    }
+
 	    SET_TIMER(nbr->timer, holdtime);
 
+	    if (nbr->dr_prio != dr_prio) {
+		/* New DR priority for neighbor, restart DR election */
+		nbr->dr_prio = dr_prio;
+		goto election;
+	    }
+
 	    return TRUE;
-	} else {
-	    /* No entry for this neighbor. Exit the loop and create an
-	     * entry for it. */
-	    break;
 	}
+
+	/* No entry for this neighbor. Exit loop to create an entry for it. */
+	break;
     }
 
     /*
      * This is a new neighbor. Create a new entry for it.
      * It must be added right after `prev_nbr`
      */
-    logit(LOG_INFO, 0, "Received PIM HELLO from new neighbor %s",
-	  inet_fmt(src, s1, sizeof(s1)));
+    logit(LOG_INFO, 0, "Received PIM HELLO from new neighbor %s", inet_fmt(src, s1, sizeof(s1)));
     new_nbr = calloc(1, sizeof(pim_nbr_entry_t));
     if (!new_nbr)
 	logit(LOG_ERR, 0, "Ran out of memory in receive_pim_hello()");
@@ -140,6 +147,7 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
     new_nbr->address          = src;
     new_nbr->vifi             = vifi;
     SET_TIMER(new_nbr->timer, holdtime);
+    new_nbr->dr_prio          = dr_prio;
     new_nbr->build_jp_message = NULL;
     new_nbr->next             = nbr;
     new_nbr->prev             = prev_nbr;
@@ -168,35 +176,33 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
 	 */
 	if ((bsr_length = create_pim_bootstrap_message(pim_send_buf)))
 	    send_pim_unicast(pim_send_buf, v->uv_mtu, v->uv_lcl_addr, src, PIM_BOOTSTRAP, bsr_length);
+    }
 
-	/* The router with highest network address is the elected DR */
-	if (ntohl(v->uv_lcl_addr) < ntohl(src)) {
-	    /* I was the DR, but not anymore. Remove all register_vif from
-	     * oif list for all directly connected sources (for vifi).
-	     */
-	    /* TODO: XXX: first entry is not used! */
-	    for (srcentry = srclist->next; srcentry; srcentry = srcentry->next) {
+  election:
+    if (restart_dr_election(v)) {
+	/* I was the DR, but not anymore. Remove all register_vif from
+	 * oif list for all directly connected sources (for vifi). */
 
-		/* If not directly connected source for vifi */
-		if ((srcentry->incoming != vifi) || srcentry->upstream)
-		    continue;
+	/* TODO: XXX: first entry is not used! */
+	for (srcentry = srclist->next; srcentry; srcentry = srcentry->next) {
+	    /* If not directly connected source for vifi */
+	    if ((srcentry->incoming != vifi) || srcentry->upstream)
+		continue;
 
-		for (mrtentry = srcentry->mrtlink; mrtentry; mrtentry = mrtentry->srcnext) {
+	    for (mrtentry = srcentry->mrtlink; mrtentry; mrtentry = mrtentry->srcnext) {
 
-		    if (!(mrtentry->flags & MRTF_SG))
-			continue;  /* This is not (S,G) entry */
+		if (!(mrtentry->flags & MRTF_SG))
+		    continue;  /* This is not (S,G) entry */
 
-		    /* Remove the register oif */
-		    VIFM_CLR(reg_vif_num, mrtentry->joined_oifs);
-		    change_interfaces(mrtentry,
-				      mrtentry->incoming,
-				      mrtentry->joined_oifs,
-				      mrtentry->pruned_oifs,
-				      mrtentry->leaves,
-				      mrtentry->asserted_oifs, 0);
-		}
+		/* Remove the register oif */
+		VIFM_CLR(reg_vif_num, mrtentry->joined_oifs);
+		change_interfaces(mrtentry,
+				  mrtentry->incoming,
+				  mrtentry->joined_oifs,
+				  mrtentry->pruned_oifs,
+				  mrtentry->leaves,
+				  mrtentry->asserted_oifs, 0);
 	    }
-	    v->uv_flags &= ~VIFF_DR;
 	}
     }
 
@@ -237,17 +243,8 @@ void delete_pim_nbr(pim_nbr_entry_t *nbr_delete)
 
     return_jp_working_buff(nbr_delete);
 
-    if (!v->uv_pim_neighbors) {
-	/* This was our last neighbor. */
-	v->uv_flags &= ~VIFF_PIM_NBR;
-	v->uv_flags |= (VIFF_NONBRS | VIFF_DR);
-    } else {
-	if (ntohl(v->uv_lcl_addr) > ntohl(v->uv_pim_neighbors->address))
-	    /* The first address is the new potential remote
-	     * DR address, but the local address is the winner.
-	     */
-	    v->uv_flags |= VIFF_DR;
-    }
+    /* That neighbor could've been the DR */
+    restart_dr_election(v);
 
     /* Update the source entries */
     for (src = srclist; src; src = src_next) {
@@ -366,18 +363,83 @@ void delete_pim_nbr(pim_nbr_entry_t *nbr_delete)
     free(nbr_delete);
 }
 
+/*
+ * If all PIM routers on a network segment support DR-Priority we use
+ * that to elect the DR, and use the highest IP address as the tie
+ * breaker.  If any routers does *not* support DR-Priority all routers
+ * must use the IP address to elect the DR, this for backwards compat.
+ *
+ * Returns TRUE if we lost the DR role, elected another router.
+ */
+static int restart_dr_election(struct uvif *v)
+{
+    int was_dr = 0, use_dr_prio = 1;
+    uint32_t best_dr_prio = 0;
+    pim_nbr_entry_t *nbr;
 
-/* TODO: simplify it! */
-static int parse_pim_hello(char *pim_message, size_t len, uint32_t src, uint16_t *holdtime)
+    if (v->uv_flags & VIFF_DR)
+	was_dr = 1;
+
+    if (!v->uv_pim_neighbors) {
+	/* This was our last neighbor, now we're it. */
+	v->uv_flags &= ~VIFF_PIM_NBR;
+	v->uv_flags |= (VIFF_NONBRS | VIFF_DR);
+
+	return FALSE;
+    }
+
+    /* Check if all routers on segment advertise DR Priority option
+     * in their PIM Hello messages.  Figure out highest prio. */
+    for (nbr = v->uv_pim_neighbors; nbr; nbr = nbr->next) {
+	if (nbr->dr_prio == 0) {
+	    use_dr_prio = 0;
+	    break;
+	}
+
+	if (nbr->dr_prio > best_dr_prio)
+	    best_dr_prio = nbr->dr_prio;
+    }
+
+    /*
+     * RFC4601 sec. 4.3.2
+     */
+    if (use_dr_prio) {
+	if (best_dr_prio < v->uv_dr_prio) {
+	    v->uv_flags |= VIFF_DR;
+	    return FALSE;
+	}
+
+	if (best_dr_prio == v->uv_dr_prio)
+	    goto tiebreak;
+    } else {
+      tiebreak:
+	if (ntohl(v->uv_lcl_addr) > ntohl(v->uv_pim_neighbors->address)) {
+	    /* The first address is the new potential remote
+	     * DR address, but the local address is the winner. */
+	    v->uv_flags |= VIFF_DR;
+	    return FALSE;
+	}
+    }
+
+    if (was_dr) {
+	v->uv_flags &= ~VIFF_DR;
+	return TRUE;		/* Lost election, clean up. */
+    }
+
+    return FALSE;
+}
+
+/* Simplify.  Look at pim6sd pim_hello_options in pim6_proto.c, for instance. */
+static int parse_pim_hello(char *msg, size_t len, uint32_t src, uint16_t *holdtime, uint32_t *dr_prio)
 {
     uint8_t *pim_hello_message;
     uint8_t *data;
     uint16_t option_type;
     uint16_t option_length;
-    int holdtime_received_ok = FALSE;
+    int holdtime_ok = FALSE;
     size_t option_total_length;
 
-    pim_hello_message = (uint8_t *)(pim_message + sizeof(pim_header_t));
+    pim_hello_message = (uint8_t *)(msg + sizeof(pim_header_t));
     len -= sizeof(pim_header_t);
     for ( ; len >= sizeof(pim_hello_t); ) {
 	/* Ignore any data if shorter than (pim_hello header) */
@@ -395,7 +457,16 @@ static int parse_pim_hello(char *pim_message, size_t len, uint32_t src, uint16_t
 	    }
 
 	    GET_HOSTSHORT(*holdtime, data);
-	    holdtime_received_ok = TRUE;
+	    holdtime_ok = TRUE;
+	} else if (option_type == PIM_MESSAGE_HELLO_DR_PRIO) {
+	    if (PIM_MESSAGE_HELLO_DR_PRIO_LENGTH != option_length) {
+		IF_DEBUG(DEBUG_PIM_HELLO) {
+		    logit(LOG_DEBUG, 0, "PIM HELLO DR Priority from %s: invalid OptionLength = %u",
+			  inet_fmt(src, s1, sizeof(s1)), option_length);
+		}
+		return FALSE;
+	    }
+	    GET_HOSTLONG(*dr_prio, data);
 	} else {
 	    /* Ignore any unknown options */
 	}
@@ -419,7 +490,7 @@ static int parse_pim_hello(char *pim_message, size_t len, uint32_t src, uint16_t
 	pim_hello_message += option_total_length;
     }
 
-    return holdtime_received_ok;
+    return holdtime_ok;
 }
 
 
@@ -434,6 +505,11 @@ int send_pim_hello(struct uvif *v, uint16_t holdtime)
     PUT_HOSTSHORT(PIM_MESSAGE_HELLO_HOLDTIME, data);
     PUT_HOSTSHORT(PIM_MESSAGE_HELLO_HOLDTIME_LENGTH, data);
     PUT_HOSTSHORT(holdtime, data);
+
+    PUT_HOSTSHORT(PIM_MESSAGE_HELLO_DR_PRIO, data);
+    PUT_HOSTSHORT(PIM_MESSAGE_HELLO_DR_PRIO_LENGTH, data);
+    PUT_HOSTLONG(v->uv_dr_prio, data);
+
 #ifdef PIM_HELLO_GENID
     PUT_HOSTSHORT(PIM_MESSAGE_HELLO_GENID, data);
     PUT_HOSTSHORT(PIM_MESSAGE_HELLO_GENID_LENGTH, data);

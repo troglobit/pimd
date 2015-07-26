@@ -450,6 +450,7 @@ static void validate_prefix_len(uint32_t *len)
  * Syntax:
  * phyint <local-addr | ifname> [disable | enable]
  *                              [igmpv2  | igmpv3]
+ *                              [dr-priority <1-4294967294>]
  *                              [threshold <t>] [preference <p>] [metric <m>]
  *                              [altnet <net-addr>/<masklen>]
  *                              [altnet <net-addr> masklen <masklen>]
@@ -665,7 +666,26 @@ static int parse_phyint(char *s)
 		v->uv_local_metric = n;
 		continue;
 	    }
-	} /* if not empty */
+
+	    if (EQUAL(w, "dr-priority")) {
+		if (EQUAL((w = next_word(&s)), "")) {
+		    WARN("Missing dr-priority value for phyint %s", inet_fmt(local, s1, sizeof(s1)));
+		    continue;
+		}
+
+		if (sscanf(w, "%u%c", &n, &c) != 1 || n < 1 || n > 4294967294) {
+		    WARN("Invalid dr-priority value '%s' for phyint %s", w, inet_fmt(local, s1, sizeof(s1)));
+		    continue;
+		}
+
+		IF_DEBUG(DEBUG_ASSERT) {
+		    logit(LOG_DEBUG, 0, "Setting dr-priority on %s to %d", inet_fmt(local, s1, sizeof(s1)), n);
+		}
+
+		v->uv_dr_prio = n;
+		continue;
+	    }
+	} /* while(... != "") */
 
 	break;
     }
