@@ -387,6 +387,10 @@ static int restart_dr_election(struct uvif *v)
 
     if (!v->uv_pim_neighbors) {
 	/* This was our last neighbor, now we're it. */
+	IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER)
+	    logit(LOG_DEBUG, 0, "All neighbor PIM routers on %s lost, we are the DR now.",
+		  inet_fmt(v->uv_lcl_addr, s1, sizeof(s1)));
+
 	v->uv_flags &= ~VIFF_PIM_NBR;
 	v->uv_flags |= (VIFF_NONBRS | VIFF_DR);
 
@@ -409,6 +413,10 @@ static int restart_dr_election(struct uvif *v)
      * RFC4601 sec. 4.3.2
      */
     if (use_dr_prio) {
+	IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER)
+	    logit(LOG_DEBUG, 0, "All routers in %s segment support DR Priority based DR election.",
+		  inet_fmt(v->uv_lcl_addr, s1, sizeof(s1)));
+
 	if (best_dr_prio < v->uv_dr_prio) {
 	    v->uv_flags |= VIFF_DR;
 	    return FALSE;
@@ -418,6 +426,10 @@ static int restart_dr_election(struct uvif *v)
 	    goto tiebreak;
     } else {
       tiebreak:
+	IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER)
+	    logit(LOG_DEBUG, 0, "Using fallback DR election on %s.",
+		  inet_fmt(v->uv_lcl_addr, s1, sizeof(s1)));
+
 	if (ntohl(v->uv_lcl_addr) > ntohl(v->uv_pim_neighbors->address)) {
 	    /* The first address is the new potential remote
 	     * DR address, but the local address is the winner. */
@@ -427,6 +439,10 @@ static int restart_dr_election(struct uvif *v)
     }
 
     if (was_dr) {
+	IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER)
+	    logit(LOG_INFO, 0, "We lost DR role on %s in election.",
+		  inet_fmt(v->uv_lcl_addr, s1, sizeof(s1)));
+
 	v->uv_flags &= ~VIFF_DR;
 	return TRUE;		/* Lost election, clean up. */
     }
