@@ -44,7 +44,6 @@
 #define IGMP_BLOCK_OLD_SOURCES		6	/* BLOCK_OLD */
 #endif
 
-#ifndef IGMP_V3_REPORT_MINLEN
 struct igmpv3_query {
     uint8_t  type;
     uint8_t  code;
@@ -84,9 +83,10 @@ struct igmpv3_report {
     struct igmpv3_grec grec[0];
 };
 
+#ifndef IGMP_V3_REPORT_MINLEN
 #define IGMP_V3_REPORT_MINLEN		8
 #define IGMP_V3_REPORT_MAXRECS		65535
-#endif /* IGMP_V3_REPORT_MINLEN */
+#endif
 
 #endif /* __PIMD_IGMPV3_H__ */
 
