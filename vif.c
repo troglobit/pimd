@@ -178,11 +178,11 @@ void zero_vif(struct uvif *v, int t)
     RESET_TIMER(v->uv_leaf_timer);
     v->uv_addrs		= (struct phaddr *)NULL;
     v->uv_filter	= (struct vif_filter *)NULL;
-    RESET_TIMER(v->uv_pim_hello_timer);
+
+    RESET_TIMER(v->uv_hello_timer);
     v->uv_dr_prio       = PIM_MESSAGE_HELLO_DR_PRIO_DEFAULT;
-#ifdef PIM_HELLO_GENID
-    v->uv_pim_hello_genid = 0;
-#endif
+    v->uv_genid         = 0;
+
     RESET_TIMER(v->uv_gq_timer);
     RESET_TIMER(v->uv_jp_timer);
     v->uv_pim_neighbors	= (struct pim_nbr_entry *)NULL;
@@ -312,10 +312,11 @@ static void start_vif(vifi_t vifi)
 	v->uv_flags = v->uv_flags & ~VIFF_DOWN;
     else {
 	v->uv_flags = (v->uv_flags | VIFF_DR | VIFF_NONBRS) & ~VIFF_DOWN;
-#ifdef PIM_HELLO_GENID
-	v->uv_pim_hello_genid = RANDOM();
-#endif
-	SET_TIMER(v->uv_pim_hello_timer, 1 + RANDOM() % pim_timer_hello_interval);
+
+	/* https://tools.ietf.org/html/draft-ietf-pim-hello-genid-01 */
+	v->uv_genid = RANDOM();
+
+	SET_TIMER(v->uv_hello_timer, 1 + RANDOM() % pim_timer_hello_interval);
 	SET_TIMER(v->uv_jp_timer, 1 + RANDOM() % PIM_JOIN_PRUNE_PERIOD);
 	/* TODO: CHECK THE TIMERS!!!!! Set or reset? */
 	RESET_TIMER(v->uv_gq_timer);
@@ -421,7 +422,7 @@ static void stop_vif(vifi_t vifi)
 
     v->uv_flags = (v->uv_flags & ~VIFF_DR & ~VIFF_QUERIER & ~VIFF_NONBRS) | VIFF_DOWN;
     if (!(v->uv_flags & VIFF_REGISTER)) {
-	RESET_TIMER(v->uv_pim_hello_timer);
+	RESET_TIMER(v->uv_hello_timer);
 	RESET_TIMER(v->uv_jp_timer);
 	RESET_TIMER(v->uv_gq_timer);
 

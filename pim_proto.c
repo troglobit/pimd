@@ -38,7 +38,7 @@
  * Local functions definitions.
  */
 static int restart_dr_election     (struct uvif *v);
-static int parse_pim_hello         (char *msg, size_t len, uint32_t src, uint16_t *holdtime, uint32_t *dr_prio);
+static int parse_pim_hello         (char *msg, size_t len, uint32_t src, uint16_t *holdtime, uint32_t *dr_prio, uint32_t *genid);
 static int send_pim_register_stop  (uint32_t reg_src, uint32_t reg_dst, uint32_t inner_source, uint32_t inner_grp);
 static build_jp_message_t *get_jp_working_buff (void);
 static void return_jp_working_buff (pim_nbr_entry_t *pim_nbr);
@@ -64,6 +64,7 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
     pim_nbr_entry_t *nbr, *prev_nbr, *new_nbr;
     uint16_t holdtime = 0;
     uint32_t dr_prio = 0;	/* 0: None */
+    uint32_t genid = 0;		/* 0: None */
     int     bsr_length;
     srcentry_t *srcentry;
     mrtentry_t *mrtentry;
@@ -87,7 +88,7 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
 	return FALSE;    /* Shoudn't come on this interface */
 
     /* Get the Holdtime (in seconds) and any DR priority from the message. Return if error. */
-    if (parse_pim_hello(msg, len, src, &holdtime, &dr_prio) == FALSE)
+    if (parse_pim_hello(msg, len, src, &holdtime, &dr_prio, &genid) == FALSE)
 	return FALSE;
 
     IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER)
@@ -97,6 +98,10 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
     IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER)
 	logit(LOG_DEBUG, 0, "PIM DR PRIORITY from %s is %u",
 	      inet_fmt(src, s1, sizeof(s1)), dr_prio);
+
+    IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER)
+	logit(LOG_DEBUG, 0, "PIM GenID from %s is %u",
+	      inet_fmt(src, s1, sizeof(s1)), genid);
 
     for (prev_nbr = NULL, nbr = v->uv_pim_neighbors; nbr; prev_nbr = nbr, nbr = nbr->next) {
 	/* The PIM neighbors are sorted in decreasing order of the
@@ -121,6 +126,14 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
 	    }
 
 	    SET_TIMER(nbr->timer, holdtime);
+
+	    /* https://tools.ietf.org/html/draft-ietf-pim-hello-genid-01 */
+	    if (nbr->genid != genid) {
+		/* Known neighbor rebooted, update info and resend RP-Set */
+		nbr->genid   = genid;
+		nbr->dr_prio = dr_prio; /* Also update dr_prio! */
+		goto rebooted;
+	    }
 
 	    if (nbr->dr_prio != dr_prio) {
 		/* New DR priority for neighbor, restart DR election */
@@ -171,6 +184,7 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
      */
     send_pim_hello(v, pim_timer_hello_holdtime);
 
+  rebooted:
     if (v->uv_flags & VIFF_DR) {
 	/*
 	 * If I am the current DR on that interface, so
@@ -451,7 +465,7 @@ static int restart_dr_election(struct uvif *v)
 }
 
 /* Simplify.  Look at pim6sd pim_hello_options in pim6_proto.c, for instance. */
-static int parse_pim_hello(char *msg, size_t len, uint32_t src, uint16_t *holdtime, uint32_t *dr_prio)
+static int parse_pim_hello(char *msg, size_t len, uint32_t src, uint16_t *holdtime, uint32_t *dr_prio, uint32_t *genid)
 {
     uint8_t *pim_hello_message;
     uint8_t *data;
@@ -488,6 +502,15 @@ static int parse_pim_hello(char *msg, size_t len, uint32_t src, uint16_t *holdti
 		return FALSE;
 	    }
 	    GET_HOSTLONG(*dr_prio, data);
+	} else if (option_type == PIM_MESSAGE_HELLO_GENID) {
+	    if (PIM_MESSAGE_HELLO_GENID_LENGTH != option_length) {
+		IF_DEBUG(DEBUG_PIM_HELLO)
+		    logit(LOG_DEBUG, 0, "PIM HELLO GenID %s: invalid OptionLength = %u",
+			  inet_fmt(src, s1, sizeof(s1)), option_length);
+
+		return FALSE;
+	    }
+	    GET_HOSTLONG(*genid, data);
 	} else {
 	    /* Ignore any unknown options */
 	}
@@ -534,12 +557,12 @@ int send_pim_hello(struct uvif *v, uint16_t holdtime)
 #ifdef PIM_HELLO_GENID
     PUT_HOSTSHORT(PIM_MESSAGE_HELLO_GENID, data);
     PUT_HOSTSHORT(PIM_MESSAGE_HELLO_GENID_LENGTH, data);
-    PUT_HOSTLONG(v->uv_pim_hello_genid, data);
+    PUT_HOSTLONG(v->uv_genid, data);
 #endif
 
     len = data - (uint8_t *)buf;
     send_pim(pim_send_buf, v->uv_lcl_addr, allpimrouters_group, PIM_HELLO, len);
-    SET_TIMER(v->uv_pim_hello_timer, pim_timer_hello_interval);
+    SET_TIMER(v->uv_hello_timer, pim_timer_hello_interval);
 
     return TRUE;
 }
