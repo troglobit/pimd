@@ -3406,7 +3406,7 @@ int receive_pim_cand_rp_adv(uint32_t src, uint32_t dst __attribute__((unused)), 
     GET_EUADDR(&euaddr, data_ptr);
     if (prefix_cnt == 0) {
 	/* The default 224.0.0.0 and masklen of 4 */
-	MASKLEN_TO_MASK(ALL_MCAST_GROUPS_LENGTH, grp_mask);
+	MASKLEN_TO_MASK(ALL_MCAST_GROUPS_LEN, grp_mask);
 	add_rp_grp_entry(&cand_rp_list, &grp_mask_list,
 			 euaddr.unicast_addr, priority, holdtime,
 			 htonl(ALL_MCAST_GROUPS_ADDR), grp_mask,
@@ -3449,7 +3449,7 @@ int send_pim_cand_rp_adv(void)
 	prefix_cnt = *cand_rp_adv_message.prefix_cnt_ptr;
 	if (prefix_cnt == 0) {
 	    /* The default 224.0.0.0 and masklen of 4 */
-	    MASKLEN_TO_MASK(ALL_MCAST_GROUPS_LENGTH, mask);
+	    MASKLEN_TO_MASK(ALL_MCAST_GROUPS_LEN, mask);
 	    add_rp_grp_entry(&cand_rp_list, &grp_mask_list,
 			     my_cand_rp_address, my_cand_rp_priority,
 			     my_cand_rp_holdtime,

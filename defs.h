@@ -233,7 +233,7 @@ typedef void (*ihfunc_t) (int, fd_set *);
 							 * to encode (*,*,RP)
 							 */
 #define ALL_MCAST_GROUPS_ADDR   (uint32_t)0xe0000000     /* 224.0.0.0 */
-#define ALL_MCAST_GROUPS_LENGTH 4
+#define ALL_MCAST_GROUPS_LEN    4
 
 /* Used by DVMRP */
 #define DEFAULT_METRIC		1	/* default subnet/tunnel metric     */
