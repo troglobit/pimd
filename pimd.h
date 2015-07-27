@@ -298,20 +298,20 @@ typedef struct pim_jp_encod_grp_ {
 
 /* Vartious options from PIM messages definitions */
 /* PIM_HELLO definitions */
-#define PIM_MESSAGE_HELLO_HOLDTIME              1
-#define PIM_MESSAGE_HELLO_HOLDTIME_LENGTH       2
-#define PIM_MESSAGE_HELLO_HOLDTIME_FOREVER      0xffff
+#define PIM_HELLO_HOLDTIME              1
+#define PIM_HELLO_HOLDTIME_LEN          2
+#define PIM_HELLO_HOLDTIME_FOREVER      0xffff
 
-#define PIM_MESSAGE_HELLO_DR_PRIO               19
-#define PIM_MESSAGE_HELLO_DR_PRIO_LENGTH        4
-#define PIM_MESSAGE_HELLO_DR_PRIO_DEFAULT       1
+#define PIM_HELLO_DR_PRIO               19
+#define PIM_HELLO_DR_PRIO_LEN           4
+#define PIM_HELLO_DR_PRIO_DEFAULT       1
 
-#define PIM_MESSAGE_HELLO_GENID                 20
-#define PIM_MESSAGE_HELLO_GENID_LENGTH          4
+#define PIM_HELLO_GENID                 20
+#define PIM_HELLO_GENID_LEN             4
 
 /* PIM_REGISTER definitions */
-#define PIM_MESSAGE_REGISTER_BORDER_BIT         0x80000000
-#define PIM_MESSAGE_REGISTER_NULL_REGISTER_BIT  0x40000000
+#define PIM_REGISTER_BORDER_BIT         0x80000000
+#define PIM_REGISTER_NULL_REGISTER_BIT  0x40000000
 
 
 #define MASK_TO_MASKLEN(mask, masklen)                           \

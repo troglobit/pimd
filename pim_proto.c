@@ -34,11 +34,19 @@
 #include <arpa/inet.h>
 #include "defs.h"
 
+typedef struct {
+    uint16_t  holdtime;
+    uint32_t  dr_prio;
+    int8_t    dr_prio_present;
+    uint32_t  genid;
+} pim_hello_opts_t;
+
 /*
  * Local functions definitions.
  */
 static int restart_dr_election     (struct uvif *v);
-static int parse_pim_hello         (char *msg, size_t len, uint32_t src, uint16_t *holdtime, uint32_t *dr_prio, uint32_t *genid);
+static int parse_pim_hello         (char *msg, size_t len, uint32_t src, pim_hello_opts_t *opts);
+static void cache_nbr_settings     (pim_nbr_entry_t *nbr, pim_hello_opts_t *opts);
 static int send_pim_register_stop  (uint32_t reg_src, uint32_t reg_dst, uint32_t inner_source, uint32_t inner_grp);
 static build_jp_message_t *get_jp_working_buff (void);
 static void return_jp_working_buff (pim_nbr_entry_t *pim_nbr);
@@ -61,11 +69,9 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
 {
     vifi_t vifi;
     struct uvif *v;
+    size_t bsr_length;
     pim_nbr_entry_t *nbr, *prev_nbr, *new_nbr;
-    uint16_t holdtime = 0;
-    uint32_t dr_prio = 0;	/* 0: None */
-    uint32_t genid = 0;		/* 0: None */
-    int     bsr_length;
+    pim_hello_opts_t opts;
     srcentry_t *srcentry;
     mrtentry_t *mrtentry;
 
@@ -88,20 +94,20 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
 	return FALSE;    /* Shoudn't come on this interface */
 
     /* Get the Holdtime (in seconds) and any DR priority from the message. Return if error. */
-    if (parse_pim_hello(msg, len, src, &holdtime, &dr_prio, &genid) == FALSE)
+    if (parse_pim_hello(msg, len, src, &opts) == FALSE)
 	return FALSE;
 
     IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER)
 	logit(LOG_DEBUG, 0, "PIM HELLO holdtime from %s is %u",
-	      inet_fmt(src, s1, sizeof(s1)), holdtime);
+	      inet_fmt(src, s1, sizeof(s1)), opts.holdtime);
 
     IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER)
 	logit(LOG_DEBUG, 0, "PIM DR PRIORITY from %s is %u",
-	      inet_fmt(src, s1, sizeof(s1)), dr_prio);
+	      inet_fmt(src, s1, sizeof(s1)), opts.dr_prio);
 
     IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER)
 	logit(LOG_DEBUG, 0, "PIM GenID from %s is %u",
-	      inet_fmt(src, s1, sizeof(s1)), genid);
+	      inet_fmt(src, s1, sizeof(s1)), opts.genid);
 
     for (prev_nbr = NULL, nbr = v->uv_pim_neighbors; nbr; prev_nbr = nbr, nbr = nbr->next) {
 	/* The PIM neighbors are sorted in decreasing order of the
@@ -113,7 +119,7 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
 
 	if (src == nbr->address) {
 	    /* We already have an entry for this host */
-	    if (0 == holdtime) {
+	    if (0 == opts.holdtime) {
 		/* Looks like we have a nice neighbor who is going down
 		 * and wants to inform us by sending "holdtime=0". Thanks
 		 * buddy and see you again!
@@ -125,22 +131,20 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
 		return TRUE;
 	    }
 
-	    SET_TIMER(nbr->timer, holdtime);
-
 	    /* https://tools.ietf.org/html/draft-ietf-pim-hello-genid-01 */
-	    if (nbr->genid != genid) {
+	    if (nbr->genid != opts.genid) {
 		/* Known neighbor rebooted, update info and resend RP-Set */
-		nbr->genid   = genid;
-		nbr->dr_prio = dr_prio; /* Also update dr_prio! */
+		cache_nbr_settings(nbr, &opts);
 		goto rebooted;
 	    }
 
-	    if (nbr->dr_prio != dr_prio) {
+	    if (nbr->dr_prio != opts.dr_prio) {
 		/* New DR priority for neighbor, restart DR election */
-		nbr->dr_prio = dr_prio;
+		cache_nbr_settings(nbr, &opts);
 		goto election;
 	    }
 
+	    cache_nbr_settings(nbr, &opts);
 	    return TRUE;
 	}
 
@@ -161,12 +165,14 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
 
     new_nbr->address          = src;
     new_nbr->vifi             = vifi;
-    SET_TIMER(new_nbr->timer, holdtime);
-    new_nbr->dr_prio          = dr_prio;
     new_nbr->build_jp_message = NULL;
     new_nbr->next             = nbr;
     new_nbr->prev             = prev_nbr;
 
+    /* Add PIM Hello options */
+    cache_nbr_settings(new_nbr, &opts);
+
+    /* Add to linked list of neighbors */
     if (prev_nbr)
 	prev_nbr->next  = new_nbr;
     else
@@ -414,7 +420,7 @@ static int restart_dr_election(struct uvif *v)
     /* Check if all routers on segment advertise DR Priority option
      * in their PIM Hello messages.  Figure out highest prio. */
     for (nbr = v->uv_pim_neighbors; nbr; nbr = nbr->next) {
-	if (nbr->dr_prio == 0) {
+	if (!nbr->dr_prio_present) {
 	    use_dr_prio = 0;
 	    break;
 	}
@@ -464,79 +470,82 @@ static int restart_dr_election(struct uvif *v)
     return FALSE;
 }
 
-/* Simplify.  Look at pim6sd pim_hello_options in pim6_proto.c, for instance. */
-static int parse_pim_hello(char *msg, size_t len, uint32_t src, uint16_t *holdtime, uint32_t *dr_prio, uint32_t *genid)
+static int validate_pim_opt(uint32_t src, char *str, uint16_t len, uint16_t opt_len)
 {
-    uint8_t *pim_hello_message;
+    if (len != opt_len) {
+	IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER)
+	    logit(LOG_DEBUG, 0, "PIM HELLO %s from %s: invalid OptionLength = %u",
+		  str, inet_fmt(src, s1, sizeof(s1)), opt_len);
+
+	return FALSE;
+    }
+
+    return TRUE;
+}
+
+static int parse_pim_hello(char *msg, size_t len, uint32_t src, pim_hello_opts_t *opts)
+{
+    int result = FALSE;
+    size_t rec_len;
     uint8_t *data;
-    uint16_t option_type;
-    uint16_t option_length;
-    int holdtime_ok = FALSE;
-    size_t option_total_length;
+    uint16_t opt_type;
+    uint16_t opt_len;
 
-    pim_hello_message = (uint8_t *)(msg + sizeof(pim_header_t));
-    len -= sizeof(pim_header_t);
-    for ( ; len >= sizeof(pim_hello_t); ) {
-	/* Ignore any data if shorter than (pim_hello header) */
-	data = pim_hello_message;
-	GET_HOSTSHORT(option_type, data);
-	GET_HOSTSHORT(option_length, data);
+    /* Assume no opts. */
+    memset(opts, 0, sizeof(*opts));
 
-	if (option_type == PIM_MESSAGE_HELLO_HOLDTIME) {
-	    if (PIM_MESSAGE_HELLO_HOLDTIME_LENGTH != option_length) {
-		IF_DEBUG(DEBUG_PIM_HELLO)
-		    logit(LOG_DEBUG, 0, "PIM HELLO Holdtime from %s: invalid OptionLength = %u",
-			  inet_fmt(src, s1, sizeof(s1)), option_length);
+    /* Body of PIM message */
+    msg += sizeof(pim_header_t);
 
-		return FALSE;
-	    }
+    /* Ignore any data if shorter than (pim_hello header) */
+    for (len -= sizeof(pim_header_t); len >= sizeof(pim_hello_t); len -= rec_len) {
+	data = (uint8_t *)msg;
+	GET_HOSTSHORT(opt_type, data);
+	GET_HOSTSHORT(opt_len,  data);
 
-	    GET_HOSTSHORT(*holdtime, data);
-	    holdtime_ok = TRUE;
-	} else if (option_type == PIM_MESSAGE_HELLO_DR_PRIO) {
-	    if (PIM_MESSAGE_HELLO_DR_PRIO_LENGTH != option_length) {
-		IF_DEBUG(DEBUG_PIM_HELLO)
-		    logit(LOG_DEBUG, 0, "PIM HELLO DR Priority from %s: invalid OptionLength = %u",
-			  inet_fmt(src, s1, sizeof(s1)), option_length);
+	switch (opt_type) {
+	    case PIM_HELLO_HOLDTIME:
+		result = validate_pim_opt(src, "Holdtime", PIM_HELLO_HOLDTIME_LEN, opt_len);
+		if (TRUE == result)
+		    GET_HOSTSHORT(opts->holdtime, data);
+		break;
 
-		return FALSE;
-	    }
-	    GET_HOSTLONG(*dr_prio, data);
-	} else if (option_type == PIM_MESSAGE_HELLO_GENID) {
-	    if (PIM_MESSAGE_HELLO_GENID_LENGTH != option_length) {
-		IF_DEBUG(DEBUG_PIM_HELLO)
-		    logit(LOG_DEBUG, 0, "PIM HELLO GenID %s: invalid OptionLength = %u",
-			  inet_fmt(src, s1, sizeof(s1)), option_length);
+	    case PIM_HELLO_DR_PRIO:
+		result = validate_pim_opt(src, "DR Priority", PIM_HELLO_DR_PRIO_LEN, opt_len);
+		if (TRUE == result) {
+		    opts->dr_prio_present = 1;
+		    GET_HOSTLONG(opts->dr_prio, data);
+		}
+		break;
 
-		return FALSE;
-	    }
-	    GET_HOSTLONG(*genid, data);
-	} else {
-	    /* Ignore any unknown options */
+	    case PIM_HELLO_GENID:
+		result = validate_pim_opt(src, "GenID", PIM_HELLO_GENID_LEN, opt_len);
+		if (TRUE == result)
+		    GET_HOSTLONG(opts->genid, data);
+		break;
+
+	    default:
+		break;		/* Ignore any unknown options */
 	}
 
 	/* Move to the next option */
-	/* XXX: TODO: If we are padding to the end of the 32 bit boundary,
-	 * use the first method to move to the next option, otherwise
-	 * simply (sizeof(pim_hello_t) + option_length).
-	 */
-#ifdef BOUNDARY_32_BIT
-	option_total_length = (sizeof(pim_hello_t) + (option_length & ~0x3) +
-			       ((option_length & 0x3) ? 4 : 0));
-#else
-	option_total_length = (sizeof(pim_hello_t) + option_length);
-#endif /* BOUNDARY_32_BIT */
-
-	if (len < option_total_length)
+	rec_len = (sizeof(pim_hello_t) + opt_len);
+	if (len < rec_len || result == FALSE)
 	    return FALSE;
 
-	len -= option_total_length;
-	pim_hello_message += option_total_length;
+	msg += rec_len;
     }
 
-    return holdtime_ok;
+    return result;
 }
 
+static void cache_nbr_settings(pim_nbr_entry_t *nbr, pim_hello_opts_t *opts)
+{
+    SET_TIMER(nbr->timer,  opts->holdtime);
+    nbr->genid           = opts->genid;
+    nbr->dr_prio         = opts->dr_prio;
+    nbr->dr_prio_present = opts->dr_prio_present;
+}
 
 int send_pim_hello(struct uvif *v, uint16_t holdtime)
 {
@@ -546,17 +555,17 @@ int send_pim_hello(struct uvif *v, uint16_t holdtime)
 
     buf = pim_send_buf + sizeof(struct ip) + sizeof(pim_header_t);
     data = (uint8_t *)buf;
-    PUT_HOSTSHORT(PIM_MESSAGE_HELLO_HOLDTIME, data);
-    PUT_HOSTSHORT(PIM_MESSAGE_HELLO_HOLDTIME_LENGTH, data);
+    PUT_HOSTSHORT(PIM_HELLO_HOLDTIME, data);
+    PUT_HOSTSHORT(PIM_HELLO_HOLDTIME_LEN, data);
     PUT_HOSTSHORT(holdtime, data);
 
-    PUT_HOSTSHORT(PIM_MESSAGE_HELLO_DR_PRIO, data);
-    PUT_HOSTSHORT(PIM_MESSAGE_HELLO_DR_PRIO_LENGTH, data);
+    PUT_HOSTSHORT(PIM_HELLO_DR_PRIO, data);
+    PUT_HOSTSHORT(PIM_HELLO_DR_PRIO_LEN, data);
     PUT_HOSTLONG(v->uv_dr_prio, data);
 
-#ifdef PIM_HELLO_GENID
-    PUT_HOSTSHORT(PIM_MESSAGE_HELLO_GENID, data);
-    PUT_HOSTSHORT(PIM_MESSAGE_HELLO_GENID_LENGTH, data);
+#ifdef ENABLE_PIM_HELLO_GENID
+    PUT_HOSTSHORT(PIM_HELLO_GENID, data);
+    PUT_HOSTSHORT(PIM_HELLO_GENID_LEN, data);
     PUT_HOSTLONG(v->uv_genid, data);
 #endif
 
@@ -639,8 +648,8 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
 
     /* Lookup register message flags */
     reg = (pim_register_t *)(msg + sizeof(pim_header_t));
-    is_border = ntohl(reg->reg_flags) & PIM_MESSAGE_REGISTER_BORDER_BIT;
-    is_null   = ntohl(reg->reg_flags) & PIM_MESSAGE_REGISTER_NULL_REGISTER_BIT;
+    is_border = ntohl(reg->reg_flags) & PIM_REGISTER_BORDER_BIT;
+    is_null   = ntohl(reg->reg_flags) & PIM_REGISTER_NULL_REGISTER_BIT;
 
     /* initialize the pointer to the encapsulated packet */
     ip = (struct ip *)(reg + 1);
@@ -977,7 +986,7 @@ int send_pim_null_register(mrtentry_t *mrtentry)
 				      sizeof(pim_header_t));
     memset(pim_register, 0, sizeof(pim_register_t));
     pim_register->reg_flags = htonl(pim_register->reg_flags
-				    | PIM_MESSAGE_REGISTER_NULL_REGISTER_BIT);
+				    | PIM_REGISTER_NULL_REGISTER_BIT);
 
     ip = (struct ip *)(pim_register + 1);
     /* set src/dst in dummy hdr */

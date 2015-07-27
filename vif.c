@@ -180,7 +180,7 @@ void zero_vif(struct uvif *v, int t)
     v->uv_filter	= (struct vif_filter *)NULL;
 
     RESET_TIMER(v->uv_hello_timer);
-    v->uv_dr_prio       = PIM_MESSAGE_HELLO_DR_PRIO_DEFAULT;
+    v->uv_dr_prio       = PIM_HELLO_DR_PRIO_DEFAULT;
     v->uv_genid         = 0;
 
     RESET_TIMER(v->uv_gq_timer);

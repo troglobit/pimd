@@ -162,7 +162,7 @@ while [ "$*" != "" ]; do
 done
 
 if [ $disable_genid -ne 1 ]; then
-    echo "DEFS         += -DPIM_HELLO_GENID" >> $TMP
+    echo "DEFS         += -DENABLE_PIM_HELLO_GENID" >> $TMP
 fi
 
 ## BSDI		-D__bsdi__ is defined by the OS

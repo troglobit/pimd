@@ -138,7 +138,7 @@ void age_vifs(void)
 	     * link up with periodic Hello messages.
 	     */
 	    /* TODO: XXX: TIMER implem. dependency! */
-	    if (PIM_MESSAGE_HELLO_HOLDTIME_FOREVER == curr->timer)
+	    if (PIM_HELLO_HOLDTIME_FOREVER == curr->timer)
 		continue;
 	    IF_NOT_TIMEOUT(curr->timer)
 		continue;
