@@ -1265,7 +1265,7 @@ void log_pim_join_prune(uint32_t src, uint8_t *data_ptr, int num_groups, char* i
     }
 }
 
-/* TODO: when parsing, check if we go beyong message size */
+/* TODO: when parsing, check if we go beyond message size */
 /* TODO: too long, simplify it! */
 #define PIM_JOIN_PRUNE_MINLEN (4 + PIM_ENCODE_UNI_ADDR_LEN + 4)
 int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), char *msg, size_t len)
@@ -1326,21 +1326,27 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 
     /* sanity check for the minimum length */
     if (len < PIM_JOIN_PRUNE_MINLEN) {
-	logit(LOG_NOTICE, 0, "receive_pim_join_prune: Join/Prune message size(%u) is too short from %s on %s",
-	      len, inet_fmt(src, s1, sizeof(s1)), v->uv_name);
+	logit(LOG_NOTICE, 0, "%s(): Too short Join/Prune message (%u bytes) from %s on %s",
+	      __func__, len, inet_fmt(src, s1, sizeof(s1)), v->uv_name);
 
 	return FALSE;
     }
 
     len -= PIM_JOIN_PRUNE_MINLEN;
     data = (uint8_t *)(msg + sizeof(pim_header_t));
+
     /* Get the target address */
     GET_EUADDR(&eutaddr, data);
     GET_BYTE(reserved, data);
     GET_BYTE(num_groups, data);
-    if (num_groups == 0)
-	return FALSE;    /* No indication for groups in the message */
     GET_HOSTSHORT(holdtime, data);
+
+    if (num_groups == 0) {
+	/* No indication for groups in the message */
+	logit(LOG_NOTICE, 0, "%s(): No groups in Join/Prune message from %s on %s!",
+	      __func__, inet_fmt(src, s1, sizeof(s1)), v->uv_name);
+	return FALSE;
+    }
 
     logit(LOG_INFO, 0, "Received PIM JOIN/PRUNE from %s on %s",
 	  inet_fmt(src, s1, sizeof(s1)), v->uv_name);
@@ -1353,12 +1359,12 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 	
         /* group addr + #join + #src */
         if (len < PIM_ENCODE_GRP_ADDR_LEN + sizeof(uint32_t)) {
-            logit(LOG_NOTICE, 0,
-                "receive_pim_join_prune: Join/Prune message from %s on %s is"
-                " too short to contain enough data",
-                inet_fmt(src, s1, sizeof(s1)), v->uv_name);
+            logit(LOG_NOTICE, 0, "%s(): Join/Prune message from %s on %s is"
+		  " too short to contain enough data",
+		  __func__, inet_fmt(src, s1, sizeof(s1)), v->uv_name);
             return FALSE;
         }
+
         len -= (PIM_ENCODE_GRP_ADDR_LEN + sizeof(uint32_t));
         data += PIM_ENCODE_GRP_ADDR_LEN;
 
@@ -1367,10 +1373,9 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
         GET_HOSTSHORT(num_p_srcs, data);
         srclen = (num_j_srcs + num_p_srcs) * PIM_ENCODE_SRC_ADDR_LEN;
         if (len < srclen) {
-            logit(LOG_NOTICE, 0,
-                "receive_pim_join_prune: Join/Prune message from %s on %s is"
-                " too short to contain enough data", inet_fmt(src, s1, sizeof(s1)),
-                v->uv_name);
+            logit(LOG_NOTICE, 0, "%s(): Join/Prune message from %s on %s is"
+		  " too short to contain enough data", __func__,
+		  inet_fmt(src, s1, sizeof(s1)), v->uv_name);
             return FALSE;
         }
         len -= srclen;
@@ -1381,8 +1386,9 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 
     /* Sanity check is done. Log the message */
     log_pim_join_prune(src, data, num_groups, v->uv_name);
+
     if (eutaddr.unicast_addr != v->uv_lcl_addr) {
-	/* if I am not the targer of the join message */
+	/* if I am not the target of the join message */
 	/* Join/Prune suppression code. This either modifies the J/P timers
 	 * or triggers an overriding Join.
 	 */
@@ -1457,6 +1463,7 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 		    source = esaddr.src_addr;
 		    if (!inet_valid_host(source))
 			continue;
+
 		    s_flags = esaddr.flags;
 		    MASKLEN_TO_MASK(esaddr.masklen, s_mask);
 		    if ((s_flags & USADDR_RP_BIT) && (s_flags & USADDR_WC_BIT)) {
