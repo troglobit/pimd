@@ -354,14 +354,13 @@ void send_pim_unicast(char *buf, int mtu, uint32_t src, uint32_t dst, int type, 
      */
 #ifdef BROKEN_CISCO_CHECKSUM
     pim->pim_cksum	= inet_cksum((uint16_t *)pim, sizeof(pim_header_t) + len);
-#else /* !BROKEN_CISCO_CHECKSUM */
+#else
     if (PIM_REGISTER == type) {
-	pim->pim_cksum	= inet_cksum((uint16_t *)pim, sizeof(pim_header_t)
-				     + sizeof(pim_register_t));
+	pim->pim_cksum	= inet_cksum((uint16_t *)pim, sizeof(pim_header_t) + sizeof(pim_register_t));
     } else {
         pim->pim_cksum	= inet_cksum((uint16_t *)pim, sizeof(pim_header_t) + len);
     }
-#endif /* !BROKEN_CISCO_CHECKSUM */
+#endif /* BROKEN_CISCO_CHECKSUM */
 
     memset(&sin, 0, sizeof(sin));
     sin.sin_family = AF_INET;
@@ -372,7 +371,7 @@ void send_pim_unicast(char *buf, int mtu, uint32_t src, uint32_t dst, int type, 
 
     IF_DEBUG(DEBUG_PIM_DETAIL) {
 	IF_DEBUG(DEBUG_PIM) {
-	    logit(LOG_DEBUG, 0, "SENDING %5d bytes %s from %-15s to %s ...",
+	    logit(LOG_DEBUG, 0, "SEND %5d bytes %s from %-15s to %s ...",
 		  sendlen, packet_kind(IPPROTO_PIM, type, 0),
 		  inet_fmt(src, source, sizeof(source)), inet_fmt(dst, dest, sizeof(dest)));
 	}
@@ -473,7 +472,7 @@ static int send_frame(char *buf, size_t len, size_t frag, size_t mtu, struct soc
 #else
 /*
  * send unicast register frames
- * Version: Michael Fine
+ * Version: Joachim Nilsson
  * Staus:   Does not work (yet!)
  * Design:  Fragment IP frames when the frame length exceeds the MTU
  *          reported from the interface.  Optimizes for less fragments
