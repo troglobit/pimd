@@ -435,6 +435,7 @@ int k_del_mfc(int socket, uint32_t source, uint32_t group)
  */
 int k_chg_mfc(int socket, uint32_t source, uint32_t group, vifi_t iif, vifbitmap_t oifs, uint32_t rp_addr __attribute__((unused)))
 {
+    char           input[IFNAMSIZ], output[MAXVIFS * (IFNAMSIZ + 2)] = "";
     vifi_t	   vifi;
     struct uvif   *v;
     struct mfcctl  mc;
@@ -450,26 +451,33 @@ int k_chg_mfc(int socket, uint32_t source, uint32_t group, vifi_t iif, vifbitmap
     VIFM_CLR(mc.mfcc_parent, oifs);
 
     for (vifi = 0, v = uvifs; vifi < numvifs; vifi++, v++) {
-	if (VIFM_ISSET(vifi, oifs))
+	if (VIFM_ISSET(vifi, oifs)) {
 	    mc.mfcc_ttls[vifi] = v->uv_threshold;
-	else
+	    if (output[0] != 0)
+		strlcat(output, ", ", sizeof(output));
+	    strlcat(output, v->uv_name, sizeof(output));
+	} else {
 	    mc.mfcc_ttls[vifi] = 0;
+	}
     }
+    strlcpy(input, uvifs[iif].uv_name, sizeof(input));
 
 #ifdef PIM_REG_KERNEL_ENCAP
     mc.mfcc_rp_addr.s_addr = rp_addr;
 #endif
     if (setsockopt(socket, IPPROTO_IP, MRT_ADD_MFC, (char *)&mc, sizeof(mc)) < 0) {
-	logit(LOG_WARNING, errno, "Failed adding MFC entry src %s grp %s",
+	logit(LOG_WARNING, errno, "Failed adding MFC entry src %s grp %s from %s to %s",
 	      inet_fmt(mc.mfcc_origin.s_addr, s1, sizeof(s1)),
-	      inet_fmt(mc.mfcc_mcastgrp.s_addr, s2, sizeof(s2)));
+	      inet_fmt(mc.mfcc_mcastgrp.s_addr, s2, sizeof(s2)),
+	      input, output);
 
 	return FALSE;
     }
 
-    logit(LOG_INFO, 0, "Added kernel MFC entry src %s grp %s",
+    logit(LOG_INFO, 0, "Added kernel MFC entry src %s grp %s from %s to %s",
 	  inet_fmt(mc.mfcc_origin.s_addr, s1, sizeof(s1)),
-	  inet_fmt(mc.mfcc_mcastgrp.s_addr, s2, sizeof(s2)));
+	  inet_fmt(mc.mfcc_mcastgrp.s_addr, s2, sizeof(s2)),
+	  input, output);
 
     return TRUE;
 }
