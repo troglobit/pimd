@@ -590,16 +590,11 @@ int accept_sources(int igmp_report_type, uint32_t igmp_src, uint32_t group, uint
 /*
  * Handle IGMP v3 membership reports (join/leave)
  */
-void accept_membership_report(uint32_t src, uint32_t dst __attribute__((unused)), struct igmpv3_report *report, ssize_t reportlen)
+void accept_membership_report(uint32_t src, uint32_t dst, struct igmpv3_report *report, ssize_t reportlen)
 {
     struct igmpv3_grec *record;
     int num_groups, i;
-    uint8_t *report_pastend;
-
-    IF_DEBUG(DEBUG_IGMP)
-	logit(LOG_DEBUG, 0, "Received IGMP v3 Membership Report from %s", inet_fmt(src, s1, sizeof(s1)));
-
-    report_pastend = (uint8_t *)report + reportlen;
+    uint8_t *report_pastend = (uint8_t *)report + reportlen;
 
     num_groups = ntohs(report->ngrec);
     if (num_groups < 0) {
@@ -607,6 +602,10 @@ void accept_membership_report(uint32_t src, uint32_t dst __attribute__((unused))
 	      inet_fmt(src, s1, sizeof(s1)), num_groups);
 	return;
     }
+
+    IF_DEBUG(DEBUG_IGMP)
+	logit(LOG_DEBUG, 0, "%s(): IGMP v3 report, %d bytes, from %s to %s with %d group records.",
+	      __func__, reportlen, inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)), num_groups);
 
     record = &report->grec[0];
 
