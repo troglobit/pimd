@@ -262,7 +262,7 @@ static int usage(void)
     fputs("  -r, --show-routes    Show state of VIFs and multicast routing tables\n", stderr);
     fputs("  -t, --table-id=ID    Set multicast routing table ID.  Allowed values are:\n"
 	  "                       0 ... 999999999.  Default: 0 (use default table)\n", stderr);
-    fputs("  -s, --loglevel=LEVEL Maximum syslog level to use, default LOG_NOTICE\n", stderr);
+    fputs("  -s, --loglevel=LEVEL Maximum syslog level to use, default NOTICE, see below\n", stderr);
     fprintf(stderr, "  -v, --version        Show %s version\n", __progname);
     fputs("\n", stderr);
 
@@ -289,16 +289,36 @@ static int usage(void)
 
 
     fputs("\nValid system log levels:", stderr);
-    fputs("\n  1 - LOG_ALERT   : action must be taken immediately", stderr);
-    fputs("\n  2 - LOG_CRIT    : critical conditions", stderr);
-    fputs("\n  3 - LOG_ERR     : error conditions", stderr);
-    fputs("\n  4 - LOG_WARNING : warning conditions", stderr);
-    fputs("\n  5 - LOG_NOTICE  : normal but significant condition (DEFAULT)", stderr);
-    fputs("\n  6 - LOG_INFO    : informational", stderr);
-    fputs("\n  7 - LOG_DEBUG   : debug-level messages", stderr);
-    fputs("\n", stderr);
+    fputs("\n  1) alert    Action must be taken immediately", stderr);
+    fputs("\n  2) crit     Critical conditions", stderr);
+    fputs("\n  3) err      Error conditions", stderr);
+    fputs("\n  4) warning  Warning conditions", stderr);
+    fputs("\n  5) notice   Normal but significant condition (DEFAULT)", stderr);
+    fputs("\n  6) info     Informational", stderr);
+    fputs("\n  7) debug    Debug-level messages", stderr);
+    fputs("\n\n", stderr);
 
     return 1;
+}
+
+static int lvltonum(char *arg, const char **errstr)
+{
+    int i;
+    char *level[] = { "ENERG", "ALERT", "CRIT", "ERR", "WARNING", "NOTICE", "INFO", "DEBUG", NULL };
+
+    if (!strncmp(arg, "LOG_", 4))
+	arg += 4;
+
+    for (i = 0; level[i]; i++) {
+	if (!strncasecmp(arg, level[i], strlen(level[i]))) {
+	    *errstr = NULL;
+	    return i;
+	}
+    }
+
+    *errstr = "invalid";
+
+    return 5;
 }
 
 int main(int argc, char *argv[])
@@ -396,7 +416,11 @@ int main(int argc, char *argv[])
 			return usage();
 		}
 
-		syslog_level = strtonum(optarg, LOG_ALERT, LOG_DEBUG, &errstr);
+		if (isdigit(optarg[0]))
+		    syslog_level = strtonum(optarg, LOG_ALERT, LOG_DEBUG, &errstr);
+		else
+		    syslog_level = lvltonum(optarg, &errstr);
+
 		if (errstr) {
 		    fprintf(stderr, "Syslog level %s is %s!\n", optarg, errstr);
 		    return usage();

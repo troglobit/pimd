@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.Dd $Mdocdate: Aug 18 2012 $
+.Dd Jul 29, 2015
 .\" Please adjust this date whenever revising the manpage.
 .Dt PIMD 8 SMM
 .Os
@@ -77,7 +77,7 @@ Regardless of the debug level,
 always writes warning and error messages to the system log daemon.
 Debug levels have the following effects:
 .Pp
-.Bl -tag -width TERM -compact -offset indent
+.Bl -tag -width pim_routes -compact -offset indent
 .It Cm packet
 Debug inbound/outbout packets
 .It Cm prunes
@@ -154,21 +154,22 @@ version
 .It Fl s, -loglevel=LEVEL
 Set syslog level to one of the following:
 .Pp
-.Bl -tag -width 1_LOG_WARNING -compact -offset indent
-.It Cm 1 LOG_ALERT
+.Bl -tag -width WARNING -compact -offset indent
+.It Cm ALERT
 Action must be taken immediately
-.It Cm 2 LOG_CRIT
+.It Cm CRIT
 Critical conditions
-.It Cm 3 LOG_ERR
+.It Cm ERR
 Error conditions
-.It Cm 4 LOG_WARNING
+.It Cm WARNING
 Warning conditions
-.It Cm 5 LOG_NOTICE
+.It Cm NOTICE
 Normal but significant condition (Default)
-.It Cm 6 LOG_INFO
+.It Cm INFO
 Informational
-.It Cm 7 LOG_DEBUG
+.It Cm DEBUG
 Debug-level messages
+.El
 .El
 .Sh CONFIGURATION
 The configuration is kept in the file
