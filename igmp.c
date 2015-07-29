@@ -407,10 +407,12 @@ static void send_ip_frame(uint32_t src, uint32_t dst, int type, int code, char *
  *   QQI / MRT = (mant | 0x10) << (exp + 3)
  *
  * This requires us to find the largest set (fls) bit in the 15-bit number
- * and set the exponent based on it's index in the bits 15-8. ie.
+ * and set the exponent based on its index in the bits 15-8. ie.
+ *
  *   exponent 0: igmp_fls(0000 0000 1000 0010)
  *   exponent 5: igmp_fls(0001 0000 0000 0000)
  *   exponent 7: igmp_fls(0111 0101 0000 0000)
+ *
  * and set that as the exponent. The mantissa is set to the last 4 bits
  * remaining after the (3 + exponent) shifts to the right.
  *
