@@ -467,7 +467,7 @@ static int parse_phyint(char *s)
     uint32_t local, altnet_addr, scoped_addr;
     vifi_t vifi;
     struct uvif *v;
-    u_int n, altnet_masklen = 0, scoped_masklen = 0;
+    uint32_t n, altnet_masklen = 0, scoped_masklen = 0;
     struct phaddr *ph;
     struct vif_acl *v_acl;
 
@@ -672,7 +672,7 @@ static int parse_phyint(char *s)
 		    continue;
 		}
 
-		if (sscanf(w, "%u%c", &n, &c) != 1 || n < 1 || n > 4294967294) {
+		if (sscanf(w, "%u%c", &n, &c) != 1 || n < 1 || n > 4294967294u) {
 		    WARN("Invalid dr-priority value '%s' for phyint %s", w, inet_fmt(local, s1, sizeof(s1)));
 		    continue;
 		}
