@@ -16,6 +16,7 @@ ARCHIVEZ      = ../$(ARCHIVE).gz
 ROOTDIR      ?= $(dir $(shell pwd))
 RM            = rm -f
 CC            = $(CROSS)gcc
+CHECK        := cppcheck $(CPPFLAGS) --quiet --enable=all
 
 IGMP_OBJS     = igmp.o igmp_proto.o trace.o
 ROUTER_OBJS   = inet.o kern.o main.o config.o debug.o vers.o callout.o
@@ -42,9 +43,6 @@ DEPS          = $(addprefix .,$(SRCS:.c=.d))
 MANS          = $(addsuffix .8,$(EXEC))
 DISTFILES     = README.md README-config.md README.config.jp README-debug.md ChangeLog.org \
 		INSTALL.md LICENSE LICENSE.mrouted TODO.org CREDITS FAQ.md AUTHORS
-
-LINT          = splint
-LINTFLAGS     = $(MCAST_INCLUDE) $(filter-out -W -Wall -Werror, $(CFLAGS)) -posix-lib -weak -skipposixheaders
 
 
 all: $(EXEC)
@@ -109,8 +107,8 @@ build-deb:
 	@echo "Building .deb if $(PKG)..."
 	git-buildpackage --git-ignore-new --git-upstream-branch=master
 
-lint:
-	@$(LINT) $(LINTFLAGS) $(SRCS)
+check lint:
+	$(CHECK) *.c *.h
 
 tags: $(SRCS)
 	@ctags $(SRCS)
