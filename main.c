@@ -416,7 +416,7 @@ int main(int argc, char *argv[])
 			return usage();
 		}
 
-		if (isdigit(optarg[0]))
+		if (isdigit((int)optarg[0]))
 		    syslog_level = strtonum(optarg, LOG_ALERT, LOG_DEBUG, &errstr);
 		else
 		    syslog_level = lvltonum(optarg, &errstr);
