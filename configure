@@ -37,6 +37,7 @@ TMP=`mktemp /tmp/XXXXXX`
 
 # Defaults
 disable_genid=0
+embedded_libc=0
 
 print()
 {
@@ -72,6 +73,15 @@ usage()
     print "\n"
     print "Usage: configure [ARG]\n"
     print "\n"
+    print "  --prefix=PATH            Base installation directory, default: /usr/local\n"
+    print "  --sysconfidir=PATH       Path to pimd.conf, default: /etc\n"
+    print "  --embedded-libc          Linux system with uClibc or musl libc.  These two\n"
+    print "                           C libraries have strlcpy() and strlcat()"
+    print "\n"
+    print "By default 'make install' installs files to /usr/local/{sbin, share, man} and\n"
+    print "/etc, this can be changed with the --prefix and --syconfdir options. On top of\n"
+    print "this you can also set DESTDIR when installing, to get another root directory.\n"
+    print "\n"
     print "  --enable-broken-crc      Interop with older broken Cisco firmware that did\n"
     print "                           checksum in PIM Register messages slightly wrong.\n"
     print "                           Should not be needed anymore.\n"
@@ -96,7 +106,7 @@ usage()
     print "\n"
     print "  --with-includes=PATH     Use this if the multicast header files are not in\n"
     print "                           a standard location on your system. E.g., /sys\n"
-    print "  --with-max-vifs=MAXVIFS  Kernel maximum number of allowed VIFs, default 32\n"
+    print "  --with-max-vifs=MAXVIFS  Kernel maximum number of allowed VIFs, default: 32\n"
     print "                           \e[1mNote:\e[0m Try multiple routing tables instead!\n"
     print "\n"
     print "Report bugs to https://github.com/troglobit/pimd/issues\n"
@@ -106,17 +116,33 @@ usage()
 }
 
 echo > $TMP
-echo "# Enabled features ..." >> $TMP
+echo "# Configured settings/features ..." >> $TMP
 
 while [ "$*" != "" ]; do
     opt=`expr "$1" : "--\([^=]*\)=.*"`
     arg=`expr "$1" : "--[^=]*=\(.*\)"`
     if [ -z "$opt" ]; then
         opt=`expr "$1" : "--\(.*\)"`
+	if [ -z "$opt" ]; then
+            opt=`expr "$1" : "-\(.*\)"`
+	fi
     fi
     shift
 
     case $opt in
+	prefix)
+	    echo "prefix        = $arg"     >> $TMP
+	    echo "sysconfdir   += $arg/etc" >> $TMP
+	    ;;
+
+	sysconfdir)
+	    echo "sysconfdir    = $arg" >> $TMP
+	    ;;
+
+	embedded-libc)
+	    embedded_libc=1
+	    ;;
+
         enable-broken-crc)
             echo "DEFS         += -DBROKEN_CISCO_CHECKSUM" >> $TMP
             ;;
@@ -166,7 +192,7 @@ while [ "$*" != "" ]; do
             echo "DEFS         += -DCUSTOM_MAX_VIFS=$arg" >> $TMP
             ;;
 
-        help)
+        help | h)
             usage
             ;;
 
@@ -218,7 +244,9 @@ case $OS in
 	echo "INCLUDES     = -Iinclude" >> $CFG
 	echo "DEFS        += -DRAW_OUTPUT_IS_RAW -DIOCTL_OK_ON_RAW_SOCKET" >> $CFG
 	echo "ROUTER_OBJS += netlink.o" >> $CFG
-	echo "EXTRA_OBJS   = libite/strlcpy.o libite/strlcat.o" >> $CFG
+	if [ $embedded_libc -ne 1 ]; then
+	    echo "EXTRA_OBJS   = libite/strlcpy.o libite/strlcat.o" >> $CFG
+	fi
 	echo "EXTRA_OBJS  += libite/pidfile.o libite/strtonum.o" >> $CFG
 	echo "EXTRA_LIBS   =" >> $CFG
 	;;

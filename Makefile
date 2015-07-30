@@ -14,14 +14,8 @@ ARCHIVE       = $(PKG).tar
 ARCHIVEZ      = ../$(ARCHIVE).gz
 
 ROOTDIR      ?= $(dir $(shell pwd))
-RM           ?= rm -f
-CC           ?= $(CROSS)gcc
-
-prefix       ?= /usr/local
-sysconfdir   ?= /etc
-datadir       = $(prefix)/share/doc/pimd
-mandir        = $(prefix)/share/man/man8
-
+RM            = rm -f
+CC            = $(CROSS)gcc
 
 IGMP_OBJS     = igmp.o igmp_proto.o trace.o
 ROUTER_OBJS   = inet.o kern.o main.o config.o debug.o vers.o callout.o
@@ -31,6 +25,11 @@ DVMRP_OBJS    = dvmrp_proto.o
 # This magic trick looks like a comment, but works on BSD PMake
 #include <config.mk>
 include config.mk
+
+prefix       ?= /usr/local
+sysconfdir   ?= /etc
+datadir       = $(prefix)/share/doc/pimd
+mandir        = $(prefix)/share/man/man8
 
 ## Common
 CFLAGS       += $(INCLUDES) $(DEFS) $(USERCOMPILE)
@@ -42,13 +41,11 @@ SRCS          = $(OBJS:.o=.c)
 DEPS          = $(addprefix .,$(SRCS:.c=.d))
 MANS          = $(addsuffix .8,$(EXEC))
 DISTFILES     = README.md README-config.md README.config.jp README-debug.md ChangeLog.org \
-		INSTALL LICENSE LICENSE.mrouted TODO.org CREDITS FAQ.md AUTHORS
+		INSTALL.md LICENSE LICENSE.mrouted TODO.org CREDITS FAQ.md AUTHORS
 
 LINT          = splint
 LINTFLAGS     = $(MCAST_INCLUDE) $(filter-out -W -Wall -Werror, $(CFLAGS)) -posix-lib -weak -skipposixheaders
 
-PURIFY        = purify
-PURIFYFLAGS   = -cache-dir=/tmp -collector=/import/pkgs/gcc/lib/gcc-lib/sparc-sun-sunos4.1.3_U1/2.7.2.2/ld
 
 all: $(EXEC)
 
@@ -59,9 +56,6 @@ all: $(EXEC)
 $(EXEC): $(OBJS)
 	@printf "  LINK    $@\n"
 	@$(CC) $(CFLAGS) $(LDFLAGS) -Wl,-Map,$@.map -o $@ $(OBJS) $(LDLIBS)
-
-purify: $(OBJS)
-	@$(PURIFY) $(PURIFYFLAGS) $(CC) $(LDFLAGS) -o $(EXEC) $(CFLAGS) $(OBJS) $(LDLIBS)
 
 vers.c:
 	@echo $(VERSION) | sed -e 's/.*/char todaysversion[]="&";/' > vers.c
