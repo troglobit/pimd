@@ -36,14 +36,18 @@
  * Leland Stanford Junior University.
  *
  */
-#ifndef __PIMD_PATHNAMES_H__
-#define __PIMD_PATHNAMES_H__
+#ifndef PIMD_PATHNAMES_H_
+#define PIMD_PATHNAMES_H_
 
 #include <paths.h>
 
-#define _PATH_PIMD_CONF         "/etc/pimd.conf"
+#ifndef _PATH_SYSCONF
+#define _PATH_SYSCONF           "/etc/"
+#endif
+
+#define _PATH_PIMD_CONF         _PATH_SYSCONF "pimd.conf"
 #define _PATH_PIMD_RUNDIR       _PATH_VARRUN "pimd"
 #define _PATH_PIMD_DUMP         _PATH_PIMD_RUNDIR "/pimd.dump"
 #define _PATH_PIMD_CACHE        _PATH_PIMD_RUNDIR "/pimd.cache"
 
-#endif /* __PIMD_PATHNAMES_H__ */
+#endif /* PIMD_PATHNAMES_H_ */

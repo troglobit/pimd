@@ -33,6 +33,7 @@ datadir       = $(prefix)/share/doc/pimd
 mandir        = $(prefix)/share/man/man8
 
 ## Common
+CPPFLAGS     += -D_PATH_SYSCONF=\"$(sysconfdir)\"
 CFLAGS       += $(INCLUDES) $(DEFS) $(USERCOMPILE)
 CFLAGS       += -W -Wall -Werror -fno-strict-aliasing
 LDLIBS        = $(EXTRA_LIBS)

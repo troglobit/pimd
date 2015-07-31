@@ -137,12 +137,12 @@ while [ "$*" != "" ]; do
 	    ;;
 
 	prefix)
-	    echo "prefix        = $arg"     >> $TMP
-	    echo "sysconfdir   += $arg/etc" >> $TMP
+	    echo "prefix        = $arg"      >> $TMP
+	    echo "sysconfdir   += $arg/etc/" >> $TMP
 	    ;;
 
 	sysconfdir)
-	    echo "sysconfdir    = $arg" >> $TMP
+	    echo "sysconfdir    = $arg/" >> $TMP
 	    ;;
 
 	embedded-libc)
