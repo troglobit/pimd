@@ -38,7 +38,7 @@ Tested on Ubuntu 14.04 (GLIBC/Linux 3.13), Debian 8.1 (GLIBC/Linux
     If all routers on a LAN send this option this value is used in the
     DR election rather than the IP address.  The priority is configured
     per =phyint=.  This closes the long-standing issue #5.
-  - Distribution archive format changed from XZ to Gzip, for the benfit
+  - Distribution archive format changed from XZ to Gzip, for the benefit
     of OpenBSD that only ships Gzip in the base system.
 
 ** New pimd.conf syntax!
