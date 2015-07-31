@@ -41,7 +41,8 @@ SRCS          = $(OBJS:.o=.c)
 DEPS          = $(addprefix .,$(SRCS:.c=.d))
 MANS          = $(addsuffix .8,$(EXEC))
 DISTFILES     = README.md README-config.md README.config.jp README-debug.md ChangeLog.org \
-		INSTALL.md LICENSE LICENSE.mrouted TODO.org CREDITS FAQ.md AUTHORS
+		CONTRIBUTING.md CODE-OF-CONDUCT.md INSTALL.md LICENSE LICENSE.mrouted     \
+		TODO.org CREDITS FAQ.md AUTHORS
 
 
 all: $(EXEC)

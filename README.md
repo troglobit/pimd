@@ -229,10 +229,19 @@ or to watch it continually:
 In addition, pimd logs important events to the system logfile, in
 particular at startup when parsing the `pimd.conf` configuration file.
 
+
+Contributing
+------------
+
+If you find bugs, have feature requests, or want to contribute fixes or
+features to pimd, see the file [CONTRIBUTING.md][contrib] for details.
+
+
 [BSD license]:     https://en.wikipedia.org/wiki/BSD_licenses
 [github]:          http://github.com/troglobit/pimd
 [homepage]:        http://troglobit.com/pimd.html
-[changes]:         https://github.com/troglobit/pimd/blob/dev/ChangeLog.org
+[changes]:         https://github.com/troglobit/pimd/blob/master/ChangeLog.org
+[contrib]:         https://github.com/troglobit/pimd/blob/master/CONTRIBUTING.md
 [Travis]:          https://travis-ci.org/troglobit/pimd
 [Travis Status]:   https://travis-ci.org/troglobit/pimd.png?branch=master
 [Coverity Scan]:   https://scan.coverity.com/projects/3319
