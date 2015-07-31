@@ -98,7 +98,7 @@ dist:
 		echo "Distribution $(ARCHIVEZ) already exists."; \
 		exit 1; \
 	fi
-	@echo "Building xz tarball of $(PKG) in parent dir ..."
+	@echo "Building gz tarball of $(PKG) in parent dir ..."
 	@$(ARCHTOOL) ../$(ARCHIVE)
 	@gzip ../$(ARCHIVE)
 	@md5sum $(ARCHIVEZ) | tee $(ARCHIVEZ).md5
