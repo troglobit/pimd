@@ -1,17 +1,18 @@
 #+TITLE:    pimd | Change Log
-#+AUTHOR:   Ahmed Helmy, George Edmond Eddy, Pavlin Ivanov Radoslavov, Markus Veranen
+#+AUTHOR:   Ahmed Helmy, George Edmond Eddy, Pavlin Ivanov Radoslavov, \and{} Markus Veranen
 #+OPTIONS: toc:nil
 #+OPTIONS: H:3 num:0
-#+LaTeX_HEADER: \usepackage{parskip}
+#+LaTeX_HEADER: \usepackage{parskip} \usepackage{a4wide}
 #+LaTeX_CLASS_OPTIONS: [twoside, colorlinks=true, linkcolor=blue, urlcolor=blue]
 
-* Version 2.3.0: UNRELEASED
-
-** /The PIM-SSM and IGMPv3 release!/
+* Version 2.3.0: July 31, 2015 -- /PIM-SSM & IGMPv3 release!/
 
 The significant new features in this release would not have been
 possible if not for the hard work of Markus Veranen
 <mailto:markus.veranen@gmail.com>
+
+Tested on Ubuntu 14.04 (GLIBC/Linux 3.13), Debian 8.1 (GLIBC/Linux
+3.16), FreeBSD, NetBSD, and OpenBSD.
 
 ** Changes and New Features
   - Support for PIM-SSM and IGMPv3, by Markus Veranen
@@ -37,14 +38,15 @@ possible if not for the hard work of Markus Veranen
     If all routers on a LAN send this option this value is used in the
     DR election rather than the IP address.  The priority is configured
     per =phyint=.  This closes the long-standing issue #5.
+  - Distribution archive format changed from XZ to Gzip, for the benfit
+    of OpenBSD that only ships Gzip in the base system.
 
+** New pimd.conf syntax!
 
-** New syntax in pimd.conf
-
-The =pimd.conf= syntax has undergone a major syntax change in this
-release.  Mainly, the change is to use dashes =-= instead of underscore
-=_= as word separators.  However several settings have been renamed to
-be more familiar to commands used by major router vendors:
+The =pimd.conf= syntax has been changed in this release.  Mainly, the
+configuration file now use dashes =-= instead of underscore =_= as word
+separators.  However several settings have also been renamed to be more
+familiar to commands used by major router vendors:
 
    - =bsr-candidate= :: replaces =cand_bootstrap_router=
    - =rp-candidate= :: replaces =cand_rp=
@@ -56,10 +58,10 @@ be more familiar to commands used by major router vendors:
    - =default-route-distance= :: replaces =default_source_preference=
    - =default-route-metric= :: replaces =default-source-metric= 
 
-Also, for =phyint= the =preference= setting has been replaced with the
-less confusing =distance= and =ttl-threshold= replaces =threshold=.  See
-the README or the man page for more information on the metric preference
-and admin distance confusion.
+Also, for =phyint= the =preference= sub-option has been replaced with
+the less confusing =distance= and =ttl-threshold= replaces =threshold=.
+See the README or the man page for more information on the metric
+preference and admin distance confusion.
 
 /*Note:* The =pimd.conf= parser remains backwards compatible with the
 old syntax!/
@@ -68,10 +70,18 @@ old syntax!/
 ** Compile Time Features
 
 The following are new features that must be enabled at compile time,
-using the =configure= script.  For details, see =./configure --help=
+using the =configure= script, to take effect.  For details, see
+=./configure --help=
 
+  - =--prefix=PATH= :: Standard prefix to be used at installation,
+       default =/usr/local=
+  - =--sysconfdir=PATH= :: Prefix path to be used for =pimd.conf=,
+       default =/etc=, unless =--prefix= is given.
+  - =--embedded-libc= :: Enable uClib or musl libc build, on Linux.
   - =--disable-exit-on-error= :: Allow pimd to continue running despite
        encountering errors.
+  - =--disable-pim-genid= :: Disable advertisement of PIM Hello GenID,
+       use for compatibility problems with older versions of pimd.
   - =--with-max-vifs=MAXVIFS= :: Raise max number of VIFs to MAXVIFS.
 
        *Note:* this requires raising MAXVIFS in the kernel as well!
@@ -82,7 +92,12 @@ using the =configure= script.  For details, see =./configure --help=
 
 ** Bug Fixes
   - Fix issue #40: FTBS with =./configure --enable-scoped-acls=
+  - Properly support cross compiling.  It is now possible to actually
+    define the =$CROSS= environment variable when calling =make= to
+    allow cross compiling pimd.  Should work with both GCC and Clang.
+    Tested on Ubuntu, Debian and FreeBSD.
 
+#+LATEX: \newpage
 * Version 2.2.1: April 20, 2015
 ** Bug Fixes
   - Fix another problem with issue #22 (reopened), as laid out in
@@ -95,10 +110,12 @@ using the =configure= script.  For details, see =./configure --help=
   - Fix issue with scoped =phyint= in =config.c=, found by Coverity Scan.
     The =masklen= may not be zero, config file problem, alert the user.
     
+
+#+LATEX: \newpage
 * Version 2.2.0: December 28, 2014
 ** Changes & New Features
-  - Add IP fragmentation support for PIM register messages,
-    by Michael Fine of Cumulus Networks
+  - Support for IP fragmentation of PIM register messages,
+    by Michael Fine, Cumulus Networks
   - Support =/LEN= syntax in =phyint= to complement =masklen LEN=, issue #12
   - Add support for /31 networks, point-to-point, thanks to Apollon Oikonomopoulos
   - Remove old broken SNMP support
@@ -131,6 +148,8 @@ using the =configure= script.  For details, see =./configure --help=
   - Misc. bug fixes thanks to Coverity Scan, static code analysis tool
     https://scan.coverity.com/projects/3319
 
+
+#+LATEX: \newpage
 * Version 2.1.8: October 22, 2011
 ** Changes & New Features
   - Update docs of static Rendez-Vous Point, =rp_address=, configuration
@@ -164,6 +183,8 @@ using the =configure= script.  For details, see =./configure --help=
     Filesystem Hierarchy Standard,
     http://www.pathname.com/fhs/pub/fhs-2.3.html#VARRUNRUNTIMEVARIABLEDATA
 
+
+#+LATEX: \newpage
 * Version 2.1.6: January 8, 2011
 ** Changes & New Features
   - Debian package now conflicts with =smcroute=, in addition to
@@ -198,6 +219,8 @@ using the =configure= script.  For details, see =./configure --help=
 
     Bug reported and fixed on mrouted by Dan Kruchinin <mailto:dkruchinin@acm.org>
 
+
+#+LATEX: \newpage
 * Version 2.1.4: September 25, 2010
 ** Changes & New Features
   - Updates for support on Debian GNU/kFreeBSD, FreeBSD kernel with GNU userland.
@@ -224,6 +247,8 @@ using the =configure= script.  For details, see =./configure --help=
   - Tried fixing =debug.c:logit()= build failure on Sparc due to mixup in headers
     for =tv_usec= type.
 
+
+#+LATEX: \newpage
 * Version 2.1.2: September  4, 2010
 ** Changes & New Features
   - License change on mrouted code from OpenBSD team => pimd fully free
@@ -270,6 +295,8 @@ using the =configure= script.  For details, see =./configure --help=
 
   - Fix build issues on NetBSD
 
+
+#+LATEX: \newpage
 * Version 2.1.1: January 17, 2010
 ** Changes & New Features
   - Bumping version again to celebrate the changes and make it easier for
@@ -301,6 +328,8 @@ Merged all patches from http://lintrack.org.
 
   - Bumped version number, this code has been available for a while now.
 
+
+#+LATEX: \newpage
 * Version 2.1.0-alpha29.19: January 14, 2005
 ** Bug Fixes
   - Don't ignore PIM Null Register messages if the IP version of the

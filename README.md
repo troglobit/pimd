@@ -34,12 +34,13 @@ features, such as `--enable-scoped-acls` are activated here as well.
 
     sudo make install
 
-The Makefile supports de facto standard environment variables such as
-`prefix` and `DESTDIR` for the install process.  E.g., to install pimd
-to `/usr` instead of the default `/usr/local`, but redirect to a binary
-package directory in `/tmp`:
+The configure script and Makefile supports de facto standard settings
+and environment variables such as `--prefix=PATH` and `DESTDIR=` for the
+install process.  E.g., to install pimd to `/usr` instead of the default
+`/usr/local`, but redirect to a binary package directory in `/tmp`:
 
-    VERSION=2.3.0-1 prefix=/usr DESTDIR=/tmp/pimd-2.3.0-1 make clean install
+    ./configure --prefix=/usr && make clean all
+    VERSION=2.3.0-1 DESTDIR=/tmp/pimd-2.3.0-1 make install
 
 
 Configuration
