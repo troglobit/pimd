@@ -40,7 +40,7 @@ install process.  E.g., to install pimd to `/usr` instead of the default
 `/usr/local`, but redirect to a binary package directory in `/tmp`:
 
     ./configure --prefix=/usr && make clean all
-    VERSION=2.3.0-1 DESTDIR=/tmp/pimd-2.3.0-1 make install
+    make VERSION=2.3.0-1 DESTDIR=/tmp/pimd-2.3.0-1 install
 
 
 Configuration

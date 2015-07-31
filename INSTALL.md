@@ -10,23 +10,30 @@ of the release tarballs at <https://github.com/troglobit/pimd/releases>
 After unpacking the tarball, cd to the new directory, e.g. `pimd-2.3.0/`
 followed by:
 
-	./configure && make
-	sudo make install
+    ./configure && make
+    sudo make install
 
 By default pimd is installed to the `/usr/local` prefix, except for
 `pimd.conf` which is installed to `/etc`.  If you want to install to
 another directory, e.g. `/opt`, use:
 
-	./configure --prefix=/opt && make
-	sudo make  install
+    ./configure --prefix=/opt && make
+    sudo make install
 
 This will change both the `--prefix` and the `--sysconfdir` paths.  To
 install `pimd.conf` to another path, add `--sysconfdir` *after* the
 `--prefix` path.
 
-Now, the default `/etc/pimd.conf` should be good enough for most use
-cases.  But if you edit it, see the man page or the comments in the
-file for some help.
+For distribution packagers and ports maintainers, the pimd `Makefile`
+supports the use of `DESTDIR=` to install to a staging directory.  What
+you want is probably something like:
+
+    ./configure --prefix=/usr --sysconfdir=/etc && make
+    make DESTDIR=/tmp/staging VERSION=2.3.0-1 install
+
+The default `/etc/pimd.conf` should be good enough for most use cases.
+But if you edit it, see the man page or the comments in the file for
+some help.
 
 NetBSD and FreeBSD users may have to install the kernel modules to get
 multicast routing support, including PIM support.  See your respective
@@ -41,8 +48,8 @@ possible to cross-compile.  Simply make sure to give the `configure`
 script the correct paths and options, and then set the environment
 variable `CROSS` to your cross compiler prefix.  E.g.
 
-		./configure --prefix=/ --embedded-libc
-		CROSS=arm-linux-gnueabi- make
+    ./configure --prefix=/ --embedded-libc
+    make CROSS=arm-linux-gnueabi-
 
 **Note:** some toolchains do not properly setup at `cc` symlink, for
   instance the Debian/Ubuntu ARM toolchains.  Instead they assume that
@@ -69,7 +76,7 @@ available in all major operating systems
    Because there are many debug messages, you can specify only a subset of
    the messages to be printed out:
 
-		usage: pimd [-c configfile] [-d [debug_level][,debug_level]]
+        usage: pimd [-c configfile] [-d [debug_level][,debug_level]]
 
    Valid debug levels: `dvmrp_prunes`, `dvmrp_mrt`, `dvmrp_neighbors`,
    `dvmrp_timers`, `igmp_proto`, `igmp_timers`, `igmp_members`, `trace`,
