@@ -15,7 +15,7 @@ ARCHIVEZ      = ../$(ARCHIVE).gz
 
 ROOTDIR      ?= $(dir $(shell pwd))
 RM            = rm -f
-CC            = $(CROSS)$(CC)
+CC           := $(CROSS)$(CC)
 CHECK        := cppcheck $(CPPFLAGS) --quiet --enable=all
 
 IGMP_OBJS     = igmp.o igmp_proto.o trace.o
