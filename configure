@@ -121,12 +121,12 @@ echo > $TMP
 echo "# Configured settings/features ..." >> $TMP
 
 while [ "$*" != "" ]; do
-    opt=`expr "$1" : "--\([^=]*\)=.*"`
-    arg=`expr "$1" : "--[^=]*=\(.*\)"`
+    opt=`expr -- "$1" : "--\([^=]*\)=.*"`
+    arg=`expr -- "$1" : "--[^=]*=\(.*\)"`
     if [ -z "$opt" ]; then
-        opt=`expr "$1" : "--\(.*\)"`
+        opt=`expr -- "$1" : "--\(.*\)"`
 	if [ -z "$opt" ]; then
-            opt=`expr "$1" : "-\(.*\)"`
+            opt=`expr -- "$1" : "-\(.*\)"`
 	fi
     fi
     shift
