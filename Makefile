@@ -39,8 +39,7 @@ CFLAGS       += -W -Wall -Werror -fno-strict-aliasing
 LDLIBS        = $(EXTRA_LIBS)
 OBJS          = $(IGMP_OBJS) $(ROUTER_OBJS) $(PIM_OBJS) $(DVMRP_OBJS) $(EXTRA_OBJS)
 SRCS          = $(OBJS:.o=.c)
-DEPS          = $(addprefix .,$(SRCS:.c=.d))
-MANS          = $(addsuffix .8,$(EXEC))
+MANS          = $(EXEC).8
 DISTFILES     = README.md README-config.md README.config.jp README-debug.md ChangeLog.org \
 		CONTRIBUTING.md CODE-OF-CONDUCT.md INSTALL.md LICENSE LICENSE.mrouted     \
 		TODO.org CREDITS FAQ.md AUTHORS
