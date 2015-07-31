@@ -36,6 +36,7 @@ CFG=config.mk
 TMP=`mktemp /tmp/XXXXXX`
 
 # Defaults
+debug=0
 disable_genid=0
 embedded_libc=0
 
@@ -73,6 +74,7 @@ usage()
     print "\n"
     print "Usage: configure [ARG]\n"
     print "\n"
+    print "  --debug                  Enable debuggable build, -g and -O0\n"
     print "  --prefix=PATH            Base installation directory, default: /usr/local\n"
     print "  --sysconfidir=PATH       Path to pimd.conf, default: /etc\n"
     print "  --embedded-libc          Linux system with uClibc or musl libc.  These two\n"
@@ -130,6 +132,10 @@ while [ "$*" != "" ]; do
     shift
 
     case $opt in
+	debug)
+	    debug=1;
+	    ;;
+
 	prefix)
 	    echo "prefix        = $arg"     >> $TMP
 	    echo "sysconfdir   += $arg/etc" >> $TMP
@@ -281,6 +287,14 @@ case $OS in
 	exit 1
 	;;
 esac
+
+echo >> $CFG
+echo "# Build specific settings ..." >> $CFG
+if [ $debug -eq 1 ]; then
+    echo "CFLAGS      += -O0 -g" >> $CFG
+else
+    echo "CFLAGS      += -O2" >> $CFG
+fi
 
 cat $TMP >> $CFG
 rm $TMP

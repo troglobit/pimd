@@ -34,8 +34,7 @@ mandir        = $(prefix)/share/man/man8
 
 ## Common
 CFLAGS       += $(INCLUDES) $(DEFS) $(USERCOMPILE)
-CFLAGS       += -O2 -W -Wall -Werror -fno-strict-aliasing
-#CFLAGS       += -O -g
+CFLAGS       += -W -Wall -Werror -fno-strict-aliasing
 LDLIBS        = $(EXTRA_LIBS)
 OBJS          = $(IGMP_OBJS) $(ROUTER_OBJS) $(PIM_OBJS) $(DVMRP_OBJS) $(EXTRA_OBJS)
 SRCS          = $(OBJS:.o=.c)
