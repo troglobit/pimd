@@ -42,14 +42,14 @@ it is more or less [KNF][].
 In Emacs this coding style can be achieved by using the following
 footer applied to a C file:
 
-	/**
-	 * Local Variables:
-	 *  version-control: t
-	 *  indent-tabs-mode: t
-	 *  c-file-style: "ellemtel"
-	 *  c-basic-offset: 4
-	 * End:
-	 */
+    /**
+     * Local Variables:
+     *  version-control: t
+     *  indent-tabs-mode: t
+     *  c-file-style: "ellemtel"
+     *  c-basic-offset: 4
+     * End:
+     */
 
 The current maintainer has considered shifting the original coding
 style to FULL [KNF][] several times.
@@ -62,20 +62,20 @@ Commit messages exist to track *why* a change was made.  Try to be as
 clear and concise as possible in your commit messages.  Example from
 the [Pro Git][gitbook] online book:
 
-	Brief, but clear and concise summary of changes
-	
-	More detailed explanatory text, if necessary.  Wrap it to about 72
-	characters or so.  In some contexts, the first line is treated as
-	the subject of an email and the rest of the text as the body.  The
-	blank line separating the ummary from the body is critical (unless
-	you omit the body entirely); tools like rebase can get confused if
-	you run the two together.
-	
-	Further paragraphs come after blank lines.
-	
-	 - Bullet points are okay, too
-	
-	 - Typically a hyphen or asterisk is used for the bullet, preceded
+    Brief, but clear and concise summary of changes
+    
+    More detailed explanatory text, if necessary.  Wrap it to about 72
+    characters or so.  In some contexts, the first line is treated as
+    the subject of an email and the rest of the text as the body.  The
+    blank line separating the ummary from the body is critical (unless
+    you omit the body entirely); tools like rebase can get confused if
+    you run the two together.
+    
+    Further paragraphs come after blank lines.
+    
+     - Bullet points are okay, too
+    
+     - Typically a hyphen or asterisk is used for the bullet, preceded
        by a single space, with blank lines in between, but conventions
        vary here
 
@@ -104,4 +104,10 @@ Bill & Ted; [be excellent to each other][conduct].
 [KNF]:      https://en.wikipedia.org/wiki/Kernel_Normal_Form
 [gitbook]:  https://git-scm.com/book/ch5-2.html
 [rambling]: http://stopwritingramblingcommitmessages.com/
-[conduct]:  https://github.com/troglobit/pimd/blob/dev/CODE-OF-CONDUCT.md
+[conduct]:  https://github.com/troglobit/pimd/blob/master/CODE-OF-CONDUCT.md
+
+<!--
+  -- Local Variables:
+  -- mode: markdown
+  -- End:
+  -->

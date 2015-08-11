@@ -19,6 +19,28 @@ some tips and details, see the `configure` script.
 For a summary of changes for each release, see the [ChangeLog][changes].
 
 
+Download
+--------
+
+Although the project makes heavy use of GitHub, do *not* use the ZIP
+file links GitHub provides.  Instead, use the FTP or releases page to
+download tarballs:
+
+- http://ftp.troglobit.com/pimd/
+
+If you want to [contribute][contrib], check out the code from GitHub
+like this, including the submodules.  Remember to update the submodules
+whenever you do a `git pull`.
+
+	git clone https://github.com/troglobit/pimd
+	cd pimd
+	git submodule update --init
+
+The GitHub download links, including the ZIP files on the releases page,
+do not include the files from the GIT submodules, unfortunately.  This
+has been reported to GitHub but has not been fixed by them yet.
+
+
 Building
 --------
 
