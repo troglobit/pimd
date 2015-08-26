@@ -299,5 +299,16 @@ fi
 cat $TMP >> $CFG
 rm $TMP
 
+if [ ! -e libite/lite.h ]; then
+    print "  FIXDEP  libite/lite.h missing ... "
+    git submodule update --init >/dev/null
+    if [ $? -ne 0 ]; then
+	print "FAILED!  No Internet access?"
+	exit 1
+    fi
+    print "OK\n"
+fi
+
+
 exit 0
 
