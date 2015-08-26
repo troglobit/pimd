@@ -2,12 +2,28 @@ README
 ======
 [![Travis Status][]][Travis] [![Coverity Status][]][Coverity Scan]
 
+Table of Contents
+-----------------
+
+* [Introduction](#introduction)
+* [Download](#download)
+* [Building](#building)
+* [Configuration](#configuration)
+* [Example](#example)
+* [Starting](#starting)
+* [Monitoring](#monitoring)
+* [Contributing](#contributing)
+
+
+Introduction
+------------
+
 pimd is a lightweight, stand-alone PIM-SM/SSM multicast routing daemon
 available under the free [3-clause BSD license][BSD license].  This is
 the restored original version from University of Southern California, by
 Ahmed Helmy, Rusty Eddy and Pavlin Ivanov Radoslavov.
 
-Today pimd is [maintained at GitHub][github].  Use its facilities to
+Today pimd is [maintained at GitHub][GitHub].  Use its facilities to
 access the source, report bugs and feature requests, and send patches or
 pull requests.  Official release tarballs at [the homepage][homepage].
 
@@ -22,23 +38,15 @@ For a summary of changes for each release, see the [ChangeLog][changes].
 Download
 --------
 
-Although the project makes heavy use of GitHub, do *not* use the ZIP
-file links GitHub provides.  Instead, use the FTP or releases page to
-download tarballs:
+Although the project makes heavy use of GitHub, it is *not* recommended
+to use the ZIP file links GitHub provides.  Instead, we recommend using
+proper tarball releases from [the FTP][], or the [releases page][].
 
-- http://ftp.troglobit.com/pimd/
+The GitHub *Download ZIP* links, and ZIP files on the [releases page][],
+do not include files from the GIT submodules.  The configure script has
+a check for this, but is not 100% foolproof.
 
-If you want to [contribute][contrib], check out the code from GitHub
-like this, including the submodules.  Remember to update the submodules
-whenever you do a `git pull`.
-
-	git clone https://github.com/troglobit/pimd
-	cd pimd
-	git submodule update --init
-
-The GitHub download links, including the ZIP files on the releases page,
-do not include the files from the GIT submodules, unfortunately.  This
-has been reported to GitHub but has not been fixed by them yet.
+See below if you want to contribute.
 
 
 Building
@@ -51,9 +59,8 @@ features, such as `--enable-scoped-acls` are activated here as well.
 
 **Example:**
 
-    ./configure --enable-scoped-acls
-    make
-
+    ./configure --enable-scoped-acls && make
+    
     sudo make install
 
 The configure script and Makefile supports de facto standard settings
@@ -256,15 +263,27 @@ particular at startup when parsing the `pimd.conf` configuration file.
 Contributing
 ------------
 
-If you find bugs, have feature requests, or want to contribute fixes or
-features to pimd, see the file [CONTRIBUTING.md][contrib] for details.
+pimd is maintained by [Joachim Nilsson][] at [GitHub][].  If you find
+bugs, have feature requests, or want to contribute fixes or features,
+check out the code from GitHub, including the submodules:
+
+	git clone https://github.com/troglobit/uftpd
+	cd uftpd
+	make submodules
+
+When you pull from upstream, remember to also update the submodules
+using `git submodule update`, see the file [CONTRIBUTING.md][contrib]
+for further details.
 
 
 [BSD license]:     https://en.wikipedia.org/wiki/BSD_licenses
 [github]:          http://github.com/troglobit/pimd
 [homepage]:        http://troglobit.com/pimd.html
 [changes]:         https://github.com/troglobit/pimd/blob/master/ChangeLog.org
+[the FTP]:         http://ftp.troglobit.com/pimd/
+[releases page]:   https://github.com/troglobit/pimd/releases
 [contrib]:         https://github.com/troglobit/pimd/blob/master/CONTRIBUTING.md
+[Joachim Nilsson]: http://troglobit.com
 [Travis]:          https://travis-ci.org/troglobit/pimd
 [Travis Status]:   https://travis-ci.org/troglobit/pimd.png?branch=master
 [Coverity Scan]:   https://scan.coverity.com/projects/3319
