@@ -324,9 +324,9 @@ typedef struct pim_jp_encod_grp_ {
         (masklen) = tmp_masklen;                                 \
     } while (0)
 
-#define MASKLEN_TO_MASK(masklen, mask)                                       \
-do {                                                                         \
-    (mask) = (masklen)? htonl(~0 << ((sizeof((mask)) << 3) - (masklen))) : 0;\
+#define MASKLEN_TO_MASK(masklen, mask)					    \
+  do {									    \
+    (mask) = masklen ? htonl(~0U << ((sizeof(mask) << 3) - (masklen))) : 0; \
 } while (0)
 
 
