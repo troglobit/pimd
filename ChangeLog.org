@@ -5,6 +5,15 @@
 #+LaTeX_HEADER: \usepackage{parskip} \usepackage{a4wide}
 #+LaTeX_CLASS_OPTIONS: [twoside, colorlinks=true, linkcolor=blue, urlcolor=blue]
 
+* Version 2.3.1: UNRELEASED
+
+Bug fix release.
+
+** Bug Fixes
+- Issue #55: Default config uses =/etcpimd.conf= instead of
+  =/etc/pimd.conf=.  Slashes added and now =pimd -h= lists
+  the default path instead of a hard coded string.
+
 * Version 2.3.0: July 31, 2015 -- /PIM-SSM & IGMPv3 release!/
 
 The significant new features in this release would not have been
