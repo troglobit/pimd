@@ -250,7 +250,7 @@ static int usage(void)
     struct debugname *d;
 
     fprintf(stderr, "Usage: %s [-fhlNqrv] [-c FILE] [-d [LEVEL][,LEVEL...]]\n\n", __progname);
-    fputs("  -c, --config=FILE    Configuration file to use, default /etc/pimd.conf\n", stderr);
+    fprintf(stderr, "  -c, --config=FILE    Configuration file to use, default %s\n", _PATH_PIMD_CONF);
     fputs("  -d, --debug[=LEVEL]  Debug level, see below for valid levels\n", stderr);
     fputs("  -f, --foreground     Run in foreground, do not detach from calling terminal\n", stderr);
     fputs("  -h, --help           Show this help text\n", stderr);
