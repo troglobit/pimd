@@ -60,6 +60,7 @@ heading()
     echo "# Initial definitions ..." >> $CFG
     echo "# -D_GNU_SOURCE Use GNU extensions, where possible" >> $CFG
     echo "# -D_BSD_SOURCE Use functions derived from 4.3 BSD Unix rather than POSIX.1" >> $CFG
+    echo "#               In GLIBC >= v2.20 this is replaced with -D_DEFAULT_SOURCE  " >> $CFG
     echo "# -DPIM         Enable PIM extensions in RSRR" >> $CFG
     echo "DEFS          = -D_BSD_SOURCE -D_DEFAULT_SOURCE -D_GNU_SOURCE -DPIM" >> $CFG
     echo "# EXTRA_OBJS  = For locally provided objects missing on some platforms, e.g., strlcpy.o"  >> $CFG
