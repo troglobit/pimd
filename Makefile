@@ -4,8 +4,8 @@
 #       OpenBSD not having bzip2 in the base distribution.
 #
 
-# VERSION      ?= $(shell git tag -l | tail -1)
-VERSION      ?= 2.3.1-beta1
+#VERSION       = $(shell git tag -l | tail -1)
+VERSION       = 2.3.1-beta1
 EXEC          = pimd
 CONFIG        = $(EXEC).conf
 PKG           = $(EXEC)-$(VERSION)
