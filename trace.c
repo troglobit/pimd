@@ -98,7 +98,7 @@ void accept_mtrace(uint32_t src, uint32_t dst, uint32_t group, char *data, u_int
         }
     } else {
         logit(LOG_WARNING, 0, "%s from %s to %s",
-              "Non decipherable traceroute request recieved",
+              "Non decipherable traceroute request received",
               inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
         return;
     }
