@@ -9,10 +9,16 @@
 
 Bug fix release.
 
+** Changes
+- Let build system handle missing libite GIT submodule
+- Issue #61: Debian packaging moved to https://github.com/bobek/pkg-pimd
+
 ** Bug Fixes
+- Issue #53: Build problem with Clang on FreeBSD
 - Issue #55: Default config uses =/etcpimd.conf= instead of
   =/etc/pimd.conf=.  Slashes added and now =pimd -h= lists
   the default path instead of a hard coded string.
+- Issue #60: Fix minor spelling errors.
 
 * Version 2.3.0: July 31, 2015 -- /PIM-SSM & IGMPv3 release!/
 
