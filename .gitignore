@@ -1,6 +1,5 @@
 vers.c
 pimd
-debian/files
 pimd.map
 ChangeLog.*
 *.o
@@ -11,8 +10,3 @@ ChangeLog.*
 
 build-stamp
 configure-stamp
-debian/pimd.debhelper.log
-debian/pimd.postinst.debhelper
-debian/pimd.postrm.debhelper
-debian/pimd.prerm.debhelper
-debian/pimd.substvars
