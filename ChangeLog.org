@@ -5,7 +5,7 @@
 #+LaTeX_HEADER: \usepackage{parskip} \usepackage{a4wide}
 #+LaTeX_CLASS_OPTIONS: [twoside, colorlinks=true, linkcolor=blue, urlcolor=blue]
 
-* Version 2.3.1: UNRELEASED
+* Version 2.3.1: November 15, 2015
 
 Bug fix release.
 
