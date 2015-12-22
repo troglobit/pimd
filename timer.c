@@ -360,6 +360,7 @@ void age_routes(void)
     int update_rp_iif;
     int update_src_iif;
     vifbitmap_t new_pruned_oifs;
+    int assert_timer_expired = 0;
 
     /*
      * Timing out of the global `unicast_routing_timer`
@@ -493,13 +494,19 @@ void age_routes(void)
 		    /* The (*,G) entry */
 		    /* outgoing interfaces timers */
 		    change_flag = FALSE;
+		    assert_timer_expired = (TIMEOUT(mrt_grp->assert_timer) && mrt_grp->flags & MRTF_ASSERTED);
 		    for (vifi = 0; vifi < numvifs; vifi++) {
 			if (VIFM_ISSET(vifi, mrt_grp->joined_oifs))
 			    IF_TIMEOUT(mrt_grp->vif_timers[vifi]) {
 				VIFM_CLR(vifi, mrt_grp->joined_oifs);
 				change_flag = TRUE;
 			    }
-		    }
+			if (assert_timer_expired) {
+			    VIFM_CLR(vifi, mrt_grp->asserted_oifs);
+			    change_flag = TRUE;
+			    mrt_grp->flags &= ~MRTF_ASSERTED;
+			}
+ 		    }
 
 		    if ((change_flag == TRUE) || (update_rp_iif == TRUE)) {
 			change_interfaces(mrt_grp,
@@ -542,13 +549,6 @@ void age_routes(void)
 			SET_TIMER(mrt_grp->jp_timer, PIM_JOIN_PRUNE_PERIOD);
 		    }
 
-		    /* Assert timer */
-		    if (mrt_grp->flags & MRTF_ASSERTED) {
-			IF_TIMEOUT(mrt_grp->assert_timer) {
-			    /* TODO: XXX: reset the upstream router now */
-			    mrt_grp->flags &= ~MRTF_ASSERTED;
-			}
-		    }
 		    /* Register-Suppression timer */
 		    /* TODO: to reduce the kernel calls, if the timer
 		     * is running, install a negative cache entry in
@@ -573,6 +573,7 @@ void age_routes(void)
 
 		    /* outgoing interfaces timers */
 		    change_flag = FALSE;
+		    assert_timer_expired = (TIMEOUT(mrt_srcs->assert_timer) && mrt_srcs->flags & MRTF_ASSERTED);
 		    for (vifi = 0; vifi < numvifs; vifi++) {
 			if (VIFM_ISSET(vifi, mrt_srcs->joined_oifs)) {
 			    /* TODO: checking for reg_num_vif is slow! */
@@ -582,6 +583,11 @@ void age_routes(void)
 				    change_flag = TRUE;
 				}
 			    }
+			}
+			if (assert_timer_expired) {
+			    VIFM_CLR(vifi, mrt_srcs->asserted_oifs);
+			    change_flag = TRUE;
+			    mrt_srcs->flags &= ~MRTF_ASSERTED;
 			}
 		    }
 
@@ -691,14 +697,6 @@ void age_routes(void)
 			    }
 			}
 			SET_TIMER(mrt_srcs->jp_timer, PIM_JOIN_PRUNE_PERIOD);
-		    }
-
-		    /* Assert timer */
-		    if (mrt_srcs->flags & MRTF_ASSERTED) {
-			IF_TIMEOUT(mrt_srcs->assert_timer) {
-			    /* TODO: XXX: reset the upstream router now */
-			    mrt_srcs->flags &= ~MRTF_ASSERTED;
-			}
 		    }
 
 		    /* Register-Suppression timer */
