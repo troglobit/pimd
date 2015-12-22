@@ -2860,9 +2860,10 @@ int receive_pim_assert(uint32_t src, uint32_t dst __attribute__((unused)), char 
 
 	/* Have to remove that outgoing vifi from mrt */
 	VIFM_SET(vifi, mrt->asserted_oifs);
-	/* TODO: XXX: TIMER implem. dependency! */
-	if (mrt->timer < PIM_ASSERT_TIMEOUT)
-	    SET_TIMER(mrt->timer, PIM_ASSERT_TIMEOUT);
+	mrt->flags |= MRTF_ASSERTED;
+	if (mrt->assert_timer < PIM_ASSERT_TIMEOUT)
+	    SET_TIMER(mrt->assert_timer, PIM_ASSERT_TIMEOUT);
+
 	/* TODO: XXX: check that the timer of all affected routing entries
 	 * has been restarted.
 	 */
