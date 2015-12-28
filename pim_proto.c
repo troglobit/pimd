@@ -2887,6 +2887,10 @@ int receive_pim_assert(uint32_t src, uint32_t dst __attribute__((unused)), char 
 				     */
 	}
 
+	/* Ignore assert message if we do not have an upstream router */
+	if (mrt->upstream == NULL)
+	    return FALSE;
+
 	/* TODO: where to get the local metric and preference from?
 	 * system call or mrt is fine?
 	 */
