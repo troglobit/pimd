@@ -47,7 +47,7 @@ typedef struct {
 static int restart_dr_election     (struct uvif *v);
 static int parse_pim_hello         (char *msg, size_t len, uint32_t src, pim_hello_opts_t *opts);
 static void cache_nbr_settings     (pim_nbr_entry_t *nbr, pim_hello_opts_t *opts);
-static int send_pim_register_stop  (uint32_t reg_src, uint32_t reg_dst, uint32_t inner_source, uint32_t inner_grp);
+static int send_pim_register_stop  (uint32_t reg_src, uint32_t reg_dst, uint32_t inner_grp, uint32_t inner_source);
 static build_jp_message_t *get_jp_working_buff (void);
 static void return_jp_working_buff (pim_nbr_entry_t *pim_nbr);
 static void pack_jp_message        (pim_nbr_entry_t *pim_nbr);
