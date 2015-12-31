@@ -173,9 +173,9 @@ mrtentry_t *find_route(uint32_t source, uint32_t group, uint16_t flags, char cre
 		    /* Exact (S,G) entry found */
 		    logit(LOG_DEBUG, 0 , "find_route: exact (S,G) entry found");
 		    return mrt;
-		} else {
-		    logit(LOG_DEBUG, 0 , "find_route:(S,G) entry not found");
 		}
+
+		logit(LOG_DEBUG, 0 , "find_route:(S,G) entry not found");
 	    }
 
 	    /* No (S,G) entry. Return the (*,G) entry (if exist) */
