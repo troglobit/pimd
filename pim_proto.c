@@ -652,7 +652,7 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
     is_null   = ntohl(reg->reg_flags) & PIM_REGISTER_NULL_REGISTER_BIT;
 
     /* initialize the pointer to the encapsulated packet */
-    ip = (struct ip *)(reg + 1);
+    ip = (struct ip *)(msg + sizeof(pim_header_t) + sizeof(pim_register_t));
 
     /* check the IP version (especially for the NULL register...see above) */
     if (ip->ip_v != IPVERSION && (! is_null)) {
