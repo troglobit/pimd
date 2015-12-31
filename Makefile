@@ -5,7 +5,7 @@
 #
 
 #VERSION       = $(shell git tag -l | tail -1)
-VERSION       = 2.3.1
+VERSION       = 2.3.2-beta1
 EXEC          = pimd
 CONFIG        = $(EXEC).conf
 PKG           = $(EXEC)-$(VERSION)
