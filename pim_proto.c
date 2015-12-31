@@ -1031,7 +1031,8 @@ int receive_pim_register_stop(uint32_t reg_src, uint32_t reg_dst, char *msg, siz
     GET_EGADDR(&egaddr,  data);
     GET_EUADDR(&eusaddr, data);
 
-    logit(LOG_INFO, 0, "Received PIM_REGISTER_STOP from RP %s to %s for src = %s and group = %s", inet_fmt(reg_src, s1, sizeof(s1)), inet_fmt(reg_dst, s2, sizeof(s2)),
+    logit(LOG_INFO, 0, "Received PIM_REGISTER_STOP from RP %s to %s for src = %s and group = %s",
+	  inet_fmt(reg_src, s1, sizeof(s1)), inet_fmt(reg_dst, s2, sizeof(s2)),
 	  inet_fmt(eusaddr.unicast_addr, s3, sizeof(s3)),
 	  inet_fmt(egaddr.mcast_addr, s4, sizeof(s4)));
 
@@ -1070,9 +1071,8 @@ send_pim_register_stop(uint32_t reg_src, uint32_t reg_dst, uint32_t inner_grp, u
     char   *buf;
     uint8_t *data;
 
-    if (IN_PIM_SSM_RANGE(inner_grp)) {
+    if (IN_PIM_SSM_RANGE(inner_grp))
 	return TRUE;
-    }
 
     logit(LOG_INFO, 0, "Send PIM REGISTER STOP from %s to router %s for src = %s and group = %s",
 	  inet_fmt(reg_src, s1, sizeof(s1)), inet_fmt(reg_dst, s2, sizeof(s2)),
@@ -2371,7 +2371,7 @@ int add_jp_entry(pim_nbr_entry_t *pim_nbr, uint16_t holdtime, uint32_t group,
     if (!bjpm) {
 	bjpm = get_jp_working_buff();
 	if (!bjpm) {
-	    logit(LOG_ERR, 0, "Failed allocating working buffer in add_jp_entry()\n");
+	    logit(LOG_ERR, 0, "Failed allocating working buffer in add_jp_entry()");
 	    exit (-1);
 	}
 
