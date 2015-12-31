@@ -949,11 +949,7 @@ int send_pim_register(char *packet)
 	buf += sizeof(pim_register_t);
 
 	/* Copy the data packet at the back of the register packet */
-#ifdef HAVE_IP_HDRINCL_BSD_ORDER
-	pktlen = ip->ip_len;
-#else
 	pktlen = ntohs(ip->ip_len);
-#endif
 	memcpy(buf, ip, pktlen);
 
 	pktlen += sizeof(pim_register_t); /* 'sizeof(struct ip) + sizeof(pim_header_t)' added by send_pim()  */
@@ -996,11 +992,7 @@ int send_pim_null_register(mrtentry_t *mrtentry)
     ip->ip_id    = 0;
     ip->ip_off   = 0;
     ip->ip_p     = IPPROTO_UDP;			/* XXX: bogus */
-#ifdef HAVE_IP_HDRINCL_BSD_ORDER
-    ip->ip_len   = sizeof(struct ip);
-#else
     ip->ip_len   = htons(sizeof(struct ip));
-#endif
     ip->ip_ttl   = MINTTL; /* TODO: XXX: check whether need to setup the ttl */
     ip->ip_src.s_addr = mrtentry->source->address;
     ip->ip_dst.s_addr = mrtentry->group->group;
