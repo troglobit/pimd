@@ -1,5 +1,5 @@
 #+TITLE:    pimd | Change Log
-#+AUTHOR:   Ahmed Helmy, George Edmond Eddy, Pavlin Ivanov Radoslavov, \and{} Markus Veranen
+#+AUTHOR:   Ahmed Helmy, George Edmond Eddy, Pavlin Ivanov Radoslavov, and Markus Veranen
 #+OPTIONS: toc:nil
 #+OPTIONS: H:3 num:0
 #+LaTeX_HEADER: \usepackage{parskip} \usepackage{a4wide}
@@ -7,17 +7,23 @@
 
 * Version 2.3.2: UNRELEASED
 
-Bug fix release.
+Bug fix release.  All users should upgrade, in particular FreeBSD users!
 
 ** Changes
-- Update to libite v1.4.2 with improved min()/max() macros
+- Minor code cleanup and readability changes to simplify the code.
+- Update to libite v1.4.2 with improved =min()=/=max()= macros
 - Use =-Wextra= not =-Werror= in default =CFLAGS=, this to ensure that pimd
   still builds OK on newer and more pedantic compilers
 
 ** Bug Fixes
-- Issue #57: Multicast routing table not updated on FreeBSD
+- Issue #57: Multicast routing table not updated on FreeBSD.  Introduced
+  with issue #23, in pimd v2.2.0. Too intrusive changes altered handling
+  (forwarding) of PIM register messages.  This only affects BSD systems,
+  in particular FreeBSD 10.2 (current), or any FreeBSD < 11.0
+- Issue #63: Mika Joutsenvirta <mailto:mika.joutsenvirta@insta.fi> found
+  and fixed serious issues with the PIM Assert timeout handling.
 
-
+#+LATEX: \newpage
 * Version 2.3.1: November 15, 2015
 
 Bug fix release.
@@ -33,6 +39,7 @@ Bug fix release.
   the default path instead of a hard coded string.
 - Issue #60: Fix minor spelling errors.
 
+#+LATEX: \newpage
 * Version 2.3.0: July 31, 2015 -- /PIM-SSM & IGMPv3 release!/
 
 The significant new features in this release would not have been
