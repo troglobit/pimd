@@ -499,11 +499,12 @@ void age_routes(void)
 			assert_timer_expired = TIMEOUT(mrt_grp->assert_timer);
 
 		    for (vifi = 0; vifi < numvifs; vifi++) {
-			if (VIFM_ISSET(vifi, mrt_grp->joined_oifs))
+			if (VIFM_ISSET(vifi, mrt_grp->joined_oifs)) {
 			    IF_TIMEOUT(mrt_grp->vif_timers[vifi]) {
 				VIFM_CLR(vifi, mrt_grp->joined_oifs);
 				change_flag = TRUE;
 			    }
+			}
 
 			if (assert_timer_expired) {
 			    VIFM_CLR(vifi, mrt_grp->asserted_oifs);
@@ -612,18 +613,17 @@ void age_routes(void)
 				 */
 				delete_mrtentry(mrt_srcs);
 				continue;
-			    } else {
-				/* iif info found */
-				if ((srcentry_save.incoming != mrt_srcs->incoming) ||
-				    (srcentry_save.upstream != mrt_srcs->upstream)) {
-				    /* Route change has occur */
-				    update_src_iif = TRUE;
-				    mrt_srcs->incoming = mrt_srcs->source->incoming;
-				    mrt_srcs->upstream = mrt_srcs->source->upstream;
-				}
 			    }
-			}
-			else {
+
+			    /* iif info found */
+			    if ((srcentry_save.incoming != mrt_srcs->incoming) ||
+				(srcentry_save.upstream != mrt_srcs->upstream)) {
+				/* Route change has occur */
+				update_src_iif = TRUE;
+				mrt_srcs->incoming = mrt_srcs->source->incoming;
+				mrt_srcs->upstream = mrt_srcs->source->upstream;
+			    }
+			} else {
 			    /* (S,G)RPBit with iif toward RP */
 			    if ((rpentry_save.upstream != mrt_srcs->upstream) ||
 				(rpentry_save.incoming != mrt_srcs->incoming)) {
