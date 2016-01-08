@@ -2823,7 +2823,7 @@ int receive_pim_assert(uint32_t src, uint32_t dst __attribute__((unused)), char 
 	    mrt2 = NULL;
 	}
 
-	if (mrt2) {
+	if (mrt2 && (mrt2->flags & MRTF_NEW)) {
 	    mrt2->flags &= ~MRTF_NEW;
 	    /* TODO: XXX: The spec doesn't say what entry timer value
 	     * to use when the routing entry is created because of asserts.
