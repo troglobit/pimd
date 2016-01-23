@@ -77,7 +77,7 @@ usage()
     print "\n"
     print "  --debug                  Enable debuggable build, -g and -O0\n"
     print "  --prefix=PATH            Base installation directory, default: /usr/local/\n"
-    print "  --sysconfidir=PATH       Path to pimd.conf, default: /etc/\n"
+    print "  --sysconfdir=PATH        Path to pimd.conf, default: /etc/\n"
     print "  --embedded-libc          Linux system with uClibc or musl libc.  These two\n"
     print "                           C libraries have strlcpy() and strlcat()"
     print "\n"
