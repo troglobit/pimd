@@ -144,11 +144,6 @@ typedef void (*ihfunc_t) (int, fd_set *);
 /*
  * Miscellaneous constants and macros
  */
-/* #if (!(defined(__bsdi__)) && !(defined(KERNEL))) */
-#ifndef KERNEL
-#define max(a, b)               ((a) < (b) ? (b) : (a))
-#define min(a, b)               ((a) > (b) ? (b) : (a))
-#endif
 
 #define ENABLINGSTR(val)        (val) ? "enabling" : "disabling"
 
