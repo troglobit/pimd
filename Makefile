@@ -35,7 +35,7 @@ mandir        = $(prefix)/share/man/man8
 ## Common
 CPPFLAGS     += -D_PATH_SYSCONF=\"$(sysconfdir)\"
 CFLAGS       += $(INCLUDES) $(DEFS) $(USERCOMPILE)
-CFLAGS       += -W -Wall -Werror -fno-strict-aliasing
+CFLAGS       += -W -Wall -Wextra -fno-strict-aliasing
 LDLIBS        = $(EXTRA_LIBS)
 OBJS          = $(IGMP_OBJS) $(ROUTER_OBJS) $(PIM_OBJS) $(DVMRP_OBJS) $(EXTRA_OBJS)
 SRCS          = $(OBJS:.o=.c)
