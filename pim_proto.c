@@ -705,7 +705,6 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
         if (!mrtentry)
            return TRUE;
 
-        mrtentry->incoming = reg_vif_num;
         SET_TIMER(mrtentry->timer, PIM_DATA_TIMEOUT);
         mrtentry->flags &= ~MRTF_NEW;
         change_interfaces(mrtentry,
@@ -2024,8 +2023,9 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 		 * be updated by change_interfaces()
 		 */
 		for (mrt_srcs = mrt->group->mrtlink; mrt_srcs; mrt_srcs = mrt_srcs->grpnext) {
-		    if (new_join && mrt_srcs->upstream) {
-			send_pim_join(mrt_srcs->upstream, mrt_srcs, MRTF_SG, PIM_JOIN_PRUNE_HOLDTIME);
+		    if (new_join) {
+			if (mrt_srcs->upstream)
+			    send_pim_join(mrt_srcs->upstream, mrt_srcs, MRTF_SG, PIM_JOIN_PRUNE_HOLDTIME);
 			VIFM_SET(vifi, mrt_srcs->joined_oifs);
 			VIFM_CLR(vifi, mrt_srcs->pruned_oifs);
 			VIFM_CLR(vifi, mrt_srcs->asserted_oifs);
