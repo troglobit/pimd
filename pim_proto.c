@@ -2173,6 +2173,24 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
     return TRUE;
 }
 
+/*
+ * Function for sending single PIM-JOIN instantly.
+ */
+void send_pim_join(pim_nbr_entry_t *pim_nbr, mrtentry_t *mrt, uint16_t flags, uint16_t holdtime)
+{
+    if (pim_nbr == NULL)
+        return;
+
+    if (flags & MRTF_SG)
+        add_jp_entry(pim_nbr, holdtime, mrt->group->group,
+                     SINGLE_GRP_MSKLEN, mrt->source->address,
+                     SINGLE_SRC_MSKLEN, 0, PIM_ACTION_JOIN);
+    else
+        add_jp_entry(pim_nbr, holdtime, mrt->group->group,
+                     SINGLE_GRP_MSKLEN, mrt->group->rpaddr,
+                     SINGLE_SRC_MSKLEN, flags, PIM_ACTION_JOIN);
+    pack_and_send_jp_message(pim_nbr);
+}
 
 /*
  * TODO: NOT USED, probably buggy, but may need it in the future.
