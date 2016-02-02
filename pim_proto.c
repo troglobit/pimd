@@ -696,6 +696,25 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
 	/* TODO: XXX: shouldn't it be inner_src=INADDR_ANY? Not in the spec. */
 	send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
 
+	/* Create mrtentry for forthcoming join requests. Once one occurs
+	 * we know who is sending to this group and can send join to
+	 * that immediately. Saves 0 - 60 seconds not to wait next
+	 * PIM Register.
+	 */
+        mrtentry = find_route(inner_src, inner_grp, MRTF_SG, CREATE);
+        if (!mrtentry)
+           return TRUE;
+
+        mrtentry->incoming = reg_vif_num;
+        SET_TIMER(mrtentry->timer, PIM_DATA_TIMEOUT);
+        mrtentry->flags &= ~MRTF_NEW;
+        change_interfaces(mrtentry,
+                          mrtentry->incoming,
+                          mrtentry->joined_oifs,
+                          mrtentry->pruned_oifs,
+                          mrtentry->leaves,
+                          mrtentry->asserted_oifs, 0);
+
 	return TRUE;
     }
 
