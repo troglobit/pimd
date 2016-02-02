@@ -863,10 +863,11 @@ static void process_cache_miss(struct igmpmsg *igmpctl)
 			  mrt->asserted_oifs, 0);
     } else {
 	mrt = find_route(source, group, MRTF_SG | MRTF_WC | MRTF_PMBR, DONT_CREATE);
-	switch_shortest_path(source, group);
 	if (!mrt)
 	    return;
-    }
+        if (IN_PIM_SSM_RANGE(group))
+            switch_shortest_path(source, group);
+     }
 
     /* TODO: if there are too many cache miss for the same (S,G),
      * install negative cache entry in the kernel (oif==NULL) to prevent
