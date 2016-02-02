@@ -1295,6 +1295,7 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
     rp_grp_entry_t *rp_grp;
     uint8_t *data_group_j_start;
     uint8_t *data_group_p_start;
+    uint32_t new_join;
 
     if ((vifi = find_vif_direct(src)) == NO_VIF) {
 	/* Either a local vif or somehow received PIM_JOIN_PRUNE from
@@ -1975,6 +1976,7 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 		if (!mrt)
 		    continue;
 
+		new_join = (VIFM_ISSET(vifi, mrt->joined_oifs) == 0);
 		VIFM_SET(vifi, mrt->joined_oifs);
 		VIFM_CLR(vifi, mrt->pruned_oifs);
 		VIFM_CLR(vifi, mrt->asserted_oifs);
@@ -1985,25 +1987,50 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 		}
 		if (mrt->timer < holdtime)
 		    SET_TIMER(mrt->timer, holdtime);
-		mrt->flags &= ~MRTF_NEW;
 		change_interfaces(mrt,
 				  mrt->incoming,
 				  mrt->joined_oifs,
 				  mrt->pruned_oifs,
 				  mrt->leaves,
 				  mrt->asserted_oifs, 0);
+		if (mrt->flags & MRTF_NEW) {
+		    mrt->flags &= ~MRTF_NEW;
+		    if (mrt->upstream)
+			send_pim_join(mrt->upstream, mrt, MRTF_RP | MRTF_WC,
+				      PIM_JOIN_PRUNE_HOLDTIME);
+		}
 		/* Need to update the (S,G) entries, because of the previous
 		 * cleaning of the pruned_oifs. The reason is that if the
 		 * oifs for (*,G) weren't changed, the (S,G) entries won't
 		 * be updated by change_interfaces()
 		 */
-		for (mrt_srcs = mrt->group->mrtlink; mrt_srcs; mrt_srcs = mrt_srcs->grpnext)
-		    change_interfaces(mrt_srcs,
-				      mrt_srcs->incoming,
-				      mrt_srcs->joined_oifs,
-				      mrt_srcs->pruned_oifs,
-				      mrt_srcs->leaves,
-				      mrt_srcs->asserted_oifs, 0);
+		for (mrt_srcs = mrt->group->mrtlink; mrt_srcs; mrt_srcs = mrt_srcs->grpnext) {
+		    if (new_join && mrt_srcs->upstream) {
+			send_pim_join(mrt_srcs->upstream, mrt_srcs, MRTF_SG, PIM_JOIN_PRUNE_HOLDTIME);
+			VIFM_SET(vifi, mrt_srcs->joined_oifs);
+			VIFM_CLR(vifi, mrt_srcs->pruned_oifs);
+			VIFM_CLR(vifi, mrt_srcs->asserted_oifs);
+			change_interfaces(mrt_srcs,
+					  mrt_srcs->incoming,
+					  mrt_srcs->joined_oifs,
+					  mrt_srcs->pruned_oifs,
+					  mrt_srcs->leaves,
+					  mrt_srcs->asserted_oifs, 0);
+			add_kernel_cache(mrt_srcs, mrt_srcs->source->address, mrt_srcs->group->group,
+					 MFC_MOVE_FORCE);
+			mrt_srcs->flags |= MRTF_SPT;
+			k_chg_mfc(igmp_socket, mrt_srcs->source->address, mrt_srcs->group->group,
+				  mrt_srcs->incoming, mrt_srcs->oifs, mrt_srcs->source->address);
+		    }
+		   else {
+			change_interfaces(mrt_srcs,
+					  mrt_srcs->incoming,
+					  mrt_srcs->joined_oifs,
+					  mrt_srcs->pruned_oifs,
+					  mrt_srcs->leaves,
+					  mrt_srcs->asserted_oifs, 0);
+		    }
+		}
 		continue;
 	    }
 
@@ -2016,6 +2043,7 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 		if (!mrt)
 		    continue;
 
+		new_join = (VIFM_ISSET(vifi, mrt->joined_oifs) == 0);
 		VIFM_SET(vifi, mrt->joined_oifs);
 		VIFM_CLR(vifi, mrt->pruned_oifs);
 		VIFM_CLR(vifi, mrt->asserted_oifs);
@@ -2026,12 +2054,14 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 		}
 		if (mrt->timer < holdtime)
 		    SET_TIMER(mrt->timer, holdtime);
-		/* TODO: if this is a new entry, send immediately the
-		 * Join message toward S. The Join/Prune timer for new
-		 * entries is 0, but it does not means the message will
-		 * be sent immediately.
+		/* If this is a new entry, send immediately the
+		 * Join message toward S. 
 		 */
-		mrt->flags &= ~MRTF_NEW;
+		if (mrt->flags & MRTF_NEW) {
+		    send_pim_join(mrt->upstream, mrt, MRTF_SG, PIM_JOIN_PRUNE_HOLDTIME);
+		    mrt->flags &= ~MRTF_NEW;
+		}
+
 		/* Note that we must create (S,G) without the RPbit set.
 		 * If we already had such entry, change_interfaces() will
 		 * reset the RPbit propertly.
@@ -2042,6 +2072,14 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 				  mrt->pruned_oifs,
 				  mrt->leaves,
 				  mrt->asserted_oifs, 0);
+		/* If this is join from new interface and we have incoming data
+		 * start forwarding immediately.
+		 */
+		if (new_join) {
+		    add_kernel_cache(mrt, mrt->source->address, mrt->group->group, MFC_MOVE_FORCE);
+		    k_chg_mfc(igmp_socket, mrt->source->address, mrt->group->group, 
+			      mrt->incoming, mrt->oifs, mrt->source->address);
+		}
 		continue;
 	    }
 	} /* while (num_j_srcs--) */
