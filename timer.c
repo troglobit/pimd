@@ -494,7 +494,9 @@ void age_routes(void)
 		    /* The (*,G) entry */
 		    /* outgoing interfaces timers */
 		    change_flag = FALSE;
-		    assert_timer_expired = (TIMEOUT(mrt_grp->assert_timer) && mrt_grp->flags & MRTF_ASSERTED);
+		    assert_timer_expired = 0;
+		    if (mrt_grp->flags & MRTF_ASSERTED)
+			assert_timer_expired = TIMEOUT(mrt_grp->assert_timer);
 		    for (vifi = 0; vifi < numvifs; vifi++) {
 			if (VIFM_ISSET(vifi, mrt_grp->joined_oifs))
 			    IF_TIMEOUT(mrt_grp->vif_timers[vifi]) {
@@ -573,7 +575,9 @@ void age_routes(void)
 
 		    /* outgoing interfaces timers */
 		    change_flag = FALSE;
-		    assert_timer_expired = (TIMEOUT(mrt_srcs->assert_timer) && mrt_srcs->flags & MRTF_ASSERTED);
+		    assert_timer_expired = 0;
+		    if (mrt_srcs->flags & MRTF_ASSERTED)
+			assert_timer_expired = TIMEOUT(mrt_srcs->assert_timer);
 		    for (vifi = 0; vifi < numvifs; vifi++) {
 			if (VIFM_ISSET(vifi, mrt_srcs->joined_oifs)) {
 			    /* TODO: checking for reg_num_vif is slow! */
