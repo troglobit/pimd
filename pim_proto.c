@@ -2815,7 +2815,7 @@ int receive_pim_assert(uint32_t src, uint32_t dst __attribute__((unused)), char 
 	    mrt2 = NULL;
 	}
 
-	if (mrt2) {
+	if (mrt2 && (mrt2->flags & MRTF_NEW)) {
 	    mrt2->flags &= ~MRTF_NEW;
 	    /* TODO: XXX: The spec doesn't say what entry timer value
 	     * to use when the routing entry is created because of asserts.
@@ -2860,9 +2860,9 @@ int receive_pim_assert(uint32_t src, uint32_t dst __attribute__((unused)), char 
 
 	/* Have to remove that outgoing vifi from mrt */
 	VIFM_SET(vifi, mrt->asserted_oifs);
-	/* TODO: XXX: TIMER implem. dependency! */
-	if (mrt->timer < PIM_ASSERT_TIMEOUT)
-	    SET_TIMER(mrt->timer, PIM_ASSERT_TIMEOUT);
+	mrt->flags |= MRTF_ASSERTED;
+	if (mrt->assert_timer < PIM_ASSERT_TIMEOUT)
+	    SET_TIMER(mrt->assert_timer, PIM_ASSERT_TIMEOUT);
 	/* TODO: XXX: check that the timer of all affected routing entries
 	 * has been restarted.
 	 */
@@ -2885,6 +2885,10 @@ int receive_pim_assert(uint32_t src, uint32_t dst __attribute__((unused)), char 
 				     * win the assert, so don't change it.
 				     */
 	}
+
+	/* If we do not have upstream router at the moment, we must drop the assert message */
+        if (mrt->upstream == NULL) 
+            return TRUE;
 
 	/* TODO: where to get the local metric and preference from?
 	 * system call or mrt is fine?
