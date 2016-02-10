@@ -38,10 +38,11 @@
  * Global variables
  */
 
-/* To account for header overhead, we apx 1 byte/s = 10 bits/s (bps) */
+/* To account for header overhead, we apx 1 byte/s = 10 bits/s (bps)
+ * Note, in the new spt_threshold setting the rate is in kbps as well! */
 spt_threshold_t spt_threshold = {
     .mode     = SPT_THRESHOLD_DEFAULT_MODE,
-    .bytes    = SPT_THRESHOLD_DEFAULT_RATE * SPT_THRESHOLD_DEFAULT_INTERVAL / 10,
+    .bytes    = SPT_THRESHOLD_DEFAULT_RATE * SPT_THRESHOLD_DEFAULT_INTERVAL / 10 * 1000,
     .packets  = SPT_THRESHOLD_DEFAULT_PACKETS,
     .interval = SPT_THRESHOLD_DEFAULT_INTERVAL,
 };
