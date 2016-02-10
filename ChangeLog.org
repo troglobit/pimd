@@ -5,6 +5,19 @@
 #+LaTeX_HEADER: \usepackage{parskip} \usepackage{a4wide}
 #+LaTeX_CLASS_OPTIONS: [twoside, colorlinks=true, linkcolor=blue, urlcolor=blue]
 
+* Version 2.3.2: UNRELEASED
+
+Bug fix release.
+
+** Changes
+- Update to libite v1.4.2 with improved min()/max() macros
+- Use =-Wextra= not =-Werror= in default =CFLAGS=, this to ensure that pimd
+  still builds OK on newer and more pedantic compilers
+
+** Bug Fixes
+- Issue #57: Multicast routing table not updated on FreeBSD
+
+
 * Version 2.3.1: November 15, 2015
 
 Bug fix release.
