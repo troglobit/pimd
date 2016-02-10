@@ -313,25 +313,21 @@ using the =configure= script, to take effect.  For details, see
 
 #+LATEX: \newpage
 * Version 2.1.1: January 17, 2010
+
+Merged all patches from http://lintrack.org.
+
 ** Changes & New Features
   - Bumping version again to celebrate the changes and make it easier for
     distributions to handle the upgrade.
-
-** Bug Fixes
-Merged all patches from http://lintrack.org.
-
-  - =001-debian-6.diff=: Already merged, no-op - only documenting in case anyone
-    wonders about it.
-
   - =002-better-rp_address.diff=: Support multicast group address in static
     Rendez-Vous Point .conf option.
-
-  - =003-ltfixes.diff=: Various bug fixes and error handling improvements.
-
   - =004-disableall.diff=: Add -N option to pimd.
-
   - =005-vifenable.diff=: Add enable keyword to phyint .conf option.
 
+** Bug Fixes
+  - =001-debian-6.diff=: Already merged, no-op - only documenting in case anyone
+    wonders about it.
+  - =003-ltfixes.diff=: Various bug fixes and error handling improvements.
   - =006-dot19.diff=: The lost alpha29.18 and alpha29.19 fixes by Pavlin Radoslavov.
 
 * Version 2.1.0, January 16, 2010
