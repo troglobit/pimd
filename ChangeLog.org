@@ -24,6 +24,7 @@ Bug fix release.  All users should upgrade, in particular FreeBSD users!
   in particular FreeBSD 10.2 (current), or any FreeBSD < 11.0
 - Issue #63: Mika Joutsenvirta <mailto:mika.joutsenvirta@insta.fi> found
   and fixed serious issues with the PIM Assert timeout handling.
+- Issue #65: Missing slash in config file path when using environment variable
 - Issue #66: Make it possible to run pimd without a configuration file
 
 #+LATEX: \newpage
