@@ -27,8 +27,8 @@ DVMRP_OBJS    = dvmrp_proto.o
 #include <config.mk>
 include config.mk
 
-prefix       ?= /usr/local/
-sysconfdir   ?= /etc/
+prefix       ?= /usr/local
+sysconfdir   ?= /etc
 datadir       = $(prefix)/share/doc/pimd
 mandir        = $(prefix)/share/man/man8
 
