@@ -1412,25 +1412,30 @@ static int parse_igmp_querier_timeout(char *s)
     return TRUE;
 }
 
+static void fallback_config(void)
+{
+    char buf[LINE_BUFSIZ], *s = buf;
+
+    logit(LOG_NOTICE, 0, "Using built-in defaults, including RP/BSR candidate.");
+
+    snprintf(buf, sizeof(buf), "priority 20 time 30");
+    parse_rp_candidate(s);
+
+    snprintf(buf, sizeof(buf), "priority 5");
+    parse_bsr_candidate(s);
+}
+
 void config_vifs_from_file(void)
 {
-    FILE *f;
+    FILE *fp;
     char linebuf[LINE_BUFSIZ];
     char *w, *s;
-    struct ifconf ifc;
     int option;
-    char ifbuf[BUFSIZ];
     uint8_t *data_ptr;
     int error_flag;
 
     error_flag = FALSE;
     lineno = 0;
-
-    if ((f = fopen(config_file, "r")) == NULL) {
-	if (errno != ENOENT)
-	    logit(LOG_WARNING, errno, "Cannot open %s", config_file);
-	return;
-    }
 
     /* TODO: HARDCODING!!! */
     cand_rp_adv_message.buffer = calloc(1, 4 + sizeof(pim_encod_uni_addr_t) +
@@ -1447,12 +1452,14 @@ void config_vifs_from_file(void)
     /* TODO: XXX: HARDCODING!!! */
     cand_rp_adv_message.insert_data_ptr += (4 + 6);
 
-    ifc.ifc_buf = ifbuf;
-    ifc.ifc_len = sizeof(ifbuf);
-    if (ioctl(udp_socket, SIOCGIFCONF, (char *)&ifc) < 0)
-	logit(LOG_ERR, errno, "Failed querying kernel network interfaces");
+    fp = fopen(config_file, "r");
+    if (!fp) {
+	logit(LOG_WARNING, errno, "Cannot open configuration file %s", config_file);
+	fallback_config();
+	goto nofile;
+    }
 
-    while (fgets(linebuf, sizeof(linebuf), f) != NULL) {
+    while (fgets(linebuf, sizeof(linebuf), fp)) {
 	if (strlen(linebuf) >= (LINE_BUFSIZ - 1)) {
 	    WARN("Line length must be shorter than %d", LINE_BUFSIZ);
 	    error_flag = TRUE;
@@ -1522,8 +1529,11 @@ void config_vifs_from_file(void)
 	}
     }
 
-    /* Because of internal design, static RP address is needed for SSM range.
-       Local-link address is used. It is not required to be really configured in any interface. */
+    fclose(fp);
+
+  nofile:
+    /* A static RP address is needed for SSM.  We use a link-local
+     * address. It is not required to be configured on any interface. */
     strncpy(linebuf, "169.254.0.1 232.0.0.0/8\n", sizeof(linebuf));
     s = linebuf;
     parse_rp_address(s);
@@ -1551,8 +1561,6 @@ void config_vifs_from_file(void)
 	logit(LOG_INFO, 0, "IGMP query interval  : %u sec", igmp_query_interval);
 	logit(LOG_INFO, 0, "IGMP querier timeout : %u sec", igmp_querier_timeout);
     }
-
-    fclose(f);
 }
 
 
