@@ -14,6 +14,8 @@ Bug fix release.  All users should upgrade, in particular FreeBSD users!
 - Update to libite v1.4.2 with improved =min()=/=max()= macros
 - Use =-Wextra= not =-Werror= in default =CFLAGS=, this to ensure that pimd
   still builds OK on newer and more pedantic compilers
+- Update man page and example `pimd.conf` with details on `rp-candidate`
+  `bsr-candidate`, two very important settings for correct operation.
 
 ** Bug Fixes
 - Issue #57: Multicast routing table not updated on FreeBSD.  Introduced
@@ -22,6 +24,7 @@ Bug fix release.  All users should upgrade, in particular FreeBSD users!
   in particular FreeBSD 10.2 (current), or any FreeBSD < 11.0
 - Issue #63: Mika Joutsenvirta <mailto:mika.joutsenvirta@insta.fi> found
   and fixed serious issues with the PIM Assert timeout handling.
+- Issue #66: Make it possible to run pimd without a configuration file
 
 #+LATEX: \newpage
 * Version 2.3.1: November 15, 2015
