@@ -392,16 +392,14 @@ void dump_vifs(FILE *fp)
 void logit(int severity, int syserr, const char *format, ...)
 {
     va_list ap;
-    static char fmt[211] = "warning - ";
-    char *msg;
+    char msg[211];
     struct timeval now;
     struct tm *thyme;
     time_t lt;
 
     va_start(ap, format);
-    vsnprintf(&fmt[10], sizeof(fmt) - 10, format, ap);
+    vsnprintf(msg, sizeof(msg), format, ap);
     va_end(ap);
-    msg = (severity == LOG_WARNING) ? fmt : &fmt[10];
 
     /*
      * Log to stderr if we haven't forked yet and it's a warning or
@@ -414,12 +412,15 @@ void logit(int severity, int syserr, const char *format, ...)
 
 	if (!debug)
 	    fprintf(stderr, "%s: ", __progname);
+
 	fprintf(stderr, "%02d:%02d:%02d.%03ld %s", thyme->tm_hour, thyme->tm_min,
 		thyme->tm_sec, (long int)(now.tv_usec / 1000), msg);
-	if (syserr == 0)
-	    fprintf(stderr, "\n");
-	else
-	    fprintf(stderr, ":(error %d): %s\n", syserr, strerror(syserr));
+
+	if (syserr) {
+	    errno = syserr;
+	    fprintf(stderr, ": %m");
+	}
+	fprintf(stderr, "\n");
     }
 
     /*
@@ -433,9 +434,10 @@ void logit(int severity, int syserr, const char *format, ...)
     if ((severity < LOG_WARNING) || (log_nmsgs < LOG_MAX_MSGS)) {
 	if (severity < LOG_DEBUG)
 	    log_nmsgs++;
-	if (syserr != 0) {
+
+	if (syserr) {
 	    errno = syserr;
-	    syslog(severity, "%s: %s", msg, strerror(syserr));
+	    syslog(severity, "%s: %m", msg);
 	} else {
 	    syslog(severity, "%s", msg);
 	}
