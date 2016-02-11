@@ -387,18 +387,14 @@ will either be completely silent (if you provide the
 command line option), or simply assume that you want it to utilize all interfaces
 using default settings.
 .Pp
-The
+Both the
 .Nm bsr-candidate
-setting is similar to
-.Nm rp-candidate .
-Only difference is the lack of an interval
-.Nm time
-option.
-.Pp
-The
+and 
 .Nm rp-candidate
-setting refers to Candidate Rendezvous Point (CRP).  It specifies which
-interface on this machine should be included in RP elections:
+(CRP) settings are disabled by default, which sometimes may cause a
+headache.  When troubleshooting, ensure at least one bootstrap router
+(BSR) and at least one rendez-vous point (RP) in PIM-SM, is available:
+.Pp
 .Bl -bullet -offset indent -width 1n -compact
 .It
 .Nm address | ifname :
@@ -408,13 +404,16 @@ If both address and ifname is left out,
 will default to the highest active IP address.
 .It
 .Nm priority Ar <0-255> :
-How important this CRP is compared to others. The lower the value here,
-the more important the CRP.  Default is 0 for pimd and Cisco IOS, but
-the standard says 192.
+How important this router is compared to others.  For CRP, the lower the
+value the more important the router is considered.  For BSR it is of
+course the exact opposite: a higher value is preferred.  If the priority
+is left out
+.Nm
+and Cisco IOS defaults to 0 for both, but the standard says 192 for RP.
 .It
 .Nm time Ar <10-16383> :
 The number of seconds to wait between advertising this CRP.  The default
-value is 60 seconds.
+value is 30 seconds.  Use a lower value for faster convergence.
 .El
 .Pp
 .Bl -item -offset indent -compact
