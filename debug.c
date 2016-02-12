@@ -55,6 +55,8 @@ unsigned long debug = 0x00000000;        /* If (long) is smaller than
 static char dumpfilename[] = _PATH_PIMD_DUMP;
 static char cachefilename[] = _PATH_PIMD_CACHE; /* TODO: notused */
 
+extern int syslog_level;
+
 
 char *packet_kind(int proto, int type, int code)
 {
@@ -427,12 +429,13 @@ void logit(int severity, int syserr, const char *format, ...)
      * Always log things that are worse than warnings, no matter what
      * the log_nmsgs rate limiter says.
      *
-     * Only count things worse than debugging in the rate limiter (since
-     * if you put daemon.debug in syslog.conf you probably actually want
-     * to log the debugging messages so they shouldn't be rate-limited)
+     * Only count things at the defined loglevel or worse in the rate limiter
+     * and exclude debugging (since if you put daemon.debug in syslog.conf
+     * you probably actually want to log the debugging messages so they
+     * shouldn't be rate-limited)
      */
     if ((severity < LOG_WARNING) || (log_nmsgs < LOG_MAX_MSGS)) {
-	if (severity < LOG_DEBUG)
+	if ((severity <= syslog_level) && (severity != LOG_DEBUG))
 	    log_nmsgs++;
 
 	if (syserr) {
