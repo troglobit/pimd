@@ -382,17 +382,20 @@ void dump_vifs(FILE *fp)
 	    }
 	}
     }
+
     fprintf(fp, "\n\n");
 }
 
 int loglvl(char *level)
 {
-	for (int i = 0; prioritynames[i].c_name; i++) {
-		if (string_match(prioritynames[i].c_name, level))
-			return prioritynames[i].c_val;
-	}
+    int i;
 
-	return atoi(level);
+    for (i = 0; prioritynames[i].c_name; i++) {
+	if (string_match(prioritynames[i].c_name, level))
+	    return prioritynames[i].c_val;
+    }
+
+    return atoi(level);
 }
 
 /*
