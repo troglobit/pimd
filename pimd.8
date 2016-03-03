@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.Dd Jul 29, 2015
+.Dd Mar 3, 2016
 .\" Please adjust this date whenever revising the manpage.
 .Dt PIMD 8 SMM
 .Os
@@ -13,14 +13,14 @@
 .Nm pimd
 .Op Fl fhlNqr
 .Op Fl c Ar FILE
-.Op Fl d Ar [LEVEL[,LEVEL,...]
+.Op Fl d Ar [SYS[,SYS,...]
 .Op Fl s Ar LEVEL
 .Sh DESCRIPTION
 .Nm
 is a lightweight, stand-alone PIM-SM/SSM v2 multicast routing daemon
 available under the free 3-clause BSD license.  This is the restored
-original version University of Southern California, by Ahmed Helmy,
-Rusty Eddy and Pavlin Ivanov Radoslavov.
+original from University of Southern California, by Ahmed Helmy, Rusty
+Eddy and Pavlin Ivanov Radoslavov.
 .Pp
 Protocol Independent Multicast - Sparse Mode (PIM-SM):
 .Bl -bullet -width 1n -compact
@@ -56,7 +56,7 @@ Print a help message and exit.
 .It Fl c, -config=FILE
 Specify an alternative configuration file, instead of the default
 .Pa /etc/pimd.conf .
-.It Fl d, -debug[=LEVEL[,LEVEL...]
+.It Fl d, -debug[=SYS[,SYS...]
 By default,
 .Nm
 daemonizes itself by detaching from the invoking terminal and forking to
@@ -66,16 +66,13 @@ or
 .Fl f, -foreground
 is specified,
 .Nm
-runs in the foreground of the starting terminal and responds to signals.
-If
+runs in the foreground of the starting terminal.  If
 .Fl d
-is given with no argument, the debug level defaults to
-.Nm igmp, cache, interface, groups, prunes, routes and peers .
-.sp
-Regardless of the debug level,
+is given without any argument
 .Nm
-always writes warning and error messages to the system log daemon.
-Debug levels have the following effects:
+defaults to debug all subystems.
+.Pp
+Available subsystems are:
 .Pp
 .Bl -tag -width pim_routes -compact -offset indent
 .It Cm packet
@@ -152,7 +149,8 @@ Show
 .Nm
 version
 .It Fl s, -loglevel=LEVEL
-Set syslog level to one of the following:
+Set log level to one of the following, default
+.Nm NOTICE :
 .Pp
 .Bl -tag -width WARNING -compact -offset indent
 .It Cm ALERT
