@@ -34,6 +34,7 @@
 OS=`uname`
 CFG=config.mk
 TMP=`mktemp /tmp/XXXXXX`
+BUGREPORT_URL="https://github.com/troglobit/pimd/issues"
 
 # Defaults
 debug=0
@@ -112,7 +113,7 @@ usage()
     print "  --with-max-vifs=MAXVIFS  Kernel maximum number of allowed VIFs, default: 32\n"
     print "                           \e[1mNote:\e[0m Try multiple routing tables instead!\n"
     print "\n"
-    print "Report bugs to https://github.com/troglobit/pimd/issues\n"
+    print "Report bugs to $BUGREPORT_URL\n"
     print "\n"
 
     exit 1
@@ -208,6 +209,8 @@ while [ "$*" != "" ]; do
             ;;
     esac
 done
+
+echo "DEFS         += -DPACKAGE_BUGREPORT=\\\"$BUGREPORT_URL\\\"" >> $TMP
 
 if [ $disable_genid -ne 1 ]; then
     echo "DEFS         += -DENABLE_PIM_HELLO_GENID" >> $TMP

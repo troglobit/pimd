@@ -243,36 +243,36 @@ static int killshow(int signo, char *file)
     return 0;
 }
 
-static int usage(void)
+static int usage(int code)
 {
     size_t i;
     char line[76] = "  ";
     struct debugname *d;
 
-    fprintf(stderr, "Usage: %s [-fhlNqrv] [-c FILE] [-d [LEVEL][,LEVEL...]]\n\n", __progname);
-    fprintf(stderr, "  -c, --config=FILE    Configuration file to use, default %s\n", _PATH_PIMD_CONF);
-    fputs("  -d, --debug[=LEVEL]  Debug level, see below for valid levels\n", stderr);
-    fputs("  -f, --foreground     Run in foreground, do not detach from calling terminal\n", stderr);
-    fputs("  -h, --help           Show this help text\n", stderr);
-    /* fputs("  -i, --show-cache      Show internal cache tables\n", stderr); */
-    fputs("  -l, --reload-config  Tell a running pimd to reload its configuration\n", stderr);
-    fputs("  -N, --disable-vifs   Disable all virtual interfaces (phyint) by default\n", stderr);
-    /* fputs("  -p,--show-debug      Show debug dump, only if debug is enabled\n", stderr); */
-    fputs("  -q, --quit-daemon    Send SIGTERM to a running pimd\n", stderr);
-    fputs("  -r, --show-routes    Show state of VIFs and multicast routing tables\n", stderr);
-    fputs("  -t, --table-id=ID    Set multicast routing table ID.  Allowed values are:\n"
-	  "                       0 ... 999999999.  Default: 0 (use default table)\n", stderr);
-    fputs("  -s, --loglevel=LEVEL Maximum syslog level to use, default NOTICE, see below\n", stderr);
-    fprintf(stderr, "  -v, --version        Show %s version\n", __progname);
-    fputs("\n", stderr);
+    printf("\nUsage: %s [-fhlNqrv] [-c FILE] [-d [SYS][,SYS...]] [-s LEVEL]\n\n", __progname);
+    printf(" -c, --config=FILE   Configuration file to use, default %s\n", _PATH_PIMD_CONF);
+    printf(" -d, --debug[=SYS]   Debug subsystem, see below for valid systems, default all\n");
+    printf(" -f, --foreground    Run in foreground, do not detach from calling terminal\n");
+    printf(" -h, --help          Show this help text\n");
+    /* printf("  -i, --show-cache     Show internal cache tables\n"); */
+    printf(" -l, --reload-config Tell a running pimd to reload its configuration\n");
+    printf(" -N, --disable-vifs  Disable all virtual interfaces (phyint) by default\n");
+    /* printf("  -p,--show-debug     Show debug dump, only if debug is enabled\n"); */
+    printf(" -q, --quit-daemon   Send SIGTERM to a running pimd\n");
+    printf(" -r, --show-routes   Show state of VIFs and multicast routing tables\n");
+    printf(" -t, --table-id=ID   Set multicast routing table ID.  Allowed table ID#:\n"
+	   "                      0 .. 999999999.  Default: 0 (use default table)\n");
+    printf(" -s, --loglevel=LVL  Set log level: none, err, info, notice (default), debug\n");
+    printf(" -v, --version       Show %s version\n", __progname);
+    printf("\n");
 
     /* From pimd v2.3.0 we show *all* the debug levels again */
-    fputs("Valid debug levels:\n", stderr);
+    printf("Available subsystems for debug:\n");
     for (i = 0, d = debugnames; i < ARRAY_LEN(debugnames); i++, d++) {
 	if (strlen(line) + strlen(d->name) + 3 >= sizeof(line)) {
 	    /* Finish this line and send to console */
 	    strlcat(line, "\n", sizeof(line));
-	    fputs(line, stderr);
+	    printf("%s", line);
 
 	    /* Prepare for next line */
 	    strlcpy(line, "  ", sizeof(line));
@@ -285,20 +285,11 @@ static int usage(void)
     }
     /* Flush remaining line. */
     strlcat(line, "\n", sizeof(line));
-    fputs(line, stderr);
+    printf("%s", line);
 
+    printf("\nBug report address: %-40s\n\n", PACKAGE_BUGREPORT);
 
-    fputs("\nValid system log levels:", stderr);
-    fputs("\n  1) alert    Action must be taken immediately", stderr);
-    fputs("\n  2) crit     Critical conditions", stderr);
-    fputs("\n  3) err      Error conditions", stderr);
-    fputs("\n  4) warning  Warning conditions", stderr);
-    fputs("\n  5) notice   Normal but significant condition (DEFAULT)", stderr);
-    fputs("\n  6) info     Informational", stderr);
-    fputs("\n  7) debug    Debug-level messages", stderr);
-    fputs("\n\n", stderr);
-
-    return 1;
+    return code;
 }
 
 int main(int argc, char *argv[])
@@ -359,7 +350,7 @@ int main(int argc, char *argv[])
 			}
 
 			if (i == ARRAY_LEN(debugnames))
-			    return usage();
+			    return usage(1);
 
 			debug |= d->level;
 			p = q;
@@ -372,7 +363,8 @@ int main(int argc, char *argv[])
 		break;
 
 	    case 'h':
-		return usage();
+		return usage(0);
+
 	    case 'l':
 		return killshow(SIGHUP, NULL);
 
@@ -393,24 +385,24 @@ int main(int argc, char *argv[])
 	    case 's':
 		if (!optarg) {
 			fprintf(stderr, "Missing loglevel argument!\n");
-			return usage();
+			return usage(1);
 		}
 
 		loglevel = loglvl(optarg);
 		if (-1 == loglevel)
-		    return usage();
+		    return usage(1);
 		break;
 
 	    case 't':
 		if (!optarg) {
 			fprintf(stderr, "Missing Table ID argument!\n");
-			return usage();
+			return usage(1);
 		}
 
 		mrt_table_id = strtonum(optarg, 0, 999999999, &errstr);
 		if (errstr) {
 		    fprintf(stderr, "Table ID %s!\n", errstr);
-		    return usage();
+		    return usage(1);
 		}
 		break;
 
@@ -422,13 +414,13 @@ int main(int argc, char *argv[])
 		return killshow(SIGQUIT, NULL);
 #endif
 	    default:
-		return usage();
+		return usage(1);
 	}
     }
 
     argc -= optind;
     if (argc > 0)
-	return usage();
+	return usage(1);
 
     if (geteuid() != 0)
 	errx(1, "Need root privileges to start.");
