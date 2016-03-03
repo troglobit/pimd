@@ -53,8 +53,8 @@ struct rp_hold *g_rp_hold = NULL;
 int mrt_table_id = 0;
 
 char *config_file = _PATH_PIMD_CONF;
-int syslog_level = LOG_NOTICE;
 
+extern int loglevel;
 extern char todaysversion[];
 
 static int sighandled = 0;
@@ -301,26 +301,6 @@ static int usage(void)
     return 1;
 }
 
-static int lvltonum(char *arg, const char **errstr)
-{
-    int i;
-    char *level[] = { "ENERG", "ALERT", "CRIT", "ERR", "WARNING", "NOTICE", "INFO", "DEBUG", NULL };
-
-    if (!strncmp(arg, "LOG_", 4))
-	arg += 4;
-
-    for (i = 0; level[i]; i++) {
-	if (!strncasecmp(arg, level[i], strlen(level[i]))) {
-	    *errstr = NULL;
-	    return i;
-	}
-    }
-
-    *errstr = "invalid";
-
-    return 5;
-}
-
 int main(int argc, char *argv[])
 {
     int dummysigalrm, foreground = 0;
@@ -412,19 +392,13 @@ int main(int argc, char *argv[])
 
 	    case 's':
 		if (!optarg) {
-			fprintf(stderr, "Missing syslog level argument!\n");
+			fprintf(stderr, "Missing loglevel argument!\n");
 			return usage();
 		}
 
-		if (isdigit((int)optarg[0]))
-		    syslog_level = strtonum(optarg, LOG_ALERT, LOG_DEBUG, &errstr);
-		else
-		    syslog_level = lvltonum(optarg, &errstr);
-
-		if (errstr) {
-		    fprintf(stderr, "Syslog level %s is %s!\n", optarg, errstr);
+		loglevel = loglvl(optarg);
+		if (-1 == loglevel)
 		    return usage();
-		}
 		break;
 
 	    case 't':
@@ -489,7 +463,7 @@ int main(int argc, char *argv[])
      */
 #ifdef LOG_DAEMON
     openlog("pimd", LOG_PID, LOG_DAEMON);
-    setlogmask(LOG_UPTO(syslog_level));
+    setlogmask(LOG_UPTO(loglevel));
 #else
     openlog("pimd", LOG_PID);
 #endif /* LOG_DAEMON */

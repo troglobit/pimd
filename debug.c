@@ -40,6 +40,7 @@
  *
  */
 
+#define SYSLOG_NAMES
 #include "defs.h"
 
 #include <stdarg.h>
@@ -48,14 +49,13 @@
 #define MAX_MSG_SIZE 64                  /* Max for dump_frame() */
 
 int log_nmsgs = 0;
+int loglevel = LOG_NOTICE;
 unsigned long debug = 0x00000000;        /* If (long) is smaller than
 					  * 4 bytes, then we are in
 					  * trouble.
 					  */
 static char dumpfilename[] = _PATH_PIMD_DUMP;
 static char cachefilename[] = _PATH_PIMD_CACHE; /* TODO: notused */
-
-extern int syslog_level;
 
 
 char *packet_kind(int proto, int type, int code)
@@ -385,6 +385,15 @@ void dump_vifs(FILE *fp)
     fprintf(fp, "\n\n");
 }
 
+int loglvl(char *level)
+{
+	for (int i = 0; prioritynames[i].c_name; i++) {
+		if (string_match(prioritynames[i].c_name, level))
+			return prioritynames[i].c_val;
+	}
+
+	return atoi(level);
+}
 
 /*
  * Log errors and other messages to the system log daemon and to stderr,
@@ -435,7 +444,7 @@ void logit(int severity, int syserr, const char *format, ...)
      * shouldn't be rate-limited)
      */
     if ((severity < LOG_WARNING) || (log_nmsgs < LOG_MAX_MSGS)) {
-	if ((severity <= syslog_level) && (severity != LOG_DEBUG))
+	if ((severity <= loglevel) && (severity != LOG_DEBUG))
 	    log_nmsgs++;
 
 	if (syserr) {

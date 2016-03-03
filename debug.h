@@ -40,6 +40,9 @@
  *
  */
 
+#ifndef PIMD_DEBUG_H_
+#define PIMD_DEBUG_H_
+
 extern unsigned long	debug;
 extern int log_nmsgs;
 #define IF_DEBUG(l)	if (debug && (debug & (l)))
@@ -103,3 +106,6 @@ extern int log_nmsgs;
 
 #define DEBUG_DEFAULT   0xffffffff/*  default if "-d" given without value */
 
+int loglvl(char *level);
+
+#endif /* PIMD_DEBUG_H_ */
