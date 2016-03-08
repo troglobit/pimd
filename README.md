@@ -60,7 +60,7 @@ features, such as `--enable-scoped-acls` are activated here as well.
 **Example:**
 
     ./configure --enable-scoped-acls && make
-    
+
     sudo make install
 
 The configure script and Makefile supports de facto standard settings
@@ -203,18 +203,18 @@ Example
 
     # Interface eth0 is disabled, i.e., pimd will not run there.
     phyint eth0 disable
-    
+
     # On this LAN we have a lower numeric IP than other PIM routers
     # but we want to take care of forwarding all PIM messages.
     phyint eth1 dr-priority 10
-    
+
     # Partake in BSR elections on eth1
     bsr-candidate eth1
-    
+
     # Offer to be an RP for all of 224.0.0.0/4
     rp-candidate eth1
     group-prefix 224.0.0.0 masklen 4
-    
+
     # This is the built-in defaults, switch to SPT on first packet
     spt-threshold packets 0 interval 100
 
@@ -225,15 +225,17 @@ Starting
 Having set up the configuration file, you are ready to run pimd.  As
 usual, it is recommended that you start it manually first, to make sure
 everything works as expected, before adding it to your system's startup
-scripts,  with any startup flags it might need.
+scripts, with any startup flags it might need.
 
-    pimd [-c file] [-d[level1,...,levelN]]
+    pimd [-c file] [-d subsys1[,...,subsysN]] [-s level]
 
-   * `-c file`: Utilize the specified configuration file rather than the
-      default, `/etc/pimd.conf`
-
-   * `-d[level1,...,levelN]`: Specifies the debug level(s) to utilize
-      when running the daemon.  Type `pimd -h` for a full list of levels
+* `-c file`: Utilize the specified configuration file rather than the
+   default, `/etc/pimd.conf`
+* `-d [subsys1,...,subsysN]`: Subsystems to enable debug for when
+  running the daemon.  Optional argument, if left out, all subsystems
+  are enabled.  Type `pimd -h` for a full list of subsystems
+* `-s level`: Log level, one of `none`, `error`, `warning`, `notice`,
+   `info`, or `debug`.  Default is `notice`
 
 **Example:**
 

@@ -150,22 +150,20 @@ Show
 version
 .It Fl s, -loglevel=LEVEL
 Set log level to one of the following, default
-.Nm NOTICE :
+.Nm notice :
 .Pp
 .Bl -tag -width WARNING -compact -offset indent
-.It Cm ALERT
-Action must be taken immediately
-.It Cm CRIT
-Critical conditions
-.It Cm ERR
+.It Cm none
+Disable all logging
+.It Cm error
 Error conditions
-.It Cm WARNING
+.It Cm warning
 Warning conditions
-.It Cm NOTICE
+.It Cm notice
 Normal but significant condition (Default)
-.It Cm INFO
+.It Cm info
 Informational
-.It Cm DEBUG
+.It Cm debug
 Debug-level messages
 .El
 .El
@@ -387,7 +385,7 @@ using default settings.
 .Pp
 Both the
 .Nm bsr-candidate
-and 
+and
 .Nm rp-candidate
 (CRP) settings are disabled by default, which sometimes may cause a
 headache.  When troubleshooting, ensure at least one bootstrap router
@@ -447,7 +445,7 @@ address and netmask.  Default group and netmask is 224.0.0.0/16.
 .Nm Note:
 all static RP's are announced with priority 1.
 .Pp
-The 
+The
 .Nm spt-threshold
 setting replaces two older configuration settings,
 .Nm switch_data_threshold
