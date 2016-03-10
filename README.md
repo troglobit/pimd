@@ -171,7 +171,12 @@ PIM BSR operation, see [RFC 5059](http://tools.ietf.org/search/rfc5059).
 The configuration of a Candidate BootStrap Router (CBSR) is very similar
 to that of CRP, except for the interval time.  If either the address or
 the interface name is left out pimd uses the highest active IP address.
-If the priority is left out, pimd (like Cisco) defaults to priority 0.
+If the priority is left out, `pimd` (like Cisco) defaults to priority 0.
+
+To *disable CRP and CBSR* completely in `pimd`, simply comment the two
+lines out from your `pimd.conf`, and make sure `pimd` can find the file.
+Because if `pimd` cannot find the file it will default to them enabled,
+with defaults listed in the `pimd.conf` included in the distribution.
 
 In a PIM-SM domain there can be two, or more, paths from a designated
 router (DR) for a multicast sender to reach a receiver.  When receivers

@@ -54,8 +54,15 @@ options starting with two dashes (`-').  The options are as follows:
 .It Fl h, -help
 Print a help message and exit.
 .It Fl c, -config=FILE
-Specify an alternative configuration file, instead of the default
+Specify an alternative configuration file, default
 .Pa /etc/pimd.conf .
+If
+.Nm
+cannot find its configuration file it will start up with fallback
+defaults, which include enabling both
+.Cm bsr-candidate
+and
+.Cm rp-candidate .
 .It Fl d, -debug[=SYS[,SYS...]
 By default,
 .Nm
@@ -384,12 +391,15 @@ command line option), or simply assume that you want it to utilize all interface
 using default settings.
 .Pp
 Both the
-.Nm bsr-candidate
-and
-.Nm rp-candidate
-(CRP) settings are disabled by default, which sometimes may cause a
-headache.  When troubleshooting, ensure at least one bootstrap router
-(BSR) and at least one rendez-vous point (RP) in PIM-SM, is available:
+.Cm bsr-candidate
+(CBSR) and
+.Cm rp-candidate
+(CRP) settings are enabled in the default configuration.  Disabling
+them, by commenting them out in the config file, for all PIM capable
+routers is a bad idea.  When troubleshooting, ensure at least one
+bootstrap router (BSR) and at least one rendez-vous point (RP) in
+PIM-SM, is available.  Both settings share the following options, with
+priority being interpreted differently:
 .Pp
 .Bl -bullet -offset indent -width 1n -compact
 .It
