@@ -5,7 +5,7 @@
 #
 
 #VERSION       = $(shell git tag -l | tail -1)
-VERSION       = 2.3.2-rc2
+VERSION       = 2.3.2
 EXEC          = pimd
 CONFIG        = $(EXEC).conf
 PKG           = $(EXEC)-$(VERSION)
@@ -101,7 +101,7 @@ dist:
 	@echo "Building gz tarball of $(PKG) in parent dir ..."
 	@$(ARCHTOOL) ../$(ARCHIVE)
 	@gzip ../$(ARCHIVE)
-	@md5sum $(ARCHIVEZ) | tee $(ARCHIVEZ).md5
+	@md5sum $(ARCHIVEZ) | sed 's/..\///' | tee $(ARCHIVEZ).md5
 
 build-deb:
 	@echo "Building .deb if $(PKG)..."

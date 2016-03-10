@@ -5,7 +5,7 @@
 #+LaTeX_HEADER: \usepackage{parskip} \usepackage{a4wide}
 #+LaTeX_CLASS_OPTIONS: [twoside, colorlinks=true, linkcolor=blue, urlcolor=blue]
 
-* Version 2.3.2: UNRELEASED
+* Version 2.3.2: March 10, 2016
 
 Bug fix release.  All users should upgrade, in particular FreeBSD users!
 
@@ -24,8 +24,13 @@ Bug fix release.  All users should upgrade, in particular FreeBSD users!
   in particular FreeBSD 10.2 (current), or any FreeBSD < 11.0
 - Issue #63: Mika Joutsenvirta <mailto:mika.joutsenvirta@insta.fi> found
   and fixed serious issues with the PIM Assert timeout handling.
-- Issue #65: Missing slash in config file path when using environment variable
-- Issue #66: Make it possible to run pimd without a configuration file
+- Issue #65: Missing slash in config file path when using env. variable
+- Issue #66: Make it possible to run =pimd= without a configuration
+  file.  If =pimd= cannot find its configuration file it will use
+  built-in fallback settings for =bsr-candidate= and =rp-candidate=.
+  This to ensure you do not end up with a non-working setup.  To disable
+  =bsr-candidate= and =rp-candidate=, simply leave them out of your
+  config file, and make sure =pimd= can find the file.
 - Issue #69: Rate limit only what is actually logged.  The =logit()=
   function counted filtered messages, causing long periods of silence
   for no reason.  Fix by Apollon Oikonomopoulos <mailto:apollon@skroutz.gr>
