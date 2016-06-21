@@ -172,8 +172,10 @@ void config_vifs_from_kernel(void)
 	    logit(LOG_ERR, errno, "Failed reading interface flags for phyint %s", ifr.ifr_name);
 
 	flags = ifr.ifr_flags;
-	if ((flags & (IFF_LOOPBACK | IFF_MULTICAST)) != IFF_MULTICAST)
+	if ((flags & (IFF_LOOPBACK | IFF_MULTICAST)) != IFF_MULTICAST) {
+	    WARN("Skipping interface %s, either loopback or does not support multicast.", ifr.ifr_name);
 	    continue;
+	}
 
 	/*
 	 * Everyone below is a potential vif interface.
@@ -480,7 +482,7 @@ static int parse_phyint(char *s)
     if (!local) {
 	local = inet_parse(w, 4);
 	if (!inet_valid_host(local)) {
-	    WARN("Invalid phyint address '%s'", w);
+	    WARN("Unknown (skipped?) phyint name or invalid address '%s'", w);
 	    return FALSE;
 	}
     }
