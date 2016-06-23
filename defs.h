@@ -242,13 +242,13 @@ typedef void (*ihfunc_t) (int, fd_set *);
 
 /*
  * TODO: recalculate the messages sizes, probably with regard to the MTU
- * TODO: cleanup
  */
-#define MAX_JP_MESSAGE_SIZE     8192
+/* We must assume "safe" maximum atleast until we handle MTU correctly. */
+#define MAX_JP_MESSAGE_SIZE     (576 \
+				- sizeof(struct ip) \
+				- sizeof(pim_header_t) \
+				- sizeof(pim_jp_header_t))
 #define MAX_JP_MESSAGE_POOL_NUMBER 8
-#define MAX_JOIN_LIST_SIZE      1500
-#define MAX_PRUNE_LIST_SIZE     1500
-
 
 #ifdef RSRR
 #define BIT_ZERO(X)		((X) = 0)
