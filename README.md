@@ -274,8 +274,8 @@ pimd is maintained by [Joachim Nilsson][] at [GitHub][].  If you find
 bugs, have feature requests, or want to contribute fixes or features,
 check out the code from GitHub, including the submodules:
 
-	git clone https://github.com/troglobit/uftpd
-	cd uftpd
+	git clone https://github.com/troglobit/pimd
+	cd pimd
 	make submodules
 
 When you pull from upstream, remember to also update the submodules
