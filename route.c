@@ -248,6 +248,7 @@ void add_leaf(vifi_t vifi, uint32_t source, uint32_t group)
     vifbitmap_t old_oifs;
     vifbitmap_t new_oifs;
     vifbitmap_t new_leaves;
+    uint16_t flags;
 
     /* Don't create routing entries for the LAN scoped addresses */
     if (ntohl(group) <= INADDR_MAX_LOCAL_GROUP) { /* group <= 224.0.0.255? */
@@ -274,8 +275,12 @@ void add_leaf(vifi_t vifi, uint32_t source, uint32_t group)
      * The downside is that a last-hop router may delay the initiation
      * of the SPT switch. Sigh...
      */
-    if (IN_PIM_SSM_RANGE(group))
+     /* Initialize flags */
+    flags = MRTF_RP | MRTF_WC;
+    if (IN_PIM_SSM_RANGE(group)) {
 	mrt = find_route(source, group, MRTF_SG, CREATE);
+	flags = MRTF_SG;
+    }
     else if (uvifs[vifi].uv_flags & VIFF_DR)
 	mrt = find_route(INADDR_ANY_N, group, MRTF_WC, CREATE);
     else
@@ -309,13 +314,14 @@ void add_leaf(vifi_t vifi, uint32_t source, uint32_t group)
 	/* A new created entry or the oifs have changed
 	 * from NULL to non-NULL. */
 	mrt->flags &= ~MRTF_NEW;
-	FIRE_TIMER(mrt->jp_timer); /* Timeout the Join/Prune timer */
-
-	/* TODO: explicitly call the function below?
-	send_pim_join_prune(mrt->upstream->vifi,
-			    mrt->upstream,
-			    PIM_JOIN_PRUNE_HOLDTIME);
-	*/
+	if (mrt->upstream) {
+	    send_pim_join(mrt->upstream, mrt, flags, PIM_JOIN_PRUNE_HOLDTIME);
+	    SET_TIMER(mrt->jp_timer, PIM_JOIN_PRUNE_PERIOD);
+	}
+	else  {
+	    FIRE_TIMER(mrt->jp_timer); /* Timeout the Join/Prune timer */
+	    logit(LOG_DEBUG, 0, "Upstream router not available.");
+	}
     }
 
     /* Check all (S,G) entries and set the inherited "leaf" flag.
@@ -332,6 +338,12 @@ void add_leaf(vifi_t vifi, uint32_t source, uint32_t group)
 			  srcs->pruned_oifs,
 			  new_leaves,
 			  srcs->asserted_oifs, 0);
+	/* In the case of SG entry we can create MFC directy without waiting for cache miss. */
+	if (flags & MRTF_SG) {
+	    add_kernel_cache(srcs, srcs->source->address, srcs->group->group, MFC_MOVE_FORCE);
+	    k_chg_mfc(igmp_socket, srcs->source->address, srcs->group->group, 
+		      srcs->incoming, srcs->oifs, srcs->source->address);
+	}
     }
 }
 
@@ -863,10 +875,11 @@ static void process_cache_miss(struct igmpmsg *igmpctl)
 			  mrt->asserted_oifs, 0);
     } else {
 	mrt = find_route(source, group, MRTF_SG | MRTF_WC | MRTF_PMBR, DONT_CREATE);
-	switch_shortest_path(source, group);
 	if (!mrt)
 	    return;
-    }
+        if (IN_PIM_SSM_RANGE(group))
+            switch_shortest_path(source, group);
+     }
 
     /* TODO: if there are too many cache miss for the same (S,G),
      * install negative cache entry in the kernel (oif==NULL) to prevent
