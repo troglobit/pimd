@@ -28,8 +28,8 @@
  * SUCH DAMAGE.
  */
 
-#ifndef __PIMD_IGMPV3_H__
-#define __PIMD_IGMPV3_H__
+#ifndef PIMD_IGMPV3_H_
+#define PIMD_IGMPV3_H_
 
 /*
  * IGMPv3 report modes.
@@ -88,7 +88,7 @@ struct igmpv3_report {
 #define IGMP_V3_REPORT_MAXRECS		65535
 #endif
 
-#endif /* __PIMD_IGMPV3_H__ */
+#endif /* PIMD_IGMPV3_H_ */
 
 /**
  * Local Variables:

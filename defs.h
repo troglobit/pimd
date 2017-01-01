@@ -36,8 +36,8 @@
  * Leland Stanford Junior University.
  *
  */
-#ifndef __PIMD_DEFS_H__
-#define __PIMD_DEFS_H__
+#ifndef PIMD_DEFS_H_
+#define PIMD_DEFS_H_
 
 #ifndef __linux__
 # include <sys/cdefs.h>	/* Defines __BSD_VISIBLE, needed for arc4random() etc. */

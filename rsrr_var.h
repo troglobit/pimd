@@ -24,8 +24,8 @@
  * noted when applicable.
  */
 
-#ifndef __RSRR_VAR_H__
-#define __RSRR_VAR_H__
+#ifndef RSRR_VAR_H_
+#define RSRR_VAR_H_
 
 /* RSRR things that are only needed by mrouted. */
 
@@ -42,5 +42,5 @@ struct rsrr_cache {
     struct rsrr_cache *next;		/* next cache item    */
 };
 
-#endif  /* __RSRR_VAR_H__ */
+#endif /* RSRR_VAR_H_ */
 
