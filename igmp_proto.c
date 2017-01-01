@@ -263,6 +263,10 @@ void accept_group_report(uint32_t igmp_src, uint32_t ssm_src, uint32_t group, in
     struct listaddr *g;
     struct listaddr *s = NULL;
 
+    /* Do not filter LAN scoped groups */
+    if (ntohl(group) <= INADDR_MAX_LOCAL_GROUP) /* group <= 224.0.0.255? */
+	return;
+
     if ((vifi = find_vif_direct_local(igmp_src)) == NO_VIF) {
 	IF_DEBUG(DEBUG_IGMP) {
 	    logit(LOG_INFO, 0, "Ignoring group membership report from non-adjacent host %s",
