@@ -135,7 +135,7 @@ uint16_t bootstrap_initial_delay(void)
      *        addr_delay = 2 - (myAddr/2^31);
      */
 
-    best_priority = max(curr_bsr_priority, my_bsr_priority);
+    best_priority = MAX(curr_bsr_priority, my_bsr_priority);
     if (best_priority == my_bsr_priority) {
 	addr_delay = ntohl(curr_bsr_address) - ntohl(my_bsr_address);
 	/* Calculate the integer part of log_2 of (bestAddr - myAddr) */
