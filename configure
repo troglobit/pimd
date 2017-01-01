@@ -255,9 +255,9 @@ case $OS in
 	echo "DEFS        += -DRAW_OUTPUT_IS_RAW -DIOCTL_OK_ON_RAW_SOCKET" >> $CFG
 	echo "ROUTER_OBJS += netlink.o" >> $CFG
 	if [ $embedded_libc -ne 1 ]; then
-	    echo "EXTRA_OBJS   = libite/strlcpy.o libite/strlcat.o" >> $CFG
+	    echo "EXTRA_OBJS   = compat/strlcpy.o compat/strlcat.o" >> $CFG
 	fi
-	echo "EXTRA_OBJS  += libite/pidfile.o libite/strtonum.o" >> $CFG
+	echo "EXTRA_OBJS  += compat/pidfile.o compat/strtonum.o" >> $CFG
 	echo "EXTRA_LIBS   =" >> $CFG
 	;;
 
@@ -265,7 +265,7 @@ case $OS in
         heading
 	echo "INCLUDES     =" >> $CFG
 	echo "ROUTER_OBJS += routesock.o" >> $CFG
-	echo "EXTRA_OBJS   = libite/pidfile.o" >> $CFG
+	echo "EXTRA_OBJS   = compat/pidfile.o" >> $CFG
 	echo "EXTRA_LIBS   =" >> $CFG
 	;;
 
@@ -273,7 +273,7 @@ case $OS in
         heading
 	echo "INCLUDES     =" >> $CFG
 	echo "ROUTER_OBJS += routesock.o" >> $CFG
-	echo "EXTRA_OBJS   = libite/strtonum.o" >> $CFG
+	echo "EXTRA_OBJS   = compat/strtonum.o" >> $CFG
 	echo "EXTRA_LIBS   = -lutil" >> $CFG
 	;;
 
@@ -303,16 +303,4 @@ fi
 cat $TMP >> $CFG
 rm $TMP
 
-if [ ! -e libite/lite.h ]; then
-    print "  FIXDEP  libite/lite.h missing ... "
-    git submodule update --init >/dev/null
-    if [ $? -ne 0 ]; then
-	print "FAILED!  No Internet access?"
-	exit 1
-    fi
-    print "OK\n"
-fi
-
-
 exit 0
-

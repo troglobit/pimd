@@ -84,11 +84,6 @@
 #include <netinet/ip_mroute.h>
 #endif /* __linux__ */
 
-/* If using any of the BSD distributions of UNIX the configure script
- * links with -lutil, but on Linux we link with -lite.  All required
- * APIs are forward declared in lite.h, so we can use it everywhere. */
-#include "libite/lite.h"
-
 #include <strings.h>
 #ifdef RSRR
 #include <sys/un.h>
@@ -661,7 +656,24 @@ struct rp_hold {
 	uint8_t	priority;
 };
 
-#endif /* __PIMD_DEFS_H__ */
+/* compat declarations */
+#ifndef strlcpy
+size_t  strlcpy    (char *dst, const char *src, size_t siz);
+#endif
+
+#ifndef strlcat
+size_t  strlcat    (char *dst, const char *src, size_t siz);
+#endif
+
+#ifndef strtonum
+long long strtonum (const char *numstr, long long minval, long long maxval, const char **errstrp);
+#endif
+
+#ifndef pidfile
+int     pidfile    (const char *basename);
+#endif
+
+#endif /* PIMD_DEFS_H_ */
 
 /**
  * Local Variables:

@@ -55,17 +55,6 @@ The current maintainer has considered shifting the original coding
 style to FULL [KNF][] several times.
 
 
-GIT Submodules
---------------
-
-pimd is maintained using the GIT version control system.  It also use a
-Git submodule, [libite][], to provide several utilities functions, like
-`pidfile()` and the OpenBSD `strlcpy()` family of functions.
-
-Make sure to `git submodule update` after a `git pull`, in addition to
-`git submodule update --init` when you clone the repository initially.
-
-
 Commit Messages
 ---------------
 
@@ -113,7 +102,6 @@ Bill & Ted; [be excellent to each other][conduct].
 
 [github]:   https://github.com/troglobit/pimd/
 [KNF]:      https://en.wikipedia.org/wiki/Kernel_Normal_Form
-[libite]:   https://github.com/troglobit/libite
 [gitbook]:  https://git-scm.com/book/ch5-2.html
 [rambling]: http://stopwritingramblingcommitmessages.com/
 [conduct]:  https://github.com/troglobit/pimd/blob/master/CODE-OF-CONDUCT.md

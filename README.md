@@ -35,20 +35,6 @@ some tips and details, see the `configure` script.
 For a summary of changes for each release, see the [ChangeLog][changes].
 
 
-Download
---------
-
-Although the project makes heavy use of GitHub, it is *not* recommended
-to use the ZIP file links GitHub provides.  Instead, we recommend using
-proper tarball releases from [the FTP][], or the [releases page][].
-
-The GitHub *Download ZIP* links, and ZIP files on the [releases page][],
-do not include files from the GIT submodules.  The configure script has
-a check for this, but is not 100% foolproof.
-
-See below if you want to contribute.
-
-
 Building
 --------
 
@@ -272,15 +258,12 @@ Contributing
 
 pimd is maintained by [Joachim Nilsson][] at [GitHub][].  If you find
 bugs, have feature requests, or want to contribute fixes or features,
-check out the code from GitHub, including the submodules:
+check out the code from GitHub:
 
 	git clone https://github.com/troglobit/pimd
 	cd pimd
-	make submodules
 
-When you pull from upstream, remember to also update the submodules
-using `git submodule update`, see the file [CONTRIBUTING.md][contrib]
-for further details.
+See the file [CONTRIBUTING.md][contrib] for further details.
 
 
 [BSD license]:     https://en.wikipedia.org/wiki/BSD_licenses
