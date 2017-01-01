@@ -391,7 +391,9 @@ int loglvl(char *level)
     int i;
 
     for (i = 0; prioritynames[i].c_name; i++) {
-	if (string_match(prioritynames[i].c_name, level))
+	size_t len = MIN(strlen(prioritynames[i].c_name), strlen(level));
+
+	if (!strncasecmp(prioritynames[i].c_name, level, len))
 	    return prioritynames[i].c_val;
     }
 
