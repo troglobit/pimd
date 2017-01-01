@@ -828,7 +828,7 @@ static int SetTimer(vifi_t vifi, struct listaddr *g, uint32_t source)
 {
     cbk_t *cbk;
 
-    cbk = (cbk_t *) calloc(1, sizeof(cbk_t));
+    cbk = (cbk_t *)calloc(1, sizeof(cbk_t));
     if (!cbk) {
 	logit(LOG_ERR, 0, "Failed calloc() in SetTimer()");
 	return -1;
