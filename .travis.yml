@@ -1,8 +1,14 @@
 # Travis CI integration
-sudo: false
+# Defaults to GNU GCC and autotools: ./configure && make && make test
 language: c
+
+# Use docker for quicker builds, it now allows https://docs.travis-ci.com/user/apt/
+sudo: false
+
+# Test build with both GCC and Clang (LLVM)
 compiler:
   - gcc
+  - clang
 
 env:
   global:
@@ -11,6 +17,9 @@ env:
    - secure: "OAx9MdLgm+ZpCo/h65praDhKl35RgHEQRFR1qa5fLFrVxqFIusXFl4/A+xSpY+EYcmN0Vcsn5Z79dy3DqK6Njbt14s56NH1mvuDw7SxkFDijwZkJTmgjgCiDM+Hn3Vwjk9WYX0PNifX8Mcm0Zp9sci/koW523ltJdWC7ULvFzK8="
 
 addons:
+  apt:
+    packages:
+      - tree
   coverity_scan:
     project:
       name: "troglobit/pimd"
@@ -20,4 +29,12 @@ addons:
     build_command:   "make"
     branch_pattern: dev
 
-script: ./configure && make
+script:
+  - ./configure --enable-rsrr --prefix=
+  - make clean
+  - make -j5
+  - DESTDIR=~/tmp make install
+  - tree ~/tmp
+  - ldd ~/tmp/sbin/pimd
+  - size ~/tmp/sbin/pimd
+  - ~/tmp/sbin/pimd -h
