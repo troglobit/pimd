@@ -444,6 +444,38 @@ int main(int argc, char *argv[])
 	fprintf(stderr, ")\n");
     }
 
+    if (!debug && !foreground) {
+	/* Detach from the terminal */
+	haveterminal = 0;
+	if (fork())
+	    exit(0);
+
+	close(STDIN_FILENO);
+	close(STDOUT_FILENO);
+	close(STDERR_FILENO);
+
+	n = open("/dev/null", O_RDWR, 0);
+	if (n >= 0) {
+	    dup2(n, STDIN_FILENO);
+	    dup2(n, STDOUT_FILENO);
+	    dup2(n, STDERR_FILENO);
+	}
+#ifdef SYSV
+	setpgrp();
+#else
+#ifdef TIOCNOTTY
+	n = open("/dev/tty", 2);
+	if (n >= 0) {
+	    (void)ioctl(n, TIOCNOTTY, (char *)0);
+	    (void)close(n);
+	}
+#else
+	if (setsid() < 0)
+	    perror("setsid");
+#endif /* TIOCNOTTY */
+#endif /* SYSV */
+    } /* End of child process code */
+
     /*
      * Create directory for runtime files
      */
@@ -510,38 +542,6 @@ int main(int argc, char *argv[])
 
     /* schedule first timer interrupt */
     timer_setTimer(TIMER_INTERVAL, timer, NULL);
-
-    if (!debug && !foreground) {
-	/* Detach from the terminal */
-	haveterminal = 0;
-	if (fork())
-	    exit(0);
-
-	close(STDIN_FILENO);
-	close(STDOUT_FILENO);
-	close(STDERR_FILENO);
-
-	n = open("/dev/null", O_RDWR, 0);
-	if (n >= 0) {
-	    dup2(n, STDIN_FILENO);
-	    dup2(n, STDOUT_FILENO);
-	    dup2(n, STDERR_FILENO);
-	}
-#ifdef SYSV
-	setpgrp();
-#else
-#ifdef TIOCNOTTY
-	n = open("/dev/tty", 2);
-	if (n >= 0) {
-	    (void)ioctl(n, TIOCNOTTY, (char *)0);
-	    (void)close(n);
-	}
-#else
-	if (setsid() < 0)
-	    perror("setsid");
-#endif /* TIOCNOTTY */
-#endif /* SYSV */
-    } /* End of child process code */
 
     if (pidfile(NULL))
 	warn("Cannot create pidfile");
