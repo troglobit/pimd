@@ -25,15 +25,16 @@ addons:
       name: "troglobit/pimd"
       description: "pimd | The Original PIM-SM Daemon"
     notification_email: troglobit@gmail.com
-    build_command_prepend: "./configure"
-    build_command:   "make"
+    build_command_prepend: "./autogen.sh && ./configure --enable-rsrr"
+    build_command:   "make clean all"
     branch_pattern: dev
 
 script:
+  - ./autogen.sh
   - ./configure --enable-rsrr --prefix=
   - make clean
-  - make -j5
-  - DESTDIR=~/tmp make install
+  - make V=1 -j5
+  - DESTDIR=~/tmp make install-strip
   - tree ~/tmp
   - ldd ~/tmp/sbin/pimd
   - size ~/tmp/sbin/pimd
