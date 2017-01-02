@@ -39,6 +39,8 @@
 #ifndef PIMD_DEFS_H_
 #define PIMD_DEFS_H_
 
+#include "config.h"
+
 #ifndef __linux__
 # include <sys/cdefs.h>	/* Defines __BSD_VISIBLE, needed for arc4random() etc. */
 #endif

@@ -31,9 +31,9 @@
 /* RSRR code written by Daniel Zappala, USC Information Sciences Institute,
  * April 1995.
  */
+#include <config.h>
 
 /* May 1995 -- Added support for Route Change Notification */
-
 #ifdef RSRR
 
 #include "defs.h"

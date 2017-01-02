@@ -55,7 +55,6 @@ int mrt_table_id = 0;
 char *config_file = _PATH_PIMD_CONF;
 
 extern int loglevel;
-extern char todaysversion[];
 
 static int sighandled = 0;
 #define GOT_SIGINT      0x01
@@ -318,7 +317,7 @@ int main(int argc, char *argv[])
 	{0, 0, 0, 0}
     };
 
-    snprintf(versionstring, sizeof (versionstring), "pimd version %s", todaysversion);
+    snprintf(versionstring, sizeof (versionstring), "pimd version %s", PACKAGE_VERSION);
 
     while ((ch = getopt_long(argc, argv, "c:d::fhlNvqrt:s:", long_options, NULL)) != EOF) {
 	const char *errstr;
