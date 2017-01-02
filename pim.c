@@ -547,7 +547,6 @@ static int send_frame(char *buf, size_t len, size_t frag, size_t mtu, struct soc
 
 /**
  * Local Variables:
- *  version-control: t
  *  indent-tabs-mode: t
  *  c-file-style: "ellemtel"
  *  c-basic-offset: 4

@@ -389,7 +389,6 @@ int k_req_incoming(uint32_t source, struct rpfctl *rpfcinfo)
 
 /**
  * Local Variables:
- *  version-control: t
  *  indent-tabs-mode: t
  *  c-file-style: "ellemtel"
  *  c-basic-offset: 4

@@ -196,7 +196,6 @@ dvmrp_accept_g_ack(src, dst, p, datalen)
 
 /**
  * Local Variables:
- *  version-control: t
  *  indent-tabs-mode: t
  *  c-file-style: "ellemtel"
  *  c-basic-offset: 4

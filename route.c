@@ -1089,7 +1089,6 @@ mrtentry_t *switch_shortest_path(uint32_t source, uint32_t group)
 
 /**
  * Local Variables:
- *  version-control: t
  *  indent-tabs-mode: t
  *  c-file-style: "ellemtel"
  *  c-basic-offset: 4

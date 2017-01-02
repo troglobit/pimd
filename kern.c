@@ -545,7 +545,6 @@ int k_get_sg_cnt(int socket, uint32_t source, uint32_t group, struct sg_count *r
 
 /**
  * Local Variables:
- *  version-control: t
  *  indent-tabs-mode: t
  *  c-file-style: "ellemtel"
  *  c-basic-offset: 4

@@ -3592,7 +3592,6 @@ int send_pim_cand_rp_adv(void)
 
 /**
  * Local Variables:
- *  version-control: t
  *  indent-tabs-mode: t
  *  c-file-style: "ellemtel"
  *  c-basic-offset: 4

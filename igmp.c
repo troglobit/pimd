@@ -491,7 +491,6 @@ void send_igmp(char *buf, uint32_t src, uint32_t dst, int type, int code, uint32
 
 /**
  * Local Variables:
- *  version-control: t
  *  indent-tabs-mode: t
  *  c-file-style: "ellemtel"
  *  c-basic-offset: 4

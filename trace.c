@@ -568,7 +568,6 @@ void accept_neighbor_request2(uint32_t src, uint32_t dst __attribute__((unused))
 
 /**
  * Local Variables:
- *  version-control: t
  *  indent-tabs-mode: t
  *  c-file-style: "ellemtel"
  *  c-basic-offset: 4
