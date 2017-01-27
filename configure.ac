@@ -24,7 +24,7 @@ AS_IF([test "x$has_strlcpy" = xno],
 		has_strlcpy=yes
 		has_strlcat=yes
 		has_strtonum=yes
-		libutill=yes))
+		libutil=yes))
 
 AM_CONDITIONAL(NO_PIDFILE,  [test "x$has_pidfile"  = "xno"])
 AM_CONDITIONAL(NO_STRLCPY,  [test "x$has_strlcpy"  = "xno"])
