@@ -172,8 +172,8 @@ void config_vifs_from_kernel(void)
 	    logit(LOG_ERR, errno, "Failed reading interface flags for phyint %s", ifr.ifr_name);
 
 	flags = ifr.ifr_flags;
-	if ((flags & (IFF_LOOPBACK | IFF_MULTICAST)) != IFF_MULTICAST) {
-	    WARN("Skipping interface %s, either loopback or does not support multicast.", ifr.ifr_name);
+	if (!(flags & IFF_MULTICAST)) {
+	    WARN("Skipping interface %s, does not support multicast.", ifr.ifr_name);
 	    continue;
 	}
 
