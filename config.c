@@ -199,9 +199,7 @@ void config_vifs_from_kernel(void)
 	}
 
 	subnet = addr & mask;
-#ifdef DISABLE_MASKLEN_CHECK
 	if (mask != 0xffffffff) {
-#endif
 		if ((!inet_valid_subnet(subnet, mask)) || (addr == subnet) || addr == (subnet | ~mask)) {
 			if (!(inet_valid_host(addr) && ((mask == htonl(0xfffffffe)) || (flags & IFF_POINTOPOINT)))) {
 				logit(LOG_WARNING, 0, "Ignoring %s, has invalid address %s and/or netmask %s",
@@ -209,9 +207,7 @@ void config_vifs_from_kernel(void)
 				continue;
 			}
 		}
-#ifdef DISABLE_MASKLEN_CHECK
 	}
-#endif
 
 	/*
 	 * Ignore any interface that is connected to the same subnet as

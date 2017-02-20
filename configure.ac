@@ -81,9 +81,6 @@ AC_ARG_ENABLE(pim_genid,
 AC_ARG_ENABLE(exit_on_error,
         AS_HELP_STRING([--disable-exit-on-error], [Do not exit on error messages (LOG_ERR)]))
 
-AC_ARG_ENABLE(masklen_check,
-        AS_HELP_STRING([--disable-masklen-check], [Allow virtual tunctl VIFs with prefix len 32]))
-
 
 AC_ARG_WITH(max_vifs,
 	AS_HELP_STRING([--with-max-vifs=NUM], [Kernel maximum number of allowed VIFs, default: 32.
@@ -115,9 +112,6 @@ AS_IF([test "x$enable_pim_genid" != "xno"], [
 
 AS_IF([test "x$enable_exit_on_error" = "xno"], [
 	AC_DEFINE(CONTINUE_ON_ERROR, 1, [Do not exit on error messages (LOG_ERR).])])
-
-AS_IF([test "x$enable_masklen_check" = "xno"], [
-	AC_DEFINE(DISABLE_MASKLEN_CHECK, 1, [Allow virtual tunctl VIFs with prefix len 32.])])
 
 AS_IF([test "x$with_max_vifs" != "xno" -a "x$max_vifs" != "xyes"], [
 	AC_DEFINE_UNQUOTED(CUSTOM_MAX_VIFS, $max_vifs, [Custom MAX VIFs in kernel.])])
