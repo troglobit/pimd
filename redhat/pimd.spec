@@ -24,6 +24,7 @@ RFC 2362 with a few noted exceptions (see the RELEASE.NOTES for details).
 
 
 %build
+./autogen.sh
 ./configure
 make %{?_smp_mflags}
 
@@ -45,7 +46,7 @@ make %{?_smp_mflags}
 
 %files
 %defattr(-,root,root,-)
-%doc AUTHORS CREDITS FAQ INSTALL LICENSE LICENSE.mrouted README README.config README.config.jp README.debug RELEASE.NOTES TODO
+%doc AUTHORS CREDITS LICENSE LICENSE.mrouted RELEASE.NOTES
 %config %{_sysconfdir}/pimd.conf
 %{_initrddir}/%{name}
 %{_sbindir}/%{name}
