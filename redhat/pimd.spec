@@ -24,7 +24,7 @@ RFC 2362 with a few noted exceptions (see the RELEASE.NOTES for details).
 
 
 %build
-./autogen.sh
+[ -x configure ] || ./autogen.sh
 ./configure
 make %{?_smp_mflags}
 
