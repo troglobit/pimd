@@ -58,8 +58,14 @@ Commit Messages
 ---------------
 
 Commit messages exist to track *why* a change was made.  Try to be as
-clear and concise as possible in your commit messages.  Example from
-the [Pro Git][gitbook] online book:
+clear and concise as possible in your commit messages, and always, be
+proud of your work and set up a proper GIT identity for your commits:
+
+    git config --global user.name "Jane Doe"
+    git config --global user.email jane.doe@example.com
+
+Example commit message from the [Pro Git][gitbook] online book, notice
+how `git commit -s` is used to automatically add a `Signed-off-by`:
 
     Brief, but clear and concise summary of changes
     
@@ -77,6 +83,8 @@ the [Pro Git][gitbook] online book:
      - Typically a hyphen or asterisk is used for the bullet, preceded
        by a single space, with blank lines in between, but conventions
        vary here
+    
+    Signed-off-by: Jane Doe <jane.doe@example.com>
 
 Another good *counter* example [is this][rambling] ...
 
