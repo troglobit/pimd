@@ -15,6 +15,7 @@
 .Op Fl c Ar FILE
 .Op Fl d Ar [SYS[,SYS,...]
 .Op Fl s Ar LEVEL
+.Op Fl t Ar ID
 .Sh DESCRIPTION
 .Nm
 is a lightweight, stand-alone PIM-SM/SSM v2 multicast routing daemon
@@ -173,6 +174,16 @@ Informational
 .It Cm debug
 Debug-level messages
 .El
+.It Fl t Ar ID
+Set multicast routing table ID.  Remember to also create routing rules
+directing packets to the table.  This example uses routing table ID 123:
+.Bd -unfilled -offset left
+ip mrule add iif eth0 lookup 123
+ip mrule add oif eth0 lookup 123
+.Ed
+.Pp
+.Nm Note:
+Only available on Linux.
 .El
 .Sh CONFIGURATION
 The configuration is kept in the file
