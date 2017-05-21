@@ -281,7 +281,7 @@ static int usage(int code)
     else
 	snprintf(pidfn, sizeof(pidfn), "%s", pid_file);
 
-    printf("\nUsage: %s [-fhlNqrv] [-c FILE] [-d [SYS][,SYS...]] [-s LEVEL]\n\n", prognm);
+    printf("Usage: %s [-fhlNqrv] [-c FILE] [-d [SYS][,SYS...]] [-s LEVEL]\n\n", prognm);
     printf(" -c, --config=FILE   Configuration file, default uses ident NAME: %s\n", config_file);
     printf(" -d, --debug[=SYS]   Debug subsystem, see below for valid systems, default all\n");
     printf(" -f, --foreground    Run in foreground, do not detach from calling terminal\n");
@@ -322,7 +322,10 @@ static int usage(int code)
     strlcat(line, "\n", sizeof(line));
     printf("%s", line);
 
-    printf("\nBug report address: %-40s\n\n", PACKAGE_BUGREPORT);
+    printf("\nBug report address: %-40s\n", PACKAGE_BUGREPORT);
+#ifdef PACKAGE_URL
+    printf("Project homepage: %s\n", PACKAGE_URL);
+#endif
 
     return code;
 }
