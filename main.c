@@ -55,7 +55,7 @@ int mrt_table_id = 0;
 char *ident       = PACKAGE_NAME;
 char *prognm      = NULL;
 char *pid_file    = NULL;
-char *config_file = _PATH_PIMD_CONF;
+char *config_file = NULL;
 
 extern int loglevel;
 
@@ -247,11 +247,22 @@ static int killshow(int signo, char *file)
 
 static int compose_paths(void)
 {
-	/* Default is to let pidfile() API construct PID file from ident */
-	if (!pid_file)
-		pid_file = strdup(ident);
+    /* Default .conf file path: "/etc" + '/' + "pimd" + ".conf" */
+    if (!config_file) {
+	size_t len = strlen(SYSCONFDIR) + strlen(ident) + 7;
 
-	return 0;
+	config_file = malloc(len);
+	if (!config_file)
+	    logit(LOG_ERR, errno, "Failed allocating memory, exiting.");
+
+	snprintf(config_file, len, "%s/%s.conf", SYSCONFDIR, ident);
+    }
+
+    /* Default is to let pidfile() API construct PID file from ident */
+    if (!pid_file)
+	pid_file = strdup(ident);
+
+    return 0;
 }
 
 static int usage(int code)
@@ -268,7 +279,7 @@ static int usage(int code)
 	snprintf(pidfn, sizeof(pidfn), "%s", pid_file);
 
     printf("\nUsage: %s [-fhlNqrv] [-c FILE] [-d [SYS][,SYS...]] [-s LEVEL]\n\n", prognm);
-    printf(" -c, --config=FILE   Configuration file to use, default %s\n", _PATH_PIMD_CONF);
+    printf(" -c, --config=FILE   Configuration file to use, default %s\n", config_file);
     printf(" -d, --debug[=SYS]   Debug subsystem, see below for valid systems, default all\n");
     printf(" -f, --foreground    Run in foreground, do not detach from calling terminal\n");
     printf(" -h, --help          Show this help text\n");

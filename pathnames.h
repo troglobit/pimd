@@ -39,13 +39,7 @@
 #ifndef PIMD_PATHNAMES_H_
 #define PIMD_PATHNAMES_H_
 
-#include <paths.h>
-
-#ifndef _PATH_SYSCONF
-#define _PATH_SYSCONF           "/etc"
-#endif
-
-#define _PATH_PIMD_CONF         _PATH_SYSCONF "/pimd.conf"
+#define _PATH_PIMD_CONF         SYSCONFDIR        "/pimd.conf"
 #define _PATH_PIMD_RUNDIR       LOCALSTATEDIR     "/run/pimd"
 #define _PATH_PIMD_DUMP         _PATH_PIMD_RUNDIR "/pimd.dump"
 #define _PATH_PIMD_CACHE        _PATH_PIMD_RUNDIR "/pimd.cache"
