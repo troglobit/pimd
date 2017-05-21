@@ -115,7 +115,7 @@ static void build_iflist(void)
 	return;
 
     while ((line = fgets(buf, sizeof(buf), fp))) {
-	int enabled = !do_vifs;
+	int enabled = do_vifs;
 	char *token, *ifname;
 	struct iflist *entry;
 
@@ -180,7 +180,7 @@ static int iface_enabled(char *ifname)
     }
 
   fallback:
-    return !do_vifs;
+    return do_vifs;
 }
 
 /*

@@ -47,7 +47,7 @@
 #include <sys/stat.h>
 
 char versionstring[100];
-int do_vifs = 0;
+int do_vifs = 1;
 int haveterminal = 1;
 struct rp_hold *g_rp_hold = NULL;
 int mrt_table_id = 0;
@@ -368,7 +368,7 @@ int main(int argc, char *argv[])
 		return killshow(SIGHUP, NULL);
 
 	    case 'N':
-		do_vifs = 1;
+		do_vifs = 0;
 		break;
 
 	    case 'v':
