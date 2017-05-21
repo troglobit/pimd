@@ -219,10 +219,8 @@ static int getmsg(struct rtmsg *rtm, int msglen, struct rpfctl *rpf)
 	    break;
     }
 
-    if (vifi >= numvifs) {
-	logit(LOG_WARNING, 0, "NETLINK: ifindex=%d, but no vif", ifindex);
+    if (vifi >= numvifs)
 	return FALSE;
-    }
 
     /* Found inbound interface in vifi */
     rpf->iif = vifi;
