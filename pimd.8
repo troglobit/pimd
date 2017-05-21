@@ -134,9 +134,11 @@ do this.
 .It Fl N, -disable-vifs
 This prevents
 .Nm
-from being activated on all interfaces by default.  When this command
-line option is given, use `phyint IFNAME enable` to selectively activate
-PIM services on an interface.
+from running on all interfaces by default.  When this command line
+option is given, use
+.Cm phyint IFNAME enable
+to selectively activate PIM services on an interface.  This command line
+option is also available as a setting in the configuration file.
 .It Fl q, -quit-daemon
 Tell a running
 .Nm
@@ -188,14 +190,28 @@ Only available on Linux.
 .Sh CONFIGURATION
 The configuration is kept in the file
 .Pa /etc/pimd.conf .
-The file format is relatively free-form: whitespace (including newlines) is not
-significant.  However, the order of some statements are important, see
-more below.
+The file format is relatively free-form: whitespace (including newlines)
+is not significant.  However, the order of some statements are
+important, more on this below.
 .Pp
 All <masklen> arguments to an IPv4 address, group or network can also be
 given in the alternative /CIDR format.  E.g., <group>/<masklen>.
 .Pp
-Here are the different configuration settings:
+By default,
+.Nm
+runs on all multicast capable interfaces.  The optional
+.Cm disable-vifs
+setting and the
+.Cm phyint
+setting can be used to control this behavior.  The former can also be
+set from the command line using the
+.Fl -disable-vifs
+or
+.Fl N
+option.  More on the
+.Cm phyint
+interface configuration setting below.
+.Pp
 .Bl -item -offset indent
 .It
 .Cm default-route-distance
@@ -212,6 +228,8 @@ Here are the different configuration settings:
 .It
 .Cm hello-interval
 .Ar <30-18724>
+.It
+.Cm disable-vifs
 .It
 .Cm phyint
 .Cm <address | ifname>
@@ -257,16 +275,6 @@ Here are the different configuration settings:
 .Op Cm rate Ar <KBPS> | Cm packets Ar <NUM> | Cm infinity
 .Op Cm interval Ar <SEC>
 .El
-.Pp
-By default,
-.Nm
-will be activated on all multicast capable interfaces.  The
-.Cm phyint
-setting and the
-.Fl N, -disable-vifs
-command line option control this behaviour.  More on the
-.Cm phyint
-interface configuration setting below.
 .Pp
 The
 .Cm default-route-distance
@@ -324,11 +332,12 @@ The default value for the Hello interval is 30 sec.  Anything less than
 .Pp
 The
 .Nm phyint
-option refers to a physical interface and must come after
+setting refers to a physical interface and must come after the
 .Cm default-route-metric
 and
-.Cm default-route-distance .
-Select the interface either by its IP
+.Cm default-route-distance
+settings in the configuration file.  Select the interface either by its
+IP
 .Ar address
 or interface name
 .Ar ifname
@@ -337,14 +346,20 @@ values, you don't need to put anything else on the line.  However, there
 are some additional settings:
 .Bl -bullet -offset indent -width 1n -compact
 .It
-.Nm disable :
-Do not send PIM-SM traffic through this interface nor listen for PIM-SM traffic
-from this interface.  Default: enable.
 .Nm enable :
-Selectively enable which interfaces to send PIM-SM traffic through.  Useful with
-the
-.Fl N
-command line option.
+Selectively enable this interface for
+.Nm .
+Useful with the
+.Fl N, -disable-vifs
+command line option and the
+.Cm disable-vifs
+configuration file setting.
+.It
+.Nm disable :
+Do not use this interface in
+.Nm .
+Default enable, unless
+.Fl N, -disable-vifs .
 .It
 .Nm igmpv2 :
 Force interface to use IGMPv2, or

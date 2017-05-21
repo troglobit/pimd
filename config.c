@@ -66,6 +66,7 @@
 #define CONF_IGMP_QUERY_INTERVAL                14
 #define CONF_IGMP_QUERIER_TIMEOUT               15
 #define CONF_HELLO_INTERVAL                     16
+#define CONF_DISABLE_VIFS                       17
 
 /*
  * Beginnings of a refactor of the static uvifs[] array
@@ -119,8 +120,17 @@ static void build_iflist(void)
 	char *token, *ifname;
 	struct iflist *entry;
 
-	if (parse_option(next_word(&line)) != CONF_PHYINT)
-	    continue;
+	switch (parse_option(next_word(&line))) {
+	    case CONF_PHYINT:
+		break;
+
+	    case CONF_DISABLE_VIFS:
+		do_vifs = 0;
+		continue;
+
+	    default:
+		continue;
+	}
 
 	ifname = next_word(&line);
 	while (!EQUAL((token = next_word(&line)), "")) {
@@ -468,6 +478,8 @@ static int parse_option(char *word)
 {
     if (EQUAL(word, ""))
 	return CONF_EMPTY;
+    if (EQUAL(word, "disable-vifs"))
+	return CONF_DISABLE_VIFS;
     if (EQUAL(word, "phyint"))
 	return CONF_PHYINT;
     if (EQUAL(word, "bsr-candidate"))
@@ -1586,6 +1598,10 @@ void config_vifs_from_file(void)
 
 	    case CONF_PHYINT:
 		parse_phyint(s);
+		break;
+
+	    case CONF_DISABLE_VIFS:
+		/* Ignore, handled in first stage */
 		break;
 
 	    case CONF_CANDIDATE_RP:
