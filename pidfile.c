@@ -38,13 +38,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "pathnames.h"
 
 static char *pidfile_path = NULL;
 static pid_t pidfile_pid  = 0;
 
 static void pidfile_cleanup(void);
 
-const  char *__pidfile_path = LOCALSTATEDIR "/run";
+const  char *__pidfile_path = _PATH_PIMD_RUNDIR;
 const  char *__pidfile_name = NULL;
 extern char *prognm;
 

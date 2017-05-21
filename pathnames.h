@@ -46,7 +46,7 @@
 #endif
 
 #define _PATH_PIMD_CONF         _PATH_SYSCONF "/pimd.conf"
-#define _PATH_PIMD_RUNDIR       _PATH_VARRUN "pimd"
+#define _PATH_PIMD_RUNDIR       LOCALSTATEDIR     "/run/pimd"
 #define _PATH_PIMD_DUMP         _PATH_PIMD_RUNDIR "/pimd.dump"
 #define _PATH_PIMD_CACHE        _PATH_PIMD_RUNDIR "/pimd.cache"
 

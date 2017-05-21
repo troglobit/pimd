@@ -205,7 +205,7 @@ static pid_t daemon_pid(void)
     FILE *fp;
     pid_t pid = -1;
 
-    result = asprintf(&path, "%s%s.pid", _PATH_VARRUN, prognm);
+    result = asprintf(&path, "%s/%s.pid", _PATH_PIMD_RUNDIR, prognm);
     if (result == -1 || path == NULL)
 	return -1;
 
@@ -263,7 +263,7 @@ static int usage(int code)
 
     compose_paths();
     if (pid_file && pid_file[0] != '/')
-	snprintf(pidfn, sizeof(pidfn), "%s/run/%s.pid", LOCALSTATEDIR, pid_file);
+	snprintf(pidfn, sizeof(pidfn), "%s/%s.pid", _PATH_PIMD_RUNDIR, pid_file);
     else
 	snprintf(pidfn, sizeof(pidfn), "%s", pid_file);
 
