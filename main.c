@@ -300,21 +300,21 @@ int main(int argc, char *argv[])
     struct sigaction sa;
     time_t boottime;
     struct option long_options[] = {
-	{"config", 1, 0, 'c'},
-	{"debug", 2, 0, 'd'},
-	{"foreground", 0, 0, 'f'},
-	{"disable-vifs", 0, 0, 'N'},
-	{"help", 0, 0, 'h'},
-	{"version", 0, 0, 'v'},
-	{"quit-daemon", 0, 0, 'q'},
-	{"reload-config", 0, 0, 'l'},
-	{"show-routes", 0, 0, 'r'},
-	{"table-id", 1, 0, 't'},
-	{"syslog-level", 1, 0, 's'},   /* Compat */
-	{"loglevel", 1, 0, 's'},
-	/* {"show-cache", 0, 0, 'i'}, */
-	/* {"show-debug", 0, 0, 'p'}, */
-	{0, 0, 0, 0}
+	{ "config",        1, 0, 'c' },
+	{ "debug",         2, 0, 'd' },
+	{ "disable-vifs",  0, 0, 'N' },
+	{ "foreground",    0, 0, 'f' },
+	{ "help",          0, 0, 'h' },
+	{ "loglevel",      1, 0, 's' },
+	{ "quit-daemon",   0, 0, 'q' },
+	{ "reload-config", 0, 0, 'l' },
+	{ "show-routes",   0, 0, 'r' },
+	{ "syslog-level",  1, 0, 's' },   /* Compat */
+	{ "table-id",      1, 0, 't' },
+	{ "version",       0, 0, 'v' },
+	/* { "show-cache", 0, 0, 'i' }, */
+	/* { "show-debug", 0, 0, 'p' }, */
+	{ NULL, 0, 0, 0 }
     };
 
     snprintf(versionstring, sizeof (versionstring), "pimd version %s", PACKAGE_VERSION);
@@ -371,10 +371,6 @@ int main(int argc, char *argv[])
 		do_vifs = 0;
 		break;
 
-	    case 'v':
-		printf("%s\n", versionstring);
-		return 0;
-
 	    case 'q':
 		return killshow(SIGTERM, NULL);
 
@@ -412,6 +408,11 @@ int main(int argc, char *argv[])
 	    case 'p':
 		return killshow(SIGQUIT, NULL);
 #endif
+
+	    case 'v':
+		printf("%s\n", versionstring);
+		return 0;
+
 	    default:
 		return usage(1);
 	}
