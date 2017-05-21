@@ -54,8 +54,6 @@ unsigned long debug = 0x00000000;        /* If (long) is smaller than
 					  * 4 bytes, then we are in
 					  * trouble.
 					  */
-static char dumpfilename[] = _PATH_PIMD_DUMP;
-static char cachefilename[] = _PATH_PIMD_CACHE; /* TODO: notused */
 
 
 char *packet_kind(int proto, int type, int code)
@@ -264,11 +262,13 @@ log_level(int proto, int type, int code)
 /*
  * Dump internal data structures to a file.
  */
-void fdump(int i __attribute__((unused)))
+void fdump(char *fmt)
 {
     FILE *fp;
+    char file[90];
 
-    fp = fopen(dumpfilename, "w");
+    snprintf(file, sizeof(file), fmt, ident);
+    fp = fopen(file, "w");
     if (fp) {
 	dump_vifs(fp);
 	dump_pim_mrt(fp);
@@ -280,11 +280,13 @@ void fdump(int i __attribute__((unused)))
 /*
  * Dump local cache contents to a file.
  */
-void cdump(int i __attribute__((unused)))
+void cdump(char *fmt)
 {
     FILE *fp;
+    char file[90];
 
-    fp = fopen(cachefilename, "w");
+    snprintf(file, sizeof(file), fmt, ident);
+    fp = fopen(file, "w");
     if (fp) {
 	/* XXX: TODO: implement it:
 	   dump_cache(fp);

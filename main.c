@@ -223,12 +223,15 @@ static pid_t daemon_pid(void)
 }
 
 /* Send signal to running daemon and the show resulting file. */
-static int killshow(int signo, char *file)
+static int killshow(int signo, char *fmt)
 {
-    pid_t pid = daemon_pid();
     char buf[100];
+    char file[90];
+    pid_t pid = daemon_pid();
 
     if (pid > 0) {
+	snprintf(file, sizeof(file), fmt, ident);
+
 	if (file && -1 == remove(file) && errno != ENOENT)
 	    warn("Failed removing %s, may be showing stale information", file);
 
@@ -255,7 +258,7 @@ static int compose_paths(void)
 	if (!config_file)
 	    logit(LOG_ERR, errno, "Failed allocating memory, exiting.");
 
-	snprintf(config_file, len, "%s/%s.conf", SYSCONFDIR, ident);
+	snprintf(config_file, len, _PATH_PIMD_CONF, ident);
     }
 
     /* Default is to let pidfile() API construct PID file from ident */
@@ -662,11 +665,11 @@ int main(int argc, char *argv[])
 	    }
 	    if (sighandled & GOT_SIGUSR1) {
 		sighandled &= ~GOT_SIGUSR1;
-		fdump(SIGUSR1);
+		fdump(_PATH_PIMD_DUMP);
 	    }
 	    if (sighandled & GOT_SIGUSR2) {
 		sighandled &= ~GOT_SIGUSR2;
-		cdump(SIGUSR2);
+		cdump(_PATH_PIMD_CACHE);
 	    }
 	    if (sighandled & GOT_SIGALRM) {
 		sighandled &= ~GOT_SIGALRM;
