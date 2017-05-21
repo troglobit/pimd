@@ -279,16 +279,17 @@ static int usage(int code)
 	snprintf(pidfn, sizeof(pidfn), "%s", pid_file);
 
     printf("\nUsage: %s [-fhlNqrv] [-c FILE] [-d [SYS][,SYS...]] [-s LEVEL]\n\n", prognm);
-    printf(" -c, --config=FILE   Configuration file to use, default %s\n", config_file);
+    printf(" -c, --config=FILE   Configuration file, default uses ident NAME: %s\n", config_file);
     printf(" -d, --debug[=SYS]   Debug subsystem, see below for valid systems, default all\n");
     printf(" -f, --foreground    Run in foreground, do not detach from calling terminal\n");
     printf(" -h, --help          Show this help text\n");
     /* printf("  -i, --show-cache     Show internal cache tables\n"); */
+    printf(" -I, --ident=NAME    Identity for config + PID file, and syslog, default: %s\n", ident);
     printf(" -l, --reload-config Tell a running pimd to reload its configuration\n");
     printf(" -N, --disable-vifs  Disable all virtual interfaces (phyint) by default\n");
     /* printf("  -p,--show-debug     Show debug dump, only if debug is enabled\n"); */
     printf(" -P, --pidfile=FILE  File to store process ID for signaling %s\n"
-	   "                     Default: %s\n", prognm, pidfn);
+	   "                     Default uses ident NAME: %s\n", prognm, pidfn);
     printf(" -q, --quit-daemon   Send SIGTERM to a running pimd\n");
     printf(" -r, --show-routes   Show state of VIFs and multicast routing tables\n");
     printf(" -t, --table-id=ID   Set multicast routing table ID.  Allowed table ID#:\n"
@@ -350,6 +351,7 @@ int main(int argc, char *argv[])
 	{ "disable-vifs",  0, 0, 'N' },
 	{ "foreground",    0, 0, 'f' },
 	{ "help",          0, 0, 'h' },
+	{ "ident",         1, 0, 'I' },
 	{ "loglevel",      1, 0, 's' },
 	{ "pidfile",       1, 0, 'P' },
 	{ "quit-daemon",   0, 0, 'q' },
@@ -366,7 +368,7 @@ int main(int argc, char *argv[])
     snprintf(versionstring, sizeof (versionstring), "pimd version %s", PACKAGE_VERSION);
 
     prognm = ident = progname(argv[0]);
-    while ((ch = getopt_long(argc, argv, "c:d::fhlNvP:qrt:s:", long_options, NULL)) != EOF) {
+    while ((ch = getopt_long(argc, argv, "c:d::fhI:lNvP:qrt:s:", long_options, NULL)) != EOF) {
 	const char *errstr;
 
 	switch (ch) {
@@ -410,6 +412,10 @@ int main(int argc, char *argv[])
 
 	    case 'h':
 		return usage(0);
+
+	    case 'I':	/* --ident=NAME */
+		ident = optarg;
+		break;
 
 	    case 'l':
 		return killshow(SIGHUP, NULL);
@@ -538,10 +544,10 @@ int main(int argc, char *argv[])
      * Setup logging
      */
 #ifdef LOG_DAEMON
-    openlog("pimd", LOG_PID, LOG_DAEMON);
+    openlog(ident, LOG_PID, LOG_DAEMON);
     setlogmask(LOG_UPTO(loglevel));
 #else
-    openlog("pimd", LOG_PID);
+    openlog(ident, LOG_PID);
 #endif /* LOG_DAEMON */
 
     logit(LOG_NOTICE, 0, "%s starting ...", versionstring);

@@ -14,6 +14,7 @@
 .Op Fl fhlNqr
 .Op Fl c Ar FILE
 .Op Fl d Ar [SYS[,SYS,...]
+.Op Fl I Ar NAME
 .Op Fl P Ar FILE
 .Op Fl s Ar LEVEL
 .Op Fl t Ar ID
@@ -56,8 +57,12 @@ options starting with two dashes (`-').  The options are as follows:
 .It Fl h, -help
 Print a help message and exit.
 .It Fl c, -config=FILE
-Specify an alternative configuration file, default
-.Pa /etc/pimd.conf .
+Specify an alternative configuration file, the default
+.Pa /etc/pimd.conf ,
+is derived from
+.Fl -ident=NAME ,
+which is strongly recommended to change over this option.
+.Pp
 If
 .Nm
 cannot find its configuration file it will start up with fallback
@@ -126,6 +131,19 @@ Run in the foreground, do not detach from calling terminal and do not
 fork to background.  Useful not only when debugging (above) but also
 when running under a process monitor like daemontools, runit, finit, or
 systemd.
+.It Fl I, Fl -ident=NAME
+Specify program identity (name) to be used for configuration file, PID
+file and syslog messages.  Useful with multiple instances of
+.Nm ,
+or to simply adapt to site specific practices, e.g. "PIM", without
+renaming the binary.  Note, this option only changes the base name of
+the PID or configuration files, not the location, which is system
+specific.  Usually
+.Pa /var/run/pimd/pimd.pid
+or
+.Pa /run/pimd.pid
+and
+.Pa /etc/pimd.conf .
 .It Fl l, -reload-config
 Tell a running pimd to reload its configuration.  This is done by sending
 a SIGHUP to the PID listed in
@@ -141,10 +159,11 @@ option is given, use
 to selectively activate PIM services on an interface.  This command line
 option is also available as a setting in the configuration file.
 .It Fl P, -pidfile=FILE
-File to store process ID for signaling
-.Nm .
-Default:
-.Pa /var/run/pimd.pid
+Set PID file name and location, defaults to
+.Pa /run/pimd/pimd.pid ,
+derived from
+.Fl -ident=NAME ,
+which is strongly recommended to change over this option.
 .It Fl q, -quit-daemon
 Tell a running
 .Nm
