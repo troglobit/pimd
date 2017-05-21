@@ -5,11 +5,14 @@ AM_SILENT_RULES([yes])
 
 AC_CONFIG_SRCDIR([main.c])
 AC_CONFIG_HEADER([config.h])
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile pimd.service])
 
 # Check for standard programs, headers, and functions
 AC_PROG_CC
 AC_PROG_INSTALL
+
+# Required to check for libsystemd-dev
+PKG_PROG_PKG_CONFIG
 
 AC_HEADER_STDC
 AC_CHECK_HEADERS([netinet/pim.h net/if_dl.h])
@@ -81,12 +84,15 @@ AC_ARG_ENABLE(pim_genid,
 AC_ARG_ENABLE(exit_on_error,
         AS_HELP_STRING([--disable-exit-on-error], [Do not exit on error messages (LOG_ERR)]))
 
-
 AC_ARG_WITH(max_vifs,
 	AS_HELP_STRING([--with-max-vifs=NUM], [Kernel maximum number of allowed VIFs, default: 32.
 		This must match the kernel built-in MAXVIFS value!
 		Usually, multiple routing tables is what you want.]),
 	[max_vifs=$withval], [max_vifs=yes])
+
+AC_ARG_WITH([systemd],
+     [AS_HELP_STRING([--with-systemd=DIR], [Directory for systemd service files])],,
+     [with_systemd=auto])
 
 # Create config.h from selected features and fallback defautls
 AS_IF([test "x$enable_broken_crc" = "xyes"], [
@@ -116,13 +122,39 @@ AS_IF([test "x$enable_exit_on_error" = "xno"], [
 AS_IF([test "x$with_max_vifs" != "xno" -a "x$max_vifs" != "xyes"], [
 	AC_DEFINE_UNQUOTED(CUSTOM_MAX_VIFS, $max_vifs, [Custom MAX VIFs in kernel.])])
 
-AM_CONDITIONAL(BSD,   [test "x$ac_cv_header_net_if_dl_h"    = "xyes"])
-AM_CONDITIONAL(LINUX, [test "x$ac_cv_header_netinet_pim_h" != "xyes"])
-AM_CONDITIONAL(RSRR,  [test "x$enable_rsrr"                 = "xyes"])
+AS_IF([test "x$with_systemd" = "xyes" -o "x$with_systemd" = "xauto"], [
+     def_systemd=$($PKG_CONFIG --variable=systemdsystemunitdir systemd)
+     AS_IF([test "x$def_systemd" = "x"],
+         [AS_IF([test "x$with_systemd" = "xyes"],
+	     [AC_MSG_ERROR([systemd support requested but pkg-config unable to query systemd package])])
+	     with_systemd=no], [with_systemd="$def_systemd"])]
+)
+AS_IF([test "x$with_systemd" != "xno"],
+     [AC_SUBST([systemddir], [$with_systemd])])
+
+AM_CONDITIONAL(BSD,     [test "x$ac_cv_header_net_if_dl_h"    = "xyes"])
+AM_CONDITIONAL(LINUX,   [test "x$ac_cv_header_netinet_pim_h" != "xyes"])
+AM_CONDITIONAL(RSRR,    [test "x$enable_rsrr"                 = "xyes"])
+AM_CONDITIONAL(SYSTEMD, [test "x$with_systemd"               != "xno"])
 
 LIBUTIL=
 AS_IF([test "x$libutil" = "yes"], [LIBUTIL=-lutil])
 AC_SUBST(LIBUTIL)
+
+# Expand $sbindir early, into $SBINDIR, for systemd unit file
+# NOTE: This does *not* take prefix/exec_prefix override at "make
+#       install" into account, unfortunately.
+test "x$prefix" = xNONE && prefix=$ac_default_prefix
+test "x$exec_prefix" = xNONE && exec_prefix='${prefix}'
+DOCDIR=`eval echo $docdir`
+DOCDIR=`eval echo $DOCDIR`
+AC_SUBST(DOCDIR)
+SYSCONFDIR=`eval echo $sysconfdir`
+SYSCONFDIR=`eval echo $SYSCONFDIR`
+AC_SUBST(SYSCONFDIR)
+SBINDIR=`eval echo $sbindir`
+SBINDIR=`eval echo $SBINDIR`
+AC_SUBST(SBINDIR)
 
 # Generate all files
 AC_OUTPUT

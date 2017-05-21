@@ -28,5 +28,6 @@ install-sh
 missing
 pimd
 pimd.map
+pimd.service
 stamp-h1
 vers.c

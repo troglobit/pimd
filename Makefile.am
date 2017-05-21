@@ -6,6 +6,10 @@ EXTRA_DIST       = README.md README-debug.md README-config.md README.config.jp		
 		   include/netinet/pim.h include/netinet/pim_var.h
 DISTCLEANFILES   = *~ DEADJOE semantic.cache *.gdb *.elf core core.* *.d
 
+if SYSTEMD
+systemd_DATA     = pimd.service
+endif
+
 # -D_GNU_SOURCE Use GNU extensions, where possible
 # -D_BSD_SOURCE Use functions derived from 4.3 BSD Unix rather than POSIX.1
 #               In GLIBC >= v2.20 this is replaced with -D_DEFAULT_SOURCE,
