@@ -427,7 +427,7 @@ void logit(int severity, int syserr, const char *format, ...)
 	thyme = localtime(&lt);
 
 	if (!debug)
-	    fprintf(stderr, "%s: ", __progname);
+	    fprintf(stderr, "%s: ", prognm);
 
 	fprintf(stderr, "%02d:%02d:%02d.%03ld %s", thyme->tm_hour, thyme->tm_min,
 		thyme->tm_sec, (long int)(now.tv_usec / 1000), msg);

@@ -52,6 +52,7 @@ int haveterminal = 1;
 struct rp_hold *g_rp_hold = NULL;
 int mrt_table_id = 0;
 
+char *prognm      = NULL;
 char *config_file = _PATH_PIMD_CONF;
 
 extern int loglevel;
@@ -202,7 +203,7 @@ static pid_t daemon_pid(void)
     FILE *fp;
     pid_t pid = -1;
 
-    result = asprintf(&path, "%s%s.pid", _PATH_VARRUN, __progname);
+    result = asprintf(&path, "%s%s.pid", _PATH_VARRUN, prognm);
     if (result == -1 || path == NULL)
 	return -1;
 
@@ -248,7 +249,7 @@ static int usage(int code)
     char line[76] = "  ";
     struct debugname *d;
 
-    printf("\nUsage: %s [-fhlNqrv] [-c FILE] [-d [SYS][,SYS...]] [-s LEVEL]\n\n", __progname);
+    printf("\nUsage: %s [-fhlNqrv] [-c FILE] [-d [SYS][,SYS...]] [-s LEVEL]\n\n", prognm);
     printf(" -c, --config=FILE   Configuration file to use, default %s\n", _PATH_PIMD_CONF);
     printf(" -d, --debug[=SYS]   Debug subsystem, see below for valid systems, default all\n");
     printf(" -f, --foreground    Run in foreground, do not detach from calling terminal\n");
@@ -262,7 +263,7 @@ static int usage(int code)
     printf(" -t, --table-id=ID   Set multicast routing table ID.  Allowed table ID#:\n"
 	   "                      0 .. 999999999.  Default: 0 (use default table)\n");
     printf(" -s, --loglevel=LVL  Set log level: none, err, info, notice (default), debug\n");
-    printf(" -v, --version       Show %s version\n", __progname);
+    printf(" -v, --version       Show %s version\n", prognm);
     printf("\n");
 
     /* From pimd v2.3.0 we show *all* the debug levels again */
@@ -289,6 +290,19 @@ static int usage(int code)
     printf("\nBug report address: %-40s\n\n", PACKAGE_BUGREPORT);
 
     return code;
+}
+
+static char *progname(char *arg0)
+{
+       char *nm;
+
+       nm = strrchr(arg0, '/');
+       if (nm)
+	       nm++;
+       else
+	       nm = arg0;
+
+       return nm;
 }
 
 int main(int argc, char *argv[])
@@ -319,6 +333,7 @@ int main(int argc, char *argv[])
 
     snprintf(versionstring, sizeof (versionstring), "pimd version %s", PACKAGE_VERSION);
 
+    prognm = progname(argv[0]);
     while ((ch = getopt_long(argc, argv, "c:d::fhlNvqrt:s:", long_options, NULL)) != EOF) {
 	const char *errstr;
 
