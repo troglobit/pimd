@@ -1,12 +1,13 @@
+# https://fedoraproject.org/wiki/How_to_create_an_RPM_package
 Name:           pimd
-Version:        2.1.8
+Version:        2.4.0
 Release:        2%{?dist}
-Summary:        pimd, the PIM-SM v2 multicast daemon
+Summary:        pimd, the PIM-SM/SSM v2 multicast daemon
 
 Group:          System Environment/Daemons
 License:        BSD
-URL:            https://github.com/troglobit/%{name}/archive/master.zip
-Source0:        %{name}-master.zip
+URL:            https://github.com/troglobit/%{name}/releases/download/%{version}/%{name}-%{version}.tar.gz
+Source0:        %{name}-%{version}.tar.gz
 Source1:        %{name}.init
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}
 
@@ -25,8 +26,8 @@ RFC 2362 with a few noted exceptions (see the RELEASE.NOTES for details).
 
 %build
 [ -x configure ] || ./autogen.sh
-./configure
-make %{?_smp_mflags}
+%configure
+%make_build
 
 
 %install
@@ -58,6 +59,8 @@ chkconfig --add %{name}
 
 
 %changelog
+* Sun May 21 2017 troglobit@gmail.com - 2.4.0
+
 * Mon Jan 27 2014 timeos@zssos.sk - 2.1.8
 
   fix for - pimd segfaults in igmp_read() (https://github.com/troglobit/pimd/issues/29)
