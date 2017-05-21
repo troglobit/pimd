@@ -21,7 +21,7 @@ pimd_SOURCES     = callout.c		config.c	debug.c		debug.h		\
 		   mrt.c		mrt.h		route.c		rp.c		\
 		   pim_proto.c		pim.c		pimd.h				\
 		   timer.c		trace.c		trace.h				\
-		   vif.c		vif.h
+		   vif.c		vif.h		queue.h
 pimd_LDADD       = @LIBUTIL@
 
 if LINUX

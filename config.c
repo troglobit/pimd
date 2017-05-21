@@ -38,6 +38,7 @@
  */
 
 #include "defs.h"
+#include "queue.h"
 
 #define WARN(fmt, args...)    logit(LOG_WARNING, 0, "%s:%u - " fmt, config_file, lineno, ##args)
 #define BAILOUT(msg, arg...)  { WARN(msg ", bailing out!", ##arg); return FALSE; }
@@ -67,6 +68,21 @@
 #define CONF_HELLO_INTERVAL                     16
 
 /*
+ * Beginnings of a refactor of the static uvifs[] array
+ *
+ * Used to when querying the config file for enabled/disabled interfaces
+ * during the kernel probe.  All with the purpose of limiting the waste
+ * of VIFs in the kernel -- only register an interface and create a VIF
+ * for enabled interfaces.
+ */
+struct iflist {
+    LIST_ENTRY(iflist) link;
+
+    int  enabled;
+    char ifname[IFNAMSIZ + 1];
+};
+
+/*
  * Global settings
  */
 uint16_t pim_timer_hello_interval = PIM_TIMER_HELLO_INTERVAL;
@@ -76,11 +92,96 @@ uint16_t pim_timer_hello_holdtime = PIM_TIMER_HELLO_HOLDTIME;
  * Forward declarations.
  */
 static char	*next_word	(char **);
+static int       parse_option   (char *s);
 static int	 parse_phyint	(char *s);
 static uint32_t	 ifname2addr	(char *s);
 
+static LIST_HEAD(, iflist) il = LIST_HEAD_INITIALIZER();
+
 static uint32_t        lineno;
 extern struct rp_hold *g_rp_hold;
+
+
+/*
+ * Populate interface list with interfaces from pimd.conf
+ */
+static void build_iflist(void)
+{
+    FILE *fp;
+    char buf[LINE_BUFSIZ], *line;
+
+    fp = fopen(config_file, "r");
+    if (!fp)
+	return;
+
+    while ((line = fgets(buf, sizeof(buf), fp))) {
+	int enabled = !disable_all_by_default;
+	char *token, *ifname;
+	struct iflist *entry;
+
+	if (parse_option(next_word(&line)) != CONF_PHYINT)
+	    continue;
+
+	ifname = next_word(&line);
+	while (!EQUAL((token = next_word(&line)), "")) {
+	    if (EQUAL(token, "disable")) {
+		enabled = 0;
+		continue;
+	    }
+
+	    if (EQUAL(token, "enable")) {
+		enabled = 1;
+		continue;
+	    }
+	}
+
+	entry = calloc(1, sizeof(struct iflist));
+	if (!entry) {
+	    logit(LOG_ERR, errno, "Failed allocating memory for iflist");
+	    fclose(fp);
+	    return;
+	}
+
+	entry->enabled = enabled;
+	strlcpy(entry->ifname, ifname, sizeof(entry->ifname));
+	LIST_INSERT_HEAD(&il, entry, link);
+    }
+
+    fclose(fp);
+}
+
+/*
+ * The interface list is only needed during config_vifs_from_kernel()
+ */
+static void tear_iflist(void)
+{
+	struct iflist *entry, *tmp;
+
+	LIST_FOREACH_SAFE(entry, &il, link, tmp) {
+	    LIST_REMOVE(entry, link);
+	    free(entry);
+	}
+}
+
+/*
+ * Query interface list for admin status of ifname
+ * If the interface is not mentioned, return pimd default
+ */
+static int iface_enabled(char *ifname)
+{
+    struct iflist *entry;
+
+    if (!ifname)
+	goto fallback;
+
+    LIST_FOREACH(entry, &il, link) {
+	if (!strcmp(entry->ifname, ifname))
+	    return entry->enabled;
+    }
+
+  fallback:
+    return !disable_all_by_default;
+}
 
 /*
  * Query the kernel to find network interfaces that are multicast-capable
@@ -97,6 +198,9 @@ void config_vifs_from_kernel(void)
     int num_ifreq = 64;
     struct ifconf ifc;
     char *newbuf;
+
+    /* Query config first for list of enabled interfaces */
+    build_iflist();
 
     total_interfaces = 0; /* The total number of physical interfaces */
 
@@ -135,6 +239,11 @@ void config_vifs_from_kernel(void)
      */
     for (; ifrp < ifend; ifrp = (struct ifreq *)((char *)ifrp + n)) {
 	struct ifreq ifr;
+
+	if (!iface_enabled(ifrp->ifr_name)) {
+	    logit(LOG_DEBUG, 0, "phyint %s disabled, skipping VIF", ifrp->ifr_name);
+	    continue;
+	}
 
 	memset (&ifr, 0, sizeof (ifr));
 
@@ -334,6 +443,8 @@ void config_vifs_from_kernel(void)
 	    vifs_down = TRUE;
 	}
     }
+
+    tear_iflist();
 }
 
 static int deprecated(char *word, char *new_word, int code)

@@ -103,16 +103,13 @@ void init_vifs(void)
     for (vifi = 0, v = uvifs; vifi < MAXVIFS; ++vifi, ++v)
 	zero_vif(v, FALSE);
 
-    logit(LOG_INFO, 0, "Getting vifs from kernel");
     config_vifs_from_kernel();
-    if (disable_all_by_default) {
-       logit(LOG_INFO, 0, "Disabling all vifs from kernel");
 
+    if (disable_all_by_default) {
        for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v)
           v->uv_flags |= VIFF_DISABLED;
     }
 
-    logit(LOG_INFO, 0, "Getting vifs from %s", config_file);
     config_vifs_from_file();
 
     /*
