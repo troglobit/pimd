@@ -310,7 +310,7 @@ extern struct cand_rp_adv_message_ {
     uint16_t  message_size;
 } cand_rp_adv_message;
 
-extern int disable_all_by_default;
+extern int do_vifs;
 extern int mrt_table_id;
 
 /*

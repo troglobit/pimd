@@ -105,7 +105,7 @@ void init_vifs(void)
 
     config_vifs_from_kernel();
 
-    if (disable_all_by_default) {
+    if (do_vifs) {
        for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v)
           v->uv_flags |= VIFF_DISABLED;
     }
