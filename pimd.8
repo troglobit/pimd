@@ -14,6 +14,7 @@
 .Op Fl fhlNqr
 .Op Fl c Ar FILE
 .Op Fl d Ar [SYS[,SYS,...]
+.Op Fl P Ar FILE
 .Op Fl s Ar LEVEL
 .Op Fl t Ar ID
 .Sh DESCRIPTION
@@ -139,6 +140,11 @@ option is given, use
 .Cm phyint IFNAME enable
 to selectively activate PIM services on an interface.  This command line
 option is also available as a setting in the configuration file.
+.It Fl P, -pidfile=FILE
+File to store process ID for signaling
+.Nm .
+Default:
+.Pa /var/run/pimd.pid
 .It Fl q, -quit-daemon
 Tell a running
 .Nm
@@ -154,10 +160,6 @@ similar to
 .Fl l -reload-config.
 Depending on the capabilities of your user, you may need to be root to
 do this.
-.It Fl v, -version
-Show
-.Nm
-version
 .It Fl s, -loglevel=LEVEL
 Set log level to one of the following, default
 .Nm notice :
@@ -186,6 +188,10 @@ ip mrule add oif eth0 lookup 123
 .Pp
 .Nm Note:
 Only available on Linux.
+.It Fl v, -version
+Show
+.Nm
+version
 .El
 .Sh CONFIGURATION
 The configuration is kept in the file

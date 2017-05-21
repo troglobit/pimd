@@ -52,7 +52,9 @@ int haveterminal = 1;
 struct rp_hold *g_rp_hold = NULL;
 int mrt_table_id = 0;
 
+char *ident       = PACKAGE_NAME;
 char *prognm      = NULL;
+char *pid_file    = NULL;
 char *config_file = _PATH_PIMD_CONF;
 
 extern int loglevel;
@@ -243,11 +245,27 @@ static int killshow(int signo, char *file)
     return 0;
 }
 
+static int compose_paths(void)
+{
+	/* Default is to let pidfile() API construct PID file from ident */
+	if (!pid_file)
+		pid_file = strdup(ident);
+
+	return 0;
+}
+
 static int usage(int code)
 {
     size_t i;
     char line[76] = "  ";
+    char pidfn[80];
     struct debugname *d;
+
+    compose_paths();
+    if (pid_file && pid_file[0] != '/')
+	snprintf(pidfn, sizeof(pidfn), "%s/run/%s.pid", LOCALSTATEDIR, pid_file);
+    else
+	snprintf(pidfn, sizeof(pidfn), "%s", pid_file);
 
     printf("\nUsage: %s [-fhlNqrv] [-c FILE] [-d [SYS][,SYS...]] [-s LEVEL]\n\n", prognm);
     printf(" -c, --config=FILE   Configuration file to use, default %s\n", _PATH_PIMD_CONF);
@@ -258,6 +276,8 @@ static int usage(int code)
     printf(" -l, --reload-config Tell a running pimd to reload its configuration\n");
     printf(" -N, --disable-vifs  Disable all virtual interfaces (phyint) by default\n");
     /* printf("  -p,--show-debug     Show debug dump, only if debug is enabled\n"); */
+    printf(" -P, --pidfile=FILE  File to store process ID for signaling %s\n"
+	   "                     Default: %s\n", prognm, pidfn);
     printf(" -q, --quit-daemon   Send SIGTERM to a running pimd\n");
     printf(" -r, --show-routes   Show state of VIFs and multicast routing tables\n");
     printf(" -t, --table-id=ID   Set multicast routing table ID.  Allowed table ID#:\n"
@@ -320,6 +340,7 @@ int main(int argc, char *argv[])
 	{ "foreground",    0, 0, 'f' },
 	{ "help",          0, 0, 'h' },
 	{ "loglevel",      1, 0, 's' },
+	{ "pidfile",       1, 0, 'P' },
 	{ "quit-daemon",   0, 0, 'q' },
 	{ "reload-config", 0, 0, 'l' },
 	{ "show-routes",   0, 0, 'r' },
@@ -333,8 +354,8 @@ int main(int argc, char *argv[])
 
     snprintf(versionstring, sizeof (versionstring), "pimd version %s", PACKAGE_VERSION);
 
-    prognm = progname(argv[0]);
-    while ((ch = getopt_long(argc, argv, "c:d::fhlNvqrt:s:", long_options, NULL)) != EOF) {
+    prognm = ident = progname(argv[0]);
+    while ((ch = getopt_long(argc, argv, "c:d::fhlNvP:qrt:s:", long_options, NULL)) != EOF) {
 	const char *errstr;
 
 	switch (ch) {
@@ -424,6 +445,10 @@ int main(int argc, char *argv[])
 		return killshow(SIGQUIT, NULL);
 #endif
 
+	    case 'P':	/* --pidfile=NAME */
+		pid_file = strdup(optarg);
+		break;
+
 	    case 'v':
 		printf("%s\n", versionstring);
 		return 0;
@@ -440,6 +465,7 @@ int main(int argc, char *argv[])
     if (geteuid() != 0)
 	errx(1, "Need root privileges to start.");
 
+    compose_paths();
     setlinebuf(stderr);
 
     if (debug != 0) {
@@ -558,7 +584,7 @@ int main(int argc, char *argv[])
     /* schedule first timer interrupt */
     timer_setTimer(TIMER_INTERVAL, timer, NULL);
 
-    if (pidfile(NULL))
+    if (pidfile(pid_file))
 	warn("Cannot create pidfile");
 
     /*

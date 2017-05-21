@@ -15,7 +15,7 @@ endif
 #               In GLIBC >= v2.20 this is replaced with -D_DEFAULT_SOURCE,
 #               but to build on older GLIBC systems we now need both ...
 AM_CPPFLAGS      = -D_BSD_SOURCE -D_DEFAULT_SOURCE -D_GNU_SOURCE
-
+AM_CPPFLAGS     += -DLOCALSTATEDIR=\"@localstatedir@\"
 
 sbin_PROGRAMS    = pimd
 pimd_SOURCES     = callout.c		config.c	debug.c		debug.h		\
