@@ -303,21 +303,21 @@ void config_vifs_from_kernel(void)
 	    v->uv_ifindex = ifridx.ifr_ifindex;
 	}
 	if (v->uv_flags & VIFF_POINT_TO_POINT) {
-	    logit(LOG_INFO, 0, "Installing %s (%s -> %s) as vif #%u-%d - rate %d",
+	    logit(LOG_INFO, 0, "Installing %s (%s -> %s) as VIF #%u (ifindex: %d), rate %d",
 		  v->uv_name, inet_fmt(addr, s1, sizeof(s1)), inet_fmt(v->uv_rmt_addr, s2, sizeof(s2)),
 		  numvifs, v->uv_ifindex, v->uv_rate_limit);
 	} else {
-	    logit(LOG_INFO, 0, "Installing %s (%s on subnet %s) as vif #%u-%d - rate %d",
+	    logit(LOG_INFO, 0, "Installing %s (%s on subnet %s) VIF #%u (ifindex: %d), rate %d",
 		  v->uv_name, inet_fmt(addr, s1, sizeof(s1)), netname(subnet, mask),
 		  numvifs, v->uv_ifindex, v->uv_rate_limit);
 	}
 #else /* !__linux__ */
 	if (v->uv_flags & VIFF_POINT_TO_POINT) {
-	    logit(LOG_INFO, 0, "Installing %s (%s -> %s) as vif #%u - rate=%d",
+	    logit(LOG_INFO, 0, "Installing %s (%s -> %s) as VIF #%u, rate %d",
 		  v->uv_name, inet_fmt(addr, s1, sizeof(s1)), inet_fmt(v->uv_rmt_addr, s2, sizeof(s2)),
 		  numvifs, v->uv_rate_limit);
 	} else {
-	    logit(LOG_INFO, 0, "Installing %s (%s on subnet %s) as vif #%u - rate %d",
+	    logit(LOG_INFO, 0, "Installing %s (%s on subnet %s) as VIF #%u, rate %d",
 		  v->uv_name, inet_fmt(addr, s1, sizeof(s1)), netname(subnet, mask),
 		  numvifs, v->uv_rate_limit);
 	}
@@ -478,7 +478,7 @@ static int parse_phyint(char *s)
     if (!local) {
 	local = inet_parse(w, 4);
 	if (!inet_valid_host(local)) {
-	    WARN("Unknown (skipped?) phyint name or invalid address '%s'", w);
+	    WARN("Unknown phyint name or invalid address '%s', skipping.", w);
 	    return FALSE;
 	}
     }
