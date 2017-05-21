@@ -205,7 +205,7 @@ static pid_t daemon_pid(void)
     FILE *fp;
     pid_t pid = -1;
 
-    result = asprintf(&path, "%s/%s.pid", _PATH_PIMD_RUNDIR, prognm);
+    result = asprintf(&path, "%s/%s.pid", _PATH_PIMD_RUNDIR, ident);
     if (result == -1 || path == NULL)
 	return -1;
 
