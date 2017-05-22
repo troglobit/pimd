@@ -877,6 +877,9 @@ static void restart(int i __attribute__((unused)))
     init_pim_mrt();
     init_vifs();
 
+    /* Touch PID file to acknowledge SIGHUP */
+    pidfile(pid_file);
+
     /* schedule timer interrupts */
     timer_setTimer(TIMER_INTERVAL, timer, NULL);
 }
