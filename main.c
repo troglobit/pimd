@@ -232,17 +232,15 @@ static int killshow(int signo, char *fmt)
     if (pid > 0) {
 	snprintf(file, sizeof(file), fmt, ident);
 
-	if (file && -1 == remove(file) && errno != ENOENT)
+	if (-1 == remove(file) && errno != ENOENT)
 	    warn("Failed removing %s, may be showing stale information", file);
 
 	kill(pid, signo);
-	if (file) {
-	    usleep(200);
-	    snprintf(buf, sizeof(buf), "cat %s", file);
-	    if (-1 == system(buf)) {
+
+	usleep(200);
+	snprintf(buf, sizeof(buf), "cat %s", file);
+	if (-1 == system(buf))
 		warnx("Failed listing file %s\n", file);
-	    }
-	}
     }
 
     return 0;
