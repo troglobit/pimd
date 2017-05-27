@@ -434,10 +434,9 @@ void logit(int severity, int syserr, const char *format, ...)
 	fprintf(stderr, "%02d:%02d:%02d.%03ld %s", thyme->tm_hour, thyme->tm_min,
 		thyme->tm_sec, (long int)(now.tv_usec / 1000), msg);
 
-	if (syserr) {
-	    errno = syserr;
-	    fprintf(stderr, ": %m");
-	}
+	if (syserr)
+	    fprintf(stderr, ": %s", strerror(syserr));
+
 	fprintf(stderr, "\n");
     }
 
@@ -454,12 +453,10 @@ void logit(int severity, int syserr, const char *format, ...)
 	if ((severity <= loglevel) && (severity != LOG_DEBUG))
 	    log_nmsgs++;
 
-	if (syserr) {
-	    errno = syserr;
-	    syslog(severity, "%s: %m", msg);
-	} else {
+	if (syserr)
+	    syslog(severity, "%s: %s", msg, strerror(syserr));
+	else
 	    syslog(severity, "%s", msg);
-	}
     }
 
 #ifndef CONTINUE_ON_ERROR
