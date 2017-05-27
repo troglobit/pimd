@@ -347,21 +347,11 @@ void config_vifs_from_kernel(void)
 		continue;
 	    if (v->uv_flags & VIFF_POINT_TO_POINT)
 		continue;
-#if 0
-	    /*
-	     * TODO: to allow different interfaces belong to
-	     * overlapping subnet addresses, use this version instead
-	     */
-	    if (((addr & mask ) == v->uv_subnet) && (v->uv_subnetmask == mask)) {
+
+	    if (((addr & mask) == v->uv_subnet) && (v->uv_subnetmask == mask)) {
 		logit(LOG_WARNING, 0, "Ignoring %s, same subnet as %s", ifr.ifr_name, v->uv_name);
 		break;
 	    }
-#else
-	    if ((addr & v->uv_subnetmask) == v->uv_subnet || (v->uv_subnet & mask) == subnet) {
-		logit(LOG_WARNING, 0, "Ignoring %s, same subnet as %s", ifr.ifr_name, v->uv_name);
-		break;
-	    }
-#endif /* 0 */
 	}
 	if (vifi != numvifs)
 	    continue;
