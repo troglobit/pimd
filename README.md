@@ -24,39 +24,30 @@ available under the free [3-clause BSD license][BSD license].  This is
 the restored original version from University of Southern California, by
 Ahmed Helmy, Rusty Eddy and Pavlin Ivanov Radoslavov.
 
-Today pimd is [maintained at GitHub][GitHub].  Use its facilities to
-access the source, report bugs and feature requests, and send patches or
-pull requests.  Official release tarballs at [the homepage][homepage].
+Today pimd is maintained at [GitHub][].  Use its facilities to access
+the source, report bugs and feature requests, and send patches or pull
+requests.  Official release tarballs at the [homepage][] and at the
+GitHub proejct's release directory.
 
 pimd is primarily developed on Linux and should work as-is out of the
 box on all major distributions.  Other UNIX variants (OpenBSD, NetBSD,
 and FreeBSD) should also work, but are not as thoroughly tested.  For
 some tips and details, see the `configure` script.
 
-For a summary of changes for each release, see the [ChangeLog][changes].
+For a summary of changes for each release, see the [ChangeLog][].
 
 
 Build & Install
 ---------------
 
-When building pimd from source you first need to run the `configure`
-script to generate the file `config.mk`.  The script relies on Bourne
-shell standard features as well as expr and uname.  Any optional pimd
-features, such as `--enable-scoped-acls` are activated here as well.
-
-**Example:**
-
-    ./configure --enable-scoped-acls && make
-
-    sudo make install
-
 The configure script and Makefile supports de facto standard settings
 and environment variables such as `--prefix=PATH` and `DESTDIR=` for the
 install process.  E.g., to install pimd to `/usr` instead of the default
-`/usr/local`, but redirect to a binary package directory in `/tmp`:
+`/usr/local`, but redirect install to a package directory in `/tmp`:
 
-    ./configure --prefix=/usr && make clean all
-    make VERSION=2.3.0-1 DESTDIR=/tmp/pimd-2.3.0-1 install
+    ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var
+	make
+    make DESTDIR=/tmp/pimd-2.3.0-1 install-strip
 
 
 Building from GIT
@@ -294,7 +285,7 @@ See the file [CONTRIBUTING.md][contrib] for further details.
 [BSD license]:     https://en.wikipedia.org/wiki/BSD_licenses
 [github]:          http://github.com/troglobit/pimd
 [homepage]:        http://troglobit.com/pimd.html
-[changes]:         https://github.com/troglobit/pimd/blob/master/ChangeLog.org
+[ChangeLog]:       https://github.com/troglobit/pimd/blob/master/ChangeLog.org
 [the FTP]:         http://ftp.troglobit.com/pimd/
 [releases page]:   https://github.com/troglobit/pimd/releases
 [buildsystem]:     https://airs.com/ian/configure/
