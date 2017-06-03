@@ -193,106 +193,67 @@ static int iface_enabled(char *ifname)
     return do_vifs;
 }
 
+static int getifmtu(char *ifname)
+{
+    struct ifreq ifr;
+
+    memset (&ifr, 0, sizeof (ifr));
+    strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name));
+
+    if (ioctl(udp_socket, SIOCGIFMTU, &ifr) < 0)
+	return 1500;
+
+    return ifr.ifr_mtu;
+}
+
 /*
  * Query the kernel to find network interfaces that are multicast-capable
  * and install them in the uvifs array.
  */
 void config_vifs_from_kernel(void)
 {
-    struct ifreq *ifrp, *ifend;
     struct uvif *v;
     vifi_t vifi;
-    uint32_t n;
     uint32_t addr, mask, subnet;
-    short flags;
-    int num_ifreq = 64;
-    struct ifconf ifc;
-    char *newbuf;
+    struct ifaddrs *ifaddr, *ifa;
 
     /* Query config first for list of enabled interfaces */
     build_iflist();
 
     total_interfaces = 0; /* The total number of physical interfaces */
-
-    ifc.ifc_len = num_ifreq * sizeof(struct ifreq);
-    ifc.ifc_buf = calloc(ifc.ifc_len, sizeof(char));
-    while (ifc.ifc_buf) {
-	if (ioctl(udp_socket, SIOCGIFCONF, (char *)&ifc) < 0)
-	    logit(LOG_ERR, errno, "Failed querying kernel network interfaces");
-
-	/*
-	 * If the buffer was large enough to hold all the addresses
-	 * then break out, otherwise increase the buffer size and
-	 * try again.
-	 *
-	 * The only way to know that we definitely had enough space
-	 * is to know that there was enough space for at least one
-	 * more struct ifreq. ???
-	 */
-	if ((num_ifreq * sizeof(struct ifreq)) >= ifc.ifc_len + sizeof(struct ifreq))
-	    break;
-
-	num_ifreq *= 2;
-	ifc.ifc_len = num_ifreq * sizeof(struct ifreq);
-	newbuf = realloc(ifc.ifc_buf, ifc.ifc_len);
-	if (newbuf == NULL)
-	    free(ifc.ifc_buf);
-	ifc.ifc_buf = newbuf;
+    if (getifaddrs(&ifaddr) == -1) {
+	logit(LOG_ERR, errno, "Failed retrieving interface addresses");
+	return;
     }
-    if (ifc.ifc_buf == NULL)
-	logit(LOG_ERR, 0, "config_vifs_from_kernel() ran out of memory");
 
-    ifrp = (struct ifreq *)ifc.ifc_buf;
-    ifend = (struct ifreq *)(ifc.ifc_buf + ifc.ifc_len);
     /*
      * Loop through all of the interfaces.
      */
-    for (; ifrp < ifend; ifrp = (struct ifreq *)((char *)ifrp + n)) {
-	struct ifreq ifr;
+    for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
+	short flags;
 
-	if (!iface_enabled(ifrp->ifr_name)) {
-	    logit(LOG_DEBUG, 0, "phyint %s disabled, skipping VIF", ifrp->ifr_name);
+	if (!iface_enabled(ifa->ifa_name)) {
+	    logit(LOG_DEBUG, 0, "phyint %s disabled, skipping VIF", ifa->ifa_name);
 	    continue;
 	}
-
-	memset (&ifr, 0, sizeof (ifr));
-
-#ifdef HAVE_SA_LEN
-	n = ifrp->ifr_addr.sa_len + sizeof(ifrp->ifr_name);
-	if (n < sizeof(*ifrp))
-	    n = sizeof(*ifrp);
-#else
-	n = sizeof(*ifrp);
-#endif /* HAVE_SA_LEN */
 
 	/*
 	 * Ignore any interface for an address family other than IP.
 	 */
-	if (ifrp->ifr_addr.sa_family != AF_INET) {
+	if (!ifa->ifa_addr || !ifa->ifa_netmask || ifa->ifa_addr->sa_family != AF_INET) {
 	    total_interfaces++;  /* Eventually may have IP address later */
 	    continue;
 	}
 
-	addr = ((struct sockaddr_in *)&ifrp->ifr_addr)->sin_addr.s_addr;
+	addr  = ((struct sockaddr_in *)ifa->ifa_addr)->sin_addr.s_addr;
+	mask  = ((struct sockaddr_in *)ifa->ifa_netmask)->sin_addr.s_addr;
+	flags = ifa->ifa_flags;
 
 	/*
-	 * Need a template to preserve address info that is
-	 * used below to locate the next entry.  (Otherwise,
-	 * SIOCGIFFLAGS stomps over it because the requests
-	 * are returned in a union.)
+	 * Ignore interfaces that do not support multicast.
 	 */
-	memcpy(ifr.ifr_name, ifrp->ifr_name, sizeof(ifr.ifr_name));
-
-	/*
-	 * Ignore loopback interfaces and interfaces that do not
-	 * support multicast.
-	 */
-	if (ioctl(udp_socket, SIOCGIFFLAGS, (char *)&ifr) < 0)
-	    logit(LOG_ERR, errno, "Failed reading interface flags for phyint %s", ifr.ifr_name);
-
-	flags = ifr.ifr_flags;
-	if (!(flags & IFF_MULTICAST)) {
-	    WARN("Skipping interface %s, does not support multicast.", ifr.ifr_name);
+	if (!is_set(IFF_MULTICAST, flags)) {
+	    WARN("Skipping interface %s, does not support multicast.", ifa->ifa_name);
 	    continue;
 	}
 
@@ -303,26 +264,12 @@ void config_vifs_from_kernel(void)
 	 */
 	total_interfaces++;
 
-	/*
-	 * Ignore any interface whose address and mask do not define a
-	 * valid subnet number, or whose address is of the form
-	 * {subnet,0} or {subnet,-1}.
-	 */
-	if (ioctl(udp_socket, SIOCGIFNETMASK, (char *)&ifr) < 0) {
-	    if (!(flags & IFF_POINTOPOINT))
-		logit(LOG_ERR, errno, "Failed reading interface netmask for phyint %s", ifr.ifr_name);
-
-	    mask = 0xffffffff;
-	} else {
-	    mask = ((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr;
-	}
-
 	subnet = addr & mask;
 	if (mask != 0xffffffff) {
 		if ((!inet_valid_subnet(subnet, mask)) || (addr == subnet) || addr == (subnet | ~mask)) {
-			if (!(inet_valid_host(addr) && ((mask == htonl(0xfffffffe)) || (flags & IFF_POINTOPOINT)))) {
+		    if (!(inet_valid_host(addr) && ((mask == htonl(0xfffffffe)) || is_set(IFF_POINTOPOINT, flags)))) {
 				logit(LOG_WARNING, 0, "Ignoring %s, has invalid address %s and/or netmask %s",
-				ifr.ifr_name, inet_fmt(addr, s1, sizeof(s1)), inet_fmt(mask, s2, sizeof(s2)));
+				ifa->ifa_name, inet_fmt(addr, s1, sizeof(s1)), inet_fmt(mask, s2, sizeof(s2)));
 				continue;
 			}
 		}
@@ -337,19 +284,19 @@ void config_vifs_from_kernel(void)
 	 * subnet?
 	 */
 	for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
-	    if (strcmp(v->uv_name, ifr.ifr_name) == 0) {
+	    if (strcmp(v->uv_name, ifa->ifa_name) == 0) {
 		logit(LOG_DEBUG, 0, "Ignoring %s (%s on subnet %s) (alias for vif#%u?)",
 		      v->uv_name, inet_fmt(addr, s1, sizeof(s1)), netname(subnet, mask), vifi);
 		break;
 	    }
 	    /* we don't care about point-to-point links in same subnet */
-	    if (flags & IFF_POINTOPOINT)
+	    if (is_set(IFF_POINTOPOINT, flags))
 		continue;
-	    if (v->uv_flags & VIFF_POINT_TO_POINT)
+	    if (is_set(VIFF_POINT_TO_POINT, v->uv_flags))
 		continue;
 
 	    if (((addr & mask) == v->uv_subnet) && (v->uv_subnetmask == mask)) {
-		logit(LOG_WARNING, 0, "Ignoring %s, same subnet as %s", ifr.ifr_name, v->uv_name);
+		logit(LOG_WARNING, 0, "Ignoring %s, same subnet as %s", ifa->ifa_name, v->uv_name);
 		break;
 	    }
 	}
@@ -360,7 +307,7 @@ void config_vifs_from_kernel(void)
 	 * If there is room in the uvifs array, install this interface.
 	 */
 	if (numvifs == MAXVIFS) {
-	    logit(LOG_WARNING, 0, "Too many vifs, ignoring %s", ifr.ifr_name);
+	    logit(LOG_WARNING, 0, "Too many vifs, ignoring %s", ifa->ifa_name);
 	    continue;
 	}
 	v = &uvifs[numvifs];
@@ -373,24 +320,18 @@ void config_vifs_from_kernel(void)
 	else
 		v->uv_subnetbcast = 0xffffffff;
 
-	strlcpy(v->uv_name, ifr.ifr_name, IFNAMSIZ);
+	strlcpy(v->uv_name, ifa->ifa_name, IFNAMSIZ);
 
 	/*
 	 * Figure out MTU of interface, needed as a seed value when
 	 * fragmenting PIM register messages.  We should really do
 	 * a PMTU check on initial PIM register send to a new RP...
 	 */
-	if (ioctl(udp_socket, SIOCGIFMTU, &ifr) < 0)
-	    v->uv_mtu = 1500;
-	else
-	    v->uv_mtu = ifr.ifr_mtu;
+	v->uv_mtu = getifmtu(ifa->ifa_name);
 
-	if (flags & IFF_POINTOPOINT) {
+	if (is_set(IFF_POINTOPOINT, flags)) {
 	    v->uv_flags |= (VIFF_REXMIT_PRUNES | VIFF_POINT_TO_POINT);
-	    if (ioctl(udp_socket, SIOCGIFDSTADDR, (char *)&ifr) < 0)
-		logit(LOG_ERR, errno, "Failed reading point-to-point address for %s", v->uv_name);
-	    else
-		v->uv_rmt_addr = ((struct sockaddr_in *)(&ifr.ifr_dstaddr))->sin_addr.s_addr;
+	    v->uv_rmt_addr = ((struct sockaddr_in *)(&ifa->ifa_dstaddr))->sin_addr.s_addr;
 	} else if (mask == htonl(0xfffffffe)) {
 	    /*
 	     * Handle RFC 3021 /31 netmasks as point-to-point links
@@ -402,15 +343,10 @@ void config_vifs_from_kernel(void)
 		v->uv_rmt_addr = subnet;
 	}
 #ifdef __linux__
-	{
-	    struct ifreq ifridx;
+	v->uv_ifindex = if_nametoindex(v->uv_name);
+	if (!v->uv_ifindex)
+	    logit(LOG_ERR, errno, "Failed reading interface index for %s", v->uv_name);
 
-	    memset(&ifridx, 0, sizeof(ifridx));
-	    strlcpy(ifridx.ifr_name,v->uv_name, IFNAMSIZ);
-	    if (ioctl(udp_socket, SIOGIFINDEX, (char *) &ifridx) < 0)
-		logit(LOG_ERR, errno, "Failed reading interface index for %s", ifridx.ifr_name);
-	    v->uv_ifindex = ifridx.ifr_ifindex;
-	}
 	if (v->uv_flags & VIFF_POINT_TO_POINT) {
 	    logit(LOG_INFO, 0, "Installing %s (%s -> %s) as VIF #%u (ifindex: %d), rate %d",
 		  v->uv_name, inet_fmt(addr, s1, sizeof(s1)), inet_fmt(v->uv_rmt_addr, s2, sizeof(s2)),
@@ -438,12 +374,13 @@ void config_vifs_from_kernel(void)
 	 * If the interface is not yet up, set the vifs_down flag to
 	 * remind us to check again later.
 	 */
-	if (!(flags & IFF_UP)) {
+	if (!is_set(IFF_UP, flags)) {
 	    v->uv_flags |= VIFF_DOWN;
 	    vifs_down = TRUE;
 	}
     }
 
+    freeifaddrs(ifaddr);
     tear_iflist();
 }
 

@@ -15,14 +15,14 @@ AC_PROG_INSTALL
 PKG_PROG_PKG_CONFIG
 
 AC_HEADER_STDC
-AC_CHECK_HEADERS([fcntl.h netinet/pim.h net/if_dl.h sys/time.h])
+AC_CHECK_HEADERS([fcntl.h ifaddrs.h netinet/pim.h net/if.h net/if_dl.h sys/time.h])
 
 AC_CHECK_FUNC([pidfile],  has_pidfile=yes, has_pidfile=no)
 AC_CHECK_FUNC([strlcpy],  has_strlcpy=yes, has_strlcpy=no)
 AC_CHECK_FUNC([strlcat],  has_strlcat=yes, has_strlcat=no)
 AC_CHECK_FUNC([strtonum], has_strtonum=yes, has_strtonum=no)
 
-AC_CHECK_FUNCS([atexit utimensat])
+AC_CHECK_FUNCS([atexit utimensat getifaddrs if_nametoindex])
 
 AS_IF([test "x$has_strlcpy" = xno],
 	AC_SEARCH_LIBS([strlcpy], [util],

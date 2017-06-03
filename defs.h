@@ -57,6 +57,7 @@
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <ifaddrs.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #if ((defined(SYSV)) || (defined(__bsdi__)) || ((defined SunOS) && (SunOS < 50)))
@@ -143,6 +144,7 @@ typedef void (*ihfunc_t) (int, fd_set *);
  */
 
 #define ENABLINGSTR(val)        (val) ? "enabling" : "disabling"
+#define is_set(flag, flags)     (((flag) & (flags)) == (flag))
 
 /*
  * Various definitions to make it working for different platforms
