@@ -1,3 +1,5 @@
+DISTCHECK_CONFIGURE_FLAGS = --with-systemd=$$dc_install_base/$(systemd)
+
 dist_man8_MANS   = pimd.8
 doc_DATA         = README.md README-debug.md README-config.md README.config.jp		\
 		   ChangeLog.org LICENSE LICENSE.mrouted pimd.conf
