@@ -342,31 +342,23 @@ void config_vifs_from_kernel(void)
 	    else
 		v->uv_rmt_addr = subnet;
 	}
+
 #ifdef __linux__
+	/* On Linux we can enumerate using ifindex, no need for an IP address */
 	v->uv_ifindex = if_nametoindex(v->uv_name);
 	if (!v->uv_ifindex)
 	    logit(LOG_ERR, errno, "Failed reading interface index for %s", v->uv_name);
+#endif
 
 	if (v->uv_flags & VIFF_POINT_TO_POINT) {
-	    logit(LOG_INFO, 0, "Installing %s (%s -> %s) as VIF #%u (ifindex: %d), rate %d",
-		  v->uv_name, inet_fmt(addr, s1, sizeof(s1)), inet_fmt(v->uv_rmt_addr, s2, sizeof(s2)),
-		  numvifs, v->uv_ifindex, v->uv_rate_limit);
+	    logit(LOG_INFO, 0, "VIF #%u: Installing %s (%s -> %s) rate %d",
+		  numvifs, v->uv_name, inet_fmt(addr, s1, sizeof(s1)), inet_fmt(v->uv_rmt_addr, s2, sizeof(s2)),
+		  v->uv_rate_limit);
 	} else {
-	    logit(LOG_INFO, 0, "Installing %s (%s on subnet %s) VIF #%u (ifindex: %d), rate %d",
-		  v->uv_name, inet_fmt(addr, s1, sizeof(s1)), netname(subnet, mask),
-		  numvifs, v->uv_ifindex, v->uv_rate_limit);
+	    logit(LOG_INFO, 0, "VIF #%u: Installing %s (%s on subnet %s) rate %d",
+		  numvifs, v->uv_name, inet_fmt(addr, s1, sizeof(s1)), netname(subnet, mask),
+		  v->uv_rate_limit);
 	}
-#else /* !__linux__ */
-	if (v->uv_flags & VIFF_POINT_TO_POINT) {
-	    logit(LOG_INFO, 0, "Installing %s (%s -> %s) as VIF #%u, rate %d",
-		  v->uv_name, inet_fmt(addr, s1, sizeof(s1)), inet_fmt(v->uv_rmt_addr, s2, sizeof(s2)),
-		  numvifs, v->uv_rate_limit);
-	} else {
-	    logit(LOG_INFO, 0, "Installing %s (%s on subnet %s) as VIF #%u, rate %d",
-		  v->uv_name, inet_fmt(addr, s1, sizeof(s1)), netname(subnet, mask),
-		  numvifs, v->uv_rate_limit);
-	}
-#endif /* __linux__ */
 
 	++numvifs;
 

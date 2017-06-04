@@ -322,7 +322,7 @@ static void start_vif(vifi_t vifi)
 
     /* Tell kernel to add, i.e. start this vif */
     k_add_vif(igmp_socket, vifi, &uvifs[vifi]);
-    logit(LOG_INFO, 0, "Interface %s comes up; VIF #%u now in service", v->uv_name, vifi);
+    logit(LOG_INFO, 0, "VIF #%u: now in service, interface %s UP", vifi, v->uv_name);
 
     if (!(v->uv_flags & VIFF_REGISTER)) {
 	/* Join the PIM multicast group on the interface. */
