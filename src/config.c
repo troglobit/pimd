@@ -79,8 +79,9 @@
 struct iflist {
     LIST_ENTRY(iflist) link;
 
-    int  enabled;
-    char ifname[IFNAMSIZ + 1];
+    int       enabled;
+    uint32_t  addr;
+    char      ifname[IFNAMSIZ + 1];
 };
 
 /*
@@ -117,7 +118,8 @@ static void build_iflist(void)
 
     while ((line = fgets(buf, sizeof(buf), fp))) {
 	int enabled = do_vifs;
-	char *token, *ifname;
+	uint32_t addr = 0;
+	char *token, *ifname = NULL;
 	struct iflist *entry;
 
 	switch (parse_option(next_word(&line))) {
@@ -132,7 +134,12 @@ static void build_iflist(void)
 		continue;
 	}
 
-	ifname = next_word(&line);
+	token = next_word(&line);
+	if (isdigit(token[0]))
+	    addr = inet_parse(token, 4);
+	else
+	    ifname = token;
+
 	while (!EQUAL((token = next_word(&line)), "")) {
 	    if (EQUAL(token, "disable")) {
 		enabled = 0;
@@ -153,7 +160,10 @@ static void build_iflist(void)
 	}
 
 	entry->enabled = enabled;
-	strlcpy(entry->ifname, ifname, sizeof(entry->ifname));
+	if (ifname)
+	    strlcpy(entry->ifname, ifname, sizeof(entry->ifname));
+	else
+	    entry->addr = addr;
 	LIST_INSERT_HEAD(&il, entry, link);
     }
 
@@ -177,19 +187,18 @@ static void tear_iflist(void)
  * Query interface list for admin status of ifname
  * If the interface is not mentioned, return pimd default
  */
-static int iface_enabled(char *ifname)
+static int iface_enabled(char *ifname, uint32_t addr)
 {
     struct iflist *entry;
-
-    if (!ifname)
-	goto fallback;
 
     LIST_FOREACH(entry, &il, link) {
 	if (!strcmp(entry->ifname, ifname))
 	    return entry->enabled;
+
+	if (addr && addr != 0xffffffff && addr == entry->addr)
+	    return entry->enabled;
     }
 
-  fallback:
     return do_vifs;
 }
 
@@ -232,11 +241,6 @@ void config_vifs_from_kernel(void)
     for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
 	short flags;
 
-	if (!iface_enabled(ifa->ifa_name)) {
-	    logit(LOG_DEBUG, 0, "phyint %s disabled, skipping VIF", ifa->ifa_name);
-	    continue;
-	}
-
 	/*
 	 * Ignore any interface for an address family other than IP.
 	 */
@@ -248,6 +252,15 @@ void config_vifs_from_kernel(void)
 	addr  = ((struct sockaddr_in *)ifa->ifa_addr)->sin_addr.s_addr;
 	mask  = ((struct sockaddr_in *)ifa->ifa_netmask)->sin_addr.s_addr;
 	flags = ifa->ifa_flags;
+
+	/*
+	 * Check against .conf file
+	 */
+	if (!iface_enabled(ifa->ifa_name, addr)) {
+	    logit(LOG_DEBUG, 0, "phyint %s (%s) disabled, skipping VIF",
+		  ifa->ifa_name, inet_fmt(addr, s1, sizeof(s1)));
+	    continue;
+	}
 
 	/*
 	 * Ignore interfaces that do not support multicast.
