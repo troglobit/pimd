@@ -1,3 +1,4 @@
+ACLOCAL_AMFLAGS           = -I m4
 DISTCHECK_CONFIGURE_FLAGS = --with-systemd=$$dc_install_base/$(systemd)
 
 dist_man8_MANS   = pimd.8
