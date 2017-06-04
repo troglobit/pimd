@@ -1,0 +1,451 @@
+
+
+
+
+
+
+Network Working Group                                        T. Pusateri
+Request for Comments: 4602                              Juniper Networks
+Category: Informational                                      August 2006
+
+
+         Protocol Independent Multicast - Sparse Mode (PIM-SM)
+              IETF Proposed Standard Requirements Analysis
+
+Status of This Memo
+
+   This memo provides information for the Internet community.  It does
+   not specify an Internet standard of any kind.  Distribution of this
+   memo is unlimited.
+
+Copyright Notice
+
+   Copyright (C) The Internet Society (2006).
+
+Abstract
+
+   This document provides supporting documentation to advance the
+   Protocol Independent Multicast - Sparse Mode (PIM-SM) routing
+   protocol from IETF Experimental status to Proposed Standard.
+
+Table of Contents
+
+   1. Introduction ....................................................2
+   2. RFC 1264 Requirements ...........................................2
+      2.1. Documents Specifying the Protocol and Its Usage ............2
+      2.2. Management Information Base ................................2
+      2.3. Explicit Security Architecture .............................2
+      2.4. Implementation Existence ...................................3
+           2.4.1. XORP ................................................3
+           2.4.2. Cisco IOS/IOX .......................................3
+           2.4.3. Infosys Technologies, Ltd. ..........................3
+           2.4.4. Procket Networks ....................................3
+      2.5. Evidence of Testing ........................................4
+           2.5.1. Cisco ...............................................4
+           2.5.2. XORP ................................................4
+           2.5.3. Procket Networks ....................................5
+      2.6. Suitability ................................................5
+      2.7. Authentication Mechanisms ..................................5
+   3. Security Considerations .........................................5
+   4. Acknowledgements ................................................5
+   5. References ......................................................6
+      5.1. Normative References .......................................6
+      5.2. Informative References .....................................6
+
+
+
+
+Pusateri                     Informational                      [Page 1]
+
+RFC 4602         PIM-SM Proposed Standard Req. Analysis      August 2006
+
+
+1.  Introduction
+
+   This analysis provides supporting documentation to advance the
+   Protocol Independent Multicast - Sparse Mode (PIM-SM) routing
+   protocol from the IETF Experimental status to Proposed Standard.
+   PIM-SM was first published as RFC 2117 [RFC2117] in 1997 and then
+   again as RFC 2362 [RFC2362] in 1998.  The protocol was classified as
+   Experimental in both of these documents.  The PIM-SM protocol
+   specification was then rewritten in whole in order to more fully
+   specify the protocol.  It is this new specification that is to be
+   advanced to Proposed Standard.
+
+2.  RFC 1264 Requirements
+
+   Section 4.0 of RFC 1264 [RFC1264] describes the requirements for
+   routing protocols to advance to Proposed Standard.  Each requirement
+   is listed below along with an explanation of how the requirement has
+   been satisfied.
+
+2.1.  Documents Specifying the Protocol and Its Usage
+
+   The authors of the new PIM-SM specification [RFC4601] have taken
+   considerable care to fully specify the protocol operation.  It
+   removes all known ambiguities and tries to normalize corner cases
+   that existed in the previous specification.  It has been used to
+   provide several interoperable implementations by developers that were
+   not authors of the specification.  These implementations will be
+   described below.
+
+2.2.  Management Information Base
+
+   A Management Information Base for PIM is currently specified in RFC
+   2934 [RFC2934].  This MIB has many implementations and has been used
+   by network management applications for several years.  Updates to
+   this MIB to support IPv6 and other improvements based on operation
+   experience are in progress in the PIM Working Group of the IETF.
+
+2.3.  Explicit Security Architecture
+
+   The new PIM Sparse-Mode protocol specification contains an extensive
+   security section explaining its security features and limitations.
+   Data integrity protection and groupwise data origin authentication is
+   provided for PIM protocol messages.
+
+
+
+
+
+
+
+
+Pusateri                     Informational                      [Page 2]
+
+RFC 4602         PIM-SM Proposed Standard Req. Analysis      August 2006
+
+
+2.4.  Implementation Existence
+
+   There are at least 4 known independent implementations of the new
+   protocol specification, and there are over 6 independent
+   implementations of a previous version (RFC 2362) of the
+   specification.  The new specification was carefully written to be
+   backward compatible with the old specification allowing
+   implementations compliant with RFC 2362 to also be compliant with the
+   new specification.
+
+   The 4 implementations of the new version are described below.
+
+2.4.1.  XORP
+
+   The XORP project [XORP] has an open-source implementation of PIM-SM
+   v2 as specified in RFC 4601.  It was written by Pavlin Radoslavov
+   <pavlin@icir.org> and has been available to the public since December
+   2002.  Pavlin is not an author of the protocol specification.  It
+   does not use any other existing code as a base.
+
+2.4.2.  Cisco IOS/IOX
+
+   Cisco Systems, Inc., has written an implementation of the new
+   protocol specification that has been deployed in production routers.
+   There exists an IOS implementation for IPv6 only.  There exists an
+   IOX implementation for both IPv4 and IPv6.  This code was initially
+   written by Isidor Kouvelas <kouvelas@cisco.com>.  It does not depend
+   on any existing code base.  Isidor is a co-author of the protocol
+   specification.
+
+2.4.3.  Infosys Technologies, Ltd.
+
+   Infosys Technologies, Ltd. (www.infosys.com), has developed a limited
+   shared-tree implementation of the new Sparse-Mode specification
+   including PIM Hello messages, DR election, PIM join/prune messages,
+   join suppression, and prune override.  It was written by Bharat Joshi
+   <bharat_joshi@infosys.com> and is used in commercial products.
+   Bharat is not an author of the protocol specification.
+
+2.4.4.  Procket Networks
+
+   An implementation was written from scratch at Procket Networks by
+   Dino Farinacci <dino@cisco.com>.  This implementation is now owned by
+   Cisco Systems, Inc.  Dino is not an author of the new protocol
+   specification.
+
+
+
+
+
+
+Pusateri                     Informational                      [Page 3]
+
+RFC 4602         PIM-SM Proposed Standard Req. Analysis      August 2006
+
+
+2.5.  Evidence of Testing
+
+2.5.1.  Cisco
+
+   The Cisco implementation has undergone extensive laboratory testing
+   as well as testing in production deployments.  It is found to
+   interoperate with implementations of earlier versions of the PIM
+   Sparse-Mode protocol specification.
+
+2.5.2.  XORP
+
+   The XORP PIM-SM implementation has been thoughtfully tested
+   internally by the XORP project.  The emphasis during testing has been
+   on correctness.  In a typical setup, a PIM-SM router's behavior is
+   tested by connecting it to external packet generators and observers.
+   The packet generators are used to generate messages such as IGMP and
+   PIM-SM control packets, and multicast data packets.  The packet
+   observers are used to observe the PIM-SM control packets generated by
+   the PIM-SM router under test, and to observe the data packets that
+   may be forwarded by that router.  In addition, the router's command-
+   line interface has been used to observe its internal state during
+   some of the tests.
+
+   The test scenarios have been designed to follow the protocol
+   specification closely (e.g., a separate test has been created for
+   each event in the various protocol state machines, etc).  All test
+   scenarios are described in detail in the XORP PIM-SM Test Suite
+   [XORP-TEST].
+
+   The major tested features are:
+
+   1.  Multicast data forwarding.
+
+   2.  PIM Hello messages exchange, PIM router neighbor discovery,
+       option exchange, and DR election.
+
+   3.  PIM Register messages transmission and reception, PIM Register
+       state machine, and multicast data packets encapsulation and
+       decapsulation.
+
+   4.  Transmission and reception of PIM Join/Prune messages and
+       upstream and downstream protocol state machines.  The tests
+       consider the following state: (*,*,RP), (*,G), (S,G), and
+       (S,G,rpt).
+
+   5.  Transmission and reception of PIM Assert messages and the per-
+       interface (*,G) and (S,G) Assert state machines.
+
+
+
+
+Pusateri                     Informational                      [Page 4]
+
+RFC 4602         PIM-SM Proposed Standard Req. Analysis      August 2006
+
+
+   6.  PIM Bootstrap mechanism: transmission, reception, and forwarding
+       of PIM Bootstrap messages (BSMs), transmission and reception of
+       PIM Cand-RP-Adv messages, candidate and non-candidate Bootstrap
+       Router (BSR) state machines, creating the RP-Set at the BSR,
+       receiving and using the RP-Set, and semantic fragmentation of
+       BSMs.
+
+   In the final tests, the tested router behaved as specified in the
+   PIM-SM protocol specification.  All issues found in the protocol
+   specification itself have been corrected in earlier versions of the
+   document.
+
+2.5.3.  Procket Networks
+
+   The Procket Networks implementation was deployed in many research and
+   service provider networks and showed interoperability with new and
+   old Cisco Systems implementations as well as Juniper Networks
+   implementations.
+
+2.6.  Suitability
+
+   PIM Sparse-Mode is a protocol for efficiently routing multicast
+   groups that may span wide-area (and inter-domain) Internets.  PIM
+   uses the underlying unicast routing to provide reverse-path
+   information for multicast tree building, but it is not dependent on
+   any particular unicast routing protocol.
+
+2.7.  Authentication Mechanisms
+
+   PIM specifies the use of the IP security (IPsec) authentication
+   header (AH) to provide data integrity protection and groupwise data
+   origin authentication of protocol messages.  The specific AH
+   authentication algorithm and parameters, including the choice of
+   authentication algorithm and the choice of key, are configured by the
+   network administrator.  The threats associated with receiving forged
+   PIM messages are outlined in the security considerations section of
+   the protocol specification.
+
+3.  Security Considerations
+
+   No considerations apply to a requirements analysis about a routing
+   protocol, only to a specification for that routing protocol.
+
+4.  Acknowledgements
+
+   Pavlin Radoslavov provided text for the section on XORP testing.
+   Dino Farinacci provided text for the Procket Networks testing.
+
+
+
+
+Pusateri                     Informational                      [Page 5]
+
+RFC 4602         PIM-SM Proposed Standard Req. Analysis      August 2006
+
+
+5.  References
+
+5.1.  Normative References
+
+   [RFC2934]   McCloghrie, K., Farinacci, D., Thaler, D., and B. Fenner,
+               "Protocol Independent Multicast MIB for IPv4", RFC 2934,
+               October 2000.
+
+   [RFC4601]   Fenner, B., Handley, M., Holbrook, H., and I. Kouvelas,
+               "Protocol Independent Multicast - Sparse Mode (PIM-SM):
+               Protocol Specification (Revised)", RFC 4601, August 2006.
+
+5.2.  Informative References
+
+   [RFC1264]   Hinden, R., "Internet Engineering Task Force Internet
+               Routing Protocol Standardization Criteria", RFC 1264,
+               October 1991.
+
+   [RFC2117]   Estrin, D., Farinacci, D., Helmy, A., Thaler, D.,
+               Deering, S., Handley, M., Jacobson, V., Liu, C., Sharma,
+               P., and L. Wei, "Protocol Independent Multicast-Sparse
+               Mode (PIM-SM): Protocol Specification", RFC 2117, June
+               1997.
+
+   [RFC2362]   Estrin, D., Farinacci, D., Helmy, A., Thaler, D.,
+               Deering, S., Handley, M., Jacobson, V., Liu, C., Sharma,
+               P., and L. Wei, "Protocol Independent Multicast-Sparse
+               Mode (PIM-SM): Protocol Specification", RFC 2362, June
+               1998.
+
+   [XORP]      "XORP Project", <http://www.xorp.org>.
+
+   [XORP-TEST] "XORP PIM-SM Test Suite", <http://www.xorp.org/releases/
+               current/docs/pim_testsuite/pim_testsuite.pdf>.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Pusateri                     Informational                      [Page 6]
+
+RFC 4602         PIM-SM Proposed Standard Req. Analysis      August 2006
+
+
+Author's Address
+
+   Tom Pusateri
+   Juniper Networks
+   1194 North Mathilda Avenue
+   Sunnyvale, CA  94089
+   USA
+
+   Phone: +1 408 745 2000
+   EMail: pusateri@juniper.net
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Pusateri                     Informational                      [Page 7]
+
+RFC 4602         PIM-SM Proposed Standard Req. Analysis      August 2006
+
+
+Full Copyright Statement
+
+   Copyright (C) The Internet Society (2006).
+
+   This document is subject to the rights, licenses and restrictions
+   contained in BCP 78, and except as set forth therein, the authors
+   retain all their rights.
+
+   This document and the information contained herein are provided on an
+   "AS IS" basis and THE CONTRIBUTOR, THE ORGANIZATION HE/SHE REPRESENTS
+   OR IS SPONSORED BY (IF ANY), THE INTERNET SOCIETY AND THE INTERNET
+   ENGINEERING TASK FORCE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED,
+   INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE
+   INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED
+   WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+Intellectual Property
+
+   The IETF takes no position regarding the validity or scope of any
+   Intellectual Property Rights or other rights that might be claimed to
+   pertain to the implementation or use of the technology described in
+   this document or the extent to which any license under such rights
+   might or might not be available; nor does it represent that it has
+   made any independent effort to identify any such rights.  Information
+   on the procedures with respect to rights in RFC documents can be
+   found in BCP 78 and BCP 79.
+
+   Copies of IPR disclosures made to the IETF Secretariat and any
+   assurances of licenses to be made available, or the result of an
+   attempt made to obtain a general license or permission for the use of
+   such proprietary rights by implementers or users of this
+   specification can be obtained from the IETF on-line IPR repository at
+   http://www.ietf.org/ipr.
+
+   The IETF invites any interested party to bring to its attention any
+   copyrights, patents or patent applications, or other proprietary
+   rights that may cover technology that may be required to implement
+   this standard.  Please address the information to the IETF at
+   ietf-ipr@ietf.org.
+
+Acknowledgement
+
+   Funding for the RFC Editor function is provided by the IETF
+   Administrative Support Activity (IASA).
+
+
+
+
+
+
+
+Pusateri                     Informational                      [Page 8]
+

@@ -1,0 +1,275 @@
+
+ Auto-RP: Automatic discovery of Group-to-RP mappings for IP multicast
+
+	   Dino Farinacci		Liming Wei
+
+			 Sept 9, 1998
+
+
+Abstract
+
+This document specifies version 1+ Auto-RP. Compared with version 1
+this version has the ability to deny RP-mappings by advertising negative
+group prefixes.
+
+1. Introduction
+
+
+PIM-SM (Protocol Independent Multicast, Sparse Mode) [PIM-SM] relies
+on shared data distribution trees to jump start multicast
+communication.  A shared data distribution tree is rooted at a router
+called the rendezvous point (RP) where the multicast sources and
+receivers 'meet'.  Although it is possible to use one single router as
+the RP for all groups, using different RPs for different groups has a
+number of advantages: it allows load-splitting among different RPs;
+the formation of the shared tree can take advantage of the known group
+membership distribution characteristics; and it provides a means to do
+comparative diagnostics among different RP rooted trees under
+exceptional conditions.
+
+We propose a mechanism that allows the mapping (group prefix, RP
+address) to be configured only in the RP routers and to be discovered
+by all designated routers automatically. This mechanism guarantees
+consistency and is robust. It will be able to co-exist seemlessly
+with other means of group-RP mapping dissemination methods.
+
+2. Design Goals
+
+   a) Any router should be allowed to announce its willingness to act as
+      an RP for any range of group addresses;
+
+   b) The designated routers do not need to resolve conflicts if different
+      routers announced conflicting ranges of group addresses;
+
+   c) The mechanism should be simple, and can use existing mechanisms,
+      either dense or sparse mode forwarding logic.
+
+   d) The mechanism should have minimal impact on the non-upgraded routers;
+
+   e) Has no single point of failures, and is resilent to packet losses;
+
+   f) It should work seemlessly with other group-RP mapping methods,
+      including statically configurations, across different versions of
+      PIM implementation. Therefore, it should not require any changes
+      to the existing protocols.
+
+3. The Mechanism
+
+3.1 Announcing the group-RP mappings
+
+  Each RP, once configured to announce the range of group addresses it
+intends to serve, will periodically send G-RP mapping announcement
+packets to the well-known RP announcement group address CISCO-RP-ANNOUNCE.
+For now, the period for sending this announcement is set to 60 seconds.
+When the number of RP's grows large, it is possible to let the RPs listen
+to the group CISCO-RP-ANNOUNCE and use a dynamic backoff algorithm similar
+to that used in sd[2] to reduce the traffic consumed by the announcement
+packets. However, we do not foresee in the near future any need for
+concerns about the bandwidth consumptions by the announcement traffic,
+since the number of RPs within a domain will most likely be quite small
+(due to administrative constraints).
+
+3.2 The RP-mapping Agent
+
+One or more specially configured routers, called "RP-mapping agents", listen
+on CISCO-RP-ANNOUNCE and cach the announced mappings. If there are conflicts
+between two different RP's announced mappings, the RP-mapping agent will
+resolve them. The following are three rules for conflict resolution:
+
+  1) Co-existence of longer and shorter group prefixes, from different
+     RPs. E.g. when RP1 announces 224.2.*.*, and RP2 announces 224.2.2.*,
+     both are accepted;
+
+  2) For announcements for identical group prefixes from two different RPs,
+     the one from the RP with the higher IP address is accepted;
+
+  3) No duplicates are sent to the CISCO-RP-DISCOVERY address. E.g. if
+     an RP announces both 224.2.2.* and 224.2.*.*, the former group-prefix
+     is not sent and only 224.2.*.* is sent to the CISCO-RP-DISCOVERY
+     address.
+
+The RP-mapping agent periodically sends out RP-mapping packets to
+another well-known group address CISCO-RP-DISCOVERY, the "RP mapping
+discovery group". The RP-mapping packets are sent with a period
+of 60 seconds.
+
+All designated routers (DRs) listen on CISCO-RP-DISCOVERY and obtain
+the group-RP mappings for local use. When a group address is covered
+by multiple group-prefixes, e.g. 224.2.*.* and 224.2.2.*, the prefix
+with the longest match is used.
+
+  For robustness purpose, multiple RP-mapping agents may be configured
+inside the same administrative domain. Each RP-mapping agent also
+listens to the the RP mapping discovery group CISCO-RP-DISCOVERY, and
+suppresses the sending of its own RP-mapping packets if it hears
+RP-mapping packets originated from another RP-mapping agent with a
+higher IP address.
+
+3.3 Underlying support for CISCO-RP-ANNOUNCE and CISCO-RP-DISCOVERY
+
+ We assume that the underlying multicast routing mechanism has the
+capability to forward packets destined to these two well-known groups.
+E.g. in a purely sparse mode cloud, all DRs and the RP-mapping agents
+are configured with the default RP for the CISCO-RP-DISCOVERY group.
+The RP-mapping agents and all RPs are also configured with the default
+RP for the CISCO-RP-ANNOUNCE group. Or in a dense mode capable cloud,
+the group CISCO-RP-DISCOVERY and CISCO-RP-ANNOUNCE are treated as
+dense mode groups.
+
+4. Packet Format
+
+   The RP announcement and RP-mapping messages are coded in UDP
+inside UDP messages with the destination port set to PIM-RP-DISC.
+The two messages types have identical packet formats, but with different
+code values in the header. The following packet format assumes IPv4
+addresses.
+
+                      1                   2                   3
+  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |Version| Type  |   RP count    |           Holdtime            |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |                         Reserved                              | 
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |                 Unicast IP address of RP1                     | 
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |  reserved | V | group count1  |         Encoded-              |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |                     Group Address-1                           |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |                     Encoded-                                  |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |       Group Address-2         |        .....                  |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |                 Unicast IP address of RP2                     | 
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |  reserved | V | group count2  |         Encoded-              |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |                     Group Address-1                           |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |                               . .                             |
+
+  Version:  1, this draft defines version 1+ of Auto-RP.
+
+  Type : 1  RP announcement message;
+         2  RP mapping message;
+
+  RP count: The number of RP addresses contained in this message.
+
+  Reserved: Sent as 0, ignored when received.
+
+  Holdtime : The amount of time in seconds this announcement is valid.
+             When this value is set to 0, it means this RP should never
+             be timed out unless a failure has occured.
+
+  V : RP's highest PIM version. The 2-bit field is encoded as:
+	    00 : version unknown
+	    01 : version 1
+ 	    10 : version 2 
+	    11 : Dual version 1 and 2
+
+  Unicast IP address of RP[1-n]:  The unicast IP address of hte [1-n]th RP.
+
+  Group count[1-n]: The number of group prefixes this RP[1-n] maps to.
+
+  Encoded-group address-[1-n]: The range of group addresses that can map
+	     into the RP that announced the message.
+
+                        1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   !  Reserved   |N|  Mask length  |  Group IP address             ~
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                               |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+   Reserved:  0 when sent, ignored when received
+
+   N:  0 Positive group prefix
+       1 Negative group prefix
+
+   Mask length: Length of group prefix
+
+   Group IP address: Group prefix
+   
+
+5. Well known addresses and port number
+
+The following class D addresses were assigned by the IANA for the
+auto-rp mechanism:
+
+   CISCO-RP-ANNOUNCE	224.0.1.39
+   CISCO-RP-DISCOVERY	224.0.1.40
+
+The following UDP port was assigned by the IANA for use by auto-rp:
+
+   PIM-RP-DISC	496
+
+6. Interoperability between Auto-RP v1+ and v1 systems
+
+The difference between v1 and v1+ only shows up when negative
+prefixes are configured and advertised.
+
+The version 1 Auto-RP systems will be able to receive and process
+positive prefixes in version 1+ Auto-RP messages, and will treat the
+negative prefixes as positive prefixes. But joins/prunes/registers due
+to such mis-cached RP-mapping entries will be rejected by Auto-RP v1+
+systems.
+
+When a domain upgrades from Auto-RP v1 to v1+, the domain will
+inadvertently have a mixture of v1 and v1+ systems. It is wise to
+verify the RP-mappings when a negative prefix is configured in such a
+network. For a negative prefix, a v1 system will use the denied
+RP. While a v1+ router will not use the negative RP, and treat
+the groups in sparse mode, while all v1+ systems will treate
+the same groups in dense mode.
+
+Therefore the v1+ implementation must enforce the following rules:
+
+ 1) When looking up the RP-mapping database, only one longest match
+    lookup is done on the group. If the entry found is negative,
+    the group is deemed in dense mode, even if another RP-mapping entry
+    for a different RP has a shorter positive prefix for this group.
+
+ 2) If the same group prefix is advertised from two different RPs,
+    one positive, one negative, the RP-mapping agent will always
+    cache the negative prefix.
+
+One deny entry in the RP-mapping entry will turn the group-prefix
+into dense mode in the entire domain.
+   
+
+7. Compatibility issues with alternative RP discovery/advertisement methods
+
+The auto-rp mechanism will be able to co-exist with statically configured
+RP mappings, as well as with other RP discovery mechanisms. When other RP
+discovery mechanisms come in existence, the group-RP mappings obtained
+from different methods can be assigned different preference values.
+E.g. the group-RP mappings learned through Auto-RP can take precedence
+over the local statically configured group-RP mappings. It is a local
+decision and an implementation issue how this preference is established.
+
+The PIM-SM bootstrap mechanism specified in RFC2362 will not be able
+to convey negative prefixes. This may be changed in a future PIM
+specification.
+
+8. Which RP should be used for CISCO-RP-ANNOUNCE/CISCO-RP-DISCOVERY ?
+
+   This question is irrelavant if these two well-known groups are supported
+   by a dense-mode delivery mechanism (as is possible in PIMv2).
+
+   When these two groups are delivered in sparse-mode, they need an RP
+   that is agreed on by all the RPs, DRs and the rp-mapping agent.
+   Since an RP may announce a dynamic group-RP mapping that covers the
+   two well-known groups used by Auto-RP, we need to avoid circular
+   dependancies. For these two well-known groups, the staticly
+   configured group-RP mapping should override the dynamicly learned RP.
+
+9. Reference
+
+[PIM-SM] Deering S., Estrin D., Farinacci D., Jacobson V., Liu G., Wei L.,
+         Sharma P., and Helmy A. "Protocol Indpendant Multicast, Sparse
+         Mode: Protocol Specification", version 2 Working draft.
+
+[SDR] Mark Handley, SDR, Session Directory tool. mjh@isi.edu
+
