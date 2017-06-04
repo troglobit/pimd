@@ -3,9 +3,9 @@ AC_INIT(pimd, 2.4.0-beta2, https://github.com/troglobit/pimd/issues, , http://tr
 AM_INIT_AUTOMAKE([1.11 foreign])
 AM_SILENT_RULES([yes])
 
-AC_CONFIG_SRCDIR([main.c])
+AC_CONFIG_SRCDIR([src/main.c])
 AC_CONFIG_HEADER([config.h])
-AC_CONFIG_FILES([Makefile pimd.service])
+AC_CONFIG_FILES([Makefile src/Makefile pimd.service])
 
 # Check for standard programs, headers, and functions
 AC_PROG_CC
