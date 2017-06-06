@@ -783,6 +783,7 @@ rp_grp_entry_t *rp_grp_match(uint32_t group)
     uint32_t curr_hash_value    = 0;
     uint32_t curr_address_h     = 0;
     uint32_t group_h            = ntohl(group);
+    uint32_t curr_hash_mask_h   = 0;
 
     if (grp_mask_list == NULL)
 	return NULL;
@@ -793,12 +794,13 @@ rp_grp_entry_t *rp_grp_match(uint32_t group)
 	    != ntohl(mask_ptr->group_mask & mask_ptr->group_addr))
 	    continue;
 
+	curr_hash_mask_h = ntohl(mask_ptr->hash_mask);
 	for (entry_ptr = mask_ptr->grp_rp_next; entry_ptr; entry_ptr = entry_ptr->grp_rp_next) {
 	    if (best_priority < entry_ptr->priority)
 		break;
 
-	    curr_hash_value = RP_HASH_VALUE(group_h, mask_ptr->hash_mask, curr_address_h);
 	    curr_address_h = ntohl(entry_ptr->rp->rpentry->address);
+	    curr_hash_value = RP_HASH_VALUE(group_h, curr_hash_mask_h, curr_address_h);
 
 	    if (best_priority == entry_ptr->priority) {
 		/* Compare the hash_value and then the addresses */
