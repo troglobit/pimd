@@ -2,7 +2,7 @@
 # -D_BSD_SOURCE Use functions derived from 4.3 BSD Unix rather than POSIX.1
 #               In GLIBC >= v2.20 this is replaced with -D_DEFAULT_SOURCE,
 #               but to build on older GLIBC systems we now need both ...
-AM_CPPFLAGS      = -D_BSD_SOURCE -D_DEFAULT_SOURCE -D_GNU_SOURCE
+AM_CPPFLAGS      = -D_BSD_SOURCE -D_DEFAULT_SOURCE -D_GNU_SOURCE -I$(top_srcdir)/include
 AM_CPPFLAGS     += -DSYSCONFDIR=\"@sysconfdir@\" -DLOCALSTATEDIR=\"@localstatedir@\"
 
 sbin_PROGRAMS    = pimd
@@ -17,7 +17,7 @@ pimd_SOURCES     = callout.c		config.c	debug.c		debug.h		\
 pimd_LDADD       = @LIBUTIL@
 
 if LINUX
-AM_CPPFLAGS     += -I$(top_srcdir)/include -DRAW_OUTPUT_IS_RAW -DIOCTL_OK_ON_RAW_SOCKET
+AM_CPPFLAGS     += -DRAW_OUTPUT_IS_RAW -DIOCTL_OK_ON_RAW_SOCKET
 pimd_SOURCES    += netlink.c
 endif
 
