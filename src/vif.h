@@ -166,6 +166,9 @@ struct uvif {
 
 /* TODO: define VIFF_KERNEL_FLAGS */
 #define VIFF_KERNEL_FLAGS	(VIFF_TUNNEL | VIFF_SRCRT)
+#ifndef VIFF_REGISTER
+#define VIFF_REGISTER           0x000004       /* Missing on OpenBSD        */
+#endif
 #define VIFF_DOWN		0x000100       /* kernel state of interface */
 #define VIFF_DISABLED		0x000200       /* administratively disabled */
 #define VIFF_QUERIER		0x000400       /* I am the subnet's querier */
