@@ -15,7 +15,7 @@ AC_PROG_INSTALL
 PKG_PROG_PKG_CONFIG
 
 AC_HEADER_STDC
-AC_CHECK_HEADERS([fcntl.h ifaddrs.h netinet/pim.h net/if_dl.h sys/time.h])
+AC_CHECK_HEADERS([fcntl.h ifaddrs.h netinet/pim.h net/if_dl.h sys/time.h linux/netlink.h])
 AC_CHECK_HEADERS([net/if.h], [], [], [
 #include <stdio.h>
 #ifdef STDC_HEADERS
@@ -147,10 +147,10 @@ AS_IF([test "x$with_systemd" = "xyes" -o "x$with_systemd" = "xauto"], [
 AS_IF([test "x$with_systemd" != "xno"],
      [AC_SUBST([systemddir], [$with_systemd])])
 
-AM_CONDITIONAL(BSD,     [test "x$ac_cv_header_net_if_dl_h"    = "xyes"])
-AM_CONDITIONAL(LINUX,   [test "x$ac_cv_header_netinet_pim_h" != "xyes"])
-AM_CONDITIONAL(RSRR,    [test "x$enable_rsrr"                 = "xyes"])
-AM_CONDITIONAL(SYSTEMD, [test "x$with_systemd"               != "xno"])
+AM_CONDITIONAL(BSD,     [test "x$ac_cv_header_net_if_dl_h"     = "xyes"])
+AM_CONDITIONAL(LINUX,   [test "x$ac_cv_header_linux_netlink_h" = "xyes"])
+AM_CONDITIONAL(RSRR,    [test "x$enable_rsrr"                  = "xyes"])
+AM_CONDITIONAL(SYSTEMD, [test "x$with_systemd"                != "xno"])
 
 LIBUTIL=
 AS_IF([test "x$libutil" = "yes"], [LIBUTIL=-lutil])
