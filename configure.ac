@@ -30,6 +30,9 @@ AC_CHECK_HEADERS([net/if.h], [], [], [
 # include <sys/socket.h>
 #endif])
 
+# Check if some func is not in libc
+AC_CHECK_LIB([util], [pidfile])
+
 # Check for required functions in libc
 AC_CHECK_FUNCS([atexit getifaddrs if_nametoindex])
 
