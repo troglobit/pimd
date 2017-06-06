@@ -30,24 +30,12 @@ AC_CHECK_HEADERS([net/if.h], [], [], [
 # include <sys/socket.h>
 #endif])
 
-AC_CHECK_FUNC([pidfile],  has_pidfile=yes, has_pidfile=no)
-AC_CHECK_FUNC([strlcpy],  has_strlcpy=yes, has_strlcpy=no)
-AC_CHECK_FUNC([strlcat],  has_strlcat=yes, has_strlcat=no)
-AC_CHECK_FUNC([strtonum], has_strtonum=yes, has_strtonum=no)
+# Check for required functions in libc
+AC_CHECK_FUNCS([atexit getifaddrs if_nametoindex])
 
-AC_CHECK_FUNCS([atexit utimensat getifaddrs if_nametoindex])
-
-AS_IF([test "x$has_strlcpy" = xno],
-	AC_SEARCH_LIBS([strlcpy], [util],
-		has_strlcpy=yes
-		has_strlcat=yes
-		has_strtonum=yes
-		libutil=yes))
-
-AM_CONDITIONAL(NO_PIDFILE,  [test "x$has_pidfile"  = "xno"])
-AM_CONDITIONAL(NO_STRLCPY,  [test "x$has_strlcpy"  = "xno"])
-AM_CONDITIONAL(NO_STRLCAT,  [test "x$has_strlcat"  = "xno"])
-AM_CONDITIONAL(NO_STRTONUM, [test "x$has_strtonum" = "xno"])
+# Check for usually missing API's, which we can replace
+AC_REPLACE_FUNCS([pidfile strlcpy strlcat strtonum utimensat])
+AC_CONFIG_LIBOBJ_DIR([lib])
 
 #   If your RP is buggy cisco PIM-SMv2 implementation that computes
 #   the PIM-Register checksum over the whole pkt instead only over
@@ -151,10 +139,6 @@ AM_CONDITIONAL(BSD,     [test "x$ac_cv_header_net_if_dl_h"     = "xyes"])
 AM_CONDITIONAL(LINUX,   [test "x$ac_cv_header_linux_netlink_h" = "xyes"])
 AM_CONDITIONAL(RSRR,    [test "x$enable_rsrr"                  = "xyes"])
 AM_CONDITIONAL(SYSTEMD, [test "x$with_systemd"                != "xno"])
-
-LIBUTIL=
-AS_IF([test "x$libutil" = "yes"], [LIBUTIL=-lutil])
-AC_SUBST(LIBUTIL)
 
 # Expand $sbindir early, into $SBINDIR, for systemd unit file
 # NOTE: This does *not* take prefix/exec_prefix override at "make

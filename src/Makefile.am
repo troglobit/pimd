@@ -1,3 +1,6 @@
+# For replacement functions in lib/
+AUTOMAKE_OPTIONS = subdir-objects
+
 # -D_GNU_SOURCE Use GNU extensions, where possible
 # -D_BSD_SOURCE Use functions derived from 4.3 BSD Unix rather than POSIX.1
 #               In GLIBC >= v2.20 this is replaced with -D_DEFAULT_SOURCE,
@@ -12,9 +15,9 @@ pimd_SOURCES     = callout.c		config.c	debug.c		debug.h		\
 		   inet.c		kern.c		main.c		pathnames.h	\
 		   mrt.c		mrt.h		route.c		rp.c		\
 		   pim_proto.c		pim.c		pimd.h				\
-		   timer.c		trace.c		trace.h		utimensat.c 	\
+		   timer.c		trace.c		trace.h			 	\
 		   vif.c		vif.h		queue.h
-pimd_LDADD       = @LIBUTIL@
+pimd_LDADD       = $(LIBS) $(LIBOBJS)
 
 if LINUX
 AM_CPPFLAGS     += -DRAW_OUTPUT_IS_RAW -DIOCTL_OK_ON_RAW_SOCKET
@@ -29,22 +32,6 @@ endif
 if RSRR
 AM_CPPFLAGS     += -DPIM
 pimd_SOURCES    += rsrr.c		rsrr_var.h	rsrr.h
-endif
-
-if NO_PIDFILE
-pimd_SOURCES    += pidfile.c
-endif
-
-if NO_STRLCPY
-pimd_SOURCES    += strlcpy.c
-endif
-
-if NO_STRLCAT
-pimd_SOURCES    += strlcat.c
-endif
-
-if NO_STRTONUM
-pimd_SOURCES    += strtonum.c
 endif
 
 ## BSDI		    -D__bsdi__ is defined by the OS
