@@ -32,7 +32,7 @@
 
 
 /*
- * The hash function. Stollen from Eddy's (eddy@isi.edu)
+ * The hash function. Stolen from Eddy's (eddy@isi.edu)
  * implementation (for compatibility ;)
  */
 #define SEED1   1103515245
