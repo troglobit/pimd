@@ -5,6 +5,18 @@
 #+LaTeX_HEADER: \usepackage{parskip} \usepackage{a4wide}
 #+LaTeX_CLASS_OPTIONS: [twoside, colorlinks=true, linkcolor=blue, urlcolor=blue]
 
+* Version 3.0: UNRELEASED
+
+** Changes
+- Converted to GNU Configure & Build system
+- Replace libite (=-lite=) GIT submodule with compat. functions
+
+** Bug Fixes
+- Issue #38: Allow enable =phyint= based on ifname or address
+- Issue #68: Do not enumerate VIFs for disabled interfaces.  This fix
+  allows using =pimd= on systems with more than 32 interfaces.
+
+
 * Version 2.3.2: March 10, 2016
 
 Bug fix release.  All users should upgrade, in particular FreeBSD users!
