@@ -7,14 +7,22 @@
 
 * Version 3.0: UNRELEASED
 
+As of this release =pimd= is not guaranteed to be backwards compatible
+with earlier releases.  It is recommended to run the same version of
+=pimd= on all routers in the same domain.  See issue #93 for details.
+
 ** Changes
 - Converted to GNU Configure & Build system
-- Replace libite (=-lite=) GIT submodule with compat. functions
+- Replace libite (=-lite=) GIT submodule with compatibility functions.
+  I.e., as of this release =pimd= is self-hosting again.
 
 ** Bug Fixes
-- Issue #38: Allow enable =phyint= based on ifname or address
+- Issue #38: Allow enable =phyint= based on ifname or address.
 - Issue #68: Do not enumerate VIFs for disabled interfaces.  This fix
   allows using =pimd= on systems with more than 32 interfaces.
+- Issue #93: Fixes a serious issue with the RP hash algorithm used in RP
+  elections.  The change makes =pimd= compatible with Cisco IOS, but it
+  also makes =pimd= v3.0 /incompatible/ with earlier =pimd= releases.
 
 
 * Version 2.3.2: March 10, 2016
