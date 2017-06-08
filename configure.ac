@@ -1,5 +1,5 @@
 AC_PREREQ(2.61)
-AC_INIT(pimd, 2.4.0-beta2, https://github.com/troglobit/pimd/issues, , http://troglobit.com/pimd.html)
+AC_INIT(pimd, 3.0-beta1, https://github.com/troglobit/pimd/issues, , http://troglobit.com/pimd.html)
 AM_INIT_AUTOMAKE([1.11 foreign])
 AM_SILENT_RULES([yes])
 
