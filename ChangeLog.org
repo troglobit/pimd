@@ -15,14 +15,40 @@ with earlier releases.  It is recommended to run the same version of
 - Converted to GNU Configure & Build system
 - Replace libite (=-lite=) GIT submodule with compatibility functions.
   I.e., as of this release =pimd= is self-hosting again.
+- Modify Join/Prune send logic to allow more than ~75 mcast receivers,
+  issue #62, by Mika Joutsenvirta <mailto:mika.joutsenvirta@insta.fi>
+- Stream optimization, issue #67, by Mika Joutsenvirta:
+  - Switch directly to shortest path only in the case of PIM-SSM
+  - For new IGMP group reports, send PIM Join immediately, saves 0-5 sec
+  - Forward PIM Join messages immediately
+  - Create MRT entry once PIM Register is received even if no joins
+    exists, saves 0-60 sec
+- Allow use of loopback interface as long as MULTICAST flag is set,
+  issue #89 by Vincent Bernat
+- Added systemd unit file, issue #41
+- Support for =disable-vifs= in =pimd.conf=, issue #56
+- PID file is touched to acknowledge =SIGHUP=
+- Add =-I IDENT= to change name of =pimd= in syslog, =.conf= file, and
+  PID file.  Useful when running multiple daemons, one per multicast
+  routing table.
+- Converted to use =getifaddrs()= when scanning for interfaces.  This is
+  required on at least FreeBSD 9, since =SIOCGIFCONF= seems to be really
+  broken there, at least on systems with lots of interfaces (>30).
+  Problem repored by Vladimir Shunkov
 
 ** Bug Fixes
+- Remove GNU:isms like =%m= and =__progname= to be able to build on
+  systems that don't have them, like musl libc in e.g. Alpine Linux
 - Issue #38: Allow enable =phyint= based on ifname or address.
 - Issue #68: Do not enumerate VIFs for disabled interfaces.  This fix
   allows using =pimd= on systems with more than 32 interfaces.
+- Issue #84: Netlink code warns about missing VIF for disabled interfaces 
+- Issue #92: Fix RedHat/CentOS =.spec= file, building from GIT and from
+  released tarball, by Sjoerd Boomstra <mailto:sjoerd@telecats.nl>
 - Issue #93: Fixes a serious issue with the RP hash algorithm used in RP
   elections.  The change makes =pimd= compatible with Cisco IOS, but it
   also makes =pimd= v3.0 /incompatible/ with earlier =pimd= releases.
+  Found and fixed by Xiaodong Xu <mailto:stid.smth@gmail.com>
 
 
 * Version 2.3.2: March 10, 2016
