@@ -1,5 +1,5 @@
 #+TITLE:    pimd | Change Log
-#+AUTHOR:   Ahmed Helmy, George Edmond Eddy, Pavlin Ivanov Radoslavov, and Markus Veranen
+#+AUTHOR:   Ahmed Helmy, George Edmond Eddy, Pavlin Ivanov Radoslavov, Markus Veranen, and Mika Joutsenvirta
 #+OPTIONS: toc:nil
 #+OPTIONS: H:3 num:0
 #+LaTeX_HEADER: \usepackage{parskip} \usepackage{a4wide}
@@ -74,9 +74,9 @@ Bug fix release.
 #+LATEX: \newpage
 * Version 2.3.0: July 31, 2015 -- /PIM-SSM & IGMPv3 release!/
 
-The significant new features in this release would not have been
-possible if not for the hard work of Markus Veranen
-<mailto:markus.veranen@gmail.com>
+The significant new features in this release were made possible thanks
+to the hard work of Markus Veranen <mailto:markus.veranen@gmail.com> and
+Mika Joutsenvirta <mailto:mika.joutsenvirta@insta.fi>.
 
 Tested on Ubuntu 14.04 (GLIBC/Linux 3.13), Debian 8.1 (GLIBC/Linux
 3.16), FreeBSD, NetBSD, and OpenBSD.
