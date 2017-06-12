@@ -16,7 +16,7 @@ with earlier releases.  It is recommended to run the same version of
 - Replace libite (=-lite=) GIT submodule with compatibility functions.
   I.e., as of this release =pimd= is self-hosting again.
 - Modify Join/Prune send logic to allow more than ~75 mcast receivers,
-  issue #62, by Mika Joutsenvirta <mailto:mika.joutsenvirta@insta.fi>
+  issue #62, by Joonas Ruohonen <mailto:joonas.ruohonen@insta.fi>
 - Stream optimization, issue #67, by Mika Joutsenvirta:
   - Switch directly to shortest path only in the case of PIM-SSM
   - For new IGMP group reports, send PIM Join immediately, saves 0-5 sec
