@@ -197,55 +197,6 @@ static void do_randomize(void)
 #endif
 }
 
-/* Figure out the PID of a running daemon. */
-static pid_t daemon_pid(void)
-{
-    int result;
-    char *path = NULL;
-    FILE *fp;
-    pid_t pid = -1;
-
-    result = asprintf(&path, "%s/%s.pid", _PATH_PIMD_RUNDIR, ident);
-    if (result == -1 || path == NULL)
-	return -1;
-
-    fp = fopen(path, "r");
-    if (!fp) {
-	free(path);
-	return -1;
-    }
-
-    result = fscanf(fp, "%d", &pid);
-    fclose(fp);
-    free(path);
-
-    return pid;
-}
-
-/* Send signal to running daemon and the show resulting file. */
-static int killshow(int signo, char *fmt)
-{
-    char buf[100];
-    char file[90];
-    pid_t pid = daemon_pid();
-
-    if (pid > 0) {
-	snprintf(file, sizeof(file), fmt, ident);
-
-	if (-1 == remove(file) && errno != ENOENT)
-	    warn("Failed removing %s, may be showing stale information", file);
-
-	kill(pid, signo);
-
-	usleep(200);
-	snprintf(buf, sizeof(buf), "cat %s", file);
-	if (-1 == system(buf))
-		warnx("Failed listing file %s\n", file);
-    }
-
-    return 0;
-}
-
 static int compose_paths(void)
 {
     /* Default .conf file path: "/etc" + '/' + "pimd" + ".conf" */
@@ -279,23 +230,18 @@ static int usage(int code)
     else
 	snprintf(pidfn, sizeof(pidfn), "%s", pid_file);
 
-    printf("Usage: %s [-fhlNqrv] [-c FILE] [-d [SYS][,SYS...]] [-s LEVEL]\n\n", prognm);
-    printf(" -c, --config=FILE   Configuration file, default uses ident NAME: %s\n", config_file);
-    printf(" -d, --debug[=SYS]   Debug subsystem, see below for valid systems, default all\n");
-    printf(" -f, --foreground    Run in foreground, do not detach from calling terminal\n");
-    printf(" -h, --help          Show this help text\n");
-    /* printf("  -i, --show-cache     Show internal cache tables\n"); */
+    printf("Usage: %s [-DhlNnv] [-f FILE] [-d [SYS][,SYS...]] [-s LEVEL]\n\n", prognm);
+    printf(" -f, --config=FILE   Configuration file, default uses ident NAME: %s\n", config_file);
+    printf(" -n, --foreground    Run in foreground, do not detach from calling terminal\n");
+    printf(" -d SYS              Enable debug for SYS, see below for valid systems\n");
+    printf(" -s, --loglevel=LVL  Set log level: none, err, info, notice (default), debug\n");
     printf(" -I, --ident=NAME    Identity for config + PID file, and syslog, default: %s\n", ident);
-    printf(" -l, --reload-config Tell a running pimd to reload its configuration\n");
     printf(" -N, --disable-vifs  Disable all virtual interfaces (phyint) by default\n");
-    /* printf("  -p,--show-debug     Show debug dump, only if debug is enabled\n"); */
     printf(" -P, --pidfile=FILE  File to store process ID for signaling %s\n"
 	   "                     Default uses ident NAME: %s\n", prognm, pidfn);
-    printf(" -q, --quit-daemon   Send SIGTERM to a running pimd\n");
-    printf(" -r, --show-routes   Show state of VIFs and multicast routing tables\n");
     printf(" -t, --table-id=ID   Set multicast routing table ID.  Allowed table ID#:\n"
 	   "                      0 .. 999999999.  Default: 0 (use default table)\n");
-    printf(" -s, --loglevel=LVL  Set log level: none, err, info, notice (default), debug\n");
+    printf(" -h, --help          Show this help text\n");
     printf(" -v, --version       Show %s version\n", prognm);
     printf("\n");
 
@@ -350,41 +296,32 @@ int main(int argc, char *argv[])
     struct sigaction sa;
     time_t boottime;
     struct option long_options[] = {
-	{ "config",        1, 0, 'c' },
-	{ "debug",         2, 0, 'd' },
+	{ "config",        1, 0, 'f' },
 	{ "disable-vifs",  0, 0, 'N' },
-	{ "foreground",    0, 0, 'f' },
+	{ "foreground",    0, 0, 'n' },
 	{ "help",          0, 0, 'h' },
 	{ "ident",         1, 0, 'I' },
 	{ "loglevel",      1, 0, 's' },
 	{ "pidfile",       1, 0, 'P' },
-	{ "quit-daemon",   0, 0, 'q' },
-	{ "reload-config", 0, 0, 'l' },
-	{ "show-routes",   0, 0, 'r' },
-	{ "syslog-level",  1, 0, 's' },   /* Compat */
 	{ "table-id",      1, 0, 't' },
 	{ "version",       0, 0, 'v' },
-	/* { "show-cache", 0, 0, 'i' }, */
-	/* { "show-debug", 0, 0, 'p' }, */
 	{ NULL, 0, 0, 0 }
     };
 
     snprintf(versionstring, sizeof (versionstring), "pimd version %s", PACKAGE_VERSION);
 
     prognm = ident = progname(argv[0]);
-    while ((ch = getopt_long(argc, argv, "c:d::fhI:lNvP:qrt:s:", long_options, NULL)) != EOF) {
+    while ((ch = getopt_long(argc, argv, "d:f:hI:lNnP:qrs:t:v", long_options, NULL)) != EOF) {
 	const char *errstr;
 
 	switch (ch) {
-	    case 'c':
+	    case 'f':
 		if (optarg)
 		    config_file = optarg;
 		break;
 
 	    case 'd':
-		if (!optarg) {
-		    debug = DEBUG_DEFAULT;
-		} else {
+		{
 		    char *p,*q;
 		    size_t i, len;
 		    struct debugname *d;
@@ -410,7 +347,7 @@ int main(int argc, char *argv[])
 		}
 		break;
 
-	    case 'f':
+	    case 'n':
 		foreground = 1;
 		break;
 
@@ -421,50 +358,23 @@ int main(int argc, char *argv[])
 		ident = optarg;
 		break;
 
-	    case 'l':
-		return killshow(SIGHUP, NULL);
-
 	    case 'N':
 		do_vifs = 0;
 		break;
 
-	    case 'q':
-		return killshow(SIGTERM, NULL);
-
-	    case 'r':
-		return killshow(SIGUSR1, _PATH_PIMD_DUMP);
-
 	    case 's':
-		if (!optarg) {
-			fprintf(stderr, "Missing loglevel argument!\n");
-			return usage(1);
-		}
-
 		loglevel = loglvl(optarg);
 		if (-1 == loglevel)
 		    return usage(1);
 		break;
 
 	    case 't':
-		if (!optarg) {
-			fprintf(stderr, "Missing Table ID argument!\n");
-			return usage(1);
-		}
-
 		mrt_table_id = strtonum(optarg, 0, 999999999, &errstr);
 		if (errstr) {
 		    fprintf(stderr, "Table ID %s!\n", errstr);
 		    return usage(1);
 		}
 		break;
-
-#if 0 /* XXX: TODO */
-	    case 'i':
-		return killshow(SIGUSR2, _PATH_PIMD_CACHE);
-
-	    case 'p':
-		return killshow(SIGQUIT, NULL);
-#endif
 
 	    case 'P':	/* --pidfile=NAME */
 		pid_file = strdup(optarg);

@@ -104,8 +104,6 @@ extern int log_nmsgs;
 #define DEBUG_ASSERT          ( DEBUG_PIM_ASSERT )
 #define DEBUG_ALL             0xffffffff
 
-#define DEBUG_DEFAULT   0xffffffff/*  default if "-d" given without value */
-
 int loglvl(char *level);
 
 #endif /* PIMD_DEBUG_H_ */
