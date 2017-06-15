@@ -157,6 +157,7 @@ static void timer	 (void *);
 static void cleanup      (void);
 static void restart      (int);
 static void resetlogging (void *);
+static void add_static_rp(void);
 
 int register_input_handler(int fd, ihfunc_t func)
 {
@@ -294,7 +295,6 @@ int main(int argc, char *argv[])
     fd_set rfds, readers;
     int nfds, n, i, secs, ch;
     struct sigaction sa;
-    time_t boottime;
     struct option long_options[] = {
 	{ "config",        1, 0, 'f' },
 	{ "disable-vifs",  0, 0, 'N' },
@@ -467,7 +467,6 @@ int main(int argc, char *argv[])
     logit(LOG_NOTICE, 0, "%s starting ...", versionstring);
 
     do_randomize();
-    time(&boottime);
 
     callout_init();
     init_igmp();
@@ -483,7 +482,7 @@ int main(int argc, char *argv[])
 
     init_vifs();
     init_rp_and_bsr();   /* Must be after init_vifs() */
-
+    add_static_rp();	 /* Must be after init_vifs() */
 #ifdef RSRR
     rsrr_init();
 #endif /* RSRR */
@@ -534,24 +533,6 @@ int main(int argc, char *argv[])
 	    timeout = &tv;
 	    timeout->tv_sec = secs;
 	    timeout->tv_usec = 0;
-	}
-
-	if (boottime) {
-	    time_t n;
-
-	    time(&n);
-	    if (n > boottime + 15) {
-		struct rp_hold *rph = g_rp_hold;
-
-		while(rph) {
-		    add_rp_grp_entry(&cand_rp_list, &grp_mask_list,
-				     rph->address, 1, (uint16_t)0xffffff,
-				     rph->group, rph->mask,
-				     curr_bsr_hash_mask, curr_bsr_fragment_tag);
-		    rph = rph->next;
-		}
-		boottime = 0;
-	    }
 	}
 
 	if (sighandled) {
@@ -741,6 +722,28 @@ static void handler(int sig)
     }
 }
 
+static void add_static_rp(void)
+{
+    struct rp_hold *rph = g_rp_hold;
+
+    while (rph) {
+	add_rp_grp_entry(&cand_rp_list, &grp_mask_list,
+			 rph->address, 1, (uint16_t)0xffffff,
+			 rph->group, rph->mask,
+			 curr_bsr_hash_mask, curr_bsr_fragment_tag);
+	rph = rph->next;
+    }
+}
+
+static void del_static_rp(void)
+{
+    struct rp_hold *rph = g_rp_hold;
+
+    while (rph) {
+	delete_rp(&cand_rp_list, &grp_mask_list, rph->address);
+	rph = rph->next;
+    }
+}
 
 /* TODO: not verified */
 /*
@@ -756,6 +759,7 @@ static void restart(int i __attribute__((unused)))
     /* TODO: delete?
        free_all_routes();
     */
+    del_static_rp();
     free_all_callouts();
     stop_all_vifs();
     k_stop_pim(igmp_socket);
@@ -784,6 +788,7 @@ static void restart(int i __attribute__((unused)))
     init_routesock(); /* Both for Linux netlink and BSD routing socket */
     init_pim_mrt();
     init_vifs();
+    add_static_rp();	 /* Must be after init_vifs() */
 
     /* Touch PID file to acknowledge SIGHUP */
     pidfile(pid_file);
