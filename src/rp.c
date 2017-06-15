@@ -605,15 +605,12 @@ static void delete_grp_mask_entry(cand_rp_t **used_cand_rp_list, grp_mask_t **us
     free(grp_mask_delete);
 }
 
-/*
- * TODO: currently not used.
- */
 void delete_rp(cand_rp_t **used_cand_rp_list, grp_mask_t **used_grp_mask_list, uint32_t rp_addr)
 {
     cand_rp_t *ptr;
     uint32_t rp_addr_h = ntohl(rp_addr);
 
-    for(ptr = *used_cand_rp_list; ptr != NULL; ptr = ptr->next) {
+    for (ptr = *used_cand_rp_list; ptr; ptr = ptr->next) {
 	if (ntohl(ptr->rpentry->address) > rp_addr_h)
 	    continue;
 
@@ -623,7 +620,7 @@ void delete_rp(cand_rp_t **used_cand_rp_list, grp_mask_t **used_grp_mask_list, u
 	    return;   /* Not found */
     }
 
-    if (ptr == NULL)
+    if (!ptr)
 	return;       /* Not found */
 
     delete_rp_entry(used_cand_rp_list, used_grp_mask_list, ptr);
