@@ -56,7 +56,7 @@
 #define CONF_RP_ADDRESS                         4
 #define CONF_GROUP_PREFIX                       5
 #define CONF_BOOTSTRAP_RP                       6
-#define CONF_COMPAT_THRESHOLD                   7
+#define CONF_UNUSED1                            7 /* UNUSED AS OF 3.0 */
 #define CONF_SPT_THRESHOLD                      8
 #define CONF_DEFAULT_ROUTE_METRIC               9
 #define CONF_DEFAULT_ROUTE_DISTANCE             10
@@ -389,14 +389,6 @@ void config_vifs_from_kernel(void)
     tear_iflist();
 }
 
-static int deprecated(char *word, char *new_word, int code)
-{
-    WARN("The %s option is deprecated, replaced with %s", word, new_word);
-    WARN("Please update your configuration file!");
-
-    return code;
-}
-
 /**
  * parse_option - Convert result of string comparisons into numerics.
  * @input: Pointer to the word
@@ -439,32 +431,6 @@ static int parse_option(char *word)
     if  (EQUAL(word, "scoped"))
 	return CONF_SCOPED;
     if (EQUAL(word, "hello-interval"))
-	return CONF_HELLO_INTERVAL;
-
-    /* Compatibility with old config files that use _ instead of - */
-    if (EQUAL(word, "cand_bootstrap_router"))
-	return CONF_BOOTSTRAP_RP;
-    if (EQUAL(word, "cand_rp"))
-	return CONF_CANDIDATE_RP;
-    if (EQUAL(word, "group_prefix"))
-	return CONF_GROUP_PREFIX;
-    if (EQUAL(word, "rp_address"))
-	return CONF_RP_ADDRESS;
-    if (EQUAL(word, "switch_register_threshold"))
-	return deprecated(word, "spt-threshold", CONF_COMPAT_THRESHOLD);
-    if (EQUAL(word, "switch_data_threshold"))
-	return deprecated(word, "spt-threshold", CONF_COMPAT_THRESHOLD);
-    if (EQUAL(word, "spt_threshold"))
-	return CONF_SPT_THRESHOLD;
-    if (EQUAL(word, "default_source_metric"))
-	return CONF_DEFAULT_ROUTE_METRIC;
-    if (EQUAL(word, "default_source_preference"))
-	return CONF_DEFAULT_ROUTE_DISTANCE;
-    if (EQUAL(word, "default_igmp_query_interval"))  /* compat */
-	return CONF_IGMP_QUERY_INTERVAL;
-    if (EQUAL(word, "default_igmp_querier_timeout")) /* compat */
-	return CONF_IGMP_QUERIER_TIMEOUT;
-    if (EQUAL(word, "hello_period"))
 	return CONF_HELLO_INTERVAL;
 
     return CONF_UNKNOWN;
@@ -1023,13 +989,15 @@ int parse_rp_address(char *s)
 		}
 	    }
 
-	    /* Unused, but keeping for backwards compatibility for people who
-	     * may still have this option in their pimd.conf
-	     * The priority of a static RP is hardcoded to always be 1, see Juniper's
-	     * configuration or similar sources for reference. */
+	    /*
+	     * Unused.  Kept for backwards compatibility for users that
+	     * may still have this option in pimd.conf.  The priority of
+	     * a static RP is hardcoded to always be 1, see Juniper's
+	     * configuration or similar sources for reference.
+	     */
 	    if (EQUAL(w, "priority")) {
 		w = next_word(&s);
-		WARN("The priority of static RP's is, as of pimd 2.2.0, always 1.");
+		WARN("Deprecated static RP priority, will always be 1.");
 	    }
 	}
     } else {
@@ -1056,75 +1024,6 @@ int parse_rp_address(char *s)
 
     logit(LOG_INFO, 0, "Local static RP: %s, group %s/%d",
 	  inet_fmt(local, s1, sizeof(s1)), inet_fmt(group_addr, s2, sizeof(s2)), masklen);
-
-    return TRUE;
-}
-
-
-/**
- * parse_compat_threshold - Parse old deprecated pimd.conf thresholds
- * @line:
- *
- * This is a backwards compatible parser for the two older threshold
- * settings used in pimd prior to v2.2.0.  The switchover mechanism has
- * been completely changed, however, so we simply read the settings as
- * if they where the same as the new spt-threshold, only converting the
- * rate argument differently (bps vs kbps).  Last line to be read is
- * what is activated in pimd as spt-threshold.
- *
- * Note, previously the parser was very lenient to errors, but since the
- * default has changed it is much more strict. Any syntax error and pimd
- * bails out ignoring the line.
- *
- * Syntax:
- * switch_register_threshold [rate <BPS> interval <SEC>]
- * switch_data_threshold     [rate <BPS> interval <SEC>]
- *
- * Returns:
- * When parsing @line is successful, returns %TRUE, otherwise %FALSE.
- */
-static int parse_compat_threshold(char *line)
-{
-    char *w;
-    int rate     = -1;
-    int interval = -1;
-
-    while (!EQUAL((w = next_word(&line)), "")) {
-	if (EQUAL(w, "rate")) {
-	    if (EQUAL((w = next_word(&line)), ""))
-		BAILOUT("Missing rate value in compat threshold parser");
-
-	    /* 10 --> 1,000,000,000 == 100 Gbps */
-	    if (sscanf(w, "%10d", &rate) != 1)
-		BAILOUT("Invalid rate value %s in compat threshold parser", w);
-
-	    continue;
-	}
-
-	if (EQUAL(w, "interval")) {
-	    if (EQUAL((w = next_word(&line)), ""))
-		IGNORING("Missing interval value in compat threshold parser");
-
-	    /* 5 --> 99,999 ~= 27h */
-	    if (sscanf(w, "%5d", &interval) != 1)
-		IGNORING("Invalid interval %s in compat threshold parser", w);
-
-	    continue;
-	}
-    }
-
-    /* Set polling mode */
-    spt_threshold.mode = SPT_RATE;
-
-    /* Only accept values if they don't messup for new spt-threshold */
-    if (interval >= TIMER_INTERVAL)
-	spt_threshold.interval = interval;
-
-    /* Accounting for headers we can approximate 1 byte/s == 10 bits/s (bps) */
-    spt_threshold.bytes = rate * spt_threshold.interval / 10;
-
-    logit(LOG_INFO, 0, "Compatibility set spt-treshold rate %u kbps with interval %u sec",
-	  spt_threshold.bytes, spt_threshold.interval);
 
     return TRUE;
 }
@@ -1181,10 +1080,6 @@ int parse_hello_interval(char *s)
  * This configuration setting replaces the switch_register_threshold and
  * switch_data_threshold.  It is more intuitive and more in line with
  * what major vendors are also using.
- *
- * Note that the rate is in kbps instead of bps, compared to the old
- * syntax.  Both the above parse_compat_threshold() and this function
- * target the same backend.
  *
  * Syntax:
  * spt-threshold [rate <KBPS> | packets <NUM> | infinity] [interval <SEC>]
@@ -1550,10 +1445,6 @@ void config_vifs_from_file(void)
 
 	    case CONF_BOOTSTRAP_RP:
 		parse_bsr_candidate(s);
-		break;
-
-	    case CONF_COMPAT_THRESHOLD:
-		parse_compat_threshold(s);
 		break;
 
 	    case CONF_SPT_THRESHOLD:
