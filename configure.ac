@@ -40,15 +40,6 @@ AC_CHECK_FUNCS([atexit getifaddrs if_nametoindex])
 AC_REPLACE_FUNCS([pidfile strlcpy strlcat strtonum utimensat])
 AC_CONFIG_LIBOBJ_DIR([lib])
 
-#   If your RP is buggy cisco PIM-SMv2 implementation that computes
-#   the PIM-Register checksum over the whole pkt instead only over
-#   the header, you need to define this. Otherwise, all your PIM-Register
-#   may be dropped by the cisco-RP.
-AC_ARG_ENABLE(broken_crc,
-	AS_HELP_STRING([--enable-broken-crc], [Interop with older broken Cisco firmware that did
-			checksum in PIM Register messages slightly wrong.
-			Should not be needed anymore.]))
-
 #   Register kernel encapsulation.  Your kernel must support registers
 #   kernel encapsulation to be able to use it.
 AC_ARG_ENABLE(kernel_encap,
@@ -101,9 +92,6 @@ AC_ARG_WITH([systemd],
      [with_systemd=auto])
 
 # Create config.h from selected features and fallback defautls
-AS_IF([test "x$enable_broken_crc" = "xyes"], [
-        AC_DEFINE(BROKEN_CISCO_CHECKSUM, 1, [Interop with older broken Cisco firmware.])])
-
 AS_IF([test "x$enable_kernel_encap" = "xyes"], [
         AC_DEFINE(PIM_REG_KERNEL_ENCAP, 1, [Use kernel accelerated PIM register encap/decapsulation.])])
 

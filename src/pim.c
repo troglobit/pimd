@@ -343,24 +343,14 @@ void send_pim_unicast(char *buf, int mtu, uint32_t src, uint32_t dst, int type, 
     pim->pim_reserved  = 0;
     pim->pim_cksum     = 0;
 
-    /* XXX: The PIM_REGISTERs don't include the encapsulated
-     * inner packet in the checksum.
-     * Well, try to explain this to cisco...
-     * If your RP is cisco and if it shows many PIM_REGISTER checksum
-     * errors from this router, then #define BROKEN_CISCO_CHECKSUM here
-     * or in your Makefile.
-     * Note that such checksum is not in the spec, and such PIM_REGISTERS
-     * may be dropped by some implementations (pimd should be OK).
+    /*
+     * PIM_REGISTER messages don't include the encapsulated inner packet in the checksum
      */
-#ifdef BROKEN_CISCO_CHECKSUM
-    pim->pim_cksum	= inet_cksum((uint16_t *)pim, sizeof(pim_header_t) + len);
-#else
     if (PIM_REGISTER == type) {
 	pim->pim_cksum	= inet_cksum((uint16_t *)pim, sizeof(pim_header_t) + sizeof(pim_register_t));
     } else {
         pim->pim_cksum	= inet_cksum((uint16_t *)pim, sizeof(pim_header_t) + len);
     }
-#endif /* BROKEN_CISCO_CHECKSUM */
 
     memset(&sin, 0, sizeof(sin));
     sin.sin_family = AF_INET;
