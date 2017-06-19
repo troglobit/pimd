@@ -478,7 +478,7 @@ static void validate_prefix_len(uint32_t *len)
  *                              [scoped <net-addr> masklen <masklen>]
  *
  * Returns:
- * %TRUE if the parsing was successful, o.w. %FALSE
+ * %TRUE(1) if the parsing was successful, o.w. %FALSE(0)
  */
 static int parse_phyint(char *s)
 {
@@ -1388,7 +1388,6 @@ void config_vifs_from_file(void)
     FILE *fp;
     char linebuf[LINE_BUFSIZ];
     char *w, *s;
-    int option;
     uint8_t *data_ptr;
     int error_flag;
 
@@ -1422,16 +1421,14 @@ void config_vifs_from_file(void)
 	    WARN("Line length must be shorter than %d", LINE_BUFSIZ);
 	    error_flag = TRUE;
 	}
-	lineno++;
 
+	lineno++;
 	s = linebuf;
 	w = next_word(&s);
-	option = parse_option(w);
 
-	switch (option) {
+	switch (parse_option(w)) {
 	    case CONF_EMPTY:
 		continue;
-		break;
 
 	    case CONF_PHYINT:
 		parse_phyint(s);
@@ -1484,6 +1481,7 @@ void config_vifs_from_file(void)
 	    default:
 		logit(LOG_WARNING, 0, "%s:%u - Unknown command '%s'", config_file, lineno, w);
 		error_flag = TRUE;
+		break;
 	}
     }
 
