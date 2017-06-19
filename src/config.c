@@ -514,6 +514,8 @@ static int parse_phyint(char *s)
 	    continue;
 
 	while (!EQUAL((w = next_word(&s)), "")) {
+	    char *t;
+
 	    if (EQUAL(w, "disable")) {
 		v->uv_flags |= VIFF_DISABLED;
 		continue;
@@ -553,6 +555,7 @@ static int parse_phyint(char *s)
 		    }
 		}
 
+		t = s;
 		if (EQUAL((w = next_word(&s)), "masklen")) {
 		    if (EQUAL((w = next_word(&s)), "")) {
 			WARN("Missing ALTNET masklen for phyint %s", inet_fmt(local, s1, sizeof (s1)));
@@ -563,6 +566,9 @@ static int parse_phyint(char *s)
 			WARN("Invalid altnet masklen '%s' for phyint %s", w, inet_fmt(local, s1, sizeof(s1)));
 			continue;
 		    }
+		} else {
+		    /* Next token was not "masklen", restore s! */
+		    s = t;
 		}
 
 		ph = (struct phaddr *)calloc(1, sizeof(struct phaddr));
@@ -603,6 +609,7 @@ static int parse_phyint(char *s)
 		    }
 		}
 
+		t = s;
 		if (EQUAL((w = next_word(&s)), "masklen")) {
 		    if (EQUAL((w = next_word(&s)), "")) {
 			WARN("Missing SCOPED masklen for phyint %s", inet_fmt(local, s1, sizeof(s1)));
@@ -612,6 +619,9 @@ static int parse_phyint(char *s)
 			WARN("Invalid scoped masklen '%s' for phyint %s", w, inet_fmt(local, s1, sizeof(s1)));
 			continue;
 		    }
+		} else {
+		    /* Next token was not "masklen", restore s! */
+		    s = t;
 		}
 
 		/* Invalid config. VAL_TO_MASK() also requires len > 0 or shift op will fail. */
