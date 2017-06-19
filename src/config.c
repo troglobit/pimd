@@ -1527,34 +1527,36 @@ static uint32_t ifname2addr(char *s)
 
 static char *next_word(char **s)
 {
+    size_t i = 0;
     char *w;
+    static char token[42];
+
+    memset(token, 0, sizeof(token));
 
     w = *s;
     while (*w == ' ' || *w == '\t')
 	w++;
 
     *s = w;
-    while (**s != 0) {
+    while (**s != 0 && i < sizeof(token)) {
 	switch (**s) {
 	    case ' ':
 	    case '\t':
-		**s = '\0';
 	    (*s)++;
-	    return w;
-
 	    case '\n':
 	    case '#':
-		**s = '\0';
-	    return w;
+	    return token;
 
 	    default:
 		if (isascii((int)**s) && isupper((int)**s))
-		    **s = tolower((int)**s);
+		    token[i++] = tolower((int)**s);
+		else
+		    token[i++] = **s;
 		(*s)++;
 	}
     }
 
-    return w;
+    return token;
 }
 
 /**
