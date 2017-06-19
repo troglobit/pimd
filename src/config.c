@@ -726,7 +726,7 @@ static int parse_phyint(char *s)
  * @s: String token
  *
  * Syntax:
- * rp-candidate [address | ifname] [priority <0-255>] [time <10-16383>]
+ * rp-candidate [address | ifname] [priority <0-255>] [interval <10-16383>]
  *
  * Returns:
  * %TRUE if the parsing was successful, o.w. %FALSE
@@ -761,7 +761,8 @@ int parse_rp_candidate(char *s)
 	    continue;
 	}
 
-	if (EQUAL(w, "time")) {
+	/* 'time' is old syntax, 'interval' new */
+	if (EQUAL(w, "time") || EQUAL(w, "interval")) {
 	    if (EQUAL((w = next_word(&s)), "")) {
 		WARN("Missing Cand-RP announce interval, defaulting to %u", PIM_DEFAULT_CAND_RP_ADV_PERIOD);
 		time = PIM_DEFAULT_CAND_RP_ADV_PERIOD;

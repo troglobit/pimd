@@ -137,7 +137,7 @@ setting to configure static Rendezvous Points.  The first argument can
 be an IPv4 address or a multicast group address.  The default group and
 prefix length is 224.0.0.0/16.  Static RP's always have priority 1.
 
-    rp-candidate [address | ifname] [time <10-16383>] [priority <0-255>]
+    rp-candidate [address | ifname] [interval <10-16383>] [priority <0-255>]
 
 The Rendezvous Point candidate, or CRP, setting is the same as the Cisco
 `ip pim rp-candidate` setting.  Use it to control which interface that
@@ -147,8 +147,8 @@ should be used in RP elections.
      to acquire address from.  The default is to use the highest active
      IP address.
 
-   * `time <10-16383>`: The interval, in seconds, between advertising
-     this CRP. Default: 60 seconds
+   * `interval <10-16383>`: The CRP advertisement interval, in seconds.
+     Default: 60 seconds
 
    * `priority <0-255>`: How important this CRP is compared to others.
      The lower the value here, the more important the CRP.  Like Cisco,
@@ -171,8 +171,8 @@ PIM BSR operation, see [RFC 5059](http://tools.ietf.org/search/rfc5059).
     bsr-candidate [address | ifname] [priority <0-255>]
 
 The configuration of a Candidate BootStrap Router (CBSR) is very similar
-to that of CRP, except for the interval time.  If either the address or
-the interface name is left out pimd uses the highest active IP address.
+to that of CRP, except for the interval.  If either the address or the
+interface name is left out `pimd` uses the highest active IP address.
 If the priority is left out, `pimd` (like Cisco) defaults to priority 0.
 
 To *disable CRP and CBSR* completely in `pimd`, simply comment the two
