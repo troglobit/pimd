@@ -98,9 +98,6 @@ AS_IF([test "x$enable_kernel_mfc" = "xyes"], [
 AS_IF([test "x$enable_memory_save" = "xyes"], [
         AC_DEFINE(SAVE_MEMORY, 1, [Save 4 bytes/unconfigured interface/routing entry.])])
 
-AS_IF([test "x$enable_scoped_acls" = "xyes"], [
-        AC_DEFINE(SCOPED_ACL, 1, [Scoped access control list support in pimd.conf.])])
-
 AS_IF([test "x$enable_rsrr" = "xyes"], [
         AC_DEFINE(RSRR, 1, [Routing Support for Resource Reservation.])])
 

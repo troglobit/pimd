@@ -39,30 +39,27 @@
  *
  * Administrative scoped multicast filtering im PIMD.  This allows an
  * interface to be configured as an administrative boundary for the
- * specified scoped address.  Packets belonging to the scoped address will
- * not be forwarded.
+ * specified scoped address.  Packets belonging to the scoped address
+ * will not be forwarded.
  *
- * Please note the in order to minimize the search for the matching groups
- * the implementation is limited to:
+ * Please note that in order to minimize the search for the matching
+ * groups the implementation is limited to:
  *
- * Packets are stopped from being forwarded by installing a NULL outgoing
- * interface; the user space (pimd) is not up-call-ed any more for
- * these packets which are dropped by kernel (nil oif) except for
- * when we de-install the route are re-create it (timer 3 minute).
- * uses the VIF acl that was installed via config scoped statements.
+ * Packets are stopped from being forwarded by installing a NULL
+ * outgoing interface; the user space (pimd) is not up-call-ed any more
+ * for these packets which are dropped by kernel (nil oif) except for
+ * when we de-install the route are re-create it (timer 3 minute).  uses
+ * the VIF acl that was installed via config scoped statements.
  *
- * this is not an all-purpose packet filtering mechanism.
- * we tried here to achieve the filtering with minimal processing
- * (inspect (g) when we are about to install a route for it).
- *
- * to use it edit pimd.conf and compile with -DSCOPED_ACL
+ * this is not an all-purpose packet filtering mechanism.  we tried here
+ * to achieve the filtering with minimal processing (inspect (g) when we
+ * are about to install a route for it).
  */
 
 static void   process_cache_miss  (struct igmpmsg *igmpctl);
 static void   process_wrong_iif   (struct igmpmsg *igmpctl);
 static void   process_whole_pkt   (char *buf);
 
-#ifdef SCOPED_ACL
 /* from mrouted. Contributed by Marian Stagarescu <marian@bile.cidera.com>*/
 static int scoped_addr(vifi_t vifi, uint32_t addr)
 {
@@ -76,7 +73,8 @@ static int scoped_addr(vifi_t vifi, uint32_t addr)
     return 0;
 }
 
-/* Contributed by Marian Stagarescu <marian@bile.cidera.com>
+/*
+ * Contributed by Marian Stagarescu <marian@bile.cidera.com>
  * adapted from mrouted: check for scoped multicast addresses
  * install null oif if matched
  */
@@ -86,7 +84,6 @@ static int scoped_addr(vifi_t vifi, uint32_t addr)
 	    if (scoped_addr(i, g))              \
 		(mp)->oifs = 0;			\
     }
-#endif  /* SCOPED_ACL */
 
 /* Return the iif for given address */
 vifi_t get_iif(uint32_t address)
@@ -924,9 +921,7 @@ static void process_cache_miss(struct igmpmsg *igmpctl)
 
 	    add_kernel_cache(mrt, mfc_source, group, MFC_MOVE_FORCE);
 
-#ifdef SCOPED_ACL
 	    APPLY_SCOPE(group, mrt);
-#endif
 	    k_chg_mfc(igmp_socket, mfc_source, group, iif, mrt->oifs, rp_addr);
 
 	    /* No need for RSRR message, because nothing has changed. */
@@ -955,12 +950,9 @@ static void process_cache_miss(struct igmpmsg *igmpctl)
 
 		add_kernel_cache(mrp, mfc_source, group, 0);
 
-#ifdef SCOPED_ACL
 		/* marian: not sure if we reach here with our scoped traffic? */
 		APPLY_SCOPE(group, mrt);
-#endif
-		k_chg_mfc(igmp_socket, mfc_source, group, iif,
-			  mrp->oifs, mrt->group->rpaddr);
+		k_chg_mfc(igmp_socket, mfc_source, group, iif, mrp->oifs, mrt->group->rpaddr);
 #ifdef RSRR
 		rsrr_cache_send(mrp, RSRR_NOTIFICATION_OK);
 #endif /* RSRR */
