@@ -136,7 +136,7 @@ static void rsrr_accept(size_t recvlen)
 	case RSRR_INITIAL_QUERY:
 	    /* Send Initial Reply to client */
 	    IF_DEBUG(DEBUG_RSRR) {
-		logit(LOG_DEBUG, 0, "Received Initial Query\n");
+		logit(LOG_DEBUG, 0, "Received Initial Query");
 	    }
 	    rsrr_accept_iq();
 	    break;
@@ -156,8 +156,14 @@ static void rsrr_accept(size_t recvlen)
 		      inet_fmt(route_query->dest_addr, s2, sizeof(s2)),
 		      BIT_TST(rsrr->flags,RSRR_NOTIFICATION_BIT));
 	    }
+
 	    /* Send Route Reply to client */
-	    rsrr_accept_rq(route_query, rsrr->flags, NULL);
+	    if (rsrr_accept_rq(route_query, rsrr->flags, NULL) < 0) {
+		IF_DEBUG(DEBUG_RSRR) {
+		    logit(LOG_DEBUG, 0, "Failed sending route reply to client %s",
+			  inet_fmt(route_query->source_addr, s1, sizeof(s1)));
+		}
+	    }
 	    break;
 
 	default:
@@ -405,7 +411,7 @@ static int rsrr_accept_rq(struct rsrr_rq *route_query, uint8_t flags, struct gta
 #endif /* pimd - mrouted specific code */
     
     IF_DEBUG(DEBUG_RSRR) {
-	logit(LOG_DEBUG, 0, "%sSend RSRR Route Reply for src %s dst %s in vif %d out vif %d\n",
+	logit(LOG_DEBUG, 0, "%sSend RSRR Route Reply for src %s dst %s in vif %d out vif %d",
 	      gt_notify ? "Route Change: " : "",
 	      inet_fmt(route_reply->source_addr, s1, sizeof(s1)),
 	      inet_fmt(route_reply->dest_addr, s2, sizeof(s2)),
@@ -471,7 +477,7 @@ static void rsrr_cache(struct gtable *gt, struct rsrr_rq *route_query)
 		rc->route_query.query_id = route_query->query_id;
 		IF_DEBUG(DEBUG_RSRR) {
 		    logit(LOG_DEBUG, 0,
-			  "Update cached query id %ld from client %s\n",
+			  "Update cached query id %ld from client %s",
 			  rc->route_query.query_id, rc->client_addr.sun_path);
 		}
 	    }
@@ -500,7 +506,7 @@ static void rsrr_cache(struct gtable *gt, struct rsrr_rq *route_query)
     gt->gt_rsrr_cache = rc;
 #endif /* PIM */
     IF_DEBUG(DEBUG_RSRR) {
-	logit(LOG_DEBUG, 0, "Cached query id %ld from client %s\n",
+	logit(LOG_DEBUG, 0, "Cached query id %ld from client %s",
 	      rc->route_query.query_id, rc->client_addr.sun_path);
     }
 }
@@ -527,7 +533,7 @@ void rsrr_cache_send(struct gtable *gt, int notify)
     while ((rc = *rcnp) != NULL) {
 	if (rsrr_accept_rq(&rc->route_query, flags, gt) < 0) {
 	    IF_DEBUG(DEBUG_RSRR) {
-		logit(LOG_DEBUG, 0, "Deleting cached query id %ld from client %s\n",
+		logit(LOG_DEBUG, 0, "Deleting cached query id %ld from client %s",
 		      rc->route_query.query_id,rc->client_addr.sun_path);
 	    }
 	    /* Delete cache entry. */
@@ -595,7 +601,7 @@ void rsrr_cache_bring_up(struct gtable *gt)
 		    if (rsrr_accept_rq(&rc->route_query, flags, gt) < 0) {
 			IF_DEBUG(DEBUG_RSRR) {
 			    logit(LOG_DEBUG, 0,
-				  "Deleting cached query id %ld from client %s\n",
+				  "Deleting cached query id %ld from client %s",
 				  rc->route_query.query_id,
 				  rc->client_addr.sun_path);
 			}
@@ -644,7 +650,7 @@ void rsrr_cache_bring_up(struct gtable *gt)
 		    if (rsrr_accept_rq(&rc->route_query, flags, gt) < 0) {
 			IF_DEBUG(DEBUG_RSRR) {
 			    logit(LOG_DEBUG, 0,
-				  "Deleting cached query id %ld from client %s\n",
+				  "Deleting cached query id %ld from client %s",
 				  rc->route_query.query_id,
 				  rc->client_addr.sun_path);
 			}
@@ -740,7 +746,7 @@ void rsrr_cache_clean(struct gtable *gt)
 	    if (rsrr_accept_rq(&rc->route_query, flags, gt_wide) < 0) {
 		IF_DEBUG(DEBUG_RSRR) {
 		    logit(LOG_DEBUG, 0,
-			  "Deleting cached query id %ld from client %s\n",
+			  "Deleting cached query id %ld from client %s",
 			  rc->route_query.query_id, rc->client_addr.sun_path);
 		}
 		/* Delete cache entry. */
@@ -755,7 +761,7 @@ void rsrr_cache_clean(struct gtable *gt)
     
 #else
     IF_DEBUG(DEBUG_RSRR) {
-        logit(LOG_DEBUG, 0, "cleaning cache for group %s\n",
+        logit(LOG_DEBUG, 0, "cleaning cache for group %s",
 	      inet_fmt(gt->gt_mcastgrp, s1, sizeof(s1)));
     }
     rc = gt->gt_rsrr_cache;
