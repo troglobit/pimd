@@ -123,7 +123,7 @@ int init_routesock(void)
 }
 
 /* get the rpf neighbor info */
-int k_req_incoming(uint32_t source, struct rpfctl *rpfp)
+int k_req_incoming(uint32_t source, struct rpfctl *rpf)
 {
     int rlen, l, flags = RTF_STATIC, retry_count = 3;
     sup su;
@@ -149,14 +149,16 @@ int k_req_incoming(uint32_t source, struct rpfctl *rpfp)
 #endif /* HAVE_SA_LEN */
 
     /* initialize */
-    rpfp->rpfneighbor.s_addr = INADDR_ANY_N;
-    rpfp->source.s_addr = source;
+    rpf->source.s_addr      = source;
+    rpf->rpfneighbor.s_addr = INADDR_ANY_N;
 
-    /* check if local address or directly connected before calling the
+    /*
+     * check if local address or directly connected before calling the
      * routing socket
      */
-    if ((rpfp->iif = find_vif_direct_local(source)) != NO_VIF) {
-	rpfp->rpfneighbor.s_addr = source;
+    rpf->iif = find_vif_direct_local(source);
+    if (rpf->iif != NO_VIF) {
+	rpf->rpfneighbor.s_addr = source;
 	return TRUE;
     }
 
@@ -241,8 +243,8 @@ int k_req_incoming(uint32_t source, struct rpfctl *rpfp)
 
     memset(&rpfinfo, 0, sizeof(rpfinfo));
     if (getmsg(&rtm, l, &rpfinfo)) {
-	rpfp->rpfneighbor.s_addr = rpfinfo.rpfneighbor.s_addr;
-	rpfp->iif = rpfinfo.iif;
+	rpf->rpfneighbor.s_addr = rpfinfo.rpfneighbor.s_addr;
+	rpf->iif = rpfinfo.iif;
     }
 #undef rtm
 
@@ -368,17 +370,17 @@ int init_routesock(void)
 }
 
 /*
- * Return in rpfcinfo the incoming interface and the next hop router
+ * Return in rpf the incoming interface and the next hop router
  * toward source.
  */
 /* TODO: check whether next hop router address is in network or host order */
-int k_req_incoming(uint32_t source, struct rpfctl *rpfcinfo)
+int k_req_incoming(uint32_t source, struct rpfctl *rpf)
 {
-    rpfcinfo->source.s_addr      = source;
-    rpfcinfo->iif                = NO_VIF;     /* Initialize, will be changed in kernel */
-    rpfcinfo->rpfneighbor.s_addr = INADDR_ANY; /* Initialize */
+    rpf->source.s_addr      = source;
+    rpf->iif                = NO_VIF;     /* Initialize, will be changed in kernel */
+    rpf->rpfneighbor.s_addr = INADDR_ANY; /* Initialize */
 
-    if (ioctl(udp_socket, SIOCGETRPF, (char *) rpfcinfo) < 0) {
+    if (ioctl(udp_socket, SIOCGETRPF, (char *)rpf) < 0) {
 	logit(LOG_WARNING, errno, "Failed ioctl SIOCGETRPF in k_req_incoming()");
 	return FALSE;
     }

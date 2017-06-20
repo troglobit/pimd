@@ -108,9 +108,9 @@ int k_req_incoming(uint32_t source, struct rpfctl *rpf)
     struct rtmsg *r = NLMSG_DATA(n);
     struct sockaddr_nl addr;
     
-    rpf->source.s_addr = source;
-    rpf->iif = ALL_VIFS;
-    rpf->rpfneighbor.s_addr = 0;
+    rpf->source.s_addr      = source;
+    rpf->iif                = NO_VIF;     /* Initialize, will be changed in kernel */
+    rpf->rpfneighbor.s_addr = INADDR_ANY; /* Initialize */
     
     n->nlmsg_type = RTM_GETROUTE;
     n->nlmsg_flags = NLM_F_REQUEST;

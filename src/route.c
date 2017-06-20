@@ -94,7 +94,7 @@ vifi_t get_iif(uint32_t address)
     struct rpfctl rpfc;
 
     k_req_incoming(address, &rpfc);
-    if (rpfc.rpfneighbor.s_addr == INADDR_ANY_N)
+    if (rpfc.iif == NO_VIF || rpfc.rpfneighbor.s_addr == INADDR_ANY_N)
 	return NO_VIF;
 
     return rpfc.iif;
@@ -113,9 +113,9 @@ pim_nbr_entry_t *find_pim_nbr(uint32_t source)
 
     if (local_address(source) != NO_VIF)
 	return NULL;
-    k_req_incoming(source, &rpfc);
 
-    if ((rpfc.rpfneighbor.s_addr == INADDR_ANY_N) || (rpfc.iif == NO_VIF))
+    k_req_incoming(source, &rpfc);
+    if (rpfc.iif == NO_VIF || rpfc.rpfneighbor.s_addr == INADDR_ANY_N)
 	return NULL;
 
     /* Figure out the nexthop neighbor by checking the reverse path */
@@ -187,7 +187,7 @@ int set_incoming(srcentry_t *src, int type)
 	/* TODO: probably need to check the case if the iif is disabled */
 	/* Use the lastest resource: the kernel unicast routing table */
 	k_req_incoming(src_addr, &rpfc);
-	if ((rpfc.iif == NO_VIF) || rpfc.rpfneighbor.s_addr == INADDR_ANY_N) {
+	if (rpfc.iif == NO_VIF || rpfc.rpfneighbor.s_addr == INADDR_ANY_N) {
 	    /* couldn't find a route */
 	    if (!IN_LINK_LOCAL_RANGE(src_addr)) {
 		IF_DEBUG(DEBUG_PIM_MRT | DEBUG_RPF)
