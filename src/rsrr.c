@@ -100,8 +100,8 @@ static void rsrr_read(int fd, fd_set *rfd __attribute__ ((unused)))
     ssize_t len;
     
     memset(&client_addr, 0, sizeof(client_addr));
-    while ((len = recvfrom(fd, rsrr_recv_buf, sizeof(rsrr_recv_buf),
-			   0, (struct sockaddr *)&client_addr, &client_length)) < 0) {
+    while ((len = recvfrom(fd, rsrr_recv_buf, RSRR_MAX_LEN, 0,
+			   (struct sockaddr *)&client_addr, &client_length)) < 0) {
 	if (errno == EINTR)
 	    continue;		/* Received signal, retry syscall. */
 
