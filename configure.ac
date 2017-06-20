@@ -75,9 +75,6 @@ AC_ARG_ENABLE(rsrr,
 			currently used by RSVP (EXPERIMENTAL).  For details, see
 			http://tools.ietf.org/html/draft-ietf-rsvp-routing-02]))
 
-AC_ARG_ENABLE(pim_genid,
-        AS_HELP_STRING([--disable-pim-genid], [Disable Generation ID in PIM Hello, RFC3973]))
-
 AC_ARG_ENABLE(exit_on_error,
         AS_HELP_STRING([--disable-exit-on-error], [Do not exit on error messages (LOG_ERR)]))
 
@@ -106,9 +103,6 @@ AS_IF([test "x$enable_scoped_acls" = "xyes"], [
 
 AS_IF([test "x$enable_rsrr" = "xyes"], [
         AC_DEFINE(RSRR, 1, [Routing Support for Resource Reservation.])])
-
-AS_IF([test "x$enable_pim_genid" != "xno"], [
-	AC_DEFINE(ENABLE_PIM_HELLO_GENID, 1, [Enable Generation ID in PIM Hello.])])
 
 AS_IF([test "x$enable_exit_on_error" = "xno"], [
 	AC_DEFINE(CONTINUE_ON_ERROR, 1, [Do not exit on error messages (LOG_ERR).])])

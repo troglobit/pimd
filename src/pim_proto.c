@@ -564,11 +564,9 @@ int send_pim_hello(struct uvif *v, uint16_t holdtime)
     PUT_HOSTSHORT(PIM_HELLO_DR_PRIO_LEN, data);
     PUT_HOSTLONG(v->uv_dr_prio, data);
 
-#ifdef ENABLE_PIM_HELLO_GENID
     PUT_HOSTSHORT(PIM_HELLO_GENID, data);
     PUT_HOSTSHORT(PIM_HELLO_GENID_LEN, data);
     PUT_HOSTLONG(v->uv_genid, data);
-#endif
 
     len = data - (uint8_t *)buf;
     send_pim(pim_send_buf, v->uv_lcl_addr, allpimrouters_group, PIM_HELLO, len);
