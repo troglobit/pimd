@@ -316,8 +316,7 @@ int main(int argc, char *argv[])
 
 	switch (ch) {
 	    case 'f':
-		if (optarg)
-		    config_file = optarg;
+		config_file = optarg;
 		break;
 
 	    case 'd':
