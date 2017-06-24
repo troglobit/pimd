@@ -234,7 +234,7 @@ static int usage(int code)
     printf("Usage: %s [-DhlNnv] [-f FILE] [-d [SYS][,SYS...]] [-s LEVEL]\n\n", prognm);
     printf(" -f, --config=FILE   Configuration file, default uses ident NAME: %s\n", config_file);
     printf(" -n, --foreground    Run in foreground, do not detach from calling terminal\n");
-    printf(" -d SYS              Enable debug for SYS, see below for valid systems\n");
+    printf(" -d SYS[,SYS,SYS..]  Enable debug for SYS, see below for valid systems\n");
     printf(" -l, --loglevel=LVL  Set log level: none, err, info, notice (default), debug\n");
     printf(" -I, --ident=NAME    Identity for config + PID file, and syslog, default: %s\n", ident);
     printf(" -N, --disable-vifs  Disable all virtual interfaces (phyint) by default\n");
