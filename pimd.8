@@ -11,12 +11,12 @@
 .Nd PIM-SM/SSM v2 dynamic multicast routing daemon
 .Sh SYNOPSIS
 .Nm pimd
-.Op Fl fhlNqr
-.Op Fl c Ar FILE
+.Op Fl hNnv
+.Op Fl f Ar FILE
 .Op Fl d Ar [SYS[,SYS,...]
 .Op Fl I Ar NAME
 .Op Fl P Ar FILE
-.Op Fl s Ar LEVEL
+.Op Fl l Ar LEVEL
 .Op Fl t Ar ID
 .Sh DESCRIPTION
 .Nm
@@ -56,7 +56,7 @@ options starting with two dashes (`-').  The options are as follows:
 .Bl -tag -width Ds
 .It Fl h, -help
 Print a help message and exit.
-.It Fl c, -config=FILE
+.It Fl f, -config=FILE
 Specify an alternative configuration file, the default
 .Pa /etc/pimd.conf ,
 is derived from
@@ -70,14 +70,14 @@ defaults, which include enabling both
 .Cm bsr-candidate
 and
 .Cm rp-candidate .
-.It Fl d, -debug[=SYS[,SYS...]
+.It Fl d Ar SYS[,SYS...]
 By default,
 .Nm
 daemonizes itself by detaching from the invoking terminal and forking to
 the background.  However, if
-.Fl d, -debug
+.Fl d
 or
-.Fl f, -foreground
+.Fl n, -foreground
 is specified,
 .Nm
 runs in the foreground of the starting terminal.  If
@@ -126,7 +126,7 @@ Detailed PIM debug
 .It Cm pim_hello
 Debug hello messages to/from neighbors
 .El
-.It Fl f, -foreground
+.It Fl n, -foreground
 Run in the foreground, do not detach from calling terminal and do not
 fork to background.  Useful not only when debugging (above) but also
 when running under a process monitor like daemontools, runit, finit, or
@@ -144,12 +144,6 @@ or
 .Pa /run/pimd.pid
 and
 .Pa /etc/pimd.conf .
-.It Fl l, -reload-config
-Tell a running pimd to reload its configuration.  This is done by sending
-a SIGHUP to the PID listed in
-.Pa /var/run/pimd.pid .
-Depending on the capabilities of your user, you may need to be root to
-do this.
 .It Fl N, -disable-vifs
 This prevents
 .Nm
@@ -164,22 +158,7 @@ Set PID file name and location, defaults to
 derived from
 .Fl -ident=NAME ,
 which is strongly recommended to change over this option.
-.It Fl q, -quit-daemon
-Tell a running
-.Nm
-to quit.  Similar to
-.Fl l, -reload-config
-but this command sends SIGTERM.  Depending on the capabilities of your
-user, you may need to be root to do this.
-.It Fl r, -show-routes
-Show state of VIFs and multicast routing tables. This is command sends
-SIGUSR1 to a running
-.Nm ,
-similar to
-.Fl l -reload-config.
-Depending on the capabilities of your user, you may need to be root to
-do this.
-.It Fl s, -loglevel=LEVEL
+.It Fl l, -loglevel=LEVEL
 Set log level to one of the following, default
 .Nm notice :
 .Pp
@@ -522,20 +501,17 @@ responds to the following signals:
 .Pp
 .Bl -tag -width TERM -compact
 .It HUP
-Restarts
-.Nm .
-The configuration file is reread every time this signal is evoked.
+Restart
+.Nm
+and reload configuration file
 .It TERM
-Terminates execution gracefully (i.e. by sending good-bye messages to all neighboring
-routers).
+Terminate execution gracefully, i.e. by sending good-bye messages to neighboring
+routers
 .It INT
-The same as TERM.
+The same as TERM
 .It USR1
-Dumps the internal state of VIFs and multicast routing tables to
+Dumps internal state of VIFs and multicast routing tables to
 .Pa /var/run/pimd/pimd.dump .
-See also the
-.Fl r, -show-routes
-option above.
 .\" Not implemented yet, still TODO
 .\" .It USR2
 .\" Dumps the internal cache tables to
@@ -573,10 +549,11 @@ the new GitHub project, are an attempt to gather as much info as
 possible.
 .Sh AUTHORS
 .Nm
-was written by Ahmed Helmy, George Edmond "Rusty" Eddy, and Pavlin
-Ivanov Radoslavov.  PIM-SSM, including full IGMPv3 support, added by
-Markus Veranen.  With contributions by many others.
+was originally written by Ahmed Helmy, George Edmond "Rusty" Eddy, and
+Pavlin Ivanov Radoslavov.  PIM-SSM, including full IGMPv3 support, was
+added by Markus Veranen.  With contributions by many others.
 .Pp
 This manual page was initially written by Antonín Král for the Debian
-GNU/Linux system, and then updated by Joachim Nilsson for the GitHub
-pimd project.
+GNU/Linux system.  Later on by Joachim Nilsson for the GitHub
+.Nm
+project.
