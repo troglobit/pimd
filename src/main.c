@@ -235,7 +235,7 @@ static int usage(int code)
     printf(" -f, --config=FILE   Configuration file, default uses ident NAME: %s\n", config_file);
     printf(" -n, --foreground    Run in foreground, do not detach from calling terminal\n");
     printf(" -d SYS              Enable debug for SYS, see below for valid systems\n");
-    printf(" -s, --loglevel=LVL  Set log level: none, err, info, notice (default), debug\n");
+    printf(" -l, --loglevel=LVL  Set log level: none, err, info, notice (default), debug\n");
     printf(" -I, --ident=NAME    Identity for config + PID file, and syslog, default: %s\n", ident);
     printf(" -N, --disable-vifs  Disable all virtual interfaces (phyint) by default\n");
     printf(" -P, --pidfile=FILE  File to store process ID for signaling %s\n"
@@ -301,7 +301,7 @@ int main(int argc, char *argv[])
 	{ "foreground",    0, 0, 'n' },
 	{ "help",          0, 0, 'h' },
 	{ "ident",         1, 0, 'I' },
-	{ "loglevel",      1, 0, 's' },
+	{ "loglevel",      1, 0, 'l' },
 	{ "pidfile",       1, 0, 'P' },
 	{ "table-id",      1, 0, 't' },
 	{ "version",       0, 0, 'v' },
@@ -311,7 +311,7 @@ int main(int argc, char *argv[])
     snprintf(versionstring, sizeof (versionstring), "pimd version %s", PACKAGE_VERSION);
 
     prognm = ident = progname(argv[0]);
-    while ((ch = getopt_long(argc, argv, "d:f:hI:lNnP:qrs:t:v", long_options, NULL)) != EOF) {
+    while ((ch = getopt_long(argc, argv, "d:f:hI:l:NnP:qrt:v", long_options, NULL)) != EOF) {
 	const char *errstr;
 
 	switch (ch) {
@@ -361,7 +361,7 @@ int main(int argc, char *argv[])
 		do_vifs = 0;
 		break;
 
-	    case 's':
+	    case 'l':
 		loglevel = loglvl(optarg);
 		if (-1 == loglevel)
 		    return usage(1);
