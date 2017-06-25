@@ -240,6 +240,7 @@ static int usage(int code)
     printf(" -N, --disable-vifs  Disable all virtual interfaces (phyint) by default\n");
     printf(" -P, --pidfile=FILE  File to store process ID for signaling %s\n"
 	   "                     Default uses ident NAME: %s\n", prognm, pidfn);
+    printf(" -s, --syslog        Use syslog, default unless running in foreground, -n\n");
     printf(" -t, --table-id=ID   Set multicast routing table ID.  Allowed table ID#:\n"
 	   "                      0 .. 999999999.  Default: 0 (use default table)\n");
     printf(" -h, --help          Show this help text\n");
@@ -290,7 +291,7 @@ static char *progname(char *arg0)
 
 int main(int argc, char *argv[])
 {
-    int dummysigalrm, foreground = 0;
+    int dummysigalrm, foreground = 0, do_syslog = 1;
     struct timeval tv, difftime, curtime, lasttime, *timeout;
     fd_set rfds, readers;
     int nfds, n, i, secs, ch;
@@ -303,6 +304,7 @@ int main(int argc, char *argv[])
 	{ "ident",         1, 0, 'I' },
 	{ "loglevel",      1, 0, 'l' },
 	{ "pidfile",       1, 0, 'P' },
+	{ "syslog",        0, 0, 's' },
 	{ "table-id",      1, 0, 't' },
 	{ "version",       0, 0, 'v' },
 	{ NULL, 0, 0, 0 }
@@ -311,7 +313,7 @@ int main(int argc, char *argv[])
     snprintf(versionstring, sizeof (versionstring), "pimd version %s", PACKAGE_VERSION);
 
     prognm = ident = progname(argv[0]);
-    while ((ch = getopt_long(argc, argv, "d:f:hI:l:nNP:t:v", long_options, NULL)) != EOF) {
+    while ((ch = getopt_long(argc, argv, "d:f:hI:l:nNP:st:v", long_options, NULL)) != EOF) {
 	const char *errstr;
 
 	switch (ch) {
@@ -361,6 +363,7 @@ int main(int argc, char *argv[])
 		break;
 
 	    case 'n':
+		do_syslog--;
 		foreground = 1;
 		break;
 
@@ -370,6 +373,10 @@ int main(int argc, char *argv[])
 
 	    case 'P':	/* --pidfile=NAME */
 		pid_file = strdup(optarg);
+		break;
+
+	    case 's':
+		do_syslog++;
 		break;
 
 	    case 't':
@@ -457,7 +464,7 @@ int main(int argc, char *argv[])
     /*
      * Setup logging
      */
-    log_init(haveterminal);
+    log_init(haveterminal && do_syslog > 0);
     logit(LOG_NOTICE, 0, "%s starting ...", versionstring);
 
     do_randomize();
