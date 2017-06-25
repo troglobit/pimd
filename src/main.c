@@ -457,13 +457,7 @@ int main(int argc, char *argv[])
     /*
      * Setup logging
      */
-#ifdef LOG_DAEMON
-    openlog(ident, LOG_PID, LOG_DAEMON);
-    setlogmask(LOG_UPTO(loglevel));
-#else
-    openlog(ident, LOG_PID);
-#endif /* LOG_DAEMON */
-
+    log_init(haveterminal);
     logit(LOG_NOTICE, 0, "%s starting ...", versionstring);
 
     do_randomize();

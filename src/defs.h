@@ -465,6 +465,7 @@ extern void	config_vifs_from_file	(void);
 /* debug.c */
 extern char	*packet_kind		(int proto, int type, int code);
 extern int	debug_kind		(int proto, int type, int code);
+extern void	log_init		(int log_stdout);
 extern void	logit			(int, int, const char *, ...);
 extern void	dump_frame		(char *desc, void *dump, size_t len);
 extern int	log_level		(int proto, int type, int code);

@@ -388,6 +388,23 @@ void dump_vifs(FILE *fp)
     fprintf(fp, "\n\n");
 }
 
+void log_init(int log_stdout)
+{
+    int log_opts = LOG_PID;
+
+#ifdef LOG_PERROR
+    if (log_stdout)
+	log_opts |= LOG_PERROR;
+#endif
+
+#ifdef LOG_DAEMON
+    openlog(ident, log_opts, LOG_DAEMON);
+    setlogmask(LOG_UPTO(loglevel));
+#else
+    openlog(ident, log_opts);
+#endif
+}
+
 int loglvl(char *level)
 {
     int i;
