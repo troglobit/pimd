@@ -311,14 +311,10 @@ int main(int argc, char *argv[])
     snprintf(versionstring, sizeof (versionstring), "pimd version %s", PACKAGE_VERSION);
 
     prognm = ident = progname(argv[0]);
-    while ((ch = getopt_long(argc, argv, "d:f:hI:l:NnP:qrt:v", long_options, NULL)) != EOF) {
+    while ((ch = getopt_long(argc, argv, "d:f:hI:l:nNP:t:v", long_options, NULL)) != EOF) {
 	const char *errstr;
 
 	switch (ch) {
-	    case 'f':
-		config_file = optarg;
-		break;
-
 	    case 'd':
 		{
 		    char *p,*q;
@@ -326,7 +322,8 @@ int main(int argc, char *argv[])
 		    struct debugname *d;
 
 		    debug = 0;
-		    p = optarg; q = NULL;
+		    p = optarg;
+		    q = NULL;
 		    while (p) {
 			q = strchr(p, ',');
 			if (q)
@@ -346,8 +343,8 @@ int main(int argc, char *argv[])
 		}
 		break;
 
-	    case 'n':
-		foreground = 1;
+	    case 'f':
+		config_file = optarg;
 		break;
 
 	    case 'h':
@@ -357,14 +354,22 @@ int main(int argc, char *argv[])
 		ident = optarg;
 		break;
 
-	    case 'N':
-		do_vifs = 0;
-		break;
-
 	    case 'l':
 		loglevel = loglvl(optarg);
 		if (-1 == loglevel)
 		    return usage(1);
+		break;
+
+	    case 'n':
+		foreground = 1;
+		break;
+
+	    case 'N':
+		do_vifs = 0;
+		break;
+
+	    case 'P':	/* --pidfile=NAME */
+		pid_file = strdup(optarg);
 		break;
 
 	    case 't':
@@ -373,10 +378,6 @@ int main(int argc, char *argv[])
 		    fprintf(stderr, "Table ID %s!\n", errstr);
 		    return usage(1);
 		}
-		break;
-
-	    case 'P':	/* --pidfile=NAME */
-		pid_file = strdup(optarg);
 		break;
 
 	    case 'v':
