@@ -1,6 +1,6 @@
 README
 ======
-[![Travis Status][]][Travis] [![Coverity Status][]][Coverity Scan]
+[![License Badge][]][License] [![Travis Status][]][Travis] [![Coverity Status][]][Coverity Scan]
 
 Table of Contents
 -----------------
@@ -20,8 +20,8 @@ Introduction
 ------------
 
 pimd is a lightweight, stand-alone PIM-SM/SSM multicast routing daemon
-available under the free [3-clause BSD license][BSD license].  This is
-the restored original version from University of Southern California, by
+available under the free [3-clause BSD license][License].  This is the
+restored original version from University of Southern California, by
 Ahmed Helmy, Rusty Eddy and Pavlin Ivanov Radoslavov.
 
 Today pimd is maintained at [GitHub][].  Use its facilities to access
@@ -282,7 +282,8 @@ check out the code from GitHub:
 See the file [CONTRIBUTING.md][contrib] for further details.
 
 
-[BSD license]:     https://en.wikipedia.org/wiki/BSD_licenses
+[License]:         https://en.wikipedia.org/wiki/BSD_licenses
+[License Badge]:   https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
 [github]:          http://github.com/troglobit/pimd
 [homepage]:        http://troglobit.com/pimd.html
 [ChangeLog]:       https://github.com/troglobit/pimd/blob/master/ChangeLog.org
