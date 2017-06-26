@@ -218,7 +218,7 @@ mrtentry_t *find_route(uint32_t source, uint32_t group, uint16_t flags, char cre
 		   has been disabled for SSM also in PIM protocol.
 		   The address does not need to be really configured in any interface.
 		   TODO: Avoid need for virtual RP by implementing SSM-specific state structures */
-		add_rp_grp_entry(&cand_rp_list, &grp_mask_list, 0x0100fea9, 20, 90, group,
+		add_rp_grp_entry(&cand_rp_list, &grp_mask_list, htonl(0xa9fe0001), 20, 90, group,
 				 0xffffffff, curr_bsr_hash_mask, curr_bsr_fragment_tag);
 	    }
 	}
