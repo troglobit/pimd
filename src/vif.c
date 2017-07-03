@@ -399,7 +399,7 @@ static void stop_vif(vifi_t vifi)
 
 	    while (a->al_sources) {
 		b = a->al_sources;
-		a->al_sources = a->al_next;
+		a->al_sources = b->al_next;
 		free(b);
 	    }
 
