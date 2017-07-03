@@ -119,7 +119,8 @@ static void build_iflist(void)
     while ((line = fgets(buf, sizeof(buf), fp))) {
 	int enabled = do_vifs;
 	uint32_t addr = 0;
-	char *token, *ifname = NULL;
+	char *token;
+	char ifname[IFNAMSIZ + 1] = "";
 	struct iflist *entry;
 
 	switch (parse_option(next_word(&line))) {
@@ -138,7 +139,7 @@ static void build_iflist(void)
 	if (isdigit(token[0]))
 	    addr = inet_parse(token, 4);
 	else
-	    ifname = token;
+	    strlcpy(ifname, token, sizeof(ifname));
 
 	while (!EQUAL((token = next_word(&line)), "")) {
 	    if (EQUAL(token, "disable")) {
@@ -160,7 +161,7 @@ static void build_iflist(void)
 	}
 
 	entry->enabled = enabled;
-	if (ifname)
+	if (*ifname)
 	    strlcpy(entry->ifname, ifname, sizeof(entry->ifname));
 	else
 	    entry->addr = addr;
