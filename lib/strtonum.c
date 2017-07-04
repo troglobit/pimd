@@ -21,7 +21,6 @@
 #include <limits.h>
 #include <stdlib.h>
 
-#ifndef strtonum
 #define	INVALID		1
 #define	TOOSMALL	2
 #define	TOOLARGE	3
@@ -64,4 +63,3 @@ strtonum(const char *numstr, long long minval, long long maxval,
 
 	return (ll);
 }
-#endif

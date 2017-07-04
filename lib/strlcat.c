@@ -19,7 +19,6 @@
 #include <sys/types.h>
 #include <string.h>
 
-#ifndef strlcat
 /*
  * Appends src to string dst of size dsize (unlike strncat, dsize is the
  * full size of dst, not space left).  At most dsize-1 characters
@@ -54,4 +53,3 @@ strlcat(char *dst, const char *src, size_t dsize)
 
 	return(dlen + (src - osrc));	/* count does not include NUL */
 }
-#endif
