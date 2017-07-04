@@ -409,7 +409,7 @@ void accept_group_report(uint32_t igmp_src, uint32_t ssm_src, uint32_t group, in
 
 	/** set a timer for expiration **/
 	g->al_query     = 0;
-	g->al_timer     = IGMP_GROUP_MEMBERSHIP_INTERVAL;
+	g->al_timer     = igmp_group_membership_timeout();
 	g->al_reporter  = igmp_src;
 	g->al_timerid   = SetTimer(vifi, g, ssm_src);
 
