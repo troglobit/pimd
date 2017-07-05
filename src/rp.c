@@ -414,7 +414,7 @@ rp_grp_entry_t *add_rp_grp_entry(cand_rp_t  **used_cand_rp_list,
     entry_new->grplink = NULL;
 
     /* If I am BSR candidate and rp_addr is NOT hacked SSM address, then log it */
-    if( cand_bsr_flag && rp_addr != 0x0100fea9 ) {
+    if (cand_bsr_flag && rp_addr != ntohl(0xa9fe0001)) {
 	uint32_t mask;
 	MASK_TO_MASKLEN(group_mask, mask);
 	logit(LOG_INFO, 0, "New RP candidate %s for group %s/%d, priority %d",
