@@ -111,7 +111,7 @@ static int build_iflist(void)
 {
     FILE *fp;
     char buf[LINE_BUFSIZ], *line;
-	int count=0;
+    int count = 0;
 
     fp = fopen(config_file, "r");
     if (!fp)
@@ -249,34 +249,36 @@ init_vif_list:
 	    return;
     }
 
-    for (count=0,ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
+    for (count = 0, ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
 	LIST_FOREACH(entry, &il, link) {
 	    if (((ifa->ifa_flags & IFF_UP) != IFF_UP) || strcmp(entry->ifname,ifa->ifa_name))
-			continue;
+		continue;
 
 	    if (ifa->ifa_addr && ifa->ifa_netmask && ifa->ifa_addr->sa_family == AF_INET) {
-			memcpy(&ifap[count],ifa,sizeof(struct ifaddrs));
-			ifap[count].ifa_next=NULL;
-			if (count >0)
-				ifap[count-1].ifa_next = &ifap[count];
-			count++;
-			if (count > phyint_num) {
-				logit(LOG_ERR, 0, "find more interface than configured");
-			}
+		memcpy(&ifap[count], ifa, sizeof(struct ifaddrs));
+		ifap[count].ifa_next = NULL;
+
+		if (count >0)
+		    ifap[count-1].ifa_next = &ifap[count];
+
+		count++;
+		if (count > phyint_num)
+		    logit(LOG_ERR, 0, "find more interface than configured");
 	    }
 	}
     }
 
-	IF_DEBUG(1) { 
-		logit(LOG_INFO, 0, "------------------ %s dump new list ----------", __func__);
-		int i;
-		for(i=0;i<count;i++) {
-			addr  = ((struct sockaddr_in *)ifap[i].ifa_addr)->sin_addr.s_addr;
-			logit(LOG_INFO, 0, "%s: IP %s ifap[%d]: addr %p next %p", ifap[i].ifa_name,
-					inet_fmt(addr, s1, sizeof(s1)),
-					i, &ifap[i], ifap[i].ifa_next);
-		}
+    IF_DEBUG(DEBUG_IF) {
+	int i;
+
+	logit(LOG_INFO, 0, "------------------ %s dump new list ----------", __func__);
+	for (i = 0; i < count; i++) {
+	    addr = ((struct sockaddr_in *)ifap[i].ifa_addr)->sin_addr.s_addr;
+	    logit(LOG_INFO, 0, "%s: IP %s ifap[%d]: addr %p next %p", ifap[i].ifa_name,
+		  inet_fmt(addr, s1, sizeof(s1)),
+		  i, &ifap[i], ifap[i].ifa_next);
 	}
+    }
 
     freeifaddrs(ifaddr);
     if (!do_vifs && count < phyint_num) {
@@ -435,7 +437,7 @@ init_vif_list:
 	}
     }
 
-	free(ifap);
+    free(ifap);
     tear_iflist();
 }
 
