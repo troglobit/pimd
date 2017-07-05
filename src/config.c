@@ -107,14 +107,15 @@ extern struct rp_hold *g_rp_hold;
 /*
  * Populate interface list with interfaces from pimd.conf
  */
-static void build_iflist(void)
+static int build_iflist(void)
 {
     FILE *fp;
     char buf[LINE_BUFSIZ], *line;
+	int count=0;
 
     fp = fopen(config_file, "r");
     if (!fp)
-	return;
+	return 0;
 
     while ((line = fgets(buf, sizeof(buf), fp))) {
 	int enabled = do_vifs;
@@ -157,7 +158,7 @@ static void build_iflist(void)
 	if (!entry) {
 	    logit(LOG_ERR, errno, "Failed allocating memory for iflist");
 	    fclose(fp);
-	    return;
+	    return 0;
 	}
 
 	entry->enabled = enabled;
@@ -165,10 +166,12 @@ static void build_iflist(void)
 	    strlcpy(entry->ifname, ifname, sizeof(entry->ifname));
 	else
 	    entry->addr = addr;
+	count++;
 	LIST_INSERT_HEAD(&il, entry, link);
     }
 
     fclose(fp);
+    return count;
 }
 
 /*
@@ -225,21 +228,67 @@ void config_vifs_from_kernel(void)
     struct uvif *v;
     vifi_t vifi;
     uint32_t addr, mask, subnet;
-    struct ifaddrs *ifaddr, *ifa;
+    struct ifaddrs *ifaddr, *ifa,*ifap;
+    int phyint_num;
+    int count;
+    struct iflist *entry;
 
     /* Query config first for list of enabled interfaces */
-    build_iflist();
+    phyint_num = build_iflist();
 
+init_vif_list:
     total_interfaces = 0; /* The total number of physical interfaces */
     if (getifaddrs(&ifaddr) == -1) {
 	logit(LOG_ERR, errno, "Failed retrieving interface addresses");
 	return;
     }
 
+    ifap = calloc(phyint_num, (sizeof(struct ifaddrs)));
+    if (!ifap) {
+	    logit(LOG_ERR, 0, "%s[%d]: Allocation error", __func__, __LINE__);
+	    return;
+    }
+
+    for (count=0,ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
+	LIST_FOREACH(entry, &il, link) {
+	    if (((ifa->ifa_flags & IFF_UP) != IFF_UP) || strcmp(entry->ifname,ifa->ifa_name))
+			continue;
+
+	    if (ifa->ifa_addr && ifa->ifa_netmask && ifa->ifa_addr->sa_family == AF_INET) {
+			memcpy(&ifap[count],ifa,sizeof(struct ifaddrs));
+			ifap[count].ifa_next=NULL;
+			if (count >0)
+				ifap[count-1].ifa_next = &ifap[count];
+			count++;
+			if (count > phyint_num) {
+				logit(LOG_ERR, 0, "find more interface than configured");
+			}
+	    }
+	}
+    }
+
+	IF_DEBUG(1) { 
+		logit(LOG_INFO, 0, "------------------ %s dump new list ----------", __func__);
+		int i;
+		for(i=0;i<count;i++) {
+			addr  = ((struct sockaddr_in *)ifap[i].ifa_addr)->sin_addr.s_addr;
+			logit(LOG_INFO, 0, "%s: IP %s ifap[%d]: addr %p next %p", ifap[i].ifa_name,
+					inet_fmt(addr, s1, sizeof(s1)),
+					i, &ifap[i], ifap[i].ifa_next);
+		}
+	}
+
+    freeifaddrs(ifaddr);
+    if (!do_vifs && count < phyint_num) {
+	    free(ifap);
+	    usleep(100000);
+	    goto init_vif_list;
+    }
+
     /*
      * Loop through all of the interfaces.
      */
-    for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
+    for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
 	short flags;
 
 	/*
@@ -386,7 +435,7 @@ void config_vifs_from_kernel(void)
 	}
     }
 
-    freeifaddrs(ifaddr);
+	free(ifap);
     tear_iflist();
 }
 
