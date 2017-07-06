@@ -660,10 +660,7 @@ static void dump_rpgrp(FILE *fp, rp_grp_entry_t *rpgrp, int indent)
 {
     grp_mask_t *grp = rpgrp->group;
 
-    if (indent)
-	fprintf(fp, "                           ");
-
-    fprintf(fp, "%-18.18s  %-8u  %-8u\n",
+    fprintf(fp, "                           %-18.18s  %-8u  %-8u\n",
 	    netname(grp->group_addr, grp->group_mask),
 	    rpgrp->priority, rpgrp->holdtime);
 }
@@ -680,17 +677,13 @@ int dump_rp_set(FILE *fp)
     fprintf(fp, "RP address       Incoming  Group Prefix        Priority  Holdtime\n");
     fprintf(fp, "---------------  --------  ------------------  --------  ---------------------\n");
     for (rp = cand_rp_list; rp; rp = rp->next) {
-	fprintf(fp, "%-15s  %-8d  ",
+	fprintf(fp, "%-15s  %-8d                                %-8u\n",
 		inet_fmt(rp->rpentry->address, s1, sizeof(s1)),
-		rp->rpentry->incoming);
+		rp->rpentry->incoming,
+		rp->rpentry->adv_holdtime);
 
-	rpgrp = rp->rp_grp_next;
-	if (rpgrp) {
-	    dump_rpgrp(fp, rpgrp, 0);
-
-	    for (rpgrp = rpgrp->rp_grp_next; rpgrp; rpgrp = rpgrp->rp_grp_next)
+	for (rpgrp = rp->rp_grp_next; rpgrp; rpgrp = rpgrp->rp_grp_next)
 		dump_rpgrp(fp, rpgrp, 1);
-	}
     }
 
     fprintf(fp, "------------------------------------------------------------------------------\n");

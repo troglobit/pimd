@@ -131,6 +131,7 @@ typedef struct srcentry {
     uint32_t		  metric;	/* Unicast Routing Metric to the source */
     uint32_t		  preference;	/* The metric preference (for assers)*/
     struct cand_rp	 *cand_rp;	/* Used if this is rpentry_t	    */
+    uint16_t		 adv_holdtime;	/* rpentry_t: RP advertized holdtime*/
 } srcentry_t;
 typedef srcentry_t rpentry_t;
 
