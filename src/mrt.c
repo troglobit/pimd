@@ -75,7 +75,6 @@ void init_pim_mrt(void)
     srclist->upstream   = NULL;
     srclist->metric     = 0;
     srclist->preference = 0;
-    RESET_TIMER(srclist->timer);
     srclist->cand_rp    = NULL;
 
     /* Initialize the group list */
@@ -613,7 +612,6 @@ static srcentry_t *create_srcentry(uint32_t source)
 	return NULL;
     }
 
-    RESET_TIMER(node->timer);
     node->mrtlink = NULL;
     node->cand_rp = NULL;
     node->next	  = prev->next;

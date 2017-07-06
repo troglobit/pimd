@@ -218,7 +218,6 @@ static cand_rp_t *add_cand_rp(cand_rp_t **used_cand_rp_list, uint32_t address)
     /* TODO: setup the metric and the preference as ~0 (the lowest)? */
     entry->metric = ~0;
     entry->preference = ~0;
-    RESET_TIMER(entry->timer);
     entry->cand_rp = ptr;
 
     /* TODO: XXX: check whether there is a route to that RP: if return value
@@ -298,7 +297,6 @@ rp_grp_entry_t *add_rp_grp_entry(cand_rp_t  **used_cand_rp_list,
 {
     cand_rp_t *cand_rp_ptr;
     grp_mask_t *mask_ptr;
-    rpentry_t *rpentry_ptr;
     rp_grp_entry_t *entry_next;
     rp_grp_entry_t *entry_new;
     rp_grp_entry_t *entry_prev = NULL;
@@ -340,8 +338,6 @@ rp_grp_entry_t *add_rp_grp_entry(cand_rp_t  **used_cand_rp_list,
 	return NULL;
     }
 
-    rpentry_ptr = cand_rp_ptr->rpentry;
-    SET_TIMER(rpentry_ptr->timer, rp_holdtime);
     rp_addr_h = ntohl(rp_addr);
     mask_ptr->fragment_tag = fragment_tag;   /* For garbage collection */
 
@@ -414,7 +410,7 @@ rp_grp_entry_t *add_rp_grp_entry(cand_rp_t  **used_cand_rp_list,
     entry_new->grplink = NULL;
 
     /* If I am BSR candidate and rp_addr is NOT hacked SSM address, then log it */
-    if( cand_bsr_flag && rp_addr != 0x0100fea9 ) {
+    if (cand_bsr_flag && rp_addr != ntohl(0xa9fe0001)) {
 	uint32_t mask;
 	MASK_TO_MASKLEN(group_mask, mask);
 	logit(LOG_INFO, 0, "New RP candidate %s for group %s/%d, priority %d",
