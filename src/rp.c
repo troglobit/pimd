@@ -339,6 +339,7 @@ rp_grp_entry_t *add_rp_grp_entry(cand_rp_t  **used_cand_rp_list,
 			    group_addr, group_mask);
 	return NULL;
     }
+    cand_rp_ptr->rpentry->adv_holdtime = rp_holdtime;
 
     rpentry_ptr = cand_rp_ptr->rpentry;
     SET_TIMER(rpentry_ptr->timer, rp_holdtime);
@@ -854,6 +855,7 @@ int create_pim_bootstrap_message(char *send_buff)
     rp_grp_entry_t *entry_ptr;
     int datalen;
     uint8_t masklen;
+    uint16_t holdtime;
 
     if (curr_bsr_address == INADDR_ANY_N)
 	return 0;
@@ -880,8 +882,12 @@ int create_pim_bootstrap_message(char *send_buff)
 	PUT_HOSTSHORT(0, data_ptr);
 
 	for (entry_ptr = mask_ptr->grp_rp_next; entry_ptr; entry_ptr = entry_ptr->grp_rp_next) {
+	    holdtime = entry_ptr->rp->rpentry->adv_holdtime;
+	    /* Is holdtime in MUST BE interval? (RFC5059 section 3.3) */
+	    if (holdtime != 0 && holdtime <= PIM_BOOTSTRAP_PERIOD)
+	    	holdtime = PIM_BOOTSTRAP_TIMEOUT; /* no, set to the SHOULD BE value */
 	    PUT_EUADDR(entry_ptr->rp->rpentry->address, data_ptr);
-	    PUT_HOSTSHORT(entry_ptr->holdtime, data_ptr);
+	    PUT_HOSTSHORT(holdtime, data_ptr);
 	    PUT_BYTE(entry_ptr->priority, data_ptr);
 	    PUT_BYTE(0, data_ptr);  /* The reserved field */
 	}
