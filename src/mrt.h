@@ -130,7 +130,6 @@ typedef struct srcentry {
     struct pim_nbr_entry *upstream;	/* upstream router		    */
     uint32_t		  metric;	/* Unicast Routing Metric to the source */
     uint32_t		  preference;	/* The metric preference (for assers)*/
-    uint16_t		  timer;	/* Entry timer??? Delete?	    */
     struct cand_rp	 *cand_rp;	/* Used if this is rpentry_t	    */
 } srcentry_t;
 typedef srcentry_t rpentry_t;

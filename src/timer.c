@@ -88,7 +88,6 @@ void init_timers(void)
     srcentry_save.upstream   = NULL;
     srcentry_save.metric     = ~0;
     srcentry_save.preference = ~0;
-    RESET_TIMER(srcentry_save.timer);
     srcentry_save.cand_rp    = NULL;
 
     rpentry_save.prev       = NULL;
@@ -99,7 +98,6 @@ void init_timers(void)
     rpentry_save.upstream   = NULL;
     rpentry_save.metric     = ~0;
     rpentry_save.preference = ~0;
-    RESET_TIMER(rpentry_save.timer);
     rpentry_save.cand_rp    = NULL;
 }
 
