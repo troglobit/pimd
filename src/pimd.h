@@ -70,10 +70,8 @@
 #define PIM_DEFAULT_CAND_RP_ADV_PERIOD   60
 #define PIM_MAX_CAND_RP_ADV_PERIOD       16383
 
-/* TODO: 60 is the original value. Temporarily set to 30 for debugging.
-#define PIM_BOOTSTRAP_PERIOD             60 */
+#define PIM_BOOTSTRAP_PERIOD             60
 #define PIM_BOOTSTRAP_PERIOD             30
-
 #define PIM_BOOTSTRAP_TIMEOUT	       (2.5 * PIM_BOOTSTRAP_PERIOD + 10)
 #define PIM_TIMER_HELLO_HOLDTIME       (3.5 * PIM_TIMER_HELLO_INTERVAL)
 #define PIM_ASSERT_TIMEOUT              180
