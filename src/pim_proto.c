@@ -3310,7 +3310,7 @@ int receive_pim_bootstrap(uint32_t src, uint32_t dst, char *msg, size_t len)
     curr_bsr_priority     = new_bsr_priority;
     curr_bsr_fragment_tag = new_bsr_fragment_tag;
     MASKLEN_TO_MASK(new_bsr_hash_masklen, curr_bsr_hash_mask);
-    SET_TIMER(pim_bootstrap_timer, PIM_BOOTSTRAP_TIMEOUT);
+    SET_TIMER(pim_bootstrap_timer, my_bsr_timeout);
 
     while (data + min_datalen <= max_data) {
 	GET_EGADDR(&curr_group_addr, data);
@@ -3508,8 +3508,8 @@ int receive_pim_cand_rp_adv(uint32_t src, uint32_t dst __attribute__((unused)), 
     GET_HOSTSHORT(holdtime, data_ptr);
     GET_EUADDR(&euaddr, data_ptr);
     /* Is holdtime in MUST BE interval? (RFC5059 section 3.3) */
-    if (holdtime != 0 && holdtime <= PIM_BOOTSTRAP_PERIOD)
-	holdtime = PIM_BOOTSTRAP_TIMEOUT; /* no, set to the SHOULD BE value */
+    if (holdtime != 0 && holdtime <= my_bsr_adv_period)
+	holdtime = recommended_rp_holdtime;
     if (prefix_cnt == 0) {
 	/* The default 224.0.0.0 and masklen of 4 */
 	MASKLEN_TO_MASK(ALL_MCAST_GROUPS_LEN, grp_mask);

@@ -50,6 +50,9 @@ uint32_t                 curr_bsr_hash_mask;
 uint16_t                 pim_bootstrap_timer;   /* For electing the BSR and
 						 * sending Cand-RP-set msgs */
 uint8_t                  my_bsr_priority;
+uint16_t                 my_bsr_adv_period;
+uint16_t                 my_bsr_timeout;
+uint16_t                 recommended_rp_holdtime;
 uint32_t                 my_bsr_address;
 uint32_t                 my_bsr_hash_mask;
 uint8_t                  cand_bsr_flag = FALSE; /* Set to TRUE if I am
@@ -96,7 +99,7 @@ void init_rp_and_bsr(void)
 	curr_bsr_priority = 0;             /* Lowest priority */
 	curr_bsr_address  = INADDR_ANY_N;  /* Lowest priority */
 	MASKLEN_TO_MASK(RP_DEFAULT_IPV4_HASHMASKLEN, curr_bsr_hash_mask);
-	SET_TIMER(pim_bootstrap_timer, PIM_BOOTSTRAP_TIMEOUT);
+	SET_TIMER(pim_bootstrap_timer, my_bsr_timeout);
     } else {
 	curr_bsr_fragment_tag = RANDOM();
 	curr_bsr_priority = my_bsr_priority;
@@ -880,8 +883,8 @@ int create_pim_bootstrap_message(char *send_buff)
 	for (entry_ptr = mask_ptr->grp_rp_next; entry_ptr; entry_ptr = entry_ptr->grp_rp_next) {
 	    holdtime = entry_ptr->rp->rpentry->adv_holdtime;
 	    /* Is holdtime in MUST BE interval? (RFC5059 section 3.3) */
-	    if (holdtime != 0 && holdtime <= PIM_BOOTSTRAP_PERIOD)
-	    	holdtime = PIM_BOOTSTRAP_TIMEOUT; /* no, set to the SHOULD BE value */
+	    if (holdtime != 0 && holdtime <= my_bsr_adv_period)
+		holdtime = recommended_rp_holdtime;
 	    PUT_EUADDR(entry_ptr->rp->rpentry->address, data_ptr);
 	    PUT_HOSTSHORT(holdtime, data_ptr);
 	    PUT_BYTE(entry_ptr->priority, data_ptr);

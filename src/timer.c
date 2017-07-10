@@ -823,7 +823,7 @@ void age_misc(void)
 	if (cand_bsr_flag == FALSE) {
 	    /* If I am not Cand-BSR, start accepting Bootstrap messages from anyone.
 	     * XXX: Even if the BSR has timeout, the existing Cand-RP-Set is kept. */
-	    SET_TIMER(pim_bootstrap_timer, PIM_BOOTSTRAP_TIMEOUT);
+	    SET_TIMER(pim_bootstrap_timer, my_bsr_timeout);
 	    curr_bsr_fragment_tag = 0;
 	    curr_bsr_priority     = 0;		  /* Lowest priority */
 	    curr_bsr_address      = INADDR_ANY_N; /* Lowest priority */
@@ -831,7 +831,7 @@ void age_misc(void)
 	} else {
 	    /* I am Cand-BSR, so set the current BSR to me */
 	    if (curr_bsr_address == my_bsr_address) {
-		SET_TIMER(pim_bootstrap_timer, PIM_BOOTSTRAP_PERIOD);
+		SET_TIMER(pim_bootstrap_timer, my_bsr_adv_period);
 		send_pim_bootstrap();
 	    } else {
 		/* Short delay before becoming the BSR and start sending
