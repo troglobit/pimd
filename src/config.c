@@ -931,15 +931,17 @@ int parse_group_prefix(char *s)
  * @s: String token
  *
  * Syntax:
- * bsr-candidate [address | ifname] [priority <0-255>]
+ * bsr-candidate [address | ifname] [priority <0-255>] [interval <10-26214>]
  */
 int parse_bsr_candidate(char *s)
 {
-    char *w;
-    uint32_t local    = INADDR_ANY_N;
+    u_int time = PIM_BOOTSTRAP_PERIOD;
     uint32_t priority = PIM_DEFAULT_BSR_PRIORITY;
+    char *w;
+    uint32_t local = INADDR_ANY_N;
 
     cand_bsr_flag = FALSE;
+    my_bsr_adv_period = PIM_BOOTSTRAP_PERIOD;
     while (!EQUAL((w = next_word(&s)), "")) {
 	if (EQUAL(w, "priority")) {
 	    if (EQUAL((w = next_word(&s)), "")) {
@@ -960,6 +962,29 @@ int parse_bsr_candidate(char *s)
 	    }
 
 	    my_bsr_priority = (uint8_t)priority;
+	    continue;
+	}
+
+	if (EQUAL(w, "interval")) {
+	    if (EQUAL((w = next_word(&s)), "")) {
+		WARN("Missing Cand-BSR announce interval, defaulting to %u", PIM_BOOTSTRAP_PERIOD);
+		time = PIM_BOOTSTRAP_PERIOD;
+		continue;
+	    }
+
+	    if (sscanf(w, "%u", &time) != 1) {
+		WARN("Invalid Cand-BSR announce interval, defaulting to %u", PIM_BOOTSTRAP_PERIOD);
+		time = PIM_BOOTSTRAP_PERIOD;
+		continue;
+	    }
+
+	    if (time < PIM_MIN_BOOTSTRAP_PERIOD)
+		time = PIM_MIN_BOOTSTRAP_PERIOD;
+
+	    if (time > PIM_MAX_BOOTSTRAP_PERIOD)
+		time = PIM_MAX_BOOTSTRAP_PERIOD;
+
+	    my_bsr_adv_period = time;
 	    continue;
 	}
 
@@ -988,8 +1013,12 @@ int parse_bsr_candidate(char *s)
     my_bsr_address  = local;
     my_bsr_priority = priority;
     MASKLEN_TO_MASK(RP_DEFAULT_IPV4_HASHMASKLEN, my_bsr_hash_mask);
+    my_bsr_adv_period = time;
     cand_bsr_flag   = TRUE;
-    logit(LOG_INFO, 0, "Local Cand-BSR address %s, priority %u", inet_fmt(local, s1, sizeof(s1)), priority);
+
+    logit(LOG_INFO, 0,
+    		"Local Cand-BSR address %s, priority %u, interval %u sec",
+		inet_fmt(local, s1, sizeof(s1)), priority, time);
 
     return TRUE;
 }
@@ -1429,11 +1458,11 @@ static void fallback_config(void)
 
     logit(LOG_NOTICE, 0, "Using built-in defaults, including RP/BSR candidate.");
 
-    snprintf(buf, sizeof(buf), "priority 20 time 30");
-    parse_rp_candidate(s);
-
-    snprintf(buf, sizeof(buf), "priority 5");
+    snprintf(buf, sizeof(buf), "priority 5 interval 60");
     parse_bsr_candidate(s);
+
+    snprintf(buf, sizeof(buf), "priority 20 interval 30");
+    parse_rp_candidate(s);
 }
 
 void config_vifs_from_file(void)
@@ -1550,10 +1579,22 @@ void config_vifs_from_file(void)
     if (error_flag)
 	logit(LOG_ERR, 0, "%s:%u - Syntax error", config_file, lineno);
 
+    if (cand_bsr_flag != FALSE) {
+	my_bsr_timeout = 2 * my_bsr_adv_period + 10;   /* RFC5059 section 5 */
+    } else {
+	/* set a sensible default to check and compute RPs holdtime */
+	my_bsr_adv_period = PIM_BOOTSTRAP_PERIOD;
+    }
+
+    recommended_rp_holdtime = 2.5 * my_bsr_adv_period; /* RFC5059 section 3.3 SHOULD BE value */
+
     cand_rp_adv_message.message_size = cand_rp_adv_message.insert_data_ptr - cand_rp_adv_message.buffer;
     if (cand_rp_flag != FALSE) {
 	/* Prepare the RP info */
 	my_cand_rp_holdtime = 2.5 * my_cand_rp_adv_period;
+	/* Is holdtime in MUST BE interval? (RFC5059 section 3.3) */
+	if (my_cand_rp_holdtime <= my_bsr_adv_period)
+	    	my_cand_rp_holdtime = recommended_rp_holdtime;
 
 	/* TODO: HARDCODING! */
 	data_ptr = cand_rp_adv_message.buffer + 1;

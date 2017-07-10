@@ -70,8 +70,11 @@
 #define PIM_DEFAULT_CAND_RP_ADV_PERIOD   60
 #define PIM_MAX_CAND_RP_ADV_PERIOD       16383
 
-#define PIM_BOOTSTRAP_PERIOD             60
-#define PIM_BOOTSTRAP_TIMEOUT	       (2.5 * PIM_BOOTSTRAP_PERIOD + 10)
+#define PIM_BOOTSTRAP_PERIOD             60 /* RFC5059 section 5 */
+#define PIM_MIN_BOOTSTRAP_PERIOD         10 /* RFC5059 section 5 */
+/* Let RP holdtime fit in 16 bits in the BSM */
+#define PIM_MAX_BOOTSTRAP_PERIOD     (65535 / 2.5)
+
 #define PIM_TIMER_HELLO_HOLDTIME       (3.5 * PIM_TIMER_HELLO_INTERVAL)
 #define PIM_ASSERT_TIMEOUT              180
 

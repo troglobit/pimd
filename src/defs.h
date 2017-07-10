@@ -344,6 +344,9 @@ extern uint32_t          curr_bsr_address;
 extern uint32_t          curr_bsr_hash_mask;
 extern uint8_t		 cand_bsr_flag;		   /* candidate BSR flag */
 extern uint8_t           my_bsr_priority;
+extern uint16_t          my_bsr_adv_period;        /* RFC5059: BS_Period */
+extern uint16_t          my_bsr_timeout;           /* RFC5059: BS_Timeout */
+extern uint16_t          recommended_rp_holdtime;  /* RFC5059: RP_Holdtime */
 extern uint32_t          my_bsr_address;
 extern uint32_t          my_bsr_hash_mask;
 extern uint8_t           cand_rp_flag;              /* Candidate RP flag */

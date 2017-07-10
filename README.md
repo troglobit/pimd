@@ -168,12 +168,13 @@ feature called *Bootstrap Router*.  The elected BSR in a PIM-SM domain
 periodically announces the RP set in Bootstrap messages.  For details on
 PIM BSR operation, see [RFC 5059](http://tools.ietf.org/search/rfc5059).
 
-    bsr-candidate [address | ifname] [priority <0-255>]
+    bsr-candidate [address | ifname] [priority <0-255>] [interval <10-26214>]
 
 The configuration of a Candidate BootStrap Router (CBSR) is very similar
-to that of CRP, except for the interval.  If either the address or the
-interface name is left out `pimd` uses the highest active IP address.
-If the priority is left out, `pimd` (like Cisco) defaults to priority 0.
+to that of CRP.  If either the address or the interface name is left out
+`pimd` uses the highest active IP address.  If the priority is left out,
+`pimd` (like Cisco) defaults to priority 0.  If the interval is left out,
+it defaults to the RFC value of 60 seconds.
 
 To *disable CRP and CBSR* completely in `pimd`, simply comment the two
 lines out from your `pimd.conf`, and make sure `pimd` can find the file.
