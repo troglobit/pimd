@@ -45,12 +45,14 @@ AC_CONFIG_LIBOBJ_DIR([lib])
 AC_ARG_ENABLE(kernel_encap,
 	AS_HELP_STRING([--enable-kernel-encap], [Specialized kernels do PIM Register encapsulation
 			by themselves, speeding up processing considerably.
-			Not on Linux/*BSD, needs pimkern-PATCH_6]))
+			Not on Linux/*BSD, needs pimkern-PATCH_6]),,
+	enable_kernel_encap=no)
 
 #   (*,G) kernel MFC support.  Use it ONLY with (*,G) capable kernel
 AC_ARG_ENABLE(kernel_mfc,
 	AS_HELP_STRING([--enable-kernel-mfc], [Specialized kernels may have (*,G) MFC support.
-			Not on Linux/*BSD, needs pimkern-PATCH_7]))
+			Not on Linux/*BSD, needs pimkern-PATCH_7]),,
+	enable_kernel_mfc=no)
 
 #   Saves 4 bytes per unconfigured interface per routing entry.  If set,
 #   configuring such interface will restart the daemon and will flush
@@ -58,15 +60,18 @@ AC_ARG_ENABLE(kernel_mfc,
 AC_ARG_ENABLE(memory_save,
 	AS_HELP_STRING([--enable-memory-save], [Save 4 bytes/unconfigured interface/routing entry.
 			Must restart pimd and cause routing table to be flushed when configuring
-			new interfaces.]))
+			new interfaces.]),,
+	enable_memory_save=no)
 
 AC_ARG_ENABLE(rsrr,
 	AS_HELP_STRING([--enable-rsrr], [Routing Support for Resource Reservation
 			currently used by RSVP (EXPERIMENTAL).  For details, see
-			http://tools.ietf.org/html/draft-ietf-rsvp-routing-02]))
+			http://tools.ietf.org/html/draft-ietf-rsvp-routing-02]),,
+	enable_rsrr=no)
 
 AC_ARG_ENABLE(exit_on_error,
-        AS_HELP_STRING([--disable-exit-on-error], [Do not exit on error messages (LOG_ERR)]))
+        AS_HELP_STRING([--disable-exit-on-error], [Do not exit on error messages (LOG_ERR)]),,
+	enable_exit_on_error=yes)
 
 AC_ARG_WITH(max_vifs,
 	AS_HELP_STRING([--with-max-vifs=NUM], [Kernel maximum number of allowed VIFs, default: 32.
@@ -95,7 +100,8 @@ AS_IF([test "x$enable_exit_on_error" = "xno"], [
 	AC_DEFINE(CONTINUE_ON_ERROR, 1, [Do not exit on error messages (LOG_ERR).])])
 
 AS_IF([test "x$with_max_vifs" != "xno" -a "x$max_vifs" != "xyes"], [
-	AC_DEFINE_UNQUOTED(CUSTOM_MAX_VIFS, $max_vifs, [Custom MAX VIFs in kernel.])])
+	AC_DEFINE_UNQUOTED(CUSTOM_MAX_VIFS, $max_vifs, [Custom MAX VIFs in kernel.])], [
+	max_vifs=32])
 
 AS_IF([test "x$with_systemd" = "xyes" -o "x$with_systemd" = "xauto"], [
      def_systemd=$($PKG_CONFIG --variable=systemdsystemunitdir systemd)
@@ -129,3 +135,29 @@ AC_SUBST(SBINDIR)
 
 # Generate all files
 AC_OUTPUT
+
+cat <<EOF
+
+------------------ Summary ------------------
+ $PACKAGE_NAME version $PACKAGE_VERSION
+  Prefix................: $prefix
+  Sysconfdir............: `eval echo $sysconfdir`
+  Localstatedir.........: `eval echo $localstatedir`
+  C Compiler............: $CC $CFLAGS $CPPFLAGS $LDFLAGS $LIBS
+
+Optional features:
+  Kernel register encap.: $enable_kernel_encap
+  Kernel (*,G) support..: $enable_kernel_mfc
+  Kernel MAX VIFs.......: $max_vifs
+  Memory save...........: $enable_memory_save
+  RSRR (experimental)...: $enable_rsrr
+  Exit on error.........: $enable_exit_on_error
+
+------------- Compiler version --------------
+$($CC --version || true)
+---------------------------------------------
+
+Check the above options and compile with:
+ ${MAKE-make}
+
+EOF
