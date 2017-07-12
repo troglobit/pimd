@@ -11,7 +11,7 @@
 .Nd PIM-SM/SSM v2 dynamic multicast routing daemon
 .Sh SYNOPSIS
 .Nm pimd
-.Op Fl hNnv
+.Op Fl hNnsv
 .Op Fl f Ar FILE
 .Op Fl d Ar [SYS[,SYS,...]
 .Op Fl I Ar NAME
@@ -176,6 +176,9 @@ Informational
 .It Cm debug
 Debug-level messages
 .El
+.It Fl s, --syslog
+Use syslog, default unless running in foreground,
+.Fl n .
 .It Fl t, -table-id=ID
 Set multicast routing table ID.  Remember to also create routing rules
 directing packets to the table.  This example uses routing table ID 123:
