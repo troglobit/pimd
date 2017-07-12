@@ -60,16 +60,6 @@ AC_ARG_ENABLE(memory_save,
 			Must restart pimd and cause routing table to be flushed when configuring
 			new interfaces.]))
 
-#   Scoped access control list support in pimd.conf.  If you want to
-#   install NUL OIF for the "scoped groups", use the following syntax:
-#   "phyint IFNAME [scoped <MCAST_ADDR> masklen <PREFIX_LEN>]", e.g.
-#      phyint fxp0 scoped "addr" masklen "len"
-#   Support contributed by Marian Stagarescu <marian@cidera.com>
-AC_ARG_ENABLE(scoped_acls,
-	AS_HELP_STRING([--enable-scoped-acls], [Scoped access control list support in pimd.conf:
-			phyint IFNAME [scoped <MCGROUP> masklen <LEN>]
-			phyint fxp0 scoped 239.0.0.0 masklen 8]))
-
 AC_ARG_ENABLE(rsrr,
 	AS_HELP_STRING([--enable-rsrr], [Routing Support for Resource Reservation
 			currently used by RSVP (EXPERIMENTAL).  For details, see
