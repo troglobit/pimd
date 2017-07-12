@@ -228,9 +228,8 @@ void config_vifs_from_kernel(void)
     struct uvif *v;
     vifi_t vifi;
     uint32_t addr, mask, subnet;
-    struct ifaddrs *ifaddr, *ifa,*ifap;
-    int phyint_num;
-    int count;
+    struct ifaddrs *ifaddr, *ifa, *ifap;
+    int phyint_num, count;
     struct iflist *entry;
 
     /* Query config first for list of enabled interfaces */
@@ -245,13 +244,13 @@ init_vif_list:
 
     ifap = calloc(phyint_num, (sizeof(struct ifaddrs)));
     if (!ifap) {
-	    logit(LOG_ERR, 0, "%s[%d]: Allocation error", __func__, __LINE__);
-	    return;
+	logit(LOG_ERR, 0, "%s[%d]: Allocation error", __func__, __LINE__);
+	return;
     }
 
     for (count = 0, ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
 	LIST_FOREACH(entry, &il, link) {
-	    if (((ifa->ifa_flags & IFF_UP) != IFF_UP) || strcmp(entry->ifname,ifa->ifa_name))
+	    if ((ifa->ifa_flags & IFF_UP) != IFF_UP || strcmp(entry->ifname, ifa->ifa_name))
 		continue;
 
 	    if (ifa->ifa_addr && ifa->ifa_netmask && ifa->ifa_addr->sa_family == AF_INET) {
@@ -282,9 +281,9 @@ init_vif_list:
 
     freeifaddrs(ifaddr);
     if (!do_vifs && count < phyint_num) {
-	    free(ifap);
-	    usleep(100000);
-	    goto init_vif_list;
+	free(ifap);
+	usleep(100000);
+	goto init_vif_list;
     }
 
     /*
@@ -331,13 +330,13 @@ init_vif_list:
 
 	subnet = addr & mask;
 	if (mask != 0xffffffff) {
-		if ((!inet_valid_subnet(subnet, mask)) || (addr == subnet) || addr == (subnet | ~mask)) {
-		    if (!(inet_valid_host(addr) && ((mask == htonl(0xfffffffe)) || is_set(IFF_POINTOPOINT, flags)))) {
-				logit(LOG_WARNING, 0, "Ignoring %s, has invalid address %s and/or netmask %s",
-				ifa->ifa_name, inet_fmt(addr, s1, sizeof(s1)), inet_fmt(mask, s2, sizeof(s2)));
-				continue;
-			}
+	    if ((!inet_valid_subnet(subnet, mask)) || (addr == subnet) || addr == (subnet | ~mask)) {
+		if (!(inet_valid_host(addr) && ((mask == htonl(0xfffffffe)) || is_set(IFF_POINTOPOINT, flags)))) {
+		    logit(LOG_WARNING, 0, "Ignoring %s, has invalid address %s and/or netmask %s",
+			  ifa->ifa_name, inet_fmt(addr, s1, sizeof(s1)), inet_fmt(mask, s2, sizeof(s2)));
+		    continue;
 		}
+	    }
 	}
 
 	/*
