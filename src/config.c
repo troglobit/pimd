@@ -282,8 +282,13 @@ init_vif_list:
     freeifaddrs(ifaddr);
     if (!do_vifs && count < phyint_num) {
 	free(ifap);
-	usleep(100000);
-	goto init_vif_list;
+
+	if (retry_forever) {
+	    usleep(100000);
+	    goto init_vif_list;
+	}
+
+	logit(LOG_ERR, 0, "Cannot find all required phyint interfaces, exiting.");
     }
 
     /*

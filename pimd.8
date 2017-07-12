@@ -11,7 +11,7 @@
 .Nd PIM-SM/SSM v2 dynamic multicast routing daemon
 .Sh SYNOPSIS
 .Nm pimd
-.Op Fl hNnsv
+.Op Fl hNnrsv
 .Op Fl f Ar FILE
 .Op Fl d Ar [SYS[,SYS,...]
 .Op Fl I Ar NAME
@@ -176,6 +176,16 @@ Informational
 .It Cm debug
 Debug-level messages
 .El
+.It Fl r
+With this option, and
+.Fl N ,
+.Nm
+will retry (forever) querying the kernel for all required
+.Cm phyint
+interfaces listed in
+.Pa /etc/pimd.conf .
+Useful at startup when not all interfaces may be up or have an IP
+address assigned yet.
 .It Fl s, --syslog
 Use syslog, default unless running in foreground,
 .Fl n .

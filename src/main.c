@@ -47,8 +47,9 @@
 #include <sys/stat.h>
 
 char versionstring[100];
-int do_vifs = 1;
-int haveterminal = 1;
+int do_vifs       = 1;
+int retry_forever = 0;
+int haveterminal  = 1;
 struct rp_hold *g_rp_hold = NULL;
 int mrt_table_id = 0;
 
@@ -240,6 +241,8 @@ static int usage(int code)
     printf(" -N, --disable-vifs  Disable all virtual interfaces (phyint) by default\n");
     printf(" -P, --pidfile=FILE  File to store process ID for signaling %s\n"
 	   "                     Default uses ident NAME: %s\n", prognm, pidfn);
+    printf(" -r                  Retry (forever) if not all phyint interfaces are available\n"
+	   "                     yet when starting up, e.g. wait for DHCP lease\n");
     printf(" -s, --syslog        Use syslog, default unless running in foreground, -n\n");
     printf(" -t, --table-id=ID   Set multicast routing table ID.  Allowed table ID#:\n"
 	   "                      0 .. 999999999.  Default: 0 (use default table)\n");
@@ -313,7 +316,7 @@ int main(int argc, char *argv[])
     snprintf(versionstring, sizeof (versionstring), "pimd version %s", PACKAGE_VERSION);
 
     prognm = ident = progname(argv[0]);
-    while ((ch = getopt_long(argc, argv, "d:f:hI:l:nNP:st:v", long_options, NULL)) != EOF) {
+    while ((ch = getopt_long(argc, argv, "d:f:hI:l:nNP:rst:v", long_options, NULL)) != EOF) {
 	const char *errstr;
 
 	switch (ch) {
@@ -373,6 +376,10 @@ int main(int argc, char *argv[])
 
 	    case 'P':	/* --pidfile=NAME */
 		pid_file = strdup(optarg);
+		break;
+
+	    case 'r':
+		retry_forever++;
 		break;
 
 	    case 's':
