@@ -6,7 +6,6 @@ Table of Contents
 -----------------
 
 * [Introduction](#introduction)
-* [Download](#download)
 * [Build & Install](#build--install)
 * [Building from GIT](#building-from-git)
 * [Configuration](#configuration)
