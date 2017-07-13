@@ -80,6 +80,8 @@ struct iflist {
     LIST_ENTRY(iflist) link;
 
     int       enabled;
+    struct ifaddrs *ifa;	/* Set if found */
+
     uint32_t  addr;
     char      ifname[IFNAMSIZ + 1];
 };
@@ -192,22 +194,21 @@ static void tear_iflist(void)
 }
 
 /*
- * Query interface list for admin status of ifname
- * If the interface is not mentioned, return pimd default
+ * phyint <IFNAME | ADDRESS> -- Select interface based on name or addr
  */
-static int iface_enabled(char *ifname, uint32_t addr)
+static struct iflist *iface_find(char *ifname, uint32_t addr)
 {
     struct iflist *entry;
 
     LIST_FOREACH(entry, &il, link) {
 	if (!strcmp(entry->ifname, ifname))
-	    return entry->enabled;
+	    return entry;
 
 	if (addr && addr != 0xffffffff && addr == entry->addr)
-	    return entry->enabled;
+	    return entry;
     }
 
-    return do_vifs;
+    return NULL;
 }
 
 static int getifmtu(char *ifname)
@@ -223,6 +224,63 @@ static int getifmtu(char *ifname)
     return ifr.ifr_mtu;
 }
 
+static int compare_requested_with_kernel(struct ifaddrs *ifaddr, int num)
+{
+    int count = 0;
+    short flags;
+    uint32_t addr, mask, subnet;
+    struct iflist *entry;
+    struct ifaddrs *ifa;
+
+    if (do_vifs)
+	return 0;
+
+    for (ifa = ifaddr; ifa && num; ifa = ifa->ifa_next) {
+	logit(LOG_DEBUG, 0, "1Checking phyint %s ...", ifa->ifa_name);
+
+	/*
+	 * Ignore any interface for an address family other than IP.
+	 */
+	if (!ifa->ifa_addr || !ifa->ifa_netmask || ifa->ifa_addr->sa_family != AF_INET) {
+	    total_interfaces++;  /* Eventually may have IP address later */
+	    continue;
+	}
+
+	addr  = ((struct sockaddr_in *)ifa->ifa_addr)->sin_addr.s_addr;
+	mask  = ((struct sockaddr_in *)ifa->ifa_netmask)->sin_addr.s_addr;
+	flags = ifa->ifa_flags;
+
+	/*
+	 * Ignore interfaces that do not support multicast.
+	 */
+	if (!is_set(IFF_MULTICAST, flags)) {
+	    WARN("Skipping interface %s, does not support multicast.", ifa->ifa_name);
+	    continue;
+	}
+
+	entry = iface_find(ifa->ifa_name, addr);
+	if (!entry || !entry->enabled)
+	    continue;
+
+	entry->ifa = ifa;
+	count++;
+    }
+
+    IF_DEBUG(DEBUG_IF) {
+	logit(LOG_INFO, 0, "------------------ %s dump new list ----------", __func__);
+	LIST_FOREACH(entry, &il, link) {
+	    if (!entry->ifa)
+		continue;
+
+	    addr = ((struct sockaddr_in *)(entry->ifa->ifa_addr))->sin_addr.s_addr;
+	    logit(LOG_INFO, 0, "%s: %s", entry->ifa->ifa_name, inet_fmt(addr, s1, sizeof(s1)));
+	}
+    }
+
+    return count;
+}
+
+
 /*
  * Query the kernel to find network interfaces that are multicast-capable
  * and install them in the uvifs array.
@@ -231,8 +289,9 @@ void config_vifs_from_kernel(void)
 {
     struct uvif *v;
     vifi_t vifi;
+    short flags;
     uint32_t addr, mask, subnet;
-    struct ifaddrs *ifaddr, *ifa, *ifap;
+    struct ifaddrs *ifaddr, *ifa;
     int phyint_num, count;
     struct iflist *entry;
 
@@ -246,60 +305,27 @@ init_vif_list:
 	return;
     }
 
-    ifap = calloc(phyint_num, (sizeof(struct ifaddrs)));
-    if (!ifap) {
-	logit(LOG_ERR, 0, "%s[%d]: Allocation error", __func__, __LINE__);
-	return;
-    }
-
-    for (count = 0, ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
-	LIST_FOREACH(entry, &il, link) {
-	    if ((ifa->ifa_flags & IFF_UP) != IFF_UP || strcmp(entry->ifname, ifa->ifa_name))
-		continue;
-
-	    if (ifa->ifa_addr && ifa->ifa_netmask && ifa->ifa_addr->sa_family == AF_INET) {
-		memcpy(&ifap[count], ifa, sizeof(struct ifaddrs));
-		ifap[count].ifa_next = NULL;
-
-		if (count >0)
-		    ifap[count-1].ifa_next = &ifap[count];
-
-		count++;
-		if (count > phyint_num)
-		    logit(LOG_ERR, 0, "find more interface than configured");
-	    }
-	}
-    }
-
-    IF_DEBUG(DEBUG_IF) {
-	int i;
-
-	logit(LOG_INFO, 0, "------------------ %s dump new list ----------", __func__);
-	for (i = 0; i < count; i++) {
-	    addr = ((struct sockaddr_in *)ifap[i].ifa_addr)->sin_addr.s_addr;
-	    logit(LOG_INFO, 0, "%s: IP %s ifap[%d]: addr %p next %p", ifap[i].ifa_name,
-		  inet_fmt(addr, s1, sizeof(s1)),
-		  i, &ifap[i], ifap[i].ifa_next);
-	}
-    }
-
-    freeifaddrs(ifaddr);
+    count = compare_requested_with_kernel(ifaddr, phyint_num);
     if (!do_vifs && count < phyint_num) {
-	free(ifap);
+	freeifaddrs(ifaddr);
 
 	if (retry_forever) {
-	    usleep(100000);
+	    LIST_FOREACH(entry, &il, link)
+		entry->ifa = NULL;
+
+	    usleep(500000);	/* 500 msec */
 	    goto init_vif_list;
 	}
 
+	tear_iflist();
 	logit(LOG_ERR, 0, "Cannot find all required phyint interfaces, exiting.");
     }
 
     /*
      * Loop through all of the interfaces.
      */
-    for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
-	short flags;
+    for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
+	logit(LOG_DEBUG, 0, "2Checking phyint %s ...", ifa->ifa_name);
 
 	/*
 	 * Ignore any interface for an address family other than IP.
@@ -316,18 +342,19 @@ init_vif_list:
 	/*
 	 * Check against .conf file
 	 */
-	if (!iface_enabled(ifa->ifa_name, addr)) {
-	    logit(LOG_DEBUG, 0, "phyint %s (%s) disabled, skipping VIF",
-		  ifa->ifa_name, inet_fmt(addr, s1, sizeof(s1)));
-	    continue;
-	}
-
-	/*
-	 * Ignore interfaces that do not support multicast.
-	 */
-	if (!is_set(IFF_MULTICAST, flags)) {
-	    WARN("Skipping interface %s, does not support multicast.", ifa->ifa_name);
-	    continue;
+	entry = iface_find(ifa->ifa_name, addr);
+	if (do_vifs) {
+	    if (entry && !entry->enabled) {
+		logit(LOG_DEBUG, 0, "phyint %s (%s) disabled, skipping VIF",
+		      ifa->ifa_name, inet_fmt(addr, s1, sizeof(s1)));
+		continue;
+	    }
+	} else {
+	    if (!entry || !entry->ifa) {
+		logit(LOG_DEBUG, 0, "phyint %s (%s) disabled, skipping VIF",
+		      ifa->ifa_name, inet_fmt(addr, s1, sizeof(s1)));
+		continue;
+	    }
 	}
 
 	/*
@@ -445,7 +472,7 @@ init_vif_list:
 	}
     }
 
-    free(ifap);
+    freeifaddrs(ifaddr);
     tear_iflist();
 }
 
