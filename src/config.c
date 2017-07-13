@@ -106,6 +106,7 @@ extern struct rp_hold *g_rp_hold;
 
 /*
  * Populate interface list with interfaces from pimd.conf
+ * Returns number of enabled phyint
  */
 static int build_iflist(void)
 {
@@ -162,11 +163,14 @@ static int build_iflist(void)
 	}
 
 	entry->enabled = enabled;
+	if (enabled)
+	    count++;
+
 	if (*ifname)
 	    strlcpy(entry->ifname, ifname, sizeof(entry->ifname));
 	else
 	    entry->addr = addr;
-	count++;
+
 	LIST_INSERT_HEAD(&il, entry, link);
     }
 
