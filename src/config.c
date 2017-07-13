@@ -236,8 +236,6 @@ static int compare_requested_with_kernel(struct ifaddrs *ifaddr, int num)
 	return 0;
 
     for (ifa = ifaddr; ifa && num; ifa = ifa->ifa_next) {
-	logit(LOG_DEBUG, 0, "1Checking phyint %s ...", ifa->ifa_name);
-
 	/*
 	 * Ignore any interface for an address family other than IP.
 	 */
@@ -264,17 +262,6 @@ static int compare_requested_with_kernel(struct ifaddrs *ifaddr, int num)
 
 	entry->ifa = ifa;
 	count++;
-    }
-
-    IF_DEBUG(DEBUG_IF) {
-	logit(LOG_INFO, 0, "------------------ %s dump new list ----------", __func__);
-	LIST_FOREACH(entry, &il, link) {
-	    if (!entry->ifa)
-		continue;
-
-	    addr = ((struct sockaddr_in *)(entry->ifa->ifa_addr))->sin_addr.s_addr;
-	    logit(LOG_INFO, 0, "%s: %s", entry->ifa->ifa_name, inet_fmt(addr, s1, sizeof(s1)));
-	}
     }
 
     return count;
@@ -325,8 +312,6 @@ init_vif_list:
      * Loop through all of the interfaces.
      */
     for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
-	logit(LOG_DEBUG, 0, "2Checking phyint %s ...", ifa->ifa_name);
-
 	/*
 	 * Ignore any interface for an address family other than IP.
 	 */
