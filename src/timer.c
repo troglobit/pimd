@@ -615,8 +615,8 @@ void age_routes(void)
 			    }
 
 			    /* iif info found */
-			    if ((srcentry_save.incoming != mrt_srcs->incoming) ||
-				(srcentry_save.upstream != mrt_srcs->upstream)) {
+			    if ((srcentry_save.incoming != mrt_srcs->source->incoming) ||
+				(srcentry_save.upstream != mrt_srcs->source->upstream)) {
 				/* Route change has occur */
 				update_src_iif = TRUE;
 				mrt_srcs->incoming = mrt_srcs->source->incoming;
@@ -641,7 +641,7 @@ void age_routes(void)
 					  mrt_srcs->joined_oifs,
 					  mrt_srcs->pruned_oifs,
 					  mrt_srcs->leaves,
-					  mrt_srcs->asserted_oifs, 0);
+					  mrt_srcs->asserted_oifs, MFC_UPDATE_FORCE);
 
 		    check_spt_threshold(mrt_srcs);
 
