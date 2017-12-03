@@ -416,7 +416,7 @@ init_vif_list:
 
 	if (is_set(IFF_POINTOPOINT, flags)) {
 	    v->uv_flags |= (VIFF_REXMIT_PRUNES | VIFF_POINT_TO_POINT);
-	    v->uv_rmt_addr = ((struct sockaddr_in *)(&ifa->ifa_dstaddr))->sin_addr.s_addr;
+	    v->uv_rmt_addr = ((struct sockaddr_in *)(ifa->ifa_dstaddr))->sin_addr.s_addr;
 	} else if (mask == htonl(0xfffffffe)) {
 	    /*
 	     * Handle RFC 3021 /31 netmasks as point-to-point links
