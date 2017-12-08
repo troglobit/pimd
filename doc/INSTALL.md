@@ -43,17 +43,24 @@ documentation, or consult the web for help!
 OpenBSD
 -------
 
-PIM support was removed from the multicast stack in OpenBSD 6.1 (https://marc.info/?l=openbsd-cvs&m=148240469327159)
+PIM support was unfortunately removed from the multicast stack as of
+[OpenBSD 6.1](https://marc.info/?l=openbsd-cvs&m=148240469327159)
 
-For instructions on installing pimd on OpenBSD 6.0, you can use the HOWTO page at http://troglobit.com/howto-run-pimd-on-openbsd.html, taking into account the following:
+For instructions on installing pimd on OpenBSD 6.0, and earlier, you can
+use the [HOWTO](http://troglobit.com/howto-run-pimd-on-openbsd.html),
+taking into account the following:
 
-1. Additional prerequisite: The MROUTING option is enabled by default in the kernel, but the PIM option is not. In /src/sys/conf/GENERIC, uncomment the following line and rebuild the kernel:
+1. The MROUTING option is enabled by default in the kernel, but the PIM
+   option is not.  In `/src/sys/conf/GENERIC`, uncomment the following
+   line and rebuild the kernel:
 
    ```
    options   PIM              # Enable for pimd
    ```
 
-2. Change: the multicast configuration option in /etc/rc.conf.local now only consists of one line instead of the two mentioned in the HOWTO document:
+2. The multicast configuration option in `/etc/rc.conf.local` now only
+   consists of one line instead of the two mentioned in the HOWTO
+   document:
 
    ```
    # Multicast routing configuration
