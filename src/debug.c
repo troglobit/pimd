@@ -272,6 +272,7 @@ void fdump(char *fmt)
     if (fp) {
 	dump_vifs(fp);
 	dump_pim_mrt(fp);
+	dump_rp_set(fp);
 	fclose(fp);
     }
 }
