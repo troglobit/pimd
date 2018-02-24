@@ -255,10 +255,15 @@ static void check_spt_threshold(mrtentry_t *mrt)
 
 	status = k_get_sg_cnt(udp_socket, kc->source, kc->group, &kc->sg_count);
 	if (status || prev_bytecnt == kc->sg_count.bytecnt) {
-	    /* Either (for whatever reason) there is no such routing
-	     * entry, or that particular (S,G) was idle.  Delete the
-	     * routing entry from the kernel. */
-	    delete_single_kernel_cache(mrt, kc);
+	    /*
+	     * Either (for whatever reason) there is no such routing
+	     * entry, or that particular (S,G) was idle.
+	     *
+	     * Note: This code path used to delete the routing entry
+	     *       from the kernel.  This caused issues on unicast
+	     *       routing changes, GitHub issue #79.  Now we let
+	     *       it linger and be removed on IGMPMSG_WRONGVIF.
+	     */
 	    continue;
 	}
 
