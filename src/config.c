@@ -1661,7 +1661,8 @@ static char *next_word(char **s)
 	switch (**s) {
 	    case ' ':
 	    case '\t':
-	    (*s)++;
+		(*s)++;
+		/* fallthrough */
 	    case '\n':
 	    case '#':
 	    return token;
