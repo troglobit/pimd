@@ -227,15 +227,15 @@ static int getifmtu(char *ifname)
 static int compare_requested_with_kernel(struct ifaddrs *ifaddr, int num)
 {
     int count = 0;
-    short flags;
-    uint32_t addr, mask, subnet;
-    struct iflist *entry;
     struct ifaddrs *ifa;
 
     if (do_vifs)
 	return 0;
 
     for (ifa = ifaddr; ifa && num; ifa = ifa->ifa_next) {
+	struct iflist *entry;
+	uint32_t addr;
+
 	/*
 	 * Ignore any interface for an address family other than IP.
 	 */
@@ -244,18 +244,15 @@ static int compare_requested_with_kernel(struct ifaddrs *ifaddr, int num)
 	    continue;
 	}
 
-	addr  = ((struct sockaddr_in *)ifa->ifa_addr)->sin_addr.s_addr;
-	mask  = ((struct sockaddr_in *)ifa->ifa_netmask)->sin_addr.s_addr;
-	flags = ifa->ifa_flags;
-
 	/*
 	 * Ignore interfaces that do not support multicast.
 	 */
-	if (!is_set(IFF_MULTICAST, flags)) {
+	if (!is_set(IFF_MULTICAST, ifa->ifa_flags)) {
 	    WARN("Skipping interface %s, does not support multicast.", ifa->ifa_name);
 	    continue;
 	}
 
+	addr  = ((struct sockaddr_in *)ifa->ifa_addr)->sin_addr.s_addr;
 	entry = iface_find(ifa->ifa_name, addr);
 	if (!entry || !entry->enabled)
 	    continue;
