@@ -656,7 +656,7 @@ void dump_pim_mrt(FILE *fp)
     fprintf(fp, "------------------------------------------------------------------------------\n\n");
 }
 
-static void dump_rpgrp(FILE *fp, rp_grp_entry_t *rpgrp, int indent)
+static void dump_rpgrp(FILE *fp, rp_grp_entry_t *rpgrp)
 {
     grp_mask_t *grp = rpgrp->group;
 
@@ -683,7 +683,7 @@ int dump_rp_set(FILE *fp)
 		rp->rpentry->adv_holdtime);
 
 	for (rpgrp = rp->rp_grp_next; rpgrp; rpgrp = rpgrp->rp_grp_next)
-		dump_rpgrp(fp, rpgrp, 1);
+		dump_rpgrp(fp, rpgrp);
     }
 
     fprintf(fp, "------------------------------------------------------------------------------\n");
