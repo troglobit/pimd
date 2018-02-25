@@ -153,7 +153,8 @@ static struct debugname {
 /*
  * Forward declarations.
  */
-static void            handler       (int);
+static void            handle_signals(int);
+static int             check_signals (void);
 static void            timer         (void *);
 static struct timeval *timeout       (int);
 static void            cleanup       (void);
@@ -295,8 +296,8 @@ static char *progname(char *arg0)
 
 int main(int argc, char *argv[])
 {
-    int dummysigalrm, foreground = 0, do_syslog = 1;
-    fd_set rfds, readers;
+    int foreground = 0, do_syslog = 1;
+    fd_set fds;
     int nfds, n = -1, i, ch;
     struct sigaction sa;
     struct option long_options[] = {
@@ -495,7 +496,7 @@ int main(int argc, char *argv[])
     rsrr_init();
 #endif /* RSRR */
 
-    sa.sa_handler = handler;
+    sa.sa_handler = handle_signals;
     sa.sa_flags = 0;	/* Interrupt system calls */
     sigemptyset(&sa.sa_mask);
     sigaction(SIGALRM, &sa, NULL);
@@ -504,15 +505,6 @@ int main(int argc, char *argv[])
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGUSR1, &sa, NULL);
     sigaction(SIGUSR2, &sa, NULL);
-
-    FD_ZERO(&readers);
-    FD_SET(igmp_socket, &readers);
-    nfds = igmp_socket + 1;
-    for (i = 0; i < nhandlers; i++) {
-	FD_SET(ihandlers[i].fd, &readers);
-	if (ihandlers[i].fd >= nfds)
-	    nfds = ihandlers[i].fd + 1;
-    }
 
     IF_DEBUG(DEBUG_IF)
 	dump_vifs(stderr);
@@ -528,44 +520,18 @@ int main(int argc, char *argv[])
     /*
      * Main receive loop.
      */
-    dummysigalrm = SIGALRM;
-
     while (1) {
-	if (sighandled) {
-	    if (sighandled & GOT_SIGINT) {
-		sighandled &= ~GOT_SIGINT;
-		break;
-	    }
-	    if (sighandled & GOT_SIGHUP) {
-		sighandled &= ~GOT_SIGHUP;
-		restart(SIGHUP);
+	if (check_signals())
+	    break;
 
-		/* reconstruct readers and nfds */
-		FD_ZERO(&readers);
-		FD_SET(igmp_socket, &readers);
-		nfds = igmp_socket + 1;
-		for (i = 0; i < nhandlers; i++) {
-		    FD_SET(ihandlers[i].fd, &readers);
-		    if (ihandlers[i].fd >= nfds)
-			nfds = ihandlers[i].fd + 1;
-		}
-	    }
-	    if (sighandled & GOT_SIGUSR1) {
-		sighandled &= ~GOT_SIGUSR1;
-		fdump(_PATH_PIMD_DUMP);
-	    }
-	    if (sighandled & GOT_SIGUSR2) {
-		sighandled &= ~GOT_SIGUSR2;
-		cdump(_PATH_PIMD_CACHE);
-	    }
-	    if (sighandled & GOT_SIGALRM) {
-		sighandled &= ~GOT_SIGALRM;
-		timer(&dummysigalrm);
-	    }
+	FD_ZERO(&fds);
+	for (i = 0, nfds = 0; i < nhandlers; i++) {
+	    FD_SET(ihandlers[i].fd, &fds);
+	    if (ihandlers[i].fd >= nfds)
+		nfds = ihandlers[i].fd + 1;
 	}
 
-	memcpy(&rfds, &readers, sizeof(rfds));
-	n = select(nfds, &rfds, NULL, NULL, timeout(n));
+	n = select(nfds, &fds, NULL, NULL, timeout(n));
 	if (n < 0) {
 	    if (errno != EINTR) /* SIGALRM is expected */
 		logit(LOG_WARNING, errno, "select failed");
@@ -573,8 +539,8 @@ int main(int argc, char *argv[])
 	}
 
 	for (i = 0; n > 0 && i < nhandlers; i++) {
-	    if (FD_ISSET(ihandlers[i].fd, &rfds))
-		(*ihandlers[i].func)(ihandlers[i].fd, &rfds);
+	    if (FD_ISSET(ihandlers[i].fd, &fds))
+		(*ihandlers[i].func)(ihandlers[i].fd, &fds);
 	}
     }
 
@@ -710,7 +676,7 @@ static void cleanup(void)
  * Signal handler.  Take note of the fact that the signal arrived
  * so that the main loop can take care of it.
  */
-static void handler(int sig)
+static void handle_signals(int sig)
 {
     switch (sig) {
     case SIGALRM:
@@ -734,6 +700,41 @@ static void handler(int sig)
 	sighandled |= GOT_SIGUSR2;
 	break;
     }
+}
+
+static int check_signals(void)
+{
+    int dummy = SIGALRM;
+
+    if (!sighandled)
+	return 0;
+
+    if (sighandled & GOT_SIGINT) {
+	sighandled &= ~GOT_SIGINT;
+	return 1;
+    }
+
+    if (sighandled & GOT_SIGHUP) {
+	sighandled &= ~GOT_SIGHUP;
+	restart(SIGHUP);
+    }
+
+    if (sighandled & GOT_SIGUSR1) {
+	sighandled &= ~GOT_SIGUSR1;
+	fdump(_PATH_PIMD_DUMP);
+    }
+
+    if (sighandled & GOT_SIGUSR2) {
+	sighandled &= ~GOT_SIGUSR2;
+	cdump(_PATH_PIMD_CACHE);
+    }
+
+    if (sighandled & GOT_SIGALRM) {
+	sighandled &= ~GOT_SIGALRM;
+	timer(&dummy);
+    }
+
+    return 0;
 }
 
 static void add_static_rp(void)
