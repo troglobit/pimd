@@ -229,19 +229,21 @@ Example
 Starting
 --------
 
-Having set up the configuration file, you are ready to run pimd.  As
+Having set up the configuration file, you are ready to run `pimd`.  As
 usual, it is recommended that you start it manually first, to make sure
 everything works as expected, before adding it to your system's startup
 scripts, with any startup flags it might need.
 
-    pimd [-c file] [-d subsys1[,...,subsysN]] [-s level]
+    pimd [-n] [-s] [-c file] [-d subsys1[,...,subsysN]] [-l level]
 
+* `-n`: Run in foreground, with logs defaulting to stdout
+* `-s`: Use syslog, default unless `-n`
 * `-c file`: Utilize the specified configuration file rather than the
    default, `/etc/pimd.conf`
 * `-d [subsys1,...,subsysN]`: Subsystems to enable debug for when
   running the daemon.  Optional argument, if left out, all subsystems
   are enabled.  Type `pimd -h` for a full list of subsystems
-* `-s level`: Log level, one of `none`, `error`, `warning`, `notice`,
+* `-l level`: Log level, one of `none`, `error`, `warning`, `notice`,
    `info`, or `debug`.  Default is `notice`
 
 **Example:**
