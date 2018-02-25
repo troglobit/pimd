@@ -59,7 +59,7 @@ extern int curttl;
 /*
  * Local functions definitions.
  */
-static void igmp_read   (int i, fd_set *rfd);
+static void igmp_read   (int sd);
 static void accept_igmp (ssize_t recvlen);
 
 
@@ -117,13 +117,13 @@ void init_igmp(void)
 }
 
 
-/* Read an IGMP message */
-static void igmp_read(int i __attribute__((unused)), fd_set *rfd __attribute__((unused)))
+/* Read an IGMP message from igmp_socket */
+static void igmp_read(int sd)
 {
     ssize_t len;
     socklen_t dummy = 0;
 
-    while ((len = recvfrom(igmp_socket, igmp_recv_buf, RECV_BUF_SIZE, 0, NULL, &dummy)) < 0) {
+    while ((len = recvfrom(sd, igmp_recv_buf, RECV_BUF_SIZE, 0, NULL, &dummy)) < 0) {
 	if (errno == EINTR)
 	    continue;		/* Received signal, retry syscall. */
 

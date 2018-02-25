@@ -58,7 +58,7 @@ static uint16_t ip_id = 0;
 /*
  * Local function definitions.
  */
-static void pim_read   (int f, fd_set *rfd);
+static void pim_read   (int sd);
 static void accept_pim (ssize_t recvlen);
 static int  send_frame (char *buf, size_t len, size_t frag, size_t mtu, struct sockaddr *dst, size_t salen);
 
@@ -107,14 +107,14 @@ void init_pim(void)
 }
 
 
-/* Read a PIM message */
-static void pim_read(int f __attribute__((unused)), fd_set *rfd __attribute__((unused)))
+/* Read a PIM message from the pim_socket */
+static void pim_read(int sd)
 {
     ssize_t len;
     socklen_t dummy = 0;
     sigset_t block, oblock;
 
-    while ((len = recvfrom(pim_socket, pim_recv_buf, RECV_BUF_SIZE, 0, NULL, &dummy)) < 0) {
+    while ((len = recvfrom(sd, pim_recv_buf, RECV_BUF_SIZE, 0, NULL, &dummy)) < 0) {
 	if (errno == EINTR)
 	    continue;		/* Received signal, retry syscall. */
 

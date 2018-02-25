@@ -58,7 +58,7 @@ static socklen_t client_length = sizeof(client_addr);
 static void	rsrr_accept    (size_t recvlen);
 static void	rsrr_accept_iq (void);
 static int	rsrr_accept_rq (struct rsrr_rq *route_query, uint8_t flags, struct gtable *gt_notify);
-static void	rsrr_read      (int, fd_set *);
+static void	rsrr_read      (int sd);
 static int	rsrr_send      (int sendlen);
 static void	rsrr_cache     (struct gtable *gt, struct rsrr_rq *route_query);
 
@@ -95,12 +95,12 @@ void rsrr_init(void)
 }
 
 /* Read a message from the RSRR socket */
-static void rsrr_read(int fd, fd_set *rfd __attribute__ ((unused)))
+static void rsrr_read(int sd)
 {
     ssize_t len;
     
     memset(&client_addr, 0, sizeof(client_addr));
-    while ((len = recvfrom(fd, rsrr_recv_buf, RSRR_MAX_LEN, 0,
+    while ((len = recvfrom(sd, rsrr_recv_buf, RSRR_MAX_LEN, 0,
 			   (struct sockaddr *)&client_addr, &client_length)) < 0) {
 	if (errno == EINTR)
 	    continue;		/* Received signal, retry syscall. */

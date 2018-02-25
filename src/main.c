@@ -541,7 +541,7 @@ int main(int argc, char *argv[])
 
 	for (i = 0; n > 0 && i < nhandlers; i++) {
 	    if (FD_ISSET(ihandlers[i].fd, &fds))
-		(*ihandlers[i].func)(ihandlers[i].fd, &fds);
+		ihandlers[i].func(ihandlers[i].fd);
 	}
     }
 

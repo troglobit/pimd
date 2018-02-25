@@ -123,8 +123,8 @@
 #endif /* BSD */
 #endif /* BYTE_ORDER */
 
-typedef void (*cfunc_t) (void *);
-typedef void (*ihfunc_t) (int, fd_set *);
+typedef void (*cfunc_t)  (void *);
+typedef void (*ihfunc_t) (int);
 
 #include "dvmrp.h"     /* Added for further compatibility and convenience */
 #include "pimd.h"
