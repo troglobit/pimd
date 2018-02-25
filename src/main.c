@@ -153,12 +153,13 @@ static struct debugname {
 /*
  * Forward declarations.
  */
-static void handler      (int);
-static void timer	 (void *);
-static void cleanup      (void);
-static void restart      (int);
-static void resetlogging (void *);
-static void add_static_rp(void);
+static void            handler       (int);
+static void            timer         (void *);
+static struct timeval *timeout       (int);
+static void            cleanup       (void);
+static void            restart       (int);
+static void            resetlogging  (void *);
+static void            add_static_rp (void);
 
 int register_input_handler(int fd, ihfunc_t func)
 {
@@ -295,9 +296,8 @@ static char *progname(char *arg0)
 int main(int argc, char *argv[])
 {
     int dummysigalrm, foreground = 0, do_syslog = 1;
-    struct timeval tv, difftime, curtime, lasttime, *timeout;
     fd_set rfds, readers;
-    int nfds, n, i, secs, ch;
+    int nfds, n = -1, i, ch;
     struct sigaction sa;
     struct option long_options[] = {
 	{ "config",        1, 0, 'f' },
@@ -529,20 +529,8 @@ int main(int argc, char *argv[])
      * Main receive loop.
      */
     dummysigalrm = SIGALRM;
-    difftime.tv_usec = 0;
-    gettimeofday(&curtime, NULL);
-    lasttime = curtime;
-    while (1) {
-	memcpy(&rfds, &readers, sizeof(rfds));
-	secs = timer_nextTimer();
-	if (secs == -1)
-	    timeout = NULL;
-	else {
-	    timeout = &tv;
-	    timeout->tv_sec = secs;
-	    timeout->tv_usec = 0;
-	}
 
+    while (1) {
 	if (sighandled) {
 	    if (sighandled & GOT_SIGINT) {
 		sighandled &= ~GOT_SIGINT;
@@ -561,7 +549,6 @@ int main(int argc, char *argv[])
 		    if (ihandlers[i].fd >= nfds)
 			nfds = ihandlers[i].fd + 1;
 		}
-		memcpy(&rfds, &readers, sizeof(rfds));
 	    }
 	    if (sighandled & GOT_SIGUSR1) {
 		sighandled &= ~GOT_SIGUSR1;
@@ -576,61 +563,20 @@ int main(int argc, char *argv[])
 		timer(&dummysigalrm);
 	    }
 	}
-	if ((n = select(nfds, &rfds, NULL, NULL, timeout)) < 0) {
+
+	memcpy(&rfds, &readers, sizeof(rfds));
+	n = select(nfds, &rfds, NULL, NULL, timeout(n));
+	if (n < 0) {
 	    if (errno != EINTR) /* SIGALRM is expected */
 		logit(LOG_WARNING, errno, "select failed");
 	    continue;
 	}
-	if (n > 0) {
-	    /* TODO: shall check first igmp_socket for better performance? */
-	    for (i = 0; i < nhandlers; i++) {
-		if (FD_ISSET(ihandlers[i].fd, &rfds)) {
-		    (*ihandlers[i].func)(ihandlers[i].fd, &rfds);
-		}
-	    }
-	}
 
-	/*
-	 * Handle timeout queue.
-	 *
-	 * If select + packet processing took more than 1 second,
-	 * or if there is a timeout pending, age the timeout queue.
-	 *
-	 * If not, collect usec in difftime to make sure that the
-	 * time doesn't drift too badly.
-	 *
-	 * If the timeout handlers took more than 1 second,
-	 * age the timeout queue again.  XXX This introduces the
-	 * potential for infinite loops!
-	 */
-	do {
-	    /*
-	     * If the select timed out, then there's no other
-	     * activity to account for and we don't need to
-	     * call gettimeofday.
-	     */
-	    if (n == 0) {
-		curtime.tv_sec = lasttime.tv_sec + secs;
-		curtime.tv_usec = lasttime.tv_usec;
-		n = -1;	/* don't do this next time through the loop */
-	    } else
-		gettimeofday(&curtime, NULL);
-	    difftime.tv_sec = curtime.tv_sec - lasttime.tv_sec;
-	    difftime.tv_usec += curtime.tv_usec - lasttime.tv_usec;
-	    while (difftime.tv_usec >= 1000000) {
-		difftime.tv_sec++;
-		difftime.tv_usec -= 1000000;
-	    }
-	    if (difftime.tv_usec < 0) {
-		difftime.tv_sec--;
-		difftime.tv_usec += 1000000;
-	    }
-	    lasttime = curtime;
-	    if (secs == 0 || difftime.tv_sec > 0)
-		age_callout_queue(difftime.tv_sec);
-	    secs = -1;
-	} while (difftime.tv_sec > 0);
-    } /* Main loop */
+	for (i = 0; n > 0 && i < nhandlers; i++) {
+	    if (FD_ISSET(ihandlers[i].fd, &rfds))
+		(*ihandlers[i].func)(ihandlers[i].fd, &rfds);
+	}
+    }
 
     logit(LOG_NOTICE, 0, "%s exiting.", versionstring);
     cleanup();
@@ -669,6 +615,66 @@ static void timer(void *i __attribute__((unused)))
 
     virtual_time += TIMER_INTERVAL;
     timer_setTimer(TIMER_INTERVAL, timer, NULL);
+}
+
+/*
+ * Handle timeout queue.
+ *
+ * If select() + packet processing took more than 1 second,
+ * or if there is a timeout pending, age the timeout queue.
+ *
+ * If not, collect usec in difftime to make sure that the
+ * time doesn't drift too badly.
+ *
+ * If the timeout handlers took more than 1 second,
+ * age the timeout queue again.  XXX This introduces the
+ * potential for infinite loops!
+ */
+static struct timeval *timeout(int n)
+{
+    static struct timeval tv, difftime, curtime, lasttime;
+    struct timeval *result = NULL;
+    int secs;
+
+    secs = timer_nextTimer();
+    if (secs != -1) {
+	result = &tv;
+	tv.tv_sec  = secs;
+	tv.tv_usec = 0;
+    }
+
+    do {
+	/*
+	 * If select() timed out, then there's no other
+	 * activity to account for and we don't need to
+	 * call gettimeofday.
+	 */
+	if (n == 0) {
+	    curtime.tv_sec = lasttime.tv_sec + secs;
+	    curtime.tv_usec = lasttime.tv_usec;
+	    n = -1; /* don't do this next time through the loop */
+	} else
+	    gettimeofday(&curtime, NULL);
+
+	difftime.tv_sec = curtime.tv_sec - lasttime.tv_sec;
+	difftime.tv_usec += curtime.tv_usec - lasttime.tv_usec;
+	while (difftime.tv_usec >= 1000000) {
+	    difftime.tv_sec++;
+	    difftime.tv_usec -= 1000000;
+	}
+
+	if (difftime.tv_usec < 0) {
+	    difftime.tv_sec--;
+	    difftime.tv_usec += 1000000;
+	}
+	lasttime = curtime;
+
+	if (secs == 0 || difftime.tv_sec > 0)
+	    age_callout_queue(difftime.tv_sec);
+	secs = -1;
+    } while (difftime.tv_sec > 0);
+
+    return result;
 }
 
 /*
