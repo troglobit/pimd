@@ -298,7 +298,7 @@ int main(int argc, char *argv[])
 {
     int foreground = 0, do_syslog = 1;
     fd_set fds;
-    int nfds, n = -1, i, ch;
+    int nfds, fd, n = -1, i, ch;
     struct sigaction sa;
     struct option long_options[] = {
 	{ "config",        1, 0, 'f' },
@@ -441,20 +441,21 @@ int main(int argc, char *argv[])
 	close(STDOUT_FILENO);
 	close(STDERR_FILENO);
 
-	n = open("/dev/null", O_RDWR, 0);
-	if (n >= 0) {
-	    dup2(n, STDIN_FILENO);
-	    dup2(n, STDOUT_FILENO);
-	    dup2(n, STDERR_FILENO);
+	fd = open("/dev/null", O_RDWR, 0);
+	if (fd >= 0) {
+	    dup2(fd, STDIN_FILENO);
+	    dup2(fd, STDOUT_FILENO);
+	    dup2(fd, STDERR_FILENO);
+	    close(fd);
 	}
 #ifdef SYSV
 	setpgrp();
 #else
 #ifdef TIOCNOTTY
-	n = open("/dev/tty", 2);
-	if (n >= 0) {
-	    (void)ioctl(n, TIOCNOTTY, (char *)0);
-	    (void)close(n);
+	fd = open("/dev/tty", 2);
+	if (fd >= 0) {
+	    (void)ioctl(fd, TIOCNOTTY, (char *)0);
+	    close(fd);
 	}
 #else
 	if (setsid() < 0)
