@@ -46,7 +46,7 @@ install process.  E.g., to install pimd to `/usr` instead of the default
 
     ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var
 	make
-    make DESTDIR=/tmp/pimd-2.3.0-1 install-strip
+    make DESTDIR=/tmp/pimd-2.3.2-1 install-strip
 
 
 Building from GIT
