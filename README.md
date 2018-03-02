@@ -234,7 +234,9 @@ usual, it is recommended that you start it manually first, to make sure
 everything works as expected, before adding it to your system's startup
 scripts, with any startup flags it might need.
 
+```
     pimd [-n] [-s] [-c file] [-d subsys1[,...,subsysN]] [-l level]
+```
 
 * `-n`: Run in foreground, with logs defaulting to stdout
 * `-s`: Use syslog, default unless `-n`
@@ -248,12 +250,16 @@ scripts, with any startup flags it might need.
 
 **Example:**
 
+```
     pimd -c /cfg/pimd.conf -digmp_proto,pim_jp,kernel,pim_register
+```
 
-Notice the lack of spaces in the option argument to `-d`, the
-long-option `--debug=igmp_proto,pim_jp,kernel,pim_register`is slightly
-more readable.
+Note, spaces cannot be used in the argument to `-d`.  A slightly more
+readable variant is the long option `--debug`:
 
+```
+    pimd --debug=igmp_proto,pim_jp,kernel,pim_register
+```
 
 Monitoring
 ----------
@@ -261,14 +267,15 @@ Monitoring
 To see the virtual interface table, including neighboring PIM routers,
 and the multicast routing table:
 
-    pimd -r
+    pimctl
 
 or to watch it continually:
 
-    watch pimd -r
+    watch pimctl
 
-In addition, pimd logs important events to the system logfile, in
-particular at startup when parsing the `pimd.conf` configuration file.
+See the  `pimctl help` usage text  for more details.  Also,  `pimd` logs
+important events to  the system log file, in particular  at startup when
+it parses the `pimd.conf` configuration file.
 
 
 Contributing
