@@ -309,15 +309,9 @@ Stanford Junior University.
 [the FTP]:         http://ftp.troglobit.com/pimd/
 [releases page]:   https://github.com/troglobit/pimd/releases
 [buildsystem]:     https://airs.com/ian/configure/
-[contrib]:         https://github.com/troglobit/pimd/blob/master/CONTRIBUTING.md
+[contrib]:         https://github.com/troglobit/pimd/blob/master/docs/CONTRIBUTING.md
 [Joachim Nilsson]: http://troglobit.com
 [Travis]:          https://travis-ci.org/troglobit/pimd
 [Travis Status]:   https://travis-ci.org/troglobit/pimd.png?branch=master
 [Coverity Scan]:   https://scan.coverity.com/projects/3319
 [Coverity Status]: https://scan.coverity.com/projects/3319/badge.svg
-
-<!--
-  -- Local Variables:
-  -- mode: markdown
-  -- End:
-  -->
