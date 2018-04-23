@@ -1,8 +1,8 @@
 DISTCHECK_CONFIGURE_FLAGS = --with-systemd=$$dc_install_base/$(systemd)
 
 dist_man8_MANS   = pimd.8
-doc_DATA         = README.md ChangeLog.org LICENSE LICENSE.mrouted pimd.conf
-EXTRA_DIST       = README.md ChangeLog.org LICENSE LICENSE.mrouted pimd.conf
+doc_DATA         = README.md ChangeLog.org LICENSE docs/LICENSE.mrouted pimd.conf
+EXTRA_DIST       = README.md ChangeLog.org LICENSE docs/LICENSE.mrouted pimd.conf
 DISTCLEANFILES   = *~ DEADJOE semantic.cache *.gdb *.elf core core.* *.d
 SUBDIRS          = src include
 
