@@ -291,6 +291,16 @@ check out the code from GitHub:
 See the file [CONTRIBUTING.md][contrib] for further details.
 
 
+Origin & References
+-------------------
+
+Part of this program has been derived from mrouted.  The mrouted program
+is covered by the license in the accompanying file named LICENSE.mrouted
+
+The mrouted program is COPYRIGHT 1989 by The Board of Trustees of Leland
+Stanford Junior University.
+
+
 [License]:         https://en.wikipedia.org/wiki/BSD_licenses
 [License Badge]:   https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
 [github]:          http://github.com/troglobit/pimd
