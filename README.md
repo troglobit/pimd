@@ -1,5 +1,5 @@
-README
-======
+PIM-SM/SSM Multicast Routing for UNIX
+=====================================
 [![License Badge][]][License] [![Travis Status][]][Travis] [![Coverity Status][]][Coverity Scan]
 
 Table of Contents
