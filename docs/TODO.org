@@ -3,6 +3,17 @@ TODO List                                                             -*-org-*-
 THIS LIST IS FAR AWAY FROM BEING COMPLETE, so these are the few things
 that came up at the right moment to be written down.
 
+
+* Before 3.0 release:
+** Merge patch from Ventus Networks
+** Update ChangeLog
+** Update man page
+** Implement pimctl tool to read status
+** .conf file changes?
+- Remove backwards compat?
+- Use yacc implementation from mrouted?
+** Add Quagga interface?
+
 * Random issues:
 ** Run the code checker sparse harder on the code: CC=cgcc make
 
