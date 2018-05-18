@@ -781,6 +781,7 @@ rp_grp_entry_t *rp_grp_match(uint32_t group)
     uint32_t curr_address_h     = 0;
     uint32_t group_h            = ntohl(group);
     uint32_t curr_hash_mask_h   = 0;
+    uint32_t curr_group_mask = 0; /* longest match */
 
     if (grp_mask_list == NULL)
 	return NULL;
@@ -790,6 +791,13 @@ rp_grp_entry_t *rp_grp_match(uint32_t group)
 	if ((group_h & ntohl(mask_ptr->group_mask))
 	    != ntohl(mask_ptr->group_mask & mask_ptr->group_addr))
 	    continue;
+
+    if(curr_group_mask > mask_ptr->group_mask)
+        continue;
+
+    /* reset best priority while mask get longer */
+    if(curr_group_mask < mask_ptr->group_mask)
+        best_priority = ~0;
 
 	curr_hash_mask_h = ntohl(mask_ptr->hash_mask);
 	for (entry_ptr = mask_ptr->grp_rp_next; entry_ptr; entry_ptr = entry_ptr->grp_rp_next) {
@@ -815,6 +823,7 @@ rp_grp_entry_t *rp_grp_match(uint32_t group)
 	    best_priority = best_entry->priority;
 	    best_address_h = curr_address_h;
 	    best_hash_value = curr_hash_value;
+        curr_group_mask = mask_ptr->group_mask;
 	}
     }
 
