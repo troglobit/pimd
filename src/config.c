@@ -807,8 +807,6 @@ int parse_rp_candidate(char *s)
     char *w;
     uint32_t local = INADDR_ANY_N;
 
-    cand_rp_flag = FALSE;
-    my_cand_rp_adv_period = PIM_DEFAULT_CAND_RP_ADV_PERIOD;
     while (!EQUAL((w = next_word(&s)), "")) {
 	if (EQUAL(w, "priority")) {
 	    if (EQUAL((w = next_word(&s)), "")) {
@@ -850,7 +848,6 @@ int parse_rp_candidate(char *s)
 	    if (time > PIM_MAX_CAND_RP_ADV_PERIOD)
 		time = PIM_MAX_CAND_RP_ADV_PERIOD;
 
-	    my_cand_rp_adv_period = time;
 	    continue;
 	}
 
@@ -957,8 +954,6 @@ int parse_bsr_candidate(char *s)
     char *w;
     uint32_t local = INADDR_ANY_N;
 
-    cand_bsr_flag = FALSE;
-    my_bsr_adv_period = PIM_BOOTSTRAP_PERIOD;
     while (!EQUAL((w = next_word(&s)), "")) {
 	if (EQUAL(w, "priority")) {
 	    if (EQUAL((w = next_word(&s)), "")) {
@@ -1001,7 +996,6 @@ int parse_bsr_candidate(char *s)
 	    if (time > PIM_MAX_BOOTSTRAP_PERIOD)
 		time = PIM_MAX_BOOTSTRAP_PERIOD;
 
-	    my_bsr_adv_period = time;
 	    continue;
 	}
 
@@ -1507,6 +1501,14 @@ void config_vifs_from_file(void)
     cand_rp_adv_message.insert_data_ptr = cand_rp_adv_message.buffer;
     /* TODO: XXX: HARDCODING!!! */
     cand_rp_adv_message.insert_data_ptr += (4 + 6);
+
+    /* set a sensible defaults */
+    my_bsr_adv_period = PIM_BOOTSTRAP_PERIOD;
+    my_cand_rp_adv_period = PIM_DEFAULT_CAND_RP_ADV_PERIOD;
+
+    /* Reset flags on file (re)load */
+    cand_rp_flag = FALSE;
+    cand_bsr_flag = FALSE;
 
     fp = fopen(config_file, "r");
     if (!fp) {
