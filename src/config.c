@@ -1598,12 +1598,7 @@ void config_vifs_from_file(void)
     if (error_flag)
 	logit(LOG_ERR, 0, "%s:%u - Syntax error", config_file, lineno);
 
-    if (cand_bsr_flag != FALSE) {
-	my_bsr_timeout = 2 * my_bsr_adv_period + 10;   /* RFC5059 section 5 */
-    } else {
-	/* set a sensible default to check and compute RPs holdtime */
-	my_bsr_adv_period = PIM_BOOTSTRAP_PERIOD;
-    }
+    my_bsr_timeout = 2 * my_bsr_adv_period + 10;   /* RFC5059 section 5 */
 
     recommended_rp_holdtime = 2.5 * my_bsr_adv_period; /* RFC5059 section 3.3 SHOULD BE value */
 
