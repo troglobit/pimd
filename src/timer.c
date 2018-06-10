@@ -193,7 +193,7 @@ void age_vifs(void)
     }
 }
 
-#define MRT_IS_LASTHOP(mrt) VIFM_LASTHOP_ROUTER(mrt->leaves, mrt->oifs)
+#define MRT_IS_LASTHOP(mrt) PIMD_VIFM_LASTHOP_ROUTER(mrt->leaves, mrt->oifs)
 #define MRT_IS_RP(mrt)      mrt->incoming == reg_vif_num
 
 static void try_switch_to_spt(mrtentry_t *mrt, kernel_cache_t *kc)
@@ -363,7 +363,7 @@ void age_routes(void)
     rpentry_t *rp;
     int update_rp_iif;
     int update_src_iif;
-    vifbitmap_t new_pruned_oifs;
+    uint8_t new_pruned_oifs[MAXVIFS];
     int assert_timer_expired = 0;
 
     /*
@@ -424,9 +424,9 @@ void age_routes(void)
 	    /* outgoing interfaces timers */
 	    change_flag = FALSE;
 	    for (vifi = 0; vifi < numvifs; vifi++) {
-		if (VIFM_ISSET(vifi, mrt_rp->joined_oifs)) {
+		if (PIMD_VIFM_ISSET(vifi, mrt_rp->joined_oifs)) {
 		    IF_TIMEOUT(mrt_rp->vif_timers[vifi]) {
-			VIFM_CLR(vifi, mrt_rp->joined_oifs);
+			PIMD_VIFM_CLR(vifi, mrt_rp->joined_oifs);
 			change_flag = TRUE;
 		    }
 		}
@@ -479,7 +479,7 @@ void age_routes(void)
 	    IF_TIMEOUT(mrt_rp->rs_timer) {}
 
 	    /* routing entry */
-	    if ((TIMEOUT(mrt_rp->timer)) && (VIFM_ISEMPTY(mrt_rp->leaves)))
+	    if ((TIMEOUT(mrt_rp->timer)) && (PIMD_VIFM_ISEMPTY(mrt_rp->leaves)))
 		delete_mrtentry(mrt_rp);
 	} /* if (mrt_rp) */
 
@@ -503,15 +503,15 @@ void age_routes(void)
 			assert_timer_expired = TIMEOUT(mrt_grp->assert_timer);
 
 		    for (vifi = 0; vifi < numvifs; vifi++) {
-			if (VIFM_ISSET(vifi, mrt_grp->joined_oifs)) {
+			if (PIMD_VIFM_ISSET(vifi, mrt_grp->joined_oifs)) {
 			    IF_TIMEOUT(mrt_grp->vif_timers[vifi]) {
-				VIFM_CLR(vifi, mrt_grp->joined_oifs);
+				PIMD_VIFM_CLR(vifi, mrt_grp->joined_oifs);
 				change_flag = TRUE;
 			    }
 			}
 
 			if (assert_timer_expired) {
-			    VIFM_CLR(vifi, mrt_grp->asserted_oifs);
+			    PIMD_VIFM_CLR(vifi, mrt_grp->asserted_oifs);
 			    change_flag = TRUE;
 			    mrt_grp->flags &= ~MRTF_ASSERTED;
 			}
@@ -569,7 +569,7 @@ void age_routes(void)
 		    IF_TIMEOUT(mrt_grp->rs_timer) {}
 
 		    /* routing entry */
-		    if ((TIMEOUT(mrt_grp->timer)) && (VIFM_ISEMPTY(mrt_grp->leaves)))
+		    if ((TIMEOUT(mrt_grp->timer)) && (PIMD_VIFM_ISEMPTY(mrt_grp->leaves)))
 			delete_mrtentry(mrt_grp);
 		} /* if (mrt_grp) */
 
@@ -587,18 +587,18 @@ void age_routes(void)
 			assert_timer_expired = TIMEOUT(mrt_srcs->assert_timer);
 
 		    for (vifi = 0; vifi < numvifs; vifi++) {
-			if (VIFM_ISSET(vifi, mrt_srcs->joined_oifs)) {
+			if (PIMD_VIFM_ISSET(vifi, mrt_srcs->joined_oifs)) {
 			    /* TODO: checking for reg_num_vif is slow! */
 			    if (vifi != reg_vif_num) {
 				IF_TIMEOUT(mrt_srcs->vif_timers[vifi]) {
-				    VIFM_CLR(vifi, mrt_srcs->joined_oifs);
+				    PIMD_VIFM_CLR(vifi, mrt_srcs->joined_oifs);
 				    change_flag = TRUE;
 				}
 			    }
 			}
 
 			if (assert_timer_expired) {
-			    VIFM_CLR(vifi, mrt_srcs->asserted_oifs);
+			    PIMD_VIFM_CLR(vifi, mrt_srcs->asserted_oifs);
 			    change_flag = TRUE;
 			    mrt_srcs->flags &= ~MRTF_ASSERTED;
 			}
@@ -718,8 +718,8 @@ void age_routes(void)
 		    IF_TIMER_SET(mrt_srcs->rs_timer) {
 			IF_TIMEOUT(mrt_srcs->rs_timer) {
 			    /* Start encapsulating the packets */
-			    VIFM_COPY(mrt_srcs->pruned_oifs, new_pruned_oifs);
-			    VIFM_CLR(reg_vif_num, new_pruned_oifs);
+			    PIMD_VIFM_COPY(mrt_srcs->pruned_oifs, new_pruned_oifs);
+			    PIMD_VIFM_CLR(reg_vif_num, new_pruned_oifs);
 			    change_interfaces(mrt_srcs,
 					      mrt_srcs->incoming,
 					      mrt_srcs->joined_oifs,
@@ -748,7 +748,7 @@ void age_routes(void)
 
 		    /* routing entry */
 		    if (TIMEOUT(mrt_srcs->timer)) {
-			if (VIFM_ISEMPTY(mrt_srcs->leaves)) {
+			if (PIMD_VIFM_ISEMPTY(mrt_srcs->leaves)) {
 			    delete_mrtentry(mrt_srcs);
 			    continue;
 			}
@@ -760,7 +760,7 @@ void age_routes(void)
 			 * (S,G) entry.
 			 */
 			if (mrt_srcs->group->grp_route) {
-			    if (!((mrt_srcs->group->grp_route->leaves & mrt_srcs->leaves) ^ mrt_srcs->leaves)) {
+			    if (PIMD_VIFM_LASTHOP_ROUTER(mrt_srcs->group->grp_route->leaves, mrt_srcs->leaves)) {
 				delete_mrtentry(mrt_srcs);
 				continue;
 			    }

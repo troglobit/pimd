@@ -433,7 +433,7 @@ int k_del_mfc(int socket, uint32_t source, uint32_t group)
 /*
  * Install/modify a MFC entry in the kernel
  */
-int k_chg_mfc(int socket, uint32_t source, uint32_t group, vifi_t iif, vifbitmap_t oifs, uint32_t rp_addr __attribute__((unused)))
+int k_chg_mfc(int socket, uint32_t source, uint32_t group, vifi_t iif, uint8_t *oifs, uint32_t rp_addr __attribute__((unused)))
 {
     char           input[IFNAMSIZ], output[MAXVIFS * (IFNAMSIZ + 2)] = "";
     vifi_t	   vifi;
@@ -448,10 +448,10 @@ int k_chg_mfc(int socket, uint32_t source, uint32_t group, vifi_t iif, vifbitmap
      * draft-ietf-pim-sm-v2-new-05.txt section 4.2 mentions iif is removed
      * at the packet forwarding phase
      */
-    VIFM_CLR(mc.mfcc_parent, oifs);
+    PIMD_VIFM_CLR(mc.mfcc_parent, oifs);
 
     for (vifi = 0, v = uvifs; vifi < numvifs; vifi++, v++) {
-	if (VIFM_ISSET(vifi, oifs)) {
+	if (PIMD_VIFM_ISSET(vifi, oifs)) {
 	    mc.mfcc_ttls[vifi] = v->uv_threshold;
 	    if (output[0] != 0)
 		strlcat(output, ", ", sizeof(output));

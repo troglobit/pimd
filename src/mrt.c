@@ -794,11 +794,11 @@ static mrtentry_t *alloc_mrtentry(srcentry_t *src, grpentry_t *grp)
     mrt->source  = src;
     mrt->group   = grp;
     mrt->incoming = NO_VIF;
-    VIFM_CLRALL(mrt->joined_oifs);
-    VIFM_CLRALL(mrt->leaves);
-    VIFM_CLRALL(mrt->pruned_oifs);
-    VIFM_CLRALL(mrt->asserted_oifs);
-    VIFM_CLRALL(mrt->oifs);
+    PIMD_VIFM_CLRALL(mrt->joined_oifs);
+    PIMD_VIFM_CLRALL(mrt->leaves);
+    PIMD_VIFM_CLRALL(mrt->pruned_oifs);
+    PIMD_VIFM_CLRALL(mrt->asserted_oifs);
+    PIMD_VIFM_CLRALL(mrt->oifs);
     mrt->upstream = NULL;
     mrt->metric = 0;
     mrt->preference = 0;

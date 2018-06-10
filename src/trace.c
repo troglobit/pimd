@@ -182,7 +182,7 @@ void accept_mtrace(uint32_t src, uint32_t dst, uint32_t group, char *data, u_int
             if (IN_MULTICAST(ntohl(dst)))
                 return;
             errcode = TR_WRONG_IF;
-        } else if (mrt && !VIFM_ISSET(vifi, mrt->oifs)) {
+        } else if (mrt && !PIMD_VIFM_ISSET(vifi, mrt->oifs)) {
             IF_DEBUG(DEBUG_TRACE) {
                 logit(LOG_DEBUG, 0,
                       "Destination %s not on forwarding tree for src %s",
@@ -283,12 +283,12 @@ void accept_mtrace(uint32_t src, uint32_t dst, uint32_t group, char *data, u_int
         else
             resp->tr_pktcnt = htonl(st ? st->st_savpkt : 0xffffffff);
 
-        if (VIFM_ISSET(vifi, gt->gt_scope)) {
+        if (PIMD_VIFM_ISSET(vifi, gt->gt_scope)) {
             resp->tr_rflags = TR_SCOPED;
 	} else if (gt->gt_prsent_timer) {
             resp->tr_rflags = TR_PRUNED;
-        } else if (!VIFM_ISSET(vifi, gt->gt_grpmems)) {
-            if (VIFM_ISSET(vifi, rt->rt_children) &&
+        } else if (!PIMD_VIFM_ISSET(vifi, gt->gt_grpmems)) {
+            if (PIMD_VIFM_ISSET(vifi, rt->rt_children) &&
                 NBRM_ISSETMASK(uvifs[vifi].uv_nbrmap, rt->rt_subordinates)) /*XXX*/
                 resp->tr_rflags = TR_OPRUNED;
             else
@@ -297,7 +297,7 @@ void accept_mtrace(uint32_t src, uint32_t dst, uint32_t group, char *data, u_int
     } else {
         if (scoped_addr(vifi, group))
             resp->tr_rflags = TR_SCOPED;
-        else if (rt && !VIFM_ISSET(vifi, rt->rt_children))
+        else if (rt && !PIMD_VIFM_ISSET(vifi, rt->rt_children))
             resp->tr_rflags = TR_NO_FWD;
     }
 #endif /* 0 */
@@ -329,7 +329,7 @@ void accept_mtrace(uint32_t src, uint32_t dst, uint32_t group, char *data, u_int
             parent_address = INADDR_ANY;
 
         resp->tr_rmtaddr = parent_address;
-        if (vifi != NO_VIF && !VIFM_ISSET(vifi, mrt->oifs)) {
+        if (vifi != NO_VIF && !PIMD_VIFM_ISSET(vifi, mrt->oifs)) {
             IF_DEBUG(DEBUG_TRACE)
                 logit(LOG_DEBUG, 0, "Destination %s not on forwarding tree for src %s",
                       inet_fmt(qry->tr_dst, s1, sizeof(s1)), inet_fmt(qry->tr_src, s2, sizeof(s2)));

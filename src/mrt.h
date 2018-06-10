@@ -48,11 +48,11 @@
 /* Macro to duplicate oif info (oif bits, timers) */
 #define VOIF_COPY(from, to)						\
     do {								\
-	VIFM_COPY((from)->joined_oifs, (to)->joined_oifs);		\
-	VIFM_COPY((from)->oifs, (to)->oifs);				\
-	VIFM_COPY((from)->leaves, (to)->leaves);			\
-	VIFM_COPY((from)->pruned_oifs, (to)->pruned_oifs);		\
-	VIFM_COPY((from)->asserted_oifs, (to)->asserted_oifs);		\
+	PIMD_VIFM_COPY((from)->joined_oifs, (to)->joined_oifs);		\
+	PIMD_VIFM_COPY((from)->oifs, (to)->oifs);			\
+	PIMD_VIFM_COPY((from)->leaves, (to)->leaves);			\
+	PIMD_VIFM_COPY((from)->pruned_oifs, (to)->pruned_oifs);		\
+	PIMD_VIFM_COPY((from)->asserted_oifs, (to)->asserted_oifs);	\
 	memcpy((to)->vif_timers, (from)->vif_timers,			\
 	       numvifs * sizeof((from)->vif_timers[0]));		\
 	memcpy((to)->vif_deletion_delay, (from)->vif_deletion_delay,	\
@@ -190,11 +190,11 @@ typedef struct mrtentry {
     struct grpentry	  *group;	/* pointer to group entry	    */
     struct srcentry	  *source;	/* pointer to source entry (or RP)  */
     vifi_t		  incoming;	/* the iif (either toward S or RP)  */
-    vifbitmap_t		  oifs;		/* The current result oifs	    */
-    vifbitmap_t		  joined_oifs;	/* The joined oifs (Join received)  */
-    vifbitmap_t		  pruned_oifs;	/* The pruned oifs (Prune received) */
-    vifbitmap_t		  asserted_oifs;/* The asserted oifs (lost Assert)  */
-    vifbitmap_t		  leaves;	/* Has directly connected members   */
+    uint8_t		  oifs[MAXVIFS];		/* The current result oifs	    */
+    uint8_t		  joined_oifs[MAXVIFS];		/* The joined oifs (Join received)  */
+    uint8_t		  pruned_oifs[MAXVIFS]; 	/* The pruned oifs (Prune received) */
+    uint8_t		  asserted_oifs[MAXVIFS];	/* The asserted oifs (lost Assert)  */
+    uint8_t		  leaves[MAXVIFS];		/* Has directly connected members   */
     struct pim_nbr_entry *upstream;	/* upstream router, needed because
 					 * of the asserts it may be different
 					 * than the source (or RP) upstream

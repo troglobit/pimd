@@ -37,6 +37,52 @@
  *
  */
 
+#define	PIMD_VIFM_SET(n, m)		(m[n] = 1)
+#define	PIMD_VIFM_CLR(n, m)		(m[n] = 0)
+#define	PIMD_VIFM_ISSET(n, m)		(m[n] ? 1 : 0)
+#define PIMD_VIFM_CLRALL(m)		(memset(m, 0, MAXVIFS))
+#define PIMD_VIFM_COPY(mfrom, mto)	(memcpy(mto, mfrom, MAXVIFS))
+
+inline static int PIMD_VIFM_SAME(uint8_t *m1, uint8_t *m2)
+{
+    return memcmp(m1, m2, MAXVIFS) ? 0 : 1;
+}
+
+inline static int PIMD_VIFM_ISEMPTY(uint8_t *m)
+{
+    int n;
+
+    for (n = 0; n < MAXVIFS; n ++) {
+	if (m[n] != 0)
+	    return 0;
+    }
+
+    return 1;
+}
+
+inline static void PIMD_VIFM_CLR_MASK(uint8_t *m, uint8_t *mask)
+{
+    int n;
+
+    for (n = 0; n < MAXVIFS; n ++) {
+	if (mask[n] != 0)
+	    m[n] = 0;
+    }
+}
+
+inline static void PIMD_VIFM_MERGE(uint8_t *m1, uint8_t *m2, uint8_t *result)
+{
+    int n;
+
+    for (n = 0; n < MAXVIFS; n ++)
+	result[n] = m1[n] | m2[n];
+}
+
+/* Check whether I am the last hop on some LAN */
+inline static int PIMD_VIFM_LASTHOP_ROUTER(uint8_t *leaves, uint8_t *oifs)
+{
+    return memcmp(leaves, oifs, MAXVIFS) ? 0 : 1;
+}
 
 /*
  * Bitmap handling functions.

@@ -567,7 +567,7 @@ void rsrr_cache_bring_up(struct gtable *gt)
 	    || (gt_rp->rsrr_cache == (struct rsrr_cache *)NULL))
 	    return;
 	if ((gt_rp->incoming == gt->incoming)
-	    && (VIFM_SAME(gt->oifs, gt_rp->oifs))) {
+	    && (PIMD_VIFM_SAME(gt->oifs, gt_rp->oifs))) {
 	    /* The (iif, oifs) are the same. Just link to the new routing
 	     * table entry. No need to send message to rsvpd */
 	    rcnp = &gt_rp->rsrr_cache;
@@ -635,7 +635,7 @@ void rsrr_cache_bring_up(struct gtable *gt)
 		/* Found it. Need just this entry */
 		*rcnp = rc->next; /* Free from the original chain */
 		if ((gt_wide->incoming == gt->incoming)
-		    && (VIFM_SAME(gt_wide->oifs, gt->oifs))) {
+		    && (PIMD_VIFM_SAME(gt_wide->oifs, gt->oifs))) {
 		    /* The (iif, oifs) are the same. Just link to the
 		     * new routing table entry. No need to send
 		     * message to rsvpd
@@ -722,7 +722,7 @@ void rsrr_cache_clean(struct gtable *gt)
 	    rc = rc_next;
 	}
     } else if ((gt_wide->incoming == gt->incoming)
-	       && (VIFM_SAME(gt->oifs, gt_wide->oifs))) {
+	       && (PIMD_VIFM_SAME(gt->oifs, gt_wide->oifs))) {
 	/* The (iif, oifs) are the same. Just move to the beginning of the
 	 * RSRR cache chain. No need to send message */
 	while (rc->next != (struct rsrr_cache *)NULL)

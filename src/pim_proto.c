@@ -218,7 +218,7 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
 		    continue;  /* This is not (S,G) entry */
 
 		/* Remove the register oif */
-		VIFM_CLR(reg_vif_num, mrtentry->joined_oifs);
+		PIMD_VIFM_CLR(reg_vif_num, mrtentry->joined_oifs);
 		change_interfaces(mrtentry,
 				  mrtentry->incoming,
 				  mrtentry->joined_oifs,
@@ -592,7 +592,7 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
     uint32_t is_border, is_null;
     mrtentry_t *mrtentry;
     mrtentry_t *mrtentry2;
-    vifbitmap_t oifs;
+    uint8_t oifs[MAXVIFS];
 
     /*
      * If instance specific multicast routing table is in use, check
@@ -734,8 +734,8 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
 	SET_TIMER(mrtentry->timer, PIM_DATA_TIMEOUT); /* restart timer */
 	if (!(mrtentry->flags & MRTF_SPT)) { /* The SPT bit is not set */
 	    if (!is_null) {
-		calc_oifs(mrtentry, &oifs);
-		if (VIFM_ISEMPTY(oifs) && (mrtentry->incoming == reg_vif_num)) {
+		calc_oifs(mrtentry, oifs);
+		if (PIMD_VIFM_ISEMPTY(oifs) && (mrtentry->incoming == reg_vif_num)) {
 		    IF_DEBUG(DEBUG_PIM_REGISTER)
 			logit(LOG_DEBUG, 0, "No output intefaces found for group %s source %s",
 			      inet_fmt(inner_grp, s1, sizeof(s1)), inet_fmt(inner_src, s2, sizeof(s2)));
@@ -813,8 +813,8 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
 	      inet_fmt(reg_src, s1, sizeof(s1)), inet_fmt(inner_grp, s2, sizeof(s2)));
 
 	/* (*,G) entry */
-	calc_oifs(mrtentry, &oifs);
-	if (VIFM_ISEMPTY(oifs)) {
+	calc_oifs(mrtentry, oifs);
+	if (PIMD_VIFM_ISEMPTY(oifs)) {
 	    IF_DEBUG(DEBUG_PIM_REGISTER)
 		logit(LOG_DEBUG, 0, "No output intefaces found for group %s source %s (*,G)",
 		      inet_fmt(inner_grp, s1, sizeof(s1)), inet_fmt(inner_src, s2, sizeof(s2)));
@@ -1038,7 +1038,7 @@ int receive_pim_register_stop(uint32_t reg_src, uint32_t reg_dst, char *msg, siz
     pim_encod_uni_addr_t eusaddr;
     uint8_t *data;
     mrtentry_t *mrtentry;
-    vifbitmap_t pruned_oifs;
+    uint8_t pruned_oifs[MAXVIFS];
 
     /* Checksum */
     if (inet_cksum((uint16_t *)msg, len))
@@ -1069,8 +1069,8 @@ int receive_pim_register_stop(uint32_t reg_src, uint32_t reg_dst, char *msg, siz
     SET_TIMER(mrtentry->rs_timer, (0.5 * PIM_REGISTER_SUPPRESSION_TIMEOUT)
 	      + (RANDOM() % (PIM_REGISTER_SUPPRESSION_TIMEOUT + 1)));
     /* Prune the register_vif from the outgoing list */
-    VIFM_COPY(mrtentry->pruned_oifs, pruned_oifs);
-    VIFM_SET(reg_vif_num, pruned_oifs);
+    PIMD_VIFM_COPY(mrtentry->pruned_oifs, pruned_oifs);
+    PIMD_VIFM_SET(reg_vif_num, pruned_oifs);
     change_interfaces(mrtentry, mrtentry->incoming,
 		      mrtentry->joined_oifs, pruned_oifs,
 		      mrtentry->leaves,
@@ -1110,13 +1110,13 @@ send_pim_register_stop(uint32_t reg_src, uint32_t reg_dst, uint32_t inner_grp, u
  ************************************************************************/
 int join_or_prune(mrtentry_t *mrtentry, pim_nbr_entry_t *upstream_router)
 {
-    vifbitmap_t entry_oifs;
+    uint8_t entry_oifs[MAXVIFS];
     mrtentry_t *mrtentry_grp;
 
     if (!mrtentry || !upstream_router)
 	return PIM_ACTION_NOTHING;
 
-    calc_oifs(mrtentry, &entry_oifs);
+    calc_oifs(mrtentry, entry_oifs);
     if (mrtentry->flags & (MRTF_PMBR | MRTF_WC)) {
 	if (IN_PIM_SSM_RANGE(mrtentry->group->group)) {
 	    logit(LOG_DEBUG, 0, "No action for SSM (PMBR|WC)");
@@ -1128,14 +1128,14 @@ int join_or_prune(mrtentry_t *mrtentry, pim_nbr_entry_t *upstream_router)
 	    return PIM_ACTION_NOTHING;
 
 	/* TODO: XXX: Can we have (*,*,RP) prune? */
-	if (VIFM_ISEMPTY(entry_oifs)) {
+	if (PIMD_VIFM_ISEMPTY(entry_oifs)) {
 	    /* NULL oifs */
 
 	    if (!(uvifs[mrtentry->incoming].uv_flags & VIFF_DR))
 		/* I am not the DR for that subnet. */
 		return PIM_ACTION_PRUNE;
 
-	    if (VIFM_ISSET(mrtentry->incoming, mrtentry->leaves))
+	    if (PIMD_VIFM_ISSET(mrtentry->incoming, mrtentry->leaves))
 		/* I am the DR and have local leaves */
 		return PIM_ACTION_JOIN;
 
@@ -1152,7 +1152,7 @@ int join_or_prune(mrtentry_t *mrtentry, pim_nbr_entry_t *upstream_router)
 	if (mrtentry->upstream == upstream_router) {
 	    if (!(mrtentry->flags & MRTF_RP)) {
 		/* Upstream router toward S */
-		if (VIFM_ISEMPTY(entry_oifs)) {
+		if (PIMD_VIFM_ISEMPTY(entry_oifs)) {
 		    if (mrtentry->group->active_rp_grp &&
 			mrtentry->group->rpaddr == my_cand_rp_address) {
 			/* (S,G) at the RP. Don't send Join/Prune
@@ -1173,7 +1173,7 @@ int join_or_prune(mrtentry_t *mrtentry, pim_nbr_entry_t *upstream_router)
 		    return PIM_ACTION_NOTHING;
 		}
 		/* Upstream router toward RP */
-		if (VIFM_ISEMPTY(entry_oifs))
+		if (PIMD_VIFM_ISEMPTY(entry_oifs))
 		    return PIM_ACTION_PRUNE;
 	    }
 	}
@@ -1741,9 +1741,9 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 	    for (rp_grp = rpentry->cand_rp->rp_grp_next; rp_grp; rp_grp = rp_grp->rp_grp_next) {
 		for (grp = rp_grp->grplink; grp; grp = grp->rpnext) {
 		    if (grp->grp_route)
-			VIFM_CLR(vifi, grp->grp_route->pruned_oifs);
+			PIMD_VIFM_CLR(vifi, grp->grp_route->pruned_oifs);
 		    for (mrt = grp->mrtlink; mrt; mrt = mrt->grpnext)
-			VIFM_CLR(vifi, mrt->pruned_oifs);
+			PIMD_VIFM_CLR(vifi, mrt->pruned_oifs);
 		}
 	    }
 	}
@@ -1807,7 +1807,7 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 		    for (mrt_srcs = mrt->group->mrtlink;
 			 mrt_srcs;
 			 mrt_srcs = mrt_srcs->grpnext)
-			VIFM_CLR(vifi, mrt_srcs->pruned_oifs);
+			PIMD_VIFM_CLR(vifi, mrt_srcs->pruned_oifs);
 		}
 		break;
 	    }
@@ -1847,8 +1847,8 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 				  mrt->vif_deletion_delay[vifi]);
 		}
 		IF_TIMER_NOT_SET(mrt->vif_timers[vifi]) {
-		    VIFM_CLR(vifi, mrt->joined_oifs);
-		    VIFM_SET(vifi, mrt->pruned_oifs);
+		    PIMD_VIFM_CLR(vifi, mrt->joined_oifs);
+		    PIMD_VIFM_SET(vifi, mrt->pruned_oifs);
 		    change_interfaces(mrt,
 				      mrt->incoming,
 				      mrt->joined_oifs,
@@ -1873,8 +1873,8 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 				      mrt->vif_deletion_delay[vifi]);
 		    }
 		    IF_TIMER_NOT_SET(mrt->vif_timers[vifi]) {
-			VIFM_CLR(vifi, mrt->joined_oifs);
-			VIFM_SET(vifi, mrt->pruned_oifs);
+			PIMD_VIFM_CLR(vifi, mrt->joined_oifs);
+			PIMD_VIFM_SET(vifi, mrt->pruned_oifs);
 			change_interfaces(mrt,
 					  mrt->incoming,
 					  mrt->joined_oifs,
@@ -1902,8 +1902,8 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 		     * its timer only should be lowered, so the prune can be
 		     * overwritten on multiaccess LAN. Spec BUG.
 		     */
-		    VIFM_CLR(vifi, mrt->joined_oifs);
-		    VIFM_SET(vifi, mrt->pruned_oifs);
+		    PIMD_VIFM_CLR(vifi, mrt->joined_oifs);
+		    PIMD_VIFM_SET(vifi, mrt->pruned_oifs);
 		    change_interfaces(mrt,
 				      mrt->incoming,
 				      mrt->joined_oifs,
@@ -1936,8 +1936,8 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 					  mrt->vif_deletion_delay[vifi]);
 			}
 			IF_TIMER_NOT_SET(mrt->vif_timers[vifi]) {
-			    VIFM_CLR(vifi, mrt->joined_oifs);
-			    VIFM_SET(vifi, mrt->pruned_oifs);
+			    PIMD_VIFM_CLR(vifi, mrt->joined_oifs);
+			    PIMD_VIFM_SET(vifi, mrt->pruned_oifs);
 			    change_interfaces(mrt,
 					      mrt->incoming,
 					      mrt->joined_oifs,
@@ -1961,8 +1961,8 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 		    /* TODO: XXX: should only lower the oif timer, so it can
 		     * be overwritten on multiaccess LAN. Spec bug.
 		     */
-		    VIFM_CLR(vifi, mrt->joined_oifs);
-		    VIFM_SET(vifi, mrt->pruned_oifs);
+		    PIMD_VIFM_CLR(vifi, mrt->joined_oifs);
+		    PIMD_VIFM_SET(vifi, mrt->pruned_oifs);
 		    change_interfaces(mrt,
 				      mrt->incoming,
 				      mrt->joined_oifs,
@@ -1993,10 +1993,10 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 		if (!mrt)
 		    continue;
 
-		new_join = (VIFM_ISSET(vifi, mrt->joined_oifs) == 0);
-		VIFM_SET(vifi, mrt->joined_oifs);
-		VIFM_CLR(vifi, mrt->pruned_oifs);
-		VIFM_CLR(vifi, mrt->asserted_oifs);
+		new_join = (PIMD_VIFM_ISSET(vifi, mrt->joined_oifs) == 0);
+		PIMD_VIFM_SET(vifi, mrt->joined_oifs);
+		PIMD_VIFM_CLR(vifi, mrt->pruned_oifs);
+		PIMD_VIFM_CLR(vifi, mrt->asserted_oifs);
 		/* TODO: XXX: TIMER implem. dependency! */
 		if (mrt->vif_timers[vifi] < holdtime) {
 		    SET_TIMER(mrt->vif_timers[vifi], holdtime);
@@ -2025,9 +2025,9 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 		    if (new_join) {
 			if (mrt_srcs->upstream)
 			    send_pim_join(mrt_srcs->upstream, mrt_srcs, MRTF_SG, PIM_JOIN_PRUNE_HOLDTIME);
-			VIFM_SET(vifi, mrt_srcs->joined_oifs);
-			VIFM_CLR(vifi, mrt_srcs->pruned_oifs);
-			VIFM_CLR(vifi, mrt_srcs->asserted_oifs);
+			PIMD_VIFM_SET(vifi, mrt_srcs->joined_oifs);
+			PIMD_VIFM_CLR(vifi, mrt_srcs->pruned_oifs);
+			PIMD_VIFM_CLR(vifi, mrt_srcs->asserted_oifs);
 			change_interfaces(mrt_srcs,
 					  mrt_srcs->incoming,
 					  mrt_srcs->joined_oifs,
@@ -2061,10 +2061,10 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 		if (!mrt)
 		    continue;
 
-		new_join = (VIFM_ISSET(vifi, mrt->joined_oifs) == 0);
-		VIFM_SET(vifi, mrt->joined_oifs);
-		VIFM_CLR(vifi, mrt->pruned_oifs);
-		VIFM_CLR(vifi, mrt->asserted_oifs);
+		new_join = (PIMD_VIFM_ISSET(vifi, mrt->joined_oifs) == 0);
+		PIMD_VIFM_SET(vifi, mrt->joined_oifs);
+		PIMD_VIFM_CLR(vifi, mrt->pruned_oifs);
+		PIMD_VIFM_CLR(vifi, mrt->asserted_oifs);
 		/* TODO: XXX: TIMER implem. dependency! */
 		if (mrt->vif_timers[vifi] < holdtime) {
 		    SET_TIMER(mrt->vif_timers[vifi], holdtime);
@@ -2138,9 +2138,9 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 	    if (!mrt)
 		continue;
 
-	    VIFM_SET(vifi, mrt->joined_oifs);
-	    VIFM_CLR(vifi, mrt->pruned_oifs);
-	    VIFM_CLR(vifi, mrt->asserted_oifs);
+	    PIMD_VIFM_SET(vifi, mrt->joined_oifs);
+	    PIMD_VIFM_CLR(vifi, mrt->pruned_oifs);
+	    PIMD_VIFM_CLR(vifi, mrt->asserted_oifs);
 	    /* TODO: XXX: TIMER implem. dependency! */
 	    if (mrt->vif_timers[vifi] < holdtime) {
 		SET_TIMER(mrt->vif_timers[vifi], holdtime);
@@ -2212,9 +2212,9 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 			      mrt->vif_deletion_delay[vifi]);
 	    }
 	    IF_TIMER_NOT_SET(mrt->vif_timers[vifi]) {
-		VIFM_CLR(vifi, mrt->joined_oifs);
-		VIFM_SET(vifi, mrt->pruned_oifs);
-		VIFM_SET(vifi, mrt->asserted_oifs);
+		PIMD_VIFM_CLR(vifi, mrt->joined_oifs);
+		PIMD_VIFM_SET(vifi, mrt->pruned_oifs);
+		PIMD_VIFM_SET(vifi, mrt->asserted_oifs);
 		change_interfaces(mrt,
 				  mrt->incoming,
 				  mrt->joined_oifs,
@@ -2304,7 +2304,7 @@ int send_periodic_pim_join_prune(vifi_t vifi, pim_nbr_entry_t *pim_nbr, uint16_t
 	    }
 
 	    /* TODO: XXX: The J/P suppression timer is not in the spec! */
-	    if (!VIFM_ISEMPTY(mrt->joined_oifs) || (v->uv_flags & VIFF_DR)) {
+	    if (!PIMD_VIFM_ISEMPTY(mrt->joined_oifs) || (v->uv_flags & VIFF_DR)) {
 		add_jp_entry(mrt->upstream, holdtime,
 			     grp->group,
 			     SINGLE_GRP_MSKLEN,
@@ -2312,7 +2312,7 @@ int send_periodic_pim_join_prune(vifi_t vifi, pim_nbr_entry_t *pim_nbr, uint16_t
 			     SINGLE_SRC_MSKLEN, 0, PIM_ACTION_JOIN);
 	    }
 	    /* TODO: XXX: TIMER implem. dependency! */
-	    if (VIFM_ISEMPTY(mrt->joined_oifs)
+	    if (PIMD_VIFM_ISEMPTY(mrt->joined_oifs)
 		&& (!(v->uv_flags & VIFF_DR))
 		&& (mrt->jp_timer <= TIMER_INTERVAL)) {
 		add_jp_entry(mrt->upstream, holdtime,
@@ -2331,7 +2331,7 @@ int send_periodic_pim_join_prune(vifi_t vifi, pim_nbr_entry_t *pim_nbr, uint16_t
 	    if (mrt->flags & MRTF_RP) {
 		/* RPbit set */
 		addr = mrt->source->address;
-		if (VIFM_ISEMPTY(mrt->joined_oifs) || find_vif_direct_local(addr) != NO_VIF) {
+		if (PIMD_VIFM_ISEMPTY(mrt->joined_oifs) || find_vif_direct_local(addr) != NO_VIF) {
 		    /* TODO: XXX: TIMER implem. dependency! */
 		    if (grp->grp_route &&
 			grp->grp_route->incoming == vifi &&
@@ -2346,7 +2346,7 @@ int send_periodic_pim_join_prune(vifi_t vifi, pim_nbr_entry_t *pim_nbr, uint16_t
 	    }
 	    else {
 		/* RPbit cleared */
-		if (VIFM_ISEMPTY(mrt->joined_oifs)) {
+		if (PIMD_VIFM_ISEMPTY(mrt->joined_oifs)) {
 		    /* TODO: XXX: TIMER implem. dependency! */
 		    if (mrt->incoming == vifi && mrt->jp_timer <= TIMER_INTERVAL)
 			add_jp_entry(mrt->upstream, holdtime,
@@ -2870,7 +2870,7 @@ int receive_pim_assert(uint32_t src, uint32_t dst __attribute__((unused)), char 
 	local_preference |= PIM_ASSERT_RPT_BIT;
     }
 
-    if (VIFM_ISSET(vifi, mrt->oifs)) {
+    if (PIMD_VIFM_ISSET(vifi, mrt->oifs)) {
 	/* The ASSERT has arrived on oif */
 
 	/* TODO: XXX: here the processing order is different from the spec.
@@ -2949,7 +2949,7 @@ int receive_pim_assert(uint32_t src, uint32_t dst __attribute__((unused)), char 
 	}
 
 	/* Have to remove that outgoing vifi from mrt */
-	VIFM_SET(vifi, mrt->asserted_oifs);
+	PIMD_VIFM_SET(vifi, mrt->asserted_oifs);
 	mrt->flags |= MRTF_ASSERTED;
 	if (mrt->assert_timer < PIM_ASSERT_TIMEOUT)
 	    SET_TIMER(mrt->assert_timer, PIM_ASSERT_TIMEOUT);

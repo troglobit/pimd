@@ -82,7 +82,7 @@ static int scoped_addr(vifi_t vifi, uint32_t addr)
 	vifi_t i;				\
 	for (i = 0; i < numvifs; i++)		\
 	    if (scoped_addr(i, g))              \
-		(mp)->oifs = 0;			\
+		PIMD_VIFM_CLRALL((mp)->oifs);	\
     }
 
 /* Return the iif for given address */
@@ -242,9 +242,9 @@ void add_leaf(vifi_t vifi, uint32_t source, uint32_t group)
 {
     mrtentry_t *mrt;
     mrtentry_t *srcs;
-    vifbitmap_t old_oifs;
-    vifbitmap_t new_oifs;
-    vifbitmap_t new_leaves;
+    uint8_t old_oifs[MAXVIFS];
+    uint8_t new_oifs[MAXVIFS];
+    uint8_t new_leaves[MAXVIFS];
     uint16_t flags;
 
     /* Don't create routing entries for the LAN scoped addresses */
@@ -289,25 +289,25 @@ void add_leaf(vifi_t vifi, uint32_t source, uint32_t group)
     IF_DEBUG(DEBUG_MRT)
 	logit(LOG_DEBUG, 0, "Adding vif %d for group %s", vifi, inet_fmt(group, s1, sizeof(s1)));
 
-    if (VIFM_ISSET(vifi, mrt->leaves))
+    if (PIMD_VIFM_ISSET(vifi, mrt->leaves))
 	return;     /* Already a leaf */
 
-    calc_oifs(mrt, &old_oifs);
-    VIFM_COPY(mrt->leaves, new_leaves);
-    VIFM_SET(vifi, new_leaves);    /* Add the leaf */
+    calc_oifs(mrt, old_oifs);
+    PIMD_VIFM_COPY(mrt->leaves, new_leaves);
+    PIMD_VIFM_SET(vifi, new_leaves);    /* Add the leaf */
     change_interfaces(mrt,
 		      mrt->incoming,
 		      mrt->joined_oifs,
 		      mrt->pruned_oifs,
 		      new_leaves,
 		      mrt->asserted_oifs, 0);
-    calc_oifs(mrt, &new_oifs);
+    calc_oifs(mrt, new_oifs);
 
     /* Only if I am the DR for that subnet, eventually initiate a Join */
     if (!(uvifs[vifi].uv_flags & VIFF_DR))
 	return;
 
-    if ((mrt->flags & MRTF_NEW) || (VIFM_ISEMPTY(old_oifs) && (!VIFM_ISEMPTY(new_oifs)))) {
+    if ((mrt->flags & MRTF_NEW) || (PIMD_VIFM_ISEMPTY(old_oifs) && (!PIMD_VIFM_ISEMPTY(new_oifs)))) {
 	/* A new created entry or the oifs have changed
 	 * from NULL to non-NULL. */
 	mrt->flags &= ~MRTF_NEW;
@@ -327,8 +327,8 @@ void add_leaf(vifi_t vifi, uint32_t source, uint32_t group)
      * was created by source specific IGMP join.
      */
     for (srcs = mrt->group->mrtlink; srcs; srcs = srcs->grpnext) {
-	VIFM_COPY(srcs->leaves, new_leaves);
-	VIFM_SET(vifi, new_leaves);
+	PIMD_VIFM_COPY(srcs->leaves, new_leaves);
+	PIMD_VIFM_SET(vifi, new_leaves);
 	change_interfaces(srcs,
 			  srcs->incoming,
 			  srcs->joined_oifs,
@@ -353,9 +353,9 @@ void delete_leaf(vifi_t vifi, uint32_t source, uint32_t group)
 {
     mrtentry_t *mrt;
     mrtentry_t *srcs;
-    vifbitmap_t new_oifs;
-    vifbitmap_t old_oifs;
-    vifbitmap_t new_leaves;
+    uint8_t new_oifs[MAXVIFS];
+    uint8_t old_oifs[MAXVIFS];
+    uint8_t new_leaves[MAXVIFS];
 
     if (IN_PIM_SSM_RANGE(group))
 	mrt = find_route(source, group, MRTF_SG, DONT_CREATE);
@@ -365,18 +365,18 @@ void delete_leaf(vifi_t vifi, uint32_t source, uint32_t group)
     if (!mrt)
 	return;
 
-    if (!VIFM_ISSET(vifi, mrt->leaves))
+    if (!PIMD_VIFM_ISSET(vifi, mrt->leaves))
 	return;      /* This interface wasn't leaf */
 
     IF_DEBUG(DEBUG_MRT)
 	logit(LOG_DEBUG, 0, "Deleting vif %d for group %s", vifi, inet_fmt(group, s1, sizeof(s1)));
 
-    calc_oifs(mrt, &old_oifs);
+    calc_oifs(mrt, old_oifs);
 
     /* For SSM, source must match */
     if (!IN_PIM_SSM_RANGE(group) || (mrt->source->address==source)) {
-	VIFM_COPY(mrt->leaves, new_leaves);
-	VIFM_CLR(vifi, new_leaves);
+	PIMD_VIFM_COPY(mrt->leaves, new_leaves);
+	PIMD_VIFM_CLR(vifi, new_leaves);
 	change_interfaces(mrt,
 			  mrt->incoming,
 			  mrt->joined_oifs,
@@ -384,9 +384,9 @@ void delete_leaf(vifi_t vifi, uint32_t source, uint32_t group)
 			  new_leaves,
 			  mrt->asserted_oifs, 0);
     }
-    calc_oifs(mrt, &new_oifs);
+    calc_oifs(mrt, new_oifs);
 
-    if ((!VIFM_ISEMPTY(old_oifs)) && VIFM_ISEMPTY(new_oifs)) {
+    if ((!PIMD_VIFM_ISEMPTY(old_oifs)) && PIMD_VIFM_ISEMPTY(new_oifs)) {
 	/* The result oifs have changed from non-NULL to NULL */
 	FIRE_TIMER(mrt->jp_timer); /* Timeout the Join/Prune timer */
 
@@ -403,8 +403,8 @@ void delete_leaf(vifi_t vifi, uint32_t source, uint32_t group)
      * was created by source specific IGMP join.
      */
     for (srcs = mrt->group->mrtlink; srcs; srcs = srcs->grpnext) {
-	VIFM_COPY(srcs->leaves, new_leaves);
-	VIFM_CLR(vifi, new_leaves);
+	PIMD_VIFM_COPY(srcs->leaves, new_leaves);
+	PIMD_VIFM_CLR(vifi, new_leaves);
 	change_interfaces(srcs,
 			  srcs->incoming,
 			  srcs->joined_oifs,
@@ -415,9 +415,9 @@ void delete_leaf(vifi_t vifi, uint32_t source, uint32_t group)
 }
 
 
-void calc_oifs(mrtentry_t *mrt, vifbitmap_t *oifs_ptr)
+void calc_oifs(mrtentry_t *mrt, uint8_t *oifs_ptr)
 {
-    vifbitmap_t oifs;
+    uint8_t oifs[MAXVIFS];
     mrtentry_t *grp;
     mrtentry_t *mrp;
 
@@ -430,39 +430,39 @@ void calc_oifs(mrtentry_t *mrt, vifbitmap_t *oifs_ptr)
      */
 
     if (!mrt) {
-	VIFM_CLRALL(*oifs_ptr);
+	PIMD_VIFM_CLRALL(oifs_ptr);
 	return;
     }
 
-    VIFM_CLRALL(oifs);
+    PIMD_VIFM_CLRALL(oifs);
     if (!(mrt->flags & MRTF_PMBR)) {
 	/* Either (*,G) or (S,G). Merge with the oifs from the (*,*,RP) */
 	mrp = mrt->group->active_rp_grp->rp->rpentry->mrtlink;
 	if (mrp) {
-	    VIFM_MERGE(oifs, mrp->joined_oifs, oifs);
-	    VIFM_CLR_MASK(oifs, mrp->pruned_oifs);
-	    VIFM_MERGE(oifs, mrp->leaves, oifs);
-	    VIFM_CLR_MASK(oifs, mrp->asserted_oifs);
+	    PIMD_VIFM_MERGE(oifs, mrp->joined_oifs, oifs);
+	    PIMD_VIFM_CLR_MASK(oifs, mrp->pruned_oifs);
+	    PIMD_VIFM_MERGE(oifs, mrp->leaves, oifs);
+	    PIMD_VIFM_CLR_MASK(oifs, mrp->asserted_oifs);
 	}
     }
     if (mrt->flags & MRTF_SG) {
 	/* (S,G) entry. Merge with the oifs from (*,G) */
 	grp = mrt->group->grp_route;
 	if (grp) {
-	    VIFM_MERGE(oifs, grp->joined_oifs, oifs);
-	    VIFM_CLR_MASK(oifs, grp->pruned_oifs);
-	    VIFM_MERGE(oifs, grp->leaves, oifs);
-	    VIFM_CLR_MASK(oifs, grp->asserted_oifs);
+	    PIMD_VIFM_MERGE(oifs, grp->joined_oifs, oifs);
+	    PIMD_VIFM_CLR_MASK(oifs, grp->pruned_oifs);
+	    PIMD_VIFM_MERGE(oifs, grp->leaves, oifs);
+	    PIMD_VIFM_CLR_MASK(oifs, grp->asserted_oifs);
 	}
     }
 
     /* Calculate my own stuff */
-    VIFM_MERGE(oifs, mrt->joined_oifs, oifs);
-    VIFM_CLR_MASK(oifs, mrt->pruned_oifs);
-    VIFM_MERGE(oifs, mrt->leaves, oifs);
-    VIFM_CLR_MASK(oifs, mrt->asserted_oifs);
+    PIMD_VIFM_MERGE(oifs, mrt->joined_oifs, oifs);
+    PIMD_VIFM_CLR_MASK(oifs, mrt->pruned_oifs);
+    PIMD_VIFM_MERGE(oifs, mrt->leaves, oifs);
+    PIMD_VIFM_CLR_MASK(oifs, mrt->asserted_oifs);
 
-    VIFM_COPY(oifs, *oifs_ptr);
+    PIMD_VIFM_COPY(oifs, oifs_ptr);
 }
 
 /*
@@ -477,20 +477,20 @@ void calc_oifs(mrtentry_t *mrt, vifbitmap_t *oifs_ptr)
  */
 int change_interfaces(mrtentry_t *mrt,
 		      vifi_t new_iif,
-		      vifbitmap_t new_joined_oifs_,
-		      vifbitmap_t new_pruned_oifs,
-		      vifbitmap_t new_leaves_,
-		      vifbitmap_t new_asserted_oifs,
+		      uint8_t *new_joined_oifs_,
+		      uint8_t *new_pruned_oifs,
+		      uint8_t *new_leaves_,
+		      uint8_t *new_asserted_oifs,
 		      uint16_t flags)
 {
-    vifbitmap_t new_joined_oifs;  /* The oifs for that particular mrtentry */
-    vifbitmap_t old_joined_oifs __attribute__ ((unused));
-    vifbitmap_t old_pruned_oifs __attribute__ ((unused));
-    vifbitmap_t old_leaves __attribute__ ((unused));
-    vifbitmap_t new_leaves;
-    vifbitmap_t old_asserted_oifs __attribute__ ((unused));
-    vifbitmap_t new_real_oifs;    /* The result oifs */
-    vifbitmap_t old_real_oifs;
+    uint8_t new_joined_oifs[MAXVIFS];  /* The oifs for that particular mrtentry */
+    uint8_t old_joined_oifs[MAXVIFS] __attribute__ ((unused));
+    uint8_t old_pruned_oifs[MAXVIFS] __attribute__ ((unused));
+    uint8_t old_leaves[MAXVIFS] __attribute__ ((unused));
+    uint8_t new_leaves[MAXVIFS];
+    uint8_t old_asserted_oifs[MAXVIFS] __attribute__ ((unused));
+    uint8_t new_real_oifs[MAXVIFS];    /* The result oifs */
+    uint8_t old_real_oifs[MAXVIFS];
     vifi_t      old_iif;
     rpentry_t   *rp;
     cand_rp_t   *cand_rp;
@@ -507,37 +507,37 @@ int change_interfaces(mrtentry_t *mrt,
     if (!mrt)
 	return 0;
 
-    VIFM_COPY(new_joined_oifs_, new_joined_oifs);
-    VIFM_COPY(new_leaves_, new_leaves);
+    PIMD_VIFM_COPY(new_joined_oifs_, new_joined_oifs);
+    PIMD_VIFM_COPY(new_leaves_, new_leaves);
 
     old_iif = mrt->incoming;
-    VIFM_COPY(mrt->joined_oifs, old_joined_oifs);
-    VIFM_COPY(mrt->leaves, old_leaves);
-    VIFM_COPY(mrt->pruned_oifs, old_pruned_oifs);
-    VIFM_COPY(mrt->asserted_oifs, old_asserted_oifs);
+    PIMD_VIFM_COPY(mrt->joined_oifs, old_joined_oifs);
+    PIMD_VIFM_COPY(mrt->leaves, old_leaves);
+    PIMD_VIFM_COPY(mrt->pruned_oifs, old_pruned_oifs);
+    PIMD_VIFM_COPY(mrt->asserted_oifs, old_asserted_oifs);
 
-    VIFM_COPY(mrt->oifs, old_real_oifs);
+    PIMD_VIFM_COPY(mrt->oifs, old_real_oifs);
 
     mrt->incoming = new_iif;
-    VIFM_COPY(new_joined_oifs, mrt->joined_oifs);
-    VIFM_COPY(new_pruned_oifs, mrt->pruned_oifs);
-    VIFM_COPY(new_leaves, mrt->leaves);
-    VIFM_COPY(new_asserted_oifs, mrt->asserted_oifs);
-    calc_oifs(mrt, &new_real_oifs);
+    PIMD_VIFM_COPY(new_joined_oifs, mrt->joined_oifs);
+    PIMD_VIFM_COPY(new_pruned_oifs, mrt->pruned_oifs);
+    PIMD_VIFM_COPY(new_leaves, mrt->leaves);
+    PIMD_VIFM_COPY(new_asserted_oifs, mrt->asserted_oifs);
+    calc_oifs(mrt, new_real_oifs);
 
-    if (VIFM_ISEMPTY(old_real_oifs)) {
-	if (VIFM_ISEMPTY(new_real_oifs))
+    if (PIMD_VIFM_ISEMPTY(old_real_oifs)) {
+	if (PIMD_VIFM_ISEMPTY(new_real_oifs))
 	    result = 0;
 	else
 	    result = 1;
     } else {
-	if (VIFM_ISEMPTY(new_real_oifs))
+	if (PIMD_VIFM_ISEMPTY(new_real_oifs))
 	    result = -1;
 	else
 	    result = 0;
     }
 
-    if ((VIFM_SAME(new_real_oifs, old_real_oifs))
+    if ((PIMD_VIFM_SAME(new_real_oifs, old_real_oifs))
 	&& (new_iif == old_iif)
 	&& !(flags & MFC_UPDATE_FORCE))
 	return 0;		/* Nothing to change */
@@ -545,7 +545,7 @@ int change_interfaces(mrtentry_t *mrt,
     if ((result != 0) || (new_iif != old_iif) || (flags & MFC_UPDATE_FORCE)) {
 	FIRE_TIMER(mrt->jp_timer);
     }
-    VIFM_COPY(new_real_oifs, mrt->oifs);
+    PIMD_VIFM_COPY(new_real_oifs, mrt->oifs);
 
     if (mrt->flags & MRTF_PMBR) {
 	/* (*,*,RP) entry */
@@ -556,7 +556,7 @@ int change_interfaces(mrtentry_t *mrt,
 	rp->incoming = new_iif;
 	cand_rp = rp->cand_rp;
 
-	if (VIFM_ISEMPTY(new_real_oifs)) {
+	if (PIMD_VIFM_ISEMPTY(new_real_oifs)) {
 	    delete_mrt_flag = TRUE;
 	} else {
 	    delete_mrt_flag = FALSE;
@@ -638,7 +638,7 @@ int change_interfaces(mrtentry_t *mrt,
 
     if (mrt->flags & MRTF_WC) {
 	/* (*,G) entry */
-	if (VIFM_ISEMPTY(new_real_oifs)) {
+	if (PIMD_VIFM_ISEMPTY(new_real_oifs)) {
 	    delete_mrt_flag = TRUE;
 	} else {
 	    delete_mrt_flag = FALSE;
@@ -704,7 +704,7 @@ int change_interfaces(mrtentry_t *mrt,
 	 * the (S,G). If "yes", then forbid creating (*,G) MFC. */
 	for (tmp = mrp; 1; tmp = mwc) {
 	    while (1) {
-		vifbitmap_t oifs;
+		uint8_t oifs[MAXVIFS];
 
 		if (!tmp)
 		    break;
@@ -719,7 +719,7 @@ int change_interfaces(mrtentry_t *mrt,
 		}
 
 		calc_oifs(tmp, &oifs);
-		if (!(VIFM_SAME(new_real_oifs, oifs)))
+		if (!(PIMD_VIFM_SAME(new_real_oifs, oifs)))
 		    tmp->flags |= MRTF_MFC_CLONE_SG;
 
 		break;
@@ -730,7 +730,7 @@ int change_interfaces(mrtentry_t *mrt,
 	}
 #endif /* KERNEL_MFC_WC_G */
 
-	if (VIFM_ISEMPTY(new_real_oifs)) {
+	if (PIMD_VIFM_ISEMPTY(new_real_oifs)) {
 	    delete_mrt_flag = TRUE;
 	} else {
 	    delete_mrt_flag = FALSE;
@@ -863,7 +863,7 @@ static void process_cache_miss(struct igmpmsg *igmpctl)
 	mrt->flags &= ~MRTF_NEW;
 	/* set reg_vif_num as outgoing interface ONLY if I am not the RP */
 	if (mrt->group->rpaddr != my_cand_rp_address)
-	    VIFM_SET(reg_vif_num, mrt->joined_oifs);
+	    PIMD_VIFM_SET(reg_vif_num, mrt->joined_oifs);
 	change_interfaces(mrt,
 			  mrt->incoming,
 			  mrt->joined_oifs,
@@ -883,7 +883,7 @@ static void process_cache_miss(struct igmpmsg *igmpctl)
      * too many upcalls. */
 
     if (mrt->incoming == iif) {
-	if (!VIFM_ISEMPTY(mrt->oifs)) {
+	if (!PIMD_VIFM_ISEMPTY(mrt->oifs)) {
 	    if (mrt->flags & MRTF_SG) {
 		/* TODO: check that the RPbit is not set? */
 		/* TODO: XXX: TIMER implem. dependency! */
@@ -1023,7 +1023,7 @@ static void process_wrong_iif(struct igmpmsg *igmpctl)
     }
 
     /* Trigger an Assert */
-    if (VIFM_ISSET(iif, mrt->oifs))
+    if (PIMD_VIFM_ISSET(iif, mrt->oifs))
 	send_pim_assert(source, group, iif, mrt);
 }
 

@@ -523,7 +523,7 @@ extern void	k_leave			(int socket, uint32_t grp, struct uvif *v);
 extern void	k_init_pim		(int socket);
 extern void	k_stop_pim		(int socket);
 extern int	k_del_mfc		(int socket, uint32_t source, uint32_t group);
-extern int	k_chg_mfc		(int socket, uint32_t source, uint32_t group, vifi_t iif, vifbitmap_t oifs,
+extern int	k_chg_mfc		(int socket, uint32_t source, uint32_t group, vifi_t iif, uint8_t *oifs,
                                          uint32_t rp_addr);
 extern void	k_add_vif		(int socket, vifi_t vifi, struct uvif *v);
 extern void	k_del_vif		(int socket, vifi_t vifi, struct uvif *v);
@@ -580,9 +580,9 @@ extern int	add_sg_oif		(mrtentry_t *mrtentry_ptr, vifi_t vifi, uint16_t holdtime
 extern void	add_leaf		(vifi_t vifi, uint32_t source, uint32_t group);
 extern void	delete_leaf		(vifi_t vifi, uint32_t source, uint32_t group);
 extern int	change_interfaces	(mrtentry_t *mrtentry_ptr,  vifi_t new_iif,
-                                         vifbitmap_t new_joined_oifs_, vifbitmap_t new_pruned_oifs,
-                                         vifbitmap_t new_leaves_, vifbitmap_t new_asserted_oifs, uint16_t flags);
-extern void	calc_oifs		(mrtentry_t *mrtentry_ptr, vifbitmap_t *oifs_ptr);
+                                         uint8_t *new_joined_oifs_, uint8_t *new_pruned_oifs,
+                                         uint8_t *new_leaves_, uint8_t *new_asserted_oifs, uint16_t flags);
+extern void	calc_oifs		(mrtentry_t *mrtentry_ptr, uint8_t *oifs_ptr);
 extern void	process_kernel_call	(void);
 extern int	delete_vif_from_mrt	(vifi_t vifi);
 extern mrtentry_t *switch_shortest_path	(uint32_t source, uint32_t group);

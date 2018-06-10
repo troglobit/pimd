@@ -520,24 +520,24 @@ void dump_frame(char *desc, void *dump, size_t len)
 static void dump_route(FILE *fp, mrtentry_t *r)
 {
     vifi_t vifi;
-    char oifs[(sizeof(vifbitmap_t)<<3)+1];
-    char joined_oifs[(sizeof(vifbitmap_t)<<3)+1];
-    char pruned_oifs[(sizeof(vifbitmap_t)<<3)+1];
-    char leaves_oifs[(sizeof(vifbitmap_t)<<3)+1];
-    char asserted_oifs[(sizeof(vifbitmap_t)<<3)+1];
-    char incoming_iif[(sizeof(vifbitmap_t)<<3)+1];
+    char oifs[MAXVIFS+1];
+    char joined_oifs[MAXVIFS+1];
+    char pruned_oifs[MAXVIFS+1];
+    char leaves_oifs[MAXVIFS+1];
+    char asserted_oifs[MAXVIFS+1];
+    char incoming_iif[MAXVIFS+1];
 
     for (vifi = 0; vifi < numvifs; vifi++) {
 	oifs[vifi] =
-	    VIFM_ISSET(vifi, r->oifs)	       ? 'o' : '.';
+	    PIMD_VIFM_ISSET(vifi, r->oifs) ? 'o' : '.';
 	joined_oifs[vifi] =
-	    VIFM_ISSET(vifi, r->joined_oifs)   ? 'j' : '.';
+	    PIMD_VIFM_ISSET(vifi, r->joined_oifs) ? 'j' : '.';
 	pruned_oifs[vifi] =
-	    VIFM_ISSET(vifi, r->pruned_oifs)   ? 'p' : '.';
+	    PIMD_VIFM_ISSET(vifi, r->pruned_oifs) ? 'p' : '.';
 	leaves_oifs[vifi] =
-	    VIFM_ISSET(vifi, r->leaves)	       ? 'l' : '.';
+	    PIMD_VIFM_ISSET(vifi, r->leaves) ? 'l' : '.';
 	asserted_oifs[vifi] =
-	    VIFM_ISSET(vifi, r->asserted_oifs) ? 'a' : '.';
+	    PIMD_VIFM_ISSET(vifi, r->asserted_oifs) ? 'a' : '.';
 	incoming_iif[vifi] = '.';
     }
     oifs[vifi]		= 0x0;	/* End of string */
