@@ -1566,9 +1566,6 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 		    if ((mrt->jp_timer == holdtime) && (ntohl(src) > ntohl(v->uv_lcl_addr)))
 			continue;
 
-		    jp_value = PIM_JOIN_PRUNE_PERIOD + 0.5 * (RANDOM() % PIM_JOIN_PRUNE_PERIOD);
-		    if (mrt->jp_timer < jp_value)
-			SET_TIMER(mrt->jp_timer, jp_value);
 		    continue;
 		} /* End of (*,G) Join suppression */
 
