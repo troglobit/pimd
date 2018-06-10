@@ -12,7 +12,9 @@ Table of Contents
 * [Example](#example)
 * [Starting](#starting)
 * [Monitoring](#monitoring)
+* [Large Setups](#large-setups)
 * [Contributing](#contributing)
+* [Origin & References](#origin--references)
 
 
 Introduction
@@ -276,6 +278,23 @@ or to watch it continually:
 See the  `pimctl help` usage text  for more details.  Also,  `pimd` logs
 important events to  the system log file, in particular  at startup when
 it parses the `pimd.conf` configuration file.
+
+
+Large Setups
+------------
+
+pimd is limited to the number of `MAXVIFS` interfaces listed in the
+kernel headers.  In Linux see `/usr/include/linux/mroute.h`. 
+
+To overcome this limitation, adjust the kernel `#define` to, e.g.,
+1280, and configure pimd `--with-max-vifs=1280`.
+
+With this many interfaces the kernel may run out of memory to let pimd
+to enable IGMP on all interfaces.  In Linux, use sysctl to tweak the
+following settings:
+
+    sysctl -w net.core.optmem_max=327680
+    sysctl -w net.ipv4.igmp_max_memberships=5120
 
 
 Contributing
