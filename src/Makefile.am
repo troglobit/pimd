@@ -29,34 +29,8 @@ if BSD
 pimd_SOURCES    += routesock.c
 endif
 
-# -DPIM         Enable PIM extensions in RSRR
 if RSRR
 AM_CPPFLAGS     += -DPIM
 pimd_SOURCES    += rsrr.c		rsrr_var.h	rsrr.h
 endif
 
-## BSDI		    -D__bsdi__ is defined by the OS
-#AM_CPPFLAGS     += -Iinclude
-
-## SunOS, OSF1, gcc
-#AM_CPPFLAGS     += -Iinclude -Iinclude/sunos-gcc
-#AM_CPPFLAGS     += -DSunOS=43
-
-## SunOS, OSF1, cc
-#AM_CPPFLAGS     += -Iinclude -Iinclude/sunos-cc
-#AM_CPPFLAGS     += -DSunOS=43
-
-## IRIX
-#AM_CPPFLAGS     += -Iinclude
-#AM_CPPFLAGS     += -D_BSD_SIGNALS -DIRIX
-
-## Solaris 2.5
-#AM_CPPFLAGS     += -Iinclude
-#AM_CPPFLAGS     += -DSYSV -DSunOS=55
-
-## Solaris 2.6
-#AM_CPPFLAGS     += -Iinclude
-#AM_CPPFLAGS     += -DSYSV -DSunOS=56
-
-## Solaris 2.x
-#pimd_LDADD      += -L/usr/ucblib -lucb -L/usr/lib -lsocket -lnsl
