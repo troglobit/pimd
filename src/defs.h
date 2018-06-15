@@ -48,6 +48,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stddef.h>
 #include <unistd.h> 
 #include <ctype.h>
 #include <errno.h>
@@ -57,6 +58,7 @@
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <ifaddrs.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
@@ -88,9 +90,6 @@
 #endif /* __linux__ */
 
 #include <strings.h>
-#ifdef RSRR
-#include <sys/un.h>
-#endif /* RSRR */
 
 #ifndef BYTE_ORDER
 #if (BSD >= 199103)
@@ -318,6 +317,18 @@ extern int retry_forever;
 extern int mrt_table_id;
 
 /*
+ * pimd <--> pimctl IPC
+ */
+#define IPC_OK_CMD     0
+#define IPC_NEIGH_CMD  1
+#define IPC_ERR_CMD    255
+
+struct ipc {
+    uint8_t cmd;
+    char    buf[255];
+};
+
+/*
  * Used to contol the switching to the shortest path:
  */
 typedef enum {
@@ -532,6 +543,10 @@ extern int	k_get_sg_cnt		(int socket, uint32_t source, uint32_t group, struct sg
 
 /* main.c */
 extern int	register_input_handler	(int fd, ihfunc_t func);
+
+/* ipc.c */
+extern void     ipc_init                (void);
+extern void     ipc_exit                (void);
 
 /* mrt.c */
 extern void	init_pim_mrt		(void);

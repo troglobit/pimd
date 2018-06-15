@@ -484,6 +484,7 @@ int main(int argc, char *argv[])
     init_routesock(); /* Both for Linux netlink and BSD routing socket */
     init_pim_mrt();
     init_timers();
+    ipc_init();
 
     /* Start up the log rate-limiter */
     resetlogging(NULL);
