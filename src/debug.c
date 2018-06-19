@@ -271,6 +271,7 @@ void fdump(char *fmt)
     fp = fopen(file, "w");
     if (fp) {
 	dump_vifs(fp);
+	dump_ssm(fp);
 	dump_pim_mrt(fp);
 	dump_rp_set(fp);
 	fclose(fp);
@@ -303,7 +304,7 @@ void cdump(char *fmt)
   Vif  Local-Address    Subnet                Thresh  Flags          Neighbors
   0  10.0.3.1         10.0.3/24             1       DR NO-NBR
   1  172.16.12.254    172.16.12/24          1       DR PIM         172.16.12.2
-  172.16.12.3
+                                                                   172.16.12.3
   2  192.168.122.147  register_vif0         1
 */
 void dump_vifs(FILE *fp)
@@ -313,7 +314,6 @@ void dump_vifs(FILE *fp)
     pim_nbr_entry_t *n;
     int width;
     int i;
-    struct listaddr *group, *source;
 
     fprintf(fp, "Virtual Interface Table ======================================================\n");
     fprintf(fp, "Vif  Local Address    Subnet              Thresh  Flags      Neighbors\n");
@@ -370,23 +370,32 @@ void dump_vifs(FILE *fp)
 	    fprintf(fp, "\n");
 	}
     }
+}
 
-    fprintf(fp, "\n");
+void dump_ssm(FILE *fp)
+{
+    struct listaddr *group, *source;
+    struct uvif *v;
+    vifi_t vifi;
+    int first = 1;
 
     /* Dump groups and sources */
-    fprintf(fp, " %-3s  %-15s  %-20s", "Vif", "SSM Group", "Sources");
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
 	for (group = v->uv_groups; group != NULL; group = group->al_next) {
-	    if (IN_PIM_SSM_RANGE(group->al_addr)) {
-		fprintf(fp, "\n %3u  %-15s ", vifi, inet_fmt(group->al_addr, s1, sizeof(s1)));
-		for (source = group->al_sources; source != NULL; source = source->al_next) {
-		    fprintf(fp, "%s ", inet_fmt(source->al_addr, s1, sizeof(s1)));
-		}
+	    if (!IN_PIM_SSM_RANGE(group->al_addr))
+		continue;
+
+	    if (first) {
+		fprintf(fp, "\n %-3s  %-15s  %-20s\n", "Vif", "SSM Group", "Sources");
+		first = 0;
 	    }
+
+	    fprintf(fp, " %3u  %-15s ", vifi, inet_fmt(group->al_addr, s1, sizeof(s1)));
+	    for (source = group->al_sources; source; source = source->al_next)
+		fprintf(fp, "%s ", inet_fmt(source->al_addr, s1, sizeof(s1)));
+	    fprintf(fp, "\n");
 	}
     }
-
-    fprintf(fp, "\n\n");
 }
 
 void log_init(int log_stdout)
