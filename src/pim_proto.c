@@ -166,6 +166,7 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
 
     new_nbr->address          = src;
     new_nbr->vifi             = vifi;
+    new_nbr->uptime           = time(NULL);
     new_nbr->build_jp_message = NULL;
     new_nbr->next             = nbr;
     new_nbr->prev             = prev_nbr;

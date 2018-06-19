@@ -114,6 +114,7 @@ typedef struct pim_nbr_entry {
     uint32_t              genid;	  /* Cached generation ID           */
     vifi_t		  vifi;		  /* which interface		    */
     uint16_t		  timer;	  /* for timing out neighbor	    */
+    time_t		  uptime;	  /* time since first hello	    */
     build_jp_message_t *build_jp_message; /* A structure for fairly
 					   * complicated Join/Prune
 					   * message construction.
