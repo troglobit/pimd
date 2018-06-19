@@ -216,15 +216,25 @@ scripts, with any startup flags it might need.
 **Example:**
 
 ```
-    pimd -c /cfg/pimd.conf -digmp_proto,pim_jp,kernel,pim_register
+    pimd -c /cfg/pimd.conf
 ```
 
-Note, spaces cannot be used in the argument to `-d`.  A slightly more
-readable variant is the long option `--debug`:
+When running multiple instances of pimd, make sure to use the `-I ident`
+argument, otherwise the PID and IPC socket files will be overwritten and
+the syslog will also be hard to follow.  Note, `-I` changes the default
+`.conf` filename pimd looks for as well, a complete identity change.
+
+
+### Enabling Debug
+
+Remember to set the correct log level when enabling debug messages,
+usually you need `-l debug`, and `-s` to force messages to syslog
+when running in the foreground (`-n`).
 
 ```
-    pimd --debug=igmp_proto,pim_jp,kernel,pim_register
+    pimd -d igmp_proto,pim_jp,kernel,pim_register -l debug -n -s
 ```
+
 
 Monitoring
 ----------
