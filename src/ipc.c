@@ -32,7 +32,131 @@
 static struct sockaddr_un sun;
 static int ipc_socket = -1;
 
-static void ipc_neighbors(int sd, char *fn)
+static char *timetostr(time_t t, char *buf, size_t len)
+{
+	int sec, min, hour, day;
+	static char tmp[20];
+
+	if (!buf) {
+		buf = tmp;
+		len = sizeof(tmp);
+	}
+
+	day  = t / 86400;
+	t    = t % 86400;
+	hour = t / 3600;
+	t    = t % 3600;
+	min  = t / 60;
+	t    = t % 60;
+	sec  = t;
+
+	if (day)
+		snprintf(buf, len, "%dd%dh%dm%ds", day, hour, min, sec);
+	else
+		snprintf(buf, len, "%dh%dm%ds", hour, min, sec);
+
+	return buf;
+}
+
+static char *get_dr_prio(pim_nbr_entry_t *n)
+{
+	static char prio[5];
+
+	if (n->dr_prio_present)
+		snprintf(prio, sizeof(prio), "%4d", n->dr_prio);
+	else
+		snprintf(prio, sizeof(prio), "   N");
+
+	return prio;
+}
+
+static void show_neighbor(FILE *fp, struct uvif *uv, pim_nbr_entry_t *n)
+{
+	time_t now, uptime;
+	char tmp[20], buf[42];
+
+	now = time(NULL);
+	uptime = now - n->uptime;
+	snprintf(buf, sizeof(buf), "%s/%s",
+		 timetostr(uptime, tmp, sizeof(tmp)),
+		 timetostr(n->timer, NULL, 0));
+
+	fprintf(fp, "%-16s  %-15s  %4s  %-28s\n",
+		uv->uv_name,
+		inet_fmt(n->address, s1, sizeof(s1)),
+		get_dr_prio(n),
+		buf);
+}
+
+/* PIM Neighbor Table */
+static void show_neighbors(FILE *fp)
+{
+	pim_nbr_entry_t *n;
+	struct uvif *uv;
+	vifi_t vifi;
+	int first = 1;
+
+	for (vifi = 0; vifi < numvifs; vifi++) {
+		uv = &uvifs[vifi];
+
+		for (n = uv->uv_pim_neighbors; n; n = n->next) {
+			if (first) {
+				fprintf(fp, "Interface         Address          Prio  Uptime/Expires              \n");
+				first = 0;
+			}
+			show_neighbor(fp, uv, n);
+		}
+	}
+}
+
+static void show_interface(FILE *fp, struct uvif *uv)
+{
+	pim_nbr_entry_t *n;
+	uint32_t addr = 0;
+	size_t num  = 0;
+	char tmp[5], *pri;
+
+	if (uv->uv_flags & VIFF_DR) {
+		addr = uv->uv_lcl_addr;
+		snprintf(tmp, sizeof(tmp), "%d", uv->uv_dr_prio);
+		pri  = tmp;
+	} else if (uv->uv_pim_neighbors) {
+		addr = uv->uv_pim_neighbors->address;
+		pri  = get_dr_prio(uv->uv_pim_neighbors);
+	}
+
+	for (n = uv->uv_pim_neighbors; n; n = n->next)
+		num++;
+
+	fprintf(fp, "%-16s  %-4s   %-15s  %3zu  %5d  %4s  %-15s\n",
+		uv->uv_name,
+		uv->uv_flags & VIFF_DOWN ? "DOWN" : "UP",
+		inet_fmt(uv->uv_lcl_addr, s1, sizeof(s1)),
+		num, pim_timer_hello_interval,
+		pri, inet_fmt(addr, s1, sizeof(s2)));
+}
+
+/* PIM Interface Table */
+static void show_interfaces(FILE *fp)
+{
+	vifi_t vifi;
+
+	if (numvifs)
+		fprintf(fp, "Interface         State  Address          Nbr  Hello  Prio  DR Address\n");
+
+	for (vifi = 0; vifi < numvifs; vifi++)
+		show_interface(fp, &uvifs[vifi]);
+}
+
+static void show_status(FILE *fp)
+{
+	dump_vifs(fp);
+	dump_ssm(fp);
+	dump_pim_mrt(fp);
+	dump_rp_set(fp);
+}
+
+static void ipc_generic(int sd, char *fn, void (*cb)(FILE *))
 {
 	struct ipc msg;
 	FILE *fp;
@@ -44,14 +168,14 @@ static void ipc_neighbors(int sd, char *fn)
 		goto fail;
 	}
 
-	dump_vifs(fp);
+	cb(fp);
 	fclose(fp);
 
 	msg.cmd = IPC_OK_CMD;
 	strlcpy(msg.buf, fn, sizeof(msg.buf));
 fail:
 	if (write(sd, &msg, sizeof(msg)) == -1)
-		logit(LOG_ERR, errno, "Failed sending IPC reply");
+		logit(LOG_WARNING, errno, "Failed sending IPC reply");
 }
 
 static void ipc_handle(int sd)
@@ -74,8 +198,16 @@ static void ipc_handle(int sd)
 
 	snprintf(fn, sizeof(fn), _PATH_PIMD_DUMP, ident);
 	switch (cmd) {
-	case 1:
-		ipc_neighbors(client, fn);
+	case IPC_IFACE_CMD:
+		ipc_generic(client, fn, show_interfaces);
+		break;
+
+	case IPC_NEIGH_CMD:
+		ipc_generic(client, fn, show_neighbors);
+		break;
+
+	case IPC_STAT_CMD:
+		ipc_generic(client, fn, show_status);
 		break;
 
 	default:

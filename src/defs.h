@@ -320,7 +320,9 @@ extern int mrt_table_id;
  * pimd <--> pimctl IPC
  */
 #define IPC_OK_CMD     0
-#define IPC_NEIGH_CMD  1
+#define IPC_STAT_CMD   1
+#define IPC_IFACE_CMD  2
+#define IPC_NEIGH_CMD  3
 #define IPC_ERR_CMD    255
 
 struct ipc {

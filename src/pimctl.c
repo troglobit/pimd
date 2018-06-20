@@ -29,6 +29,12 @@
 
 #include "defs.h"
 #include <getopt.h>
+#include <poll.h>
+
+struct command {
+	char  *cmd;
+	int  (*cb)(char *arg);
+};
 
 static int verbose = 0;
 static int interactive = 1;
@@ -65,14 +71,20 @@ error:
 static struct ipc *do_cmd(uint8_t cmd)
 {
 	static struct ipc msg;
+	struct pollfd pfd;
 	int sd;
 
 	sd = do_connect(ident);
 	if (-1 == sd)
 		return NULL;
 
-	msg.cmd = IPC_NEIGH_CMD;
+	msg.cmd = cmd;
 	if (write(sd, &msg, sizeof(msg)) == -1)
+		goto fail;
+
+	pfd.fd = sd;
+	pfd.events = POLLIN;
+	if (poll(&pfd, 1, 2000) <= 0)
 		goto fail;
 
 	if (read(sd, &msg, sizeof(msg)) == -1)
@@ -87,17 +99,39 @@ fail:
 	return NULL;
 }
 
-static int show_status(char *arg)
+static int show_generic(int cmd)
 {
 	struct ipc *msg;
-	char cmd[512];
+	char show[512];
 
-	msg = do_cmd(IPC_NEIGH_CMD);
+	msg = do_cmd(cmd);
 	if (!msg)
 		return -1;
 
-	snprintf(cmd, sizeof(cmd), "cat %s", msg->buf);
-	return system(cmd);
+	snprintf(show, sizeof(show), "cat %s", msg->buf);
+	return system(show);
+}
+
+static int show_interface(char *arg)
+{
+	return show_generic(IPC_IFACE_CMD);
+}
+
+static int show_neighbor(char *arg)
+{
+	return show_generic(IPC_NEIGH_CMD);
+}
+
+static int show_status(char *arg)
+{
+	return show_generic(IPC_STAT_CMD);
+}
+
+static int string_match(const char *a, const char *b)
+{
+   size_t min = MIN(strlen(a), strlen(b));
+
+   return !strncasecmp(a, b, min);
 }
 
 static int usage(int rc)
@@ -111,7 +145,10 @@ static int usage(int rc)
 		"  -h, --help                This help text\n"
 		"\n"
 		"Commands:\n"
-		"  show                      Show status\n", "pimctl");
+		"  interface                 Show PIM interfaces\n"
+		"  neighbor                  Show PIM neighbors/adjacencies\n"
+		"  status                    Show PIM daemon status\n",
+		"pimctl");
 	return 0;
 }
 
@@ -123,6 +160,12 @@ int main(int argc, char *argv[])
 		{"debug",   0, NULL, 'd'},
 		{"verbose", 0, NULL, 'v'},
 		{NULL, 0, NULL, 0}
+	};
+	struct command command[] = {
+		{ "interface", show_interface },
+		{ "neighbor",  show_neighbor },
+		{ "status",    show_status },
+		{ NULL, NULL }
 	};
 	int c;
 
@@ -145,7 +188,14 @@ int main(int argc, char *argv[])
 	if (optind >= argc)
 		return show_status(NULL);
 
-	return -1;		/* XXX: Not supported atm */
+	for (c = 0; command[c].cmd; c++) {
+		if (!string_match(command[c].cmd, argv[optind]))
+			continue;
+
+		return command[c].cb(NULL);
+	}
+
+	return usage(1);
 }
 
 /**
