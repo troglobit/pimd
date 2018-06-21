@@ -145,9 +145,9 @@ static int usage(int rc)
 		"  -h, --help                This help text\n"
 		"\n"
 		"Commands:\n"
-		"  interface                 Show PIM interfaces\n"
-		"  neighbor                  Show PIM neighbors/adjacencies\n"
-		"  status                    Show PIM daemon status\n",
+		"  interface                 Show PIM interface table\n"
+		"  neighbor                  Show PIM neighbor table\n"
+		"  status                    Show PIM status, default\n",
 		"pimctl");
 	return 0;
 }
