@@ -148,6 +148,44 @@ static void show_interfaces(FILE *fp)
 		show_interface(fp, &uvifs[vifi]);
 }
 
+/* PIM RP Set Table */
+static void show_rp(FILE *fp)
+{
+	grp_mask_t *grp;
+
+	if (grp_mask_list)
+		fprintf(fp, "Group Address       RP Address       Type     Prio  Holdtime\n");
+
+	for (grp = grp_mask_list; grp; grp = grp->next) {
+		struct rp_grp_entry *rp_grp = grp->grp_rp_next;
+
+		while (rp_grp) {
+			uint16_t ht = rp_grp->holdtime;
+			char htstr[10];
+			char type[10];
+
+			if (rp_grp == grp->grp_rp_next)
+				fprintf(fp, "%-18s  ", netname(grp->group_addr, grp->group_mask));
+			else
+				fprintf(fp, "%-18s  ", "");
+
+			if (ht == (uint16_t)0xffffff) {
+				snprintf(type, sizeof(type), "Static");
+				snprintf(htstr, sizeof(htstr), "N/A");
+			} else {
+				snprintf(type, sizeof(type), "Dynamic");
+				snprintf(htstr, sizeof(htstr), "%d", ht);
+			}
+
+			fprintf(fp, "%-15s  %-7s  %4d  %8s\n",
+				inet_fmt(rp_grp->rp->rpentry->address, s1, sizeof(s1)),
+				type, rp_grp->priority, htstr);
+
+			rp_grp = rp_grp->grp_rp_next;
+		}
+	}
+}
+
 static void show_status(FILE *fp)
 {
 	dump_vifs(fp);
@@ -204,6 +242,10 @@ static void ipc_handle(int sd)
 
 	case IPC_NEIGH_CMD:
 		ipc_generic(client, fn, show_neighbors);
+		break;
+
+	case IPC_RP_CMD:
+		ipc_generic(client, fn, show_rp);
 		break;
 
 	case IPC_STAT_CMD:

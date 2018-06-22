@@ -133,6 +133,7 @@ static int usage(int rc)
 		"Commands:\n"
 		"  interface                 Show PIM interface table\n"
 		"  neighbor                  Show PIM neighbor table\n"
+		"  rp                        Show PIM Rendezvous-Point (RP) set\n"
 		"  status                    Show PIM status, default\n",
 		"pimctl");
 	return 0;
@@ -150,6 +151,7 @@ int main(int argc, char *argv[])
 	struct command command[] = {
 		{ "interface", NULL, IPC_IFACE_CMD },
 		{ "neighbor",  NULL, IPC_NEIGH_CMD },
+		{ "rp",        NULL, IPC_RP_CMD    },
 		{ "status",    NULL, IPC_STAT_CMD  },
 		{ NULL, NULL }
 	};
