@@ -676,14 +676,14 @@ static void dump_rpgrp(FILE *fp, rp_grp_entry_t *rpgrp)
 }
 
 /*
- * Dumps the local Cand-RP-set
+ * Dumps the local RP-set
  */
 int dump_rp_set(FILE *fp)
 {
     cand_rp_t      *rp;
     rp_grp_entry_t *rpgrp;
 
-    fprintf(fp, "Candidate Rendezvous-Point Set ===============================================\n");
+    fprintf(fp, "Rendezvous-Point Set =========================================================\n");
     fprintf(fp, "RP address       Incoming  Group Prefix        Priority  Holdtime\n");
     fprintf(fp, "---------------  --------  ------------------  --------  ---------------------\n");
     for (rp = cand_rp_list; rp; rp = rp->next) {
