@@ -187,6 +187,32 @@ static void show_rp(FILE *fp)
 	}
 }
 
+/* PIM Cand-RP Table */
+static void show_crp(FILE *fp)
+{
+	struct cand_rp *rp;
+
+	if (cand_rp_list)
+		fprintf(fp, "RP Address       Group Address       Prio  Holdtime  Expires =\n");
+
+	for (rp = cand_rp_list; rp; rp = rp->next) {
+		struct rp_grp_entry *rp_grp = rp->rp_grp_next;
+		struct grp_mask *grp = rp_grp->group;
+		rpentry_t *entry = rp->rpentry;
+
+		if (entry->adv_holdtime == (uint16_t)0xffffff)
+			continue; /* Skip configured entries */
+
+		fprintf(fp, "%-15s  %-18s  %4d  %8d  %s\n",
+			inet_fmt(entry->address, s1, sizeof(s1)),
+			netname(grp->group_addr, grp->group_mask),
+			rp_grp->priority, entry->adv_holdtime,
+			timetostr(rp_grp->holdtime, NULL, 0));
+	}
+
+	fprintf(fp, "\nCurrent BSR address: %s\n", inet_fmt(curr_bsr_address, s1, sizeof(s1)));
+}
+
 static void dump_route(FILE *fp, mrtentry_t *r)
 {
 	vifi_t vifi;
@@ -398,6 +424,10 @@ static void ipc_handle(int sd)
 
 	case IPC_RP_CMD:
 		ipc_generic(client, fn, show_rp);
+		break;
+
+	case IPC_CRP_CMD:
+		ipc_generic(client, fn, show_crp);
 		break;
 
 	case IPC_STAT_CMD:

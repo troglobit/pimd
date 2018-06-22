@@ -325,6 +325,7 @@ extern int mrt_table_id;
 #define IPC_NEIGH_CMD  3
 #define IPC_ROUTE_CMD  4
 #define IPC_RP_CMD     5
+#define IPC_CRP_CMD    6
 #define IPC_ERR_CMD    255
 
 struct ipc {
