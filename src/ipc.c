@@ -357,23 +357,23 @@ fail:
 static void ipc_handle(int sd)
 {
 	socklen_t socklen = 0;
+	struct ipc msg;
 	ssize_t len;
 	char fn[256];
-	char cmd;
 	int client;
 
 	client = accept(sd, NULL, &socklen);
 	if (client < 0)
 		return;
 
-	len = read(client, &cmd, sizeof(cmd));
+	len = read(client, &msg, sizeof(msg));
 	if (len < 0) {
 		logit(LOG_WARNING, errno, "Failed reading IPC command");
 		return;
 	}
 
 	snprintf(fn, sizeof(fn), _PATH_PIMD_DUMP, ident);
-	switch (cmd) {
+	switch (msg.cmd) {
 	case IPC_IFACE_CMD:
 		ipc_generic(client, fn, show_interfaces);
 		break;
@@ -395,7 +395,7 @@ static void ipc_handle(int sd)
 		break;
 
 	default:
-		logit(LOG_WARNING, 0, "Invalid IPC command '0x%02x'", cmd);
+		logit(LOG_WARNING, 0, "Invalid IPC command '0x%02x'", msg.cmd);
 		break;
 	}
 
