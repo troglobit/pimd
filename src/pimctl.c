@@ -40,6 +40,7 @@ struct command {
 	int    op;
 };
 
+static int heading = 1;
 static int verbose = 0;
 static int interactive = 1;
 
@@ -164,18 +165,21 @@ static int show_generic(int cmd)
 		return 1;
 
 	while (fgets(line, sizeof(line), fp)) {
-		int len, heading = 0;
+		int len, head = 0;
 
 		chomp(line);
 
+		/* Table headings, or repeat headers, end with a '=' */
 		len = (int)strlen(line);
 		if (line[len - 1] == '=') {
+			if (!heading)
+				continue;
 			line[len - 1] = 0;
-			heading = 1;
+			head = 1;
+			len = get_width() - len;
 		}
 
-		len = get_width() - len;
-		if (heading)
+		if (head)
 			fprintf(stdout, "\e[7m%s%*s\e[0m\n", line, len < 0 ? 0 : len, "");
 		else
 			puts(line);
@@ -199,6 +203,7 @@ static int usage(int rc)
 		"Options:\n"
 		"  -b, --batch               Batch mode, no screen size probing\n"
 		"  -I, --ident=NAME          Connect to named pimd instance\n"
+		"  -t, --no-heading          Skip table headings\n"
 		"  -v, --verbose             Verbose output\n"
 		"  -h, --help                This help text\n"
 		"\n"
@@ -215,12 +220,13 @@ static int usage(int rc)
 int main(int argc, char *argv[])
 {
 	struct option long_options[] = {
-		{"batch",   0, NULL, 'b'},
-		{"ident",   1, NULL, 'I'},
-		{"help",    0, NULL, 'h'},
-		{"debug",   0, NULL, 'd'},
-		{"verbose", 0, NULL, 'v'},
-		{NULL, 0, NULL, 0}
+		{ "batch",      0, NULL, 'b' },
+		{ "ident",      1, NULL, 'I' },
+		{ "no-heading", 0, NULL, 't' },
+		{ "help",       0, NULL, 'h' },
+		{ "debug",      0, NULL, 'd' },
+		{ "verbose",    0, NULL, 'v' },
+		{ NULL, 0, NULL, 0 }
 	};
 	struct command command[] = {
 		{ "interface", NULL, IPC_IFACE_CMD },
@@ -232,7 +238,7 @@ int main(int argc, char *argv[])
 	};
 	int c;
 
-	while ((c = getopt_long(argc, argv, "bh?I:v", long_options, NULL)) != EOF) {
+	while ((c = getopt_long(argc, argv, "bh?I:tv", long_options, NULL)) != EOF) {
 		switch(c) {
 		case 'b':
 			interactive = 0;
@@ -244,6 +250,10 @@ int main(int argc, char *argv[])
 
 		case 'I':	/* --ident=NAME */
 			ident = optarg;
+			break;
+
+		case 't':
+			heading = 0;
 			break;
 
 		case 'v':
