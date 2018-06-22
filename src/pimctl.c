@@ -224,6 +224,7 @@ static int usage(int rc)
 		"  routes                    Show PIM routing table\n"
 		"  rp                        Show PIM Rendezvous-Point (RP) set\n"
 		"  crp                       Show PIM Candidate Rendezvous-Point (CRP) from BSR\n"
+		"  compat                    Show PIM status, compat mode, previously `pimd -r`\n"
 		"  status                    Show PIM status, default\n",
 		"pimctl");
 	return 0;
@@ -247,7 +248,8 @@ int main(int argc, char *argv[])
 		{ "neighbor",  NULL, IPC_NEIGH_CMD },
 		{ "routes",    NULL, IPC_ROUTE_CMD },
 		{ "rp",        NULL, IPC_RP_CMD    },
-		{ "crp",       NULL, IPC_CRP_CMD    },
+		{ "crp",       NULL, IPC_CRP_CMD   },
+		{ "compat",    NULL, IPC_DUMP_CMD  },
 		{ "status",    NULL, IPC_STAT_CMD  },
 		{ NULL, NULL }
 	};

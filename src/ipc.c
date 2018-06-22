@@ -359,6 +359,10 @@ static void show_pim_mrt(FILE *fp)
 
 static void show_status(FILE *fp)
 {
+}
+
+static void show_dump(FILE *fp)
+{
 	dump_vifs(fp);
 	dump_ssm(fp);
 	dump_pim_mrt(fp);
@@ -432,6 +436,10 @@ static void ipc_handle(int sd)
 
 	case IPC_STAT_CMD:
 		ipc_generic(client, fn, show_status);
+		break;
+
+	case IPC_DUMP_CMD:
+		ipc_generic(client, fn, show_dump);
 		break;
 
 	default:
