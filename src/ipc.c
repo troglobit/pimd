@@ -186,6 +186,144 @@ static void show_rp(FILE *fp)
 	}
 }
 
+static void dump_route(FILE *fp, mrtentry_t *r, int detail)
+{
+	vifi_t vifi;
+	char oifs[MAXVIFS+1];
+	char joined_oifs[MAXVIFS+1];
+	char pruned_oifs[MAXVIFS+1];
+	char leaves_oifs[MAXVIFS+1];
+	char asserted_oifs[MAXVIFS+1];
+	char incoming_iif[MAXVIFS+1];
+
+	for (vifi = 0; vifi < numvifs; vifi++) {
+		oifs[vifi] =
+			PIMD_VIFM_ISSET(vifi, r->oifs) ? 'o' : '.';
+		joined_oifs[vifi] =
+			PIMD_VIFM_ISSET(vifi, r->joined_oifs) ? 'j' : '.';
+		pruned_oifs[vifi] =
+			PIMD_VIFM_ISSET(vifi, r->pruned_oifs) ? 'p' : '.';
+		leaves_oifs[vifi] =
+			PIMD_VIFM_ISSET(vifi, r->leaves) ? 'l' : '.';
+		asserted_oifs[vifi] =
+			PIMD_VIFM_ISSET(vifi, r->asserted_oifs) ? 'a' : '.';
+		incoming_iif[vifi] = '.';
+	}
+	oifs[vifi]		= 0x0;	/* End of string */
+	joined_oifs[vifi]	= 0x0;
+	pruned_oifs[vifi]	= 0x0;
+	leaves_oifs[vifi]	= 0x0;
+	asserted_oifs[vifi] = 0x0;
+	incoming_iif[vifi]	= 0x0;
+	incoming_iif[r->incoming] = 'I';
+
+	/* TODO: don't need some of the flags */
+	if (r->flags & MRTF_SPT)	  fprintf(fp, " SPT");
+	if (r->flags & MRTF_WC)	          fprintf(fp, " WC");
+	if (r->flags & MRTF_RP)	          fprintf(fp, " RP");
+	if (r->flags & MRTF_REGISTER)     fprintf(fp, " REG");
+	if (r->flags & MRTF_IIF_REGISTER) fprintf(fp, " IIF_REG");
+	if (r->flags & MRTF_NULL_OIF)     fprintf(fp, " NULL_OIF");
+	if (r->flags & MRTF_KERNEL_CACHE) fprintf(fp, " CACHE");
+	if (r->flags & MRTF_ASSERTED)     fprintf(fp, " ASSERTED");
+	if (r->flags & MRTF_REG_SUPP)     fprintf(fp, " REG_SUPP");
+	if (r->flags & MRTF_SG)	          fprintf(fp, " SG");
+	if (r->flags & MRTF_PMBR)	  fprintf(fp, " PMBR");
+	fprintf(fp, "\n");
+
+	if (!detail)
+		return;
+
+	fprintf(fp, "Joined   oifs: %-20s\n", joined_oifs);
+	fprintf(fp, "Pruned   oifs: %-20s\n", pruned_oifs);
+	fprintf(fp, "Leaves   oifs: %-20s\n", leaves_oifs);
+	fprintf(fp, "Asserted oifs: %-20s\n", asserted_oifs);
+	fprintf(fp, "Outgoing oifs: %-20s\n", oifs);
+	fprintf(fp, "Incoming     : %-20s\n", incoming_iif);
+
+	fprintf(fp, "\nTIMERS:  Entry    JP    RS  Assert VIFS:");
+	for (vifi = 0; vifi < numvifs; vifi++)
+		fprintf(fp, "  %d", vifi);
+	fprintf(fp, "\n         %5d  %4d  %4d  %6d      ",
+		r->timer, r->jp_timer, r->rs_timer, r->assert_timer);
+	for (vifi = 0; vifi < numvifs; vifi++)
+		fprintf(fp, " %2d", r->vif_timers[vifi]);
+	fprintf(fp, "\n");
+}
+
+/* PIM Multicast Routing Table */
+static void show_pim_mrt(FILE *fp)
+{
+	grpentry_t *g;
+	mrtentry_t *r;
+	u_int number_of_cache_mirrors = 0;
+	u_int number_of_groups = 0;
+	cand_rp_t *rp;
+	kernel_cache_t *kc;
+
+	fprintf(fp, "Source           Group            RP Address       Flags\n");
+
+	/* TODO: remove the dummy 0.0.0.0 group (first in the chain) */
+	for (g = grplist->next; g; g = g->next) {
+		number_of_groups++;
+
+		r = g->grp_route;
+		if (r) {
+			if (r->flags & MRTF_KERNEL_CACHE) {
+				for (kc = r->kernel_cache; kc; kc = kc->next)
+					number_of_cache_mirrors++;
+			}
+
+			fprintf(fp, "%-15s  %-15s  %-15s ",
+				"ANY",
+				inet_fmt(g->group, s1, sizeof(s1)),
+				IN_PIM_SSM_RANGE(g->group)
+				? "SSM"
+				: (g->active_rp_grp
+				   ? inet_fmt(g->rpaddr, s2, sizeof(s2))
+				   : "NULL"));
+
+			dump_route(fp, r, 0);
+		}
+
+		for (r = g->mrtlink; r; r = r->grpnext) {
+			if (r->flags & MRTF_KERNEL_CACHE)
+				number_of_cache_mirrors++;
+
+			fprintf(fp, "%-15s  %-15s  %-15s ",
+				inet_fmt(r->source->address, s1, sizeof(s1)),
+				inet_fmt(g->group, s2, sizeof(s2)),
+				IN_PIM_SSM_RANGE(g->group)
+				? "SSM"
+				: (g->active_rp_grp
+				   ? inet_fmt(g->rpaddr, s2, sizeof(s2))
+				   : "NULL"));
+
+			dump_route(fp, r, 0);
+		}
+	}
+
+	for (rp = cand_rp_list; rp; rp = rp->next) {
+		r = rp->rpentry->mrtlink;
+		if (r) {
+			if (r->flags & MRTF_KERNEL_CACHE) {
+				for (kc = r->kernel_cache; kc; kc = kc->next)
+					number_of_cache_mirrors++;
+			}
+
+			fprintf(fp, "%-15s  %-15s  %-15s ",
+				inet_fmt(r->source->address, s1, sizeof(s1)),
+				"ANY",
+				"");
+
+			dump_route(fp, r, 0);
+		}
+	}
+
+	fprintf(fp, "\nNumber of Groups        : %u\n", number_of_groups);
+	fprintf(fp, "Number of Cache MIRRORs : %u\n", number_of_cache_mirrors);
+}
+
 static void show_status(FILE *fp)
 {
 	dump_vifs(fp);
@@ -242,6 +380,10 @@ static void ipc_handle(int sd)
 
 	case IPC_NEIGH_CMD:
 		ipc_generic(client, fn, show_neighbors);
+		break;
+
+	case IPC_ROUTE_CMD:
+		ipc_generic(client, fn, show_pim_mrt);
 		break;
 
 	case IPC_RP_CMD:
