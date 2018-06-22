@@ -40,6 +40,7 @@ struct command {
 	int    op;
 };
 
+static int plain = 0;
 static int heading = 1;
 static int verbose = 0;
 static int interactive = 1;
@@ -171,19 +172,26 @@ static int show_generic(int cmd, int detail)
 		chomp(line);
 
 		/* Table headings, or repeat headers, end with a '=' */
-		len = (int)strlen(line);
-		if (line[len - 1] == '=') {
+		len = (int)strlen(line) - 1;
+		if (len > 0 && line[len] == '=') {
 			if (!heading)
 				continue;
-			line[len - 1] = 0;
+			line[len] = 0;
 			head = 1;
-			len = get_width() - len;
+			if (!plain)
+				len = get_width() - len;
 		}
 
-		if (head)
+		if (head && !plain)
 			fprintf(stdout, "\e[7m%s%*s\e[0m\n", line, len < 0 ? 0 : len, "");
 		else
 			puts(line);
+
+		if (head && plain) {
+			while (--len)
+				fputc('=', stdout);
+			fputs("\n", stdout);
+		}
 	}
 
 	return fclose(fp);
@@ -205,6 +213,7 @@ static int usage(int rc)
 		"  -b, --batch               Batch mode, no screen size probing\n"
 		"  -d, --detail              Detailed output, where applicable\n"
 		"  -I, --ident=NAME          Connect to named pimd instance\n"
+		"  -p, --plain               Use plain table headings, no ctrl chars\n"
 		"  -t, --no-heading          Skip table headings\n"
 		"  -v, --verbose             Verbose output\n"
 		"  -h, --help                This help text\n"
@@ -226,6 +235,7 @@ int main(int argc, char *argv[])
 		{ "detail",     0, NULL, 'd' },
 		{ "ident",      1, NULL, 'I' },
 		{ "no-heading", 0, NULL, 't' },
+		{ "plain",      0, NULL, 'p' },
 		{ "help",       0, NULL, 'h' },
 		{ "debug",      0, NULL, 'd' },
 		{ "verbose",    0, NULL, 'v' },
@@ -242,7 +252,7 @@ int main(int argc, char *argv[])
 	int detail = 0;
 	int c;
 
-	while ((c = getopt_long(argc, argv, "bdh?I:tv", long_options, NULL)) != EOF) {
+	while ((c = getopt_long(argc, argv, "bdh?I:ptv", long_options, NULL)) != EOF) {
 		switch(c) {
 		case 'b':
 			interactive = 0;
@@ -258,6 +268,10 @@ int main(int argc, char *argv[])
 
 		case 'I':	/* --ident=NAME */
 			ident = optarg;
+			break;
+
+		case 'p':
+			plain = 1;
 			break;
 
 		case 't':
