@@ -101,7 +101,7 @@ static void show_neighbors(FILE *fp)
 
 		for (n = uv->uv_pim_neighbors; n; n = n->next) {
 			if (first) {
-				fprintf(fp, "Interface         Address          Prio  Uptime/Expires              \n");
+				fprintf(fp, "Interface         Address          Prio  Uptime/Expires               =\n");
 				first = 0;
 			}
 			show_neighbor(fp, uv, n);
@@ -142,7 +142,7 @@ static void show_interfaces(FILE *fp)
 	vifi_t vifi;
 
 	if (numvifs)
-		fprintf(fp, "Interface         State  Address          Nbr  Hello  Prio  DR Address\n");
+		fprintf(fp, "Interface         State  Address          Nbr  Hello  Prio  DR Address =\n");
 
 	for (vifi = 0; vifi < numvifs; vifi++)
 		show_interface(fp, &uvifs[vifi]);
@@ -154,7 +154,7 @@ static void show_rp(FILE *fp)
 	grp_mask_t *grp;
 
 	if (grp_mask_list)
-		fprintf(fp, "Group Address       RP Address       Type     Prio  Holdtime\n");
+		fprintf(fp, "Group Address       RP Address       Type     Prio  Holdtime =\n");
 
 	for (grp = grp_mask_list; grp; grp = grp->next) {
 		struct rp_grp_entry *rp_grp = grp->grp_rp_next;
@@ -261,7 +261,7 @@ static void show_pim_mrt(FILE *fp)
 	cand_rp_t *rp;
 	kernel_cache_t *kc;
 
-	fprintf(fp, "Source           Group            RP Address       Flags\n");
+	fprintf(fp, "Source           Group            RP Address       Flags =\n");
 
 	/* TODO: remove the dummy 0.0.0.0 group (first in the chain) */
 	for (g = grplist->next; g; g = g->next) {

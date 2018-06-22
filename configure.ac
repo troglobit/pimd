@@ -15,7 +15,7 @@ AC_PROG_INSTALL
 PKG_PROG_PKG_CONFIG
 
 AC_HEADER_STDC
-AC_CHECK_HEADERS([fcntl.h ifaddrs.h netinet/pim.h net/if_dl.h sys/time.h linux/netlink.h])
+AC_CHECK_HEADERS([fcntl.h ifaddrs.h netinet/pim.h net/if_dl.h sys/time.h linux/netlink.h termios.h])
 AC_CHECK_HEADERS([net/if.h], [], [], [
 #include <stdio.h>
 #ifdef STDC_HEADERS

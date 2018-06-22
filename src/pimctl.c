@@ -30,6 +30,9 @@
 #include "defs.h"
 #include <getopt.h>
 #include <poll.h>
+#ifdef HAVE_TERMIOS_H
+# include <termios.h>
+#endif
 
 struct command {
 	char  *cmd;
@@ -100,17 +103,85 @@ fail:
 	return NULL;
 }
 
+#define ESC "\033"
+static int get_width(void)
+{
+	int ret = 74;
+#ifdef HAVE_TERMIOS_H
+	char buf[42];
+	struct termios tc, saved;
+	struct pollfd fd = { STDIN_FILENO, POLLIN, 0 };
+
+	memset(buf, 0, sizeof(buf));
+	tcgetattr(STDERR_FILENO, &tc);
+	saved = tc;
+	tc.c_cflag |= (CLOCAL | CREAD);
+	tc.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
+	tcsetattr(STDERR_FILENO, TCSANOW, &tc);
+	fprintf(stderr, ESC "7" ESC "[r" ESC "[999;999H" ESC "[6n");
+
+	if (poll(&fd, 1, 300) > 0) {
+		int row, col;
+
+		if (scanf(ESC "[%d;%dR", &row, &col) == 2)
+			ret = col;
+	}
+
+	fprintf(stderr, ESC "8");
+	tcsetattr(STDERR_FILENO, TCSANOW, &saved);
+#endif
+	return ret;
+}
+
+static char *chomp(char *str)
+{
+	char *p;
+
+	if (!str || strlen(str) < 1) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	p = str + strlen(str) - 1;
+        while (*p == '\n')
+		*p-- = 0;
+
+	return str;
+}
+
 static int show_generic(int cmd)
 {
 	struct ipc *msg;
-	char show[512];
+	FILE *fp;
+	char line[512];
 
 	msg = do_cmd(cmd);
 	if (!msg)
 		return -1;
 
-	snprintf(show, sizeof(show), "cat %s", msg->buf);
-	return system(show);
+	fp = fopen(msg->buf, "r");
+	if (!fp)
+		return 1;
+
+	while (fgets(line, sizeof(line), fp)) {
+		int len, heading = 0;
+
+		chomp(line);
+
+		len = (int)strlen(line);
+		if (line[len - 1] == '=') {
+			line[len - 1] = 0;
+			heading = 1;
+		}
+
+		len = get_width() - len;
+		if (heading)
+			fprintf(stdout, "\e[7m%s%*s\e[0m\n", line, len < 0 ? 0 : len, "");
+		else
+			puts(line);
+	}
+
+	return fclose(fp);
 }
 
 static int string_match(const char *a, const char *b)
