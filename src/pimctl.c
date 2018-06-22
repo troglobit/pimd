@@ -73,7 +73,7 @@ error:
 	return -1;
 }
 
-static struct ipc *do_cmd(uint8_t cmd)
+static struct ipc *do_cmd(uint8_t cmd, int detail)
 {
 	static struct ipc msg;
 	struct pollfd pfd;
@@ -84,6 +84,7 @@ static struct ipc *do_cmd(uint8_t cmd)
 		return NULL;
 
 	msg.cmd = cmd;
+	msg.detail = detail;
 	if (write(sd, &msg, sizeof(msg)) == -1)
 		goto fail;
 
@@ -150,13 +151,13 @@ static char *chomp(char *str)
 	return str;
 }
 
-static int show_generic(int cmd)
+static int show_generic(int cmd, int detail)
 {
 	struct ipc *msg;
 	FILE *fp;
 	char line[512];
 
-	msg = do_cmd(cmd);
+	msg = do_cmd(cmd, detail);
 	if (!msg)
 		return -1;
 
@@ -202,6 +203,7 @@ static int usage(int rc)
 		"\n"
 		"Options:\n"
 		"  -b, --batch               Batch mode, no screen size probing\n"
+		"  -d, --detail              Detailed output, where applicable\n"
 		"  -I, --ident=NAME          Connect to named pimd instance\n"
 		"  -t, --no-heading          Skip table headings\n"
 		"  -v, --verbose             Verbose output\n"
@@ -221,6 +223,7 @@ int main(int argc, char *argv[])
 {
 	struct option long_options[] = {
 		{ "batch",      0, NULL, 'b' },
+		{ "detail",     0, NULL, 'd' },
 		{ "ident",      1, NULL, 'I' },
 		{ "no-heading", 0, NULL, 't' },
 		{ "help",       0, NULL, 'h' },
@@ -236,12 +239,17 @@ int main(int argc, char *argv[])
 		{ "status",    NULL, IPC_STAT_CMD  },
 		{ NULL, NULL }
 	};
+	int detail = 0;
 	int c;
 
-	while ((c = getopt_long(argc, argv, "bh?I:tv", long_options, NULL)) != EOF) {
+	while ((c = getopt_long(argc, argv, "bdh?I:tv", long_options, NULL)) != EOF) {
 		switch(c) {
 		case 'b':
 			interactive = 0;
+			break;
+
+		case 'd':
+			detail = 1;
 			break;
 
 		case 'h':
@@ -263,7 +271,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (optind >= argc)
-		return show_generic(IPC_STAT_CMD);
+		return show_generic(IPC_STAT_CMD, detail);
 
 	for (c = 0; command[c].cmd; c++) {
 		if (!string_match(command[c].cmd, argv[optind]))
@@ -272,7 +280,7 @@ int main(int argc, char *argv[])
 		if (command[c].cb)
 			return command[c].cb(NULL);
 
-		return show_generic(command[c].op);
+		return show_generic(command[c].op, detail);
 	}
 
 	return usage(1);

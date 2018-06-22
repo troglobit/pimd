@@ -31,6 +31,7 @@
 
 static struct sockaddr_un sun;
 static int ipc_socket = -1;
+static int detail = 0;
 
 static char *timetostr(time_t t, char *buf, size_t len)
 {
@@ -186,7 +187,7 @@ static void show_rp(FILE *fp)
 	}
 }
 
-static void dump_route(FILE *fp, mrtentry_t *r, int detail)
+static void dump_route(FILE *fp, mrtentry_t *r)
 {
 	vifi_t vifi;
 	char oifs[MAXVIFS+1];
@@ -241,10 +242,10 @@ static void dump_route(FILE *fp, mrtentry_t *r, int detail)
 	fprintf(fp, "Outgoing oifs: %-20s\n", oifs);
 	fprintf(fp, "Incoming     : %-20s\n", incoming_iif);
 
-	fprintf(fp, "\nTIMERS:  Entry    JP    RS  Assert VIFS:");
+	fprintf(fp, "\nTIMERS       :  Entry    JP    RS  Assert  VIFS:");
 	for (vifi = 0; vifi < numvifs; vifi++)
 		fprintf(fp, "  %d", vifi);
-	fprintf(fp, "\n         %5d  %4d  %4d  %6d      ",
+	fprintf(fp, "\n                %5d  %4d  %4d  %6d       ",
 		r->timer, r->jp_timer, r->rs_timer, r->assert_timer);
 	for (vifi = 0; vifi < numvifs; vifi++)
 		fprintf(fp, " %2d", r->vif_timers[vifi]);
@@ -274,6 +275,8 @@ static void show_pim_mrt(FILE *fp)
 					number_of_cache_mirrors++;
 			}
 
+			if (detail)
+				fprintf(fp, "\nSource           Group            RP Address       Flags =\n");
 			fprintf(fp, "%-15s  %-15s  %-15s ",
 				"ANY",
 				inet_fmt(g->group, s1, sizeof(s1)),
@@ -283,13 +286,15 @@ static void show_pim_mrt(FILE *fp)
 				   ? inet_fmt(g->rpaddr, s2, sizeof(s2))
 				   : "NULL"));
 
-			dump_route(fp, r, 0);
+			dump_route(fp, r);
 		}
 
 		for (r = g->mrtlink; r; r = r->grpnext) {
 			if (r->flags & MRTF_KERNEL_CACHE)
 				number_of_cache_mirrors++;
 
+			if (detail)
+				fprintf(fp, "\nSource           Group            RP Address       Flags =\n");
 			fprintf(fp, "%-15s  %-15s  %-15s ",
 				inet_fmt(r->source->address, s1, sizeof(s1)),
 				inet_fmt(g->group, s2, sizeof(s2)),
@@ -299,7 +304,7 @@ static void show_pim_mrt(FILE *fp)
 				   ? inet_fmt(g->rpaddr, s2, sizeof(s2))
 				   : "NULL"));
 
-			dump_route(fp, r, 0);
+			dump_route(fp, r);
 		}
 	}
 
@@ -311,12 +316,14 @@ static void show_pim_mrt(FILE *fp)
 					number_of_cache_mirrors++;
 			}
 
+			if (detail)
+				fprintf(fp, "\nSource           Group            RP Address       Flags =\n");
 			fprintf(fp, "%-15s  %-15s  %-15s ",
 				inet_fmt(r->source->address, s1, sizeof(s1)),
 				"ANY",
 				"");
 
-			dump_route(fp, r, 0);
+			dump_route(fp, r);
 		}
 	}
 
@@ -371,6 +378,9 @@ static void ipc_handle(int sd)
 		logit(LOG_WARNING, errno, "Failed reading IPC command");
 		return;
 	}
+
+	/* Set requested detail level */
+	detail = msg.detail;
 
 	snprintf(fn, sizeof(fn), _PATH_PIMD_DUMP, ident);
 	switch (msg.cmd) {

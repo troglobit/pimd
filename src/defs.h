@@ -329,7 +329,8 @@ extern int mrt_table_id;
 
 struct ipc {
     uint8_t cmd;
-    char    buf[255];
+    uint8_t detail;
+    char    buf[254];
 };
 
 /*
