@@ -127,6 +127,7 @@ static int usage(int rc)
 		"\n"
 		"Options:\n"
 		"  -b, --batch               Batch mode, no screen size probing\n"
+		"  -I, --ident=NAME          Connect to named pimd instance\n"
 		"  -v, --verbose             Verbose output\n"
 		"  -h, --help                This help text\n"
 		"\n"
@@ -143,6 +144,7 @@ int main(int argc, char *argv[])
 {
 	struct option long_options[] = {
 		{"batch",   0, NULL, 'b'},
+		{"ident",   1, NULL, 'I'},
 		{"help",    0, NULL, 'h'},
 		{"debug",   0, NULL, 'd'},
 		{"verbose", 0, NULL, 'v'},
@@ -157,7 +159,7 @@ int main(int argc, char *argv[])
 	};
 	int c;
 
-	while ((c = getopt_long(argc, argv, "bh?v", long_options, NULL)) != EOF) {
+	while ((c = getopt_long(argc, argv, "bh?I:v", long_options, NULL)) != EOF) {
 		switch(c) {
 		case 'b':
 			interactive = 0;
@@ -166,6 +168,10 @@ int main(int argc, char *argv[])
 		case 'h':
 		case '?':
 			return usage(0);
+
+		case 'I':	/* --ident=NAME */
+			ident = optarg;
+			break;
 
 		case 'v':
 			verbose = 1;
