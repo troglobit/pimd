@@ -34,6 +34,7 @@
 struct command {
 	char  *cmd;
 	int  (*cb)(char *arg);
+	int    op;
 };
 
 static int verbose = 0;
@@ -112,21 +113,6 @@ static int show_generic(int cmd)
 	return system(show);
 }
 
-static int show_interface(char *arg)
-{
-	return show_generic(IPC_IFACE_CMD);
-}
-
-static int show_neighbor(char *arg)
-{
-	return show_generic(IPC_NEIGH_CMD);
-}
-
-static int show_status(char *arg)
-{
-	return show_generic(IPC_STAT_CMD);
-}
-
 static int string_match(const char *a, const char *b)
 {
    size_t min = MIN(strlen(a), strlen(b));
@@ -162,9 +148,9 @@ int main(int argc, char *argv[])
 		{NULL, 0, NULL, 0}
 	};
 	struct command command[] = {
-		{ "interface", show_interface },
-		{ "neighbor",  show_neighbor },
-		{ "status",    show_status },
+		{ "interface", NULL, IPC_IFACE_CMD },
+		{ "neighbor",  NULL, IPC_NEIGH_CMD },
+		{ "status",    NULL, IPC_STAT_CMD  },
 		{ NULL, NULL }
 	};
 	int c;
@@ -186,13 +172,16 @@ int main(int argc, char *argv[])
 	}
 
 	if (optind >= argc)
-		return show_status(NULL);
+		return show_generic(IPC_STAT_CMD);
 
 	for (c = 0; command[c].cmd; c++) {
 		if (!string_match(command[c].cmd, argv[optind]))
 			continue;
 
-		return command[c].cb(NULL);
+		if (command[c].cb)
+			return command[c].cb(NULL);
+
+		return show_generic(command[c].op);
 	}
 
 	return usage(1);
