@@ -357,15 +357,42 @@ static void show_pim_mrt(FILE *fp)
 	fprintf(fp, "Number of Cache MIRRORs : %u\n", number_of_cache_mirrors);
 }
 
+#define ENABLED(v) (v ? "Enabled" : "Disabled")
+
 static void show_status(FILE *fp)
 {
-	fprintf(fp, "Current BSR address : %s\n", inet_fmt(curr_bsr_address, s1, sizeof(s1)));
-	fprintf(fp, "Join/Prune Interval : %d sec\n", PIM_JOIN_PRUNE_PERIOD);
-	fprintf(fp, "Hello Interval      : %d sec\n", pim_timer_hello_interval);
-	fprintf(fp, "Hello Holdtime      : %d sec\n", pim_timer_hello_holdtime);
-	fprintf(fp, "IGMP query interval : %d sec\n", igmp_query_interval);
-	fprintf(fp, "IGMP querier timeout: %d sec\n", igmp_querier_timeout);
-	fprintf(fp, "SPT Threshold       : %s\n", spt_threshold.mode == SPT_INF ? "Disabled" : "Enabled");
+	char buf[10];
+	int len;
+
+	snprintf(buf, sizeof(buf), "%d", curr_bsr_priority);
+	MASK_TO_MASKLEN(curr_bsr_hash_mask, len);
+
+	fprintf(fp, "Elected BSR\n");
+	fprintf(fp, "    Address          : %s\n", inet_fmt(curr_bsr_address, s1, sizeof(s1)));
+	fprintf(fp, "    Expiry Time      : %s\n", !pim_bootstrap_timer ? "N/A" : timetostr(pim_bootstrap_timer, NULL, 0));
+	fprintf(fp, "    Priority         : %s\n", !curr_bsr_priority ? "N/A" : buf);
+	fprintf(fp, "    Hash Mask Length : %d\n", len);
+
+	snprintf(buf, sizeof(buf), "%d", my_bsr_priority);
+	MASK_TO_MASKLEN(my_bsr_hash_mask, len);
+
+	fprintf(fp, "Candidate BSR\n");
+	fprintf(fp, "    State            : %s\n", ENABLED(cand_bsr_flag));
+	fprintf(fp, "    Address          : %s\n", inet_fmt(my_bsr_address, s1, sizeof(s1)));
+	fprintf(fp, "    Priority         : %s\n", !my_bsr_priority ? "N/A" : buf);
+
+	fprintf(fp, "Candidate RP\n");
+	fprintf(fp, "    State            : %s\n", ENABLED(cand_rp_flag));
+	fprintf(fp, "    Address          : %s\n", inet_fmt(my_cand_rp_address, s1, sizeof(s1)));
+	fprintf(fp, "    Priority         : %d\n", my_cand_rp_priority);
+	fprintf(fp, "    Holdtime         : %d sec\n", my_cand_rp_holdtime);
+
+	fprintf(fp, "Join/Prune Interval  : %d sec\n", PIM_JOIN_PRUNE_PERIOD);
+	fprintf(fp, "Hello Interval       : %d sec\n", pim_timer_hello_interval);
+	fprintf(fp, "Hello Holdtime       : %d sec\n", pim_timer_hello_holdtime);
+	fprintf(fp, "IGMP query interval  : %d sec\n", igmp_query_interval);
+	fprintf(fp, "IGMP querier timeout : %d sec\n", igmp_querier_timeout);
+	fprintf(fp, "SPT Threshold        : %s\n", spt_threshold.mode == SPT_INF ? "Disabled" : "Enabled");
 }
 
 static void show_dump(FILE *fp)
