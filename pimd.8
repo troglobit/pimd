@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.Dd Mar 3, 2016
+.Dd Jun 23, 2018
 .\" Please adjust this date whenever revising the manpage.
 .Dt PIMD 8 SMM
 .Os
@@ -66,10 +66,11 @@ which is strongly recommended to change over this option.
 If
 .Nm
 cannot find its configuration file it will start up with fallback
-defaults, which include enabling both
+defaults.  See below, in the CONFIGURATION section, how this applies to
 .Cm bsr-candidate
 and
-.Cm rp-candidate .
+.Cm rp-candidate ,
+and how that affects the operation of PIM in the network.
 .It Fl d Ar SYS[,SYS...]
 By default,
 .Nm
@@ -436,12 +437,11 @@ Both the
 .Cm bsr-candidate
 (CBSR) and
 .Cm rp-candidate
-(CRP) settings are enabled in the default configuration.  Disabling
-them, by commenting them out in the config file, for all PIM capable
-routers is a bad idea.  When troubleshooting, ensure at least one
-bootstrap router (BSR) and at least one rendez-vous point (RP) in
-PIM-SM, is available.  Both settings share the following options, with
-priority being interpreted differently:
+(CRP) settings are enabled in the default configuration file.  You can
+disable them by commenting them out, however, make sure at least one
+bootstrap router (BSR) and at least one rendezvous-point (RP) in PIM-SM,
+is available in the network.  Both settings share the following options,
+with priority being interpreted differently:
 .Pp
 .Bl -bullet -offset indent -width 1n -compact
 .It
