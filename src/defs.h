@@ -313,6 +313,7 @@ extern struct cand_rp_adv_message_ {
 } cand_rp_adv_message;
 
 extern int do_vifs;
+extern int no_fallback;
 extern int retry_forever;
 extern int mrt_table_id;
 

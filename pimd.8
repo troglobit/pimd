@@ -61,16 +61,26 @@ Specify an alternative configuration file, the default
 .Pa /etc/pimd.conf ,
 is derived from
 .Fl -ident=NAME ,
-which is strongly recommended to change over this option.
-.Pp
+which is strongly recommended to use over this option.
+.It Fl -no-fallback
 If
 .Nm
 cannot find its configuration file it will start up with fallback
-defaults.  See below, in the CONFIGURATION section, how this applies to
+defaults for
 .Cm bsr-candidate
 and
-.Cm rp-candidate ,
-and how that affects the operation of PIM in the network.
+.Cm rp-candidate .
+These fallbacks exist to ensure a fully working multicast routing setup.
+However, if there are other PIM routers that act as BSR and RP in the
+network, this option can be used to disable the built-in fallbacks.
+.Pp
+This option works the same as if
+.Nm
+finds an empty configuration file, or when 
+.Cm bsr-candidate
+and
+.Cm rp-candidate
+are commented out.
 .It Fl d Ar SYS[,SYS...]
 By default,
 .Nm

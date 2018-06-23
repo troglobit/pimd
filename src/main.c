@@ -48,6 +48,7 @@
 
 char versionstring[100];
 int do_vifs       = 1;
+int no_fallback   = 0;
 int retry_forever = 0;
 int haveterminal  = 1;
 struct rp_hold *g_rp_hold = NULL;
@@ -236,6 +237,7 @@ static int usage(int code)
 
     printf("Usage: %s [-DhlNnv] [-f FILE] [-d [SYS][,SYS...]] [-s LEVEL]\n\n", prognm);
     printf(" -f, --config=FILE   Configuration file, default uses ident NAME: %s\n", config_file);
+    printf("     --no-fallback   When started without a config file, skip RP/BSR fallbacks\n");
     printf(" -n, --foreground    Run in foreground, do not detach from calling terminal\n");
     printf(" -d SYS[,SYS,SYS..]  Enable debug for SYS, see below for valid systems\n");
     printf(" -l, --loglevel=LVL  Set log level: none, err, info, notice (default), debug\n");
@@ -302,6 +304,7 @@ int main(int argc, char *argv[])
     struct sigaction sa;
     struct option long_options[] = {
 	{ "config",        1, 0, 'f' },
+	{ "no-fallback",   0, 0, 500 },
 	{ "disable-vifs",  0, 0, 'N' },
 	{ "foreground",    0, 0, 'n' },
 	{ "help",          0, 0, 'h' },
@@ -351,6 +354,10 @@ int main(int argc, char *argv[])
 
 	    case 'f':
 		config_file = optarg;
+		break;
+
+	    case 500:
+		no_fallback = 1;
 		break;
 
 	    case 'h':

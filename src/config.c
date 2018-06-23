@@ -1467,6 +1467,10 @@ static void fallback_config(void)
 {
     char buf[LINE_BUFSIZ], *s = buf;
 
+    if (no_fallback) {
+	logit(LOG_NOTICE, 0, "Skipping built-in defaults, no RP/BSR candidate.");
+	return;
+    }
     logit(LOG_NOTICE, 0, "Using built-in defaults, including RP/BSR candidate.");
 
     snprintf(buf, sizeof(buf), "priority 5 interval 60");
