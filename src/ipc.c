@@ -82,11 +82,17 @@ static void show_neighbor(FILE *fp, struct uvif *uv, pim_nbr_entry_t *n)
 		 timetostr(uptime, tmp, sizeof(tmp)),
 		 timetostr(n->timer, NULL, 0));
 
-	fprintf(fp, "%-16s  %-15s  %4s  %-28s\n",
+	if (uv->uv_flags & VIFF_DR) {
+		memset(tmp, 0, sizeof(tmp));
+	} else {
+		if (uv->uv_pim_neighbors == n)
+			snprintf(tmp, sizeof(tmp), "DR");
+	}
+
+	fprintf(fp, "%-16s  %-15s  %4s  %-4s  %-28s\n",
 		uv->uv_name,
 		inet_fmt(n->address, s1, sizeof(s1)),
-		get_dr_prio(n),
-		buf);
+		get_dr_prio(n), tmp, buf);
 }
 
 /* PIM Neighbor Table */
@@ -102,7 +108,7 @@ static void show_neighbors(FILE *fp)
 
 		for (n = uv->uv_pim_neighbors; n; n = n->next) {
 			if (first) {
-				fprintf(fp, "Interface         Address          Prio  Uptime/Expires               =\n");
+				fprintf(fp, "Interface         Address          Prio  Mode  Uptime/Expires               =\n");
 				first = 0;
 			}
 			show_neighbor(fp, uv, n);
