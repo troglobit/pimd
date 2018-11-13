@@ -718,7 +718,7 @@ int change_interfaces(mrtentry_t *mrt,
 		    break;
 		}
 
-		calc_oifs(tmp, &oifs);
+		calc_oifs(tmp, oifs);
 		if (!(PIMD_VIFM_SAME(new_real_oifs, oifs)))
 		    tmp->flags |= MRTF_MFC_CLONE_SG;
 
