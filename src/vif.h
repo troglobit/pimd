@@ -78,10 +78,17 @@ inline static void PIMD_VIFM_MERGE(uint8_t *m1, uint8_t *m2, uint8_t *result)
 	result[n] = m1[n] | m2[n];
 }
 
-/* Check whether I am the last hop on some LAN */
+/* Check with any oifs whether I am the last hop on some LAN */
 inline static int PIMD_VIFM_LASTHOP_ROUTER(uint8_t *leaves, uint8_t *oifs)
 {
-    return memcmp(leaves, oifs, MAXVIFS) ? 0 : 1;
+    int i;
+
+    for (i = 0; i < MAXVIFS; i++) {
+        if (leaves[i] && oifs[i])
+            return 1;
+    }
+
+    return 0;
 }
 
 /*
