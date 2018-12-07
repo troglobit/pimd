@@ -479,12 +479,14 @@ void send_igmp(char *buf, uint32_t src, uint32_t dst, int type, int code, uint32
         igmp->code    = code;
     igmp->group       = group;
     igmp->csum        = 0;
-    igmp->csum        = inet_cksum((uint16_t *)igmp, len);
 
     if (datalen >= 4) {
         igmp->qrv = 2;
         igmp->qqic = igmp_floating_point(igmp_query_interval);
     }
+
+    /* Note: calculate IGMP checksum last. */
+    igmp->csum = inet_cksum((uint16_t *)igmp, len);
 
     send_ip_frame(src, dst, type, code, buf, len);
 }
