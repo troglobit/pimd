@@ -549,6 +549,8 @@ static void SwitchVersion(void *arg)
 
     logit(LOG_INFO, 0, "Switch IGMP compatibility mode back to v%d for group %s",
 	  cbk->g->al_pv, inet_fmt(cbk->g->al_addr, s1, sizeof(s1)));
+
+    free(cbk);
 }
 
 /*
