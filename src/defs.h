@@ -686,7 +686,7 @@ struct rp_hold {
 	uint32_t	address;
 	uint32_t	group;
 	uint32_t	mask;
-	uint8_t	priority;
+	uint8_t		priority;
 };
 
 /* compat declarations */

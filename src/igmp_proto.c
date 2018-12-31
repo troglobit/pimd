@@ -190,7 +190,7 @@ void accept_membership_query(uint32_t src, uint32_t dst __attribute__((unused)),
 	    }
 
 	    if (!v->uv_querier) {
-		v->uv_querier = (struct listaddr *) calloc(1, sizeof(struct listaddr));
+		v->uv_querier = calloc(1, sizeof(struct listaddr));
 		if (!v->uv_querier) {
 		    logit(LOG_ERR, 0, "Failed calloc() in accept_membership_query()");
 		    return;
@@ -342,7 +342,7 @@ void accept_group_report(uint32_t igmp_src, uint32_t ssm_src, uint32_t group, in
 		}
 		if (!s) {
 		    /* Add new source */
-		    s = (struct listaddr *)calloc(1, sizeof(struct listaddr));
+		    s = calloc(1, sizeof(struct listaddr));
 		    if (!s) {
 			logit(LOG_ERR, errno, "%s(): Ran out of memory", __func__);
 			return;
@@ -373,19 +373,19 @@ void accept_group_report(uint32_t igmp_src, uint32_t ssm_src, uint32_t group, in
      * If not found, add it to the list and update kernel cache.
      */
     if (!g) {
-	g = (struct listaddr *)calloc(1, sizeof(struct listaddr));
+	g = calloc(1, sizeof(struct listaddr));
 	if (!g) {
 	    logit(LOG_ERR, errno, "%s(): Ran out of memory", __func__);
 	    return;
 	}
 
 	g->al_addr = group;
-	if (!IN_PIM_SSM_RANGE(group) && igmp_report_type == IGMP_V1_MEMBERSHIP_REPORT) {
+	if (igmp_report_type == IGMP_V1_MEMBERSHIP_REPORT) {
 	    g->al_old = DVMRP_OLD_AGE_THRESHOLD;
 	    IF_DEBUG(DEBUG_IGMP)
 		logit(LOG_DEBUG, 0, "Change IGMP compatibility mode to v1 for group %s", s3);
 	    g->al_pv = 1;
-	} else if (!IN_PIM_SSM_RANGE(group) && igmp_report_type == IGMP_V2_MEMBERSHIP_REPORT) {
+	} else if (igmp_report_type == IGMP_V2_MEMBERSHIP_REPORT) {
 	    IF_DEBUG(DEBUG_IGMP)
 		logit(LOG_DEBUG, 0, "Change IGMP compatibility mode to v2 for group %s", s3);
 	    g->al_pv = 2;
@@ -395,7 +395,7 @@ void accept_group_report(uint32_t igmp_src, uint32_t ssm_src, uint32_t group, in
 
 	/* Add new source */
 	if (IN_PIM_SSM_RANGE(group)) {
-	    s = (struct listaddr *)calloc(1, sizeof(struct listaddr));
+	    s = calloc(1, sizeof(struct listaddr));
 	    if (!s) {
 		logit(LOG_ERR, errno, "%s(): Ran out of memory", __func__);
 		return;
@@ -814,7 +814,7 @@ static int SetVersionTimer(vifi_t vifi, struct listaddr *g)
 {
     cbk_t *cbk;
 
-    cbk = (cbk_t *)calloc(1, sizeof(cbk_t));
+    cbk = calloc(1, sizeof(cbk_t));
     if (!cbk) {
 	logit(LOG_ERR, 0, "Failed calloc() in SetVersionTimer()\n");
 	return -1;
@@ -834,7 +834,7 @@ static int SetTimer(vifi_t vifi, struct listaddr *g, uint32_t source)
 {
     cbk_t *cbk;
 
-    cbk = (cbk_t *)calloc(1, sizeof(cbk_t));
+    cbk = calloc(1, sizeof(cbk_t));
     if (!cbk) {
 	logit(LOG_ERR, 0, "Failed calloc() in SetTimer()");
 	return -1;
@@ -895,7 +895,7 @@ static int SetQueryTimer(struct listaddr *g, vifi_t vifi, int to_expire, int q_t
 {
     cbk_t *cbk;
 
-    cbk = (cbk_t *)calloc(1, sizeof(cbk_t));
+    cbk = calloc(1, sizeof(cbk_t));
     if (!cbk) {
 	logit(LOG_ERR, 0, "Failed calloc() in SetQueryTimer()");
 	return -1;

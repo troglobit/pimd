@@ -64,7 +64,7 @@ void init_pim_mrt(void)
     /* Initialize the source list */
     /* The first entry has address 'INADDR_ANY' and is not used */
     /* The order is the smallest address first. */
-    srclist		= (srcentry_t *)calloc(1, sizeof(srcentry_t));
+    srclist		= calloc(1, sizeof(srcentry_t));
     if (!srclist)
 	logit(LOG_ERR, 0, "Ran out of memory in init_pim_mrt()");
     srclist->next       = NULL;
@@ -80,7 +80,7 @@ void init_pim_mrt(void)
     /* Initialize the group list */
     /* The first entry has address 'INADDR_ANY' and is not used */
     /* The order is the smallest address first. */
-    grplist		= (grpentry_t *)calloc(1, sizeof(grpentry_t));
+    grplist		= calloc(1, sizeof(grpentry_t));
     if (!grplist)
 	logit(LOG_ERR, 0, "Ran out of memory in init_pim_mrt()");
     grplist->next       = NULL;
@@ -815,12 +815,12 @@ static mrtentry_t *alloc_mrtentry(srcentry_t *src, grpentry_t *grp)
      * need to delete the routing table and disturb the forwarding.
      */
 #ifdef SAVE_MEMORY
-    mrt->vif_timers	    = (uint16_t *)calloc(1, sizeof(uint16_t) * numvifs);
-    mrt->vif_deletion_delay = (uint16_t *)calloc(1, sizeof(uint16_t) * numvifs);
+    mrt->vif_timers	    = calloc(1, sizeof(uint16_t) * numvifs);
+    mrt->vif_deletion_delay = calloc(1, sizeof(uint16_t) * numvifs);
     vif_numbers = numvifs;
 #else
-    mrt->vif_timers	    = (uint16_t *)calloc(1, sizeof(uint16_t) * total_interfaces);
-    mrt->vif_deletion_delay = (uint16_t *)calloc(1, sizeof(uint16_t) * total_interfaces);
+    mrt->vif_timers	    = calloc(1, sizeof(uint16_t) * total_interfaces);
+    mrt->vif_deletion_delay = calloc(1, sizeof(uint16_t) * total_interfaces);
     vif_numbers = total_interfaces;
 #endif /* SAVE_MEMORY */
     if (!mrt->vif_timers || !mrt->vif_deletion_delay) {
@@ -1053,7 +1053,9 @@ void add_kernel_cache(mrtentry_t *mrt, uint32_t source, uint32_t group, uint16_t
 	if (mrt->flags & MRTF_KERNEL_CACHE)
 	    return;
 
-	node = (kernel_cache_t *)calloc(1, sizeof(kernel_cache_t));
+	node = calloc(1, sizeof(kernel_cache_t));
+	if (!node)
+	    logit(LOG_ERR, 0, "Ran out of memory in %s()", __func__);
 	node->next = NULL;
 	node->prev = NULL;
 	node->source = source;
@@ -1085,9 +1087,10 @@ void add_kernel_cache(mrtentry_t *mrt, uint32_t source, uint32_t group, uint16_t
 	return;
     }
 
-    /* The new entry must be placed between prev and
-     * next */
+    /* The new entry must be placed between prev and next */
     node = calloc(1, sizeof(kernel_cache_t));
+    if (!node)
+	logit(LOG_ERR, 0, "Ran out of memory in %s()", __func__);
     if (prev)
 	prev->next = node;
     else

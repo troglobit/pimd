@@ -489,7 +489,7 @@ void logit(int severity, int syserr, const char *format, ...)
 #ifndef CONTINUE_ON_ERROR
     if (severity <= LOG_ERR)
 	exit(-1);		/* Exit status: 255 */
-#endif /* CONTINUE_ON_ERROR */
+#endif
 }
 
 

@@ -640,7 +640,7 @@ static int parse_phyint(char *s)
 		    s = t;
 		}
 
-		ph = (struct phaddr *)calloc(1, sizeof(struct phaddr));
+		ph = calloc(1, sizeof(struct phaddr));
 		if (!ph)
 		    return FALSE;
 
@@ -699,7 +699,7 @@ static int parse_phyint(char *s)
 		    continue;
 		}
 
-		v_acl = (struct vif_acl *)calloc(1, sizeof(struct vif_acl));
+		v_acl = calloc(1, sizeof(struct vif_acl));
 		if (!v_acl)
 		    return FALSE;
 

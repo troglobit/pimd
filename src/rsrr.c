@@ -65,15 +65,16 @@ static void	rsrr_cache     (struct gtable *gt, struct rsrr_rq *route_query);
 /* Initialize RSRR socket */
 void rsrr_init(void)
 {
-    int servlen;
     struct sockaddr_un serv_addr;
+    int servlen, rc;
 
-    rsrr_recv_buf = (char *)calloc(1, RSRR_MAX_LEN);
-    rsrr_send_buf = (char *)calloc(1, RSRR_MAX_LEN);
+    rsrr_recv_buf = calloc(1, RSRR_MAX_LEN);
+    rsrr_send_buf = calloc(1, RSRR_MAX_LEN);
     if (!rsrr_recv_buf || !rsrr_send_buf)
 	logit(LOG_ERR, 0, "Ran out of memory in rsrr_init()");
 
-    if ((rsrr_socket = socket(AF_UNIX, SOCK_DGRAM, 0)) < 0)
+    rsrr_socket = socket(AF_UNIX, SOCK_DGRAM, 0);
+    if (rsrr_socket < 0)
 	logit(LOG_ERR, errno, "Cannot create RSRR socket");
 
     unlink(RSRR_SERV_PATH);
@@ -86,11 +87,13 @@ void rsrr_init(void)
 #else
     servlen = sizeof(serv_addr.sun_family) + strlen(serv_addr.sun_path);
 #endif
- 
-    if (bind(rsrr_socket, (struct sockaddr *) &serv_addr, servlen) < 0)
+
+    rc = bind(rsrr_socket, (struct sockaddr *) &serv_addr, servlen)
+    if (rc < 0)
 	logit(LOG_ERR, errno, "Cannot bind RSRR socket");
 
-    if (register_input_handler(rsrr_socket, rsrr_read) < 0)
+    rc = register_input_handler(rsrr_socket, rsrr_read);
+    if (rc < 0)
 	logit(LOG_ERR, 0, "Could not register RSRR as an input handler");
 }
 
@@ -489,8 +492,8 @@ static void rsrr_cache(struct gtable *gt, struct rsrr_rq *route_query)
     /* Cache entry doesn't already exist.  Create one and insert at
      * front of list.
      */
-    rc = (struct rsrr_cache *)calloc(1, sizeof(struct rsrr_cache));
-    if (rc == NULL)
+    rc = calloc(1, sizeof(struct rsrr_cache));
+    if (!rc)
 	logit(LOG_ERR, 0, "Ran out of memory in rsrr_cache()");
 
     rc->route_query.source_addr = route_query->source_addr;
