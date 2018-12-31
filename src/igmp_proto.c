@@ -124,14 +124,6 @@ void accept_membership_query(uint32_t src, uint32_t dst __attribute__((unused)),
     if (local_address(src) != NO_VIF)
 	return;
 
-    /* Only v3 is allowed for SSM
-     * TODO: Rate-limit messages?
-     */
-    if (igmp_version != 3 && IN_PIM_SSM_RANGE(group)) {
-	logit(LOG_WARNING, 0, "SSM addresses are not allowed in v%d query.", igmp_version);
-	return;
-    }
-
     /* TODO: modify for DVMRP?? */
     if ((vifi = find_vif_direct(src)) == NO_VIF) {
 	IF_DEBUG(DEBUG_IGMP)
@@ -289,16 +281,20 @@ void accept_group_report(uint32_t igmp_src, uint32_t ssm_src, uint32_t group, in
      */
     for (g = v->uv_groups; g != NULL; g = g->al_next) {
 	if (group == g->al_addr) {
+	    int old_report = 0;
+
 	    if (igmp_report_type == IGMP_V1_MEMBERSHIP_REPORT) {
 		g->al_old = DVMRP_OLD_AGE_THRESHOLD;
-		if (!IN_PIM_SSM_RANGE(group) && g->al_pv>1) {
+		old_report = 1;
+
+		if (g->al_pv > 1) {
 		    IF_DEBUG(DEBUG_IGMP)
 			logit(LOG_DEBUG, 0, "Change IGMP compatibility mode to v1 for group %s", s3);
 		    g->al_pv = 1;
 		}
-	    } else if (!IN_PIM_SSM_RANGE(group) && igmp_report_type == IGMP_V2_MEMBERSHIP_REPORT) {
-		IF_DEBUG(DEBUG_IGMP)
-		    logit(LOG_DEBUG,0, "%s(): al_pv=%d", __func__, g->al_pv);
+	    } else if (igmp_report_type == IGMP_V2_MEMBERSHIP_REPORT) {
+		old_report = 1;
+
 		if (g->al_pv > 2) {
 		    IF_DEBUG(DEBUG_IGMP)
 			logit(LOG_DEBUG, 0, "Change IGMP compatibility mode to v2 for group %s", s3);
@@ -319,8 +315,7 @@ void accept_group_report(uint32_t igmp_src, uint32_t ssm_src, uint32_t group, in
 	    g->al_timerid = SetTimer(vifi, g, ssm_src);
 
 	    /* Reset timer for switching version back every time an older version report is received */
-	    if (!IN_PIM_SSM_RANGE(group) && g->al_pv<3 && (igmp_report_type == IGMP_V1_MEMBERSHIP_REPORT ||
-		igmp_report_type == IGMP_V2_MEMBERSHIP_REPORT)) {
+	    if (g->al_pv < 3 && old_report) {
 		if (g->al_versiontimer)
 			g->al_versiontimer = DeleteTimer(g->al_versiontimer);
 
@@ -363,6 +358,8 @@ void accept_group_report(uint32_t igmp_src, uint32_t ssm_src, uint32_t group, in
 		    logit(LOG_INFO, 0, "Add leaf (%s,%s)", s1, s3);
 		add_leaf(vifi, ssm_src, group);
 	    } else {
+		IF_DEBUG(DEBUG_IGMP)
+		    logit(LOG_INFO, 0, "Add leaf (*,%s)", s3);
 		add_leaf(vifi, INADDR_ANY_N, group);
 	    }
 	    break;
@@ -414,9 +411,8 @@ void accept_group_report(uint32_t igmp_src, uint32_t ssm_src, uint32_t group, in
 	g->al_timerid   = SetTimer(vifi, g, ssm_src);
 
 	/* Set timer for swithing version back if an older version report is received */
-	if (!IN_PIM_SSM_RANGE(group) && g->al_pv<3) {
+	if (g->al_pv < 3)
 	    g->al_versiontimer = SetVersionTimer(vifi, g);
-	}
 
 	g->al_next      = v->uv_groups;
 	v->uv_groups    = g;
@@ -430,7 +426,7 @@ void accept_group_report(uint32_t igmp_src, uint32_t ssm_src, uint32_t group, in
 	    add_leaf(vifi, ssm_src, group);
 	} else {
 	    IF_DEBUG(DEBUG_IGMP)
-		logit(LOG_INFO, 0, "SM group order from  %s (*,%s)", s1, s3);
+		logit(LOG_INFO, 0, "ASM group order from  %s (*,%s)", s1, s3);
 	    add_leaf(vifi, INADDR_ANY_N, group);
 	}
     }
@@ -641,11 +637,15 @@ void accept_membership_report(uint32_t src, uint32_t dst, struct igmpv3_report *
 	switch (rec_type) {
 	    case IGMP_MODE_IS_EXCLUDE:
 		/* RFC 4604: A router SHOULD ignore a group record of
-		   type MODE_IS_EXCLUDE if it refers to an SSM destination address */
+		 *           type MODE_IS_EXCLUDE if it refers to an SSM
+		 *           destination address.
+		 */
 		if (!IN_PIM_SSM_RANGE(rec_group.s_addr)) {
-		    if (rec_num_sources==0) {
-			/* RFC 5790: EXCLUDE (*,G) join can be interpreted by the router
-			   as a request to include all sources. */
+		    if (rec_num_sources == 0) {
+			/* RFC 5790: EXCLUDE (*,G) join can be
+			 *           interpreted by the router as a
+			 *           request to include all sources.
+			 */
 			accept_group_report(src, 0 /*dst*/, rec_group.s_addr, report->type);
 		    } else {
 			/* RFC 5790: LW-IGMPv3 does not use EXCLUDE filter-mode with a non-null source address list.*/
@@ -656,11 +656,15 @@ void accept_membership_report(uint32_t src, uint32_t dst, struct igmpv3_report *
 
 	    case IGMP_CHANGE_TO_EXCLUDE_MODE:
 		/* RFC 4604: A router SHOULD ignore a group record of
-		   type CHANGE_TO_EXCLUDE_MODE if it refers to an SSM destination address */
+		 *           type CHANGE_TO_EXCLUDE_MODE if it refers to
+		 *           an SSM destination address.
+		 */
 		if (!IN_PIM_SSM_RANGE(rec_group.s_addr)) {
-		    if (rec_num_sources==0) {
-			/* RFC 5790: EXCLUDE (*,G) join can be interpreted by the router
-			   as a request to include all sources. */
+		    if (rec_num_sources == 0) {
+			/* RFC 5790: EXCLUDE (*,G) join can be
+			 *           interpreted by the router as a
+			 *           request to include all sources.
+			 */
 			accept_group_report(src, 0 /*dst*/, rec_group.s_addr, report->type);
 		    } else {
 			/* RFC 5790: LW-IGMPv3 does not use EXCLUDE filter-mode with a non-null source address list.*/
@@ -711,7 +715,7 @@ void accept_membership_report(uint32_t src, uint32_t dst, struct igmpv3_report *
 		break;
 
 	    default:
-		//  RFC3376: Unrecognized Record Type values MUST be silently ignored.
+		/* RFC3376: Unrecognized Record Type values MUST be silently ignored. */
 		break;
 	}
 
