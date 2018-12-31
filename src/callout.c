@@ -77,38 +77,26 @@ void free_all_callouts(void)
  */
 void age_callout_queue(int elapsed_time)
 {
-    struct timeout_q *ptr, *expQ;
-    
+    struct timeout_q *ptr;
+
 #ifdef CALLOUT_DEBUG
     IF_DEBUG(DEBUG_TIMEOUT)
 	logit(LOG_DEBUG, 0, "aging queue (elapsed time %d):", elapsed_time);
     print_Q();
 #endif
     
-    expQ = Q;
-    ptr = NULL;
-    
-    while (Q) {
-	if (Q->time > elapsed_time) {
-	    Q->time -= elapsed_time;
-	    if (ptr) {
-		ptr->next = NULL;
-		break;
-	    }
-	    return;
-	} else {
-	    elapsed_time -= Q->time;
-	    ptr = Q;
-	    Q = Q->next;
+    for (ptr = Q; Q; ptr = Q) {
+	if (ptr->time  > elapsed_time) {
+	    ptr->time -= elapsed_time;
+	    break;
 	}
-    }
-    
-    /* handle queue of expired timers */
-    while (expQ) {
-	ptr = expQ;
+
+	/* ptr has expired, push Q */
+	Q             = ptr->next;
+	elapsed_time -= ptr->time;
+
 	if (ptr->func)
 	    ptr->func(ptr->data);
-	expQ = expQ->next;
 	free(ptr);
     }
 }
