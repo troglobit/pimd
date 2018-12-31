@@ -407,6 +407,9 @@ static void stop_vif(vifi_t vifi)
 	}
     }
 
+    if (v->uv_querier)
+	free(v->uv_querier);
+
     /*
      * TODO: inform (eventually) the neighbors I am going down by sending
      * PIM_HELLO with holdtime=0 so someone else should become a DR.
