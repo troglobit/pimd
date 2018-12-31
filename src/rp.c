@@ -333,15 +333,6 @@ rp_grp_entry_t *add_rp_grp_entry(cand_rp_t  **used_cand_rp_list,
     }
 #endif /* 0 */
 
-    cand_rp_ptr = add_cand_rp(used_cand_rp_list, rp_addr);
-    if (cand_rp_ptr == NULL) {
-	if (mask_ptr->grp_rp_next == NULL)
-	    delete_grp_mask(used_cand_rp_list, used_grp_mask_list,
-			    group_addr, group_mask);
-	return NULL;
-    }
-    cand_rp_ptr->rpentry->adv_holdtime = rp_holdtime;
-
     rp_addr_h = ntohl(rp_addr);
     mask_ptr->fragment_tag = fragment_tag;   /* For garbage collection */
 
@@ -382,6 +373,15 @@ rp_grp_entry_t *add_rp_grp_entry(cand_rp_t  **used_cand_rp_list,
 
 	return entry_next;
     }
+
+    cand_rp_ptr = add_cand_rp(used_cand_rp_list, rp_addr);
+    if (cand_rp_ptr == NULL) {
+	if (mask_ptr->grp_rp_next == NULL)
+	    delete_grp_mask(used_cand_rp_list, used_grp_mask_list,
+			    group_addr, group_mask);
+	return NULL;
+    }
+    cand_rp_ptr->rpentry->adv_holdtime = rp_holdtime;
 
     /* Create and link the new entry */
     entry_new = calloc(1, sizeof(rp_grp_entry_t));
