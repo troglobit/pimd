@@ -411,7 +411,7 @@ static void show_dump(FILE *fp)
 
 static void ipc_generic(int sd, char *fn, void (*cb)(FILE *))
 {
-	struct ipc msg;
+	struct ipc msg = { 0 };
 	FILE *fp;
 
 	fp = fopen(fn, "w");
