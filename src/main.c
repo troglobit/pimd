@@ -608,6 +608,7 @@ static void timer(void *i __attribute__((unused)))
 static struct timeval *timeout(int n)
 {
     static struct timeval tv, difftime, curtime, lasttime;
+    static int init = 1;
     struct timeval *result = NULL;
     int secs;
 
@@ -628,8 +629,13 @@ static struct timeval *timeout(int n)
 	    curtime.tv_sec = lasttime.tv_sec + secs;
 	    curtime.tv_usec = lasttime.tv_usec;
 	    n = -1; /* don't do this next time through the loop */
-	} else
+	} else {
 	    gettimeofday(&curtime, NULL);
+	    if (init) {
+		init = 0;	/* First time only */
+		lasttime = curtime;
+	    }
+	}
 
 	difftime.tv_sec = curtime.tv_sec - lasttime.tv_sec;
 	difftime.tv_usec += curtime.tv_usec - lasttime.tv_usec;
