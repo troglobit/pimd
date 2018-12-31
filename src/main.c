@@ -280,6 +280,12 @@ static int usage(int code)
     printf("Project homepage: %s\n", PACKAGE_URL);
 #endif
 
+    if (config_file)
+	free(config_file);
+
+    if (pid_file)
+	free(pid_file);
+
     return code;
 }
 
@@ -353,7 +359,7 @@ int main(int argc, char *argv[])
 		break;
 
 	    case 'f':
-		config_file = optarg;
+		config_file = strdup(optarg);
 		break;
 
 	    case 500:
@@ -664,8 +670,9 @@ static struct timeval *timeout(int n)
 /* TODO: implement all necessary stuff */
 static void cleanup(void)
 {
-    vifi_t vifi;
     struct uvif *v;
+    cand_rp_t *cand_rp;
+    vifi_t vifi;
 
     /* inform all neighbors that I'm going to die */
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
@@ -683,7 +690,74 @@ static void cleanup(void)
      * (probably by sending a the Cand-RP-set with my_priority=LOWEST?)
      */
 
-    k_stop_pim(igmp_socket);
+    for (cand_rp = cand_rp_list; cand_rp; cand_rp = cand_rp->next) {
+	rp_grp_entry_t *rp_grp;
+	mrtentry_t *mrt_rp;
+
+	mrt_rp = cand_rp->rpentry->mrtlink;
+	if (mrt_rp)
+	    delete_mrtentry(mrt_rp);
+
+	/* Just in case if that (*,*,RP) was deleted */
+	mrt_rp = cand_rp->rpentry->mrtlink;
+
+	for (rp_grp = cand_rp->rp_grp_next; rp_grp; rp_grp = rp_grp->rp_grp_next) {
+	    grpentry_t *grp;
+	    grpentry_t *grp_next;
+
+	    for (grp = rp_grp->grplink; grp; grp = grp_next) {
+		mrtentry_t *mrt_srcs_next;
+		mrtentry_t *mrt_srcs;
+		mrtentry_t *mrt_grp;
+
+		grp_next = grp->rpnext;
+		mrt_srcs = grp->mrtlink;
+
+		mrt_grp = grp->grp_route;
+		if (mrt_grp)
+		    delete_mrtentry(mrt_grp);
+
+		for (; mrt_srcs; mrt_srcs = mrt_srcs_next) {
+		    /* routing entry */
+		    mrt_srcs_next = mrt_srcs->grpnext;
+
+		    delete_mrtentry(mrt_srcs);
+		}
+	    }
+	}
+    }
+
+    delete_rp_list(&cand_rp_list, &grp_mask_list);
+    delete_rp_list(&segmented_cand_rp_list, &segmented_grp_mask_list);
+
+    restart(0);
+
+    if (srclist)
+	free(srclist);
+
+    if (grplist)
+	free(grplist);
+
+    if (cand_rp_adv_message.buffer)
+	free(cand_rp_adv_message.buffer);
+
+    if (pim_recv_buf)
+	free(pim_recv_buf);
+
+    if (pim_send_buf)
+	free(pim_send_buf);
+
+    if (igmp_recv_buf)
+	free(igmp_recv_buf);
+
+    if (igmp_send_buf)
+	free(igmp_send_buf);
+
+    if (config_file)
+	free(config_file);
+
+    if (pid_file)
+	free(pid_file);
 }
 
 
@@ -767,11 +841,16 @@ static void add_static_rp(void)
 
 static void del_static_rp(void)
 {
-    struct rp_hold *rph = g_rp_hold;
+    struct rp_hold *rph, *next;
 
+    rph = g_rp_hold;
     while (rph) {
+	next = rph->next;
+
 	delete_rp(&cand_rp_list, &grp_mask_list, rph->address);
-	rph = rph->next;
+	free(rph);
+
+	rph = next;
     }
 }
 
@@ -779,10 +858,8 @@ static void del_static_rp(void)
 /*
  * Restart the daemon
  */
-static void restart(int i __attribute__((unused)))
+static void restart(int signo)
 {
-    logit(LOG_NOTICE, 0, "%s restarting ...", versionstring);
-
     /*
      * reset all the entries
      */
@@ -809,9 +886,14 @@ static void restart(int i __attribute__((unused)))
     /* Both for Linux netlink and BSD routing socket */
     close(routing_socket);
 
+    /* Exit here if called at cleanup() */
+    if (!signo)
+	return;
+
     /*
      * start processing again
      */
+    logit(LOG_NOTICE, 0, "%s restarting ...", versionstring);
 
     init_igmp();
     init_pim();
