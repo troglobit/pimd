@@ -725,6 +725,7 @@ void accept_membership_report(uint32_t src, uint32_t dst, struct igmpv3_report *
 
 /*
  * Calculate group membership timeout
+ * Note: same as "Older Host Present Interval", RFC3376:8.13
  */
 static uint32_t igmp_group_membership_timeout(void)
 {
@@ -827,8 +828,7 @@ static int SetVersionTimer(vifi_t vifi, struct listaddr *g)
     cbk->vifi = vifi;
     cbk->g = g;
 
-    return timer_setTimer(IGMP_ROBUSTNESS_VARIABLE * igmp_query_interval + IGMP_QUERY_RESPONSE_INTERVAL,
-			  SwitchVersion, cbk);
+    return timer_setTimer(igmp_group_membership_timeout(), SwitchVersion, cbk);
 }
 
 /*
