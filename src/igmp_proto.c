@@ -737,14 +737,27 @@ static uint32_t igmp_group_membership_timeout(void)
  */
 static void DelVif(void *arg)
 {
-    cbk_t *cbk = (cbk_t *)arg;
-    vifi_t vifi = cbk->vifi;
-    struct uvif *v = &uvifs[vifi];
-    struct listaddr *a, **anp, *g = cbk->g;
-    struct listaddr *curr, *prev = NULL;
+    struct listaddr **anp;
+    struct listaddr *group, *g;
+    struct uvif *v;
+    vifi_t vifi;
+    cbk_t *cbk;
 
-    if (IN_PIM_SSM_RANGE(g->al_addr)) {
-	for (curr = g->al_sources; curr; prev = curr, curr = curr->al_next) {
+    cbk = (cbk_t *)arg;
+    if (!arg)
+	return;
+
+    group = cbk->g;
+    vifi = cbk->vifi;
+    if (vifi >= MAXVIFS)
+	return;
+
+    v = &uvifs[vifi];
+
+    if (IN_PIM_SSM_RANGE(group->al_addr)) {
+	struct listaddr *curr, *prev = NULL;
+
+	for (curr = group->al_sources; curr; prev = curr, curr = curr->al_next) {
 	    inet_fmt(cbk->source, s1, sizeof(s1));
 	    inet_fmt(curr->al_addr, s2, sizeof(s2));
 	    IF_DEBUG(DEBUG_IGMP)
@@ -752,7 +765,7 @@ static void DelVif(void *arg)
 
 	    if (curr->al_addr == cbk->source) {
 		if (!prev)
-		    g->al_sources = curr->al_next; /* Remove from beginning */
+		    group->al_sources = curr->al_next; /* Remove from beginning */
 		else
 		    prev->al_next = curr->al_next;
 
@@ -762,12 +775,12 @@ static void DelVif(void *arg)
 	}
 
 	IF_DEBUG(DEBUG_IGMP)
-	    logit(LOG_DEBUG, 0, "DelVif: %s sources left", g->al_sources ? "Still" : "No");
-	if (g->al_sources) {
+	    logit(LOG_DEBUG, 0, "DelVif: %s sources left", group->al_sources ? "Still" : "No");
+	if (group->al_sources) {
 	    IF_DEBUG(DEBUG_IGMP)
 		logit(LOG_DEBUG, 0, "DelVif: Not last source, g->al_sources --> %s",
-		      inet_fmt(g->al_sources->al_addr, s1, sizeof(s1)));
-	    delete_leaf(vifi, cbk->source, g->al_addr);
+		      inet_fmt(group->al_sources->al_addr, s1, sizeof(s1)));
+	    delete_leaf(vifi, cbk->source, group->al_addr);
 	    free(cbk);
 
 	    return;    /* This was not last source for this interface */
@@ -778,14 +791,14 @@ static void DelVif(void *arg)
      * Group has expired
      * delete all kernel cache entries with this group
      */
-    if (g->al_query)
-	DeleteTimer(g->al_query);
+    if (group->al_query)
+	DeleteTimer(group->al_query);
 
-    if (g->al_versiontimer)
-	DeleteTimer(g->al_versiontimer);
+    if (group->al_versiontimer)
+	DeleteTimer(group->al_versiontimer);
 
-    if (IN_PIM_SSM_RANGE(g->al_addr)) {
-	inet_fmt(g->al_addr, s1, sizeof(s1));
+    if (IN_PIM_SSM_RANGE(group->al_addr)) {
+	inet_fmt(group->al_addr, s1, sizeof(s1));
 	inet_fmt(cbk->source, s2, sizeof(s2));
 	IF_DEBUG(DEBUG_IGMP)
 	    logit(LOG_DEBUG, 0, "SSM range, source specific delete");
@@ -793,19 +806,19 @@ static void DelVif(void *arg)
 	/* delete (S,G) entry */
 	IF_DEBUG(DEBUG_IGMP)
 	    logit(LOG_DEBUG, 0, "DelVif: vif:%d(%s), (S=%s,G=%s)", vifi, v->uv_name, s2, s1);
-	delete_leaf(vifi, cbk->source, g->al_addr);
+	delete_leaf(vifi, cbk->source, group->al_addr);
     } else {
-	delete_leaf(vifi, INADDR_ANY_N, g->al_addr);
+	delete_leaf(vifi, INADDR_ANY_N, group->al_addr);
     }
 
-    anp = &(v->uv_groups);
-    while ((a = *anp)) {
-	if (a == g) {
-	    *anp = a->al_next;
-	    free(a->al_sources);
-	    free(a);
+    anp = &v->uv_groups;
+    while ((g = *anp)) {
+	if (g == group) {
+	    *anp = g->al_next;
+	    free(g->al_sources);
+	    free(g);
 	} else {
-	    anp = &a->al_next;
+	    anp = &g->al_next;
 	}
     }
 
