@@ -228,27 +228,26 @@ void timer_clearTimer(int timer_id)
     
     print_Q();
     while (ptr) {
-	if (ptr->id == timer_id) {
-	    /* got the right node */
-	    
-	    /* unlink it from the queue */
-	    if (ptr == Q)
-		Q = ptr->next;
-	    else
-		prev->next = ptr->next;
-	    
-	    /* increment next node if any */
-	    if (ptr->next != 0)
-		(ptr->next)->time += ptr->time;
-	    
-	    if (ptr->data)
-		free(ptr->data);
-	    free(ptr);
-
-	    break;
+	if (ptr->id != timer_id) {
+	    prev = ptr;
+	    ptr = ptr->next;
+	    continue;
 	}
-	prev = ptr;
-	ptr = ptr->next;
+
+	/* Found it, now unlink it from the queue */
+	if (ptr == Q)
+	    Q = ptr->next;
+	else
+	    prev->next = ptr->next;
+	    
+	/* increment next node if any */
+	if (ptr->next != 0)
+	    (ptr->next)->time += ptr->time;
+	    
+	if (ptr->data)
+	    free(ptr->data);
+	free(ptr);
+	break;
     }
     print_Q();
 }
