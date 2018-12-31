@@ -769,6 +769,9 @@ static void DelVif(void *arg)
 		else
 		    prev->al_next = curr->al_next;
 
+		/* Stop any SwitchVersion() timer */
+		timer_clearTimer(curr->al_versiontimer);
+
 		free(curr);
 		break;
 	    }
