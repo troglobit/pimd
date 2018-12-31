@@ -33,6 +33,23 @@ static void print_Q(void);
 #define	print_Q()	
 #endif
 
+/* Get next free (non-zero) ID
+ *
+ * TODO: Refactor pimd to use uint32_t for ID.
+ *       For now, make sure timer ID is never <= 0
+ *
+ * ID is a counter that wraps to zero, which is reserved.
+ * The range of counters IDs is big so we should be OK.
+ */
+static int next_id(void)
+{
+    id++;
+    if (id <= 0)
+	id = 1;
+
+    return id;
+}
+
 void callout_init(void)
 {
     Q = NULL;
@@ -139,7 +156,7 @@ int timer_setTimer(int delay, cfunc_t action, void *data)
     node->data = data;
     node->time = delay; 
     node->next = 0;	
-    node->id   = ++id;
+    node->id   = next_id();
     
     prev = ptr = Q;
     
