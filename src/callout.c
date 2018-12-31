@@ -46,10 +46,13 @@ void free_all_callouts(void)
     while (Q) {
 	p = Q;
 	Q = Q->next;
+	if (p->data)
+	    free(p->data);
 	free(p);
     }
-}
 
+    callout_init();
+}
 
 /*
  * elapsed_time seconds have passed; perform all the events that should
