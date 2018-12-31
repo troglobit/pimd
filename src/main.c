@@ -824,22 +824,27 @@ static void restart(int i __attribute__((unused)))
 
 static void resetlogging(void *arg)
 {
+    static int disabled = 0;
     int nxttime = 60;
-    void *narg = NULL;
 
-    if (arg == NULL && log_nmsgs >= LOG_MAX_MSGS) {
-	nxttime = LOG_SHUT_UP;
-	narg = (void *)&log_nmsgs;	/* just need some valid void * */
+    (void)arg;
+
+    if (!disabled && log_nmsgs >= LOG_MAX_MSGS) {
 	syslog(LOG_WARNING, "logging too fast, shutting up for %d minutes",
 	       LOG_SHUT_UP / 60);
+
+	disabled = 1;
+	nxttime = LOG_SHUT_UP;
     } else {
-	if (arg != NULL) {
+	if (disabled) {
 	    syslog(LOG_NOTICE, "logging enabled again after rate limiting");
+	    disabled = 0;
 	}
+
 	log_nmsgs = 0;
     }
 
-    timer_setTimer(nxttime, resetlogging, narg);
+    timer_setTimer(nxttime, resetlogging, NULL);
 }
 
 /**
