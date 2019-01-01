@@ -88,7 +88,7 @@ void rsrr_init(void)
     servlen = sizeof(serv_addr.sun_family) + strlen(serv_addr.sun_path);
 #endif
 
-    rc = bind(rsrr_socket, (struct sockaddr *) &serv_addr, servlen)
+    rc = bind(rsrr_socket, (struct sockaddr *) &serv_addr, servlen);
     if (rc < 0)
 	logit(LOG_ERR, errno, "Cannot bind RSRR socket");
 
