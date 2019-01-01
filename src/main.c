@@ -911,6 +911,13 @@ static void restart(int signo)
     timer_setTimer(TIMER_INTERVAL, timer, NULL);
 }
 
+int daemon_restart(void *arg)
+{
+    (void)arg;
+    restart(1);
+
+    return 0;
+}
 
 static void resetlogging(void *arg)
 {

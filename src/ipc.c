@@ -409,10 +409,13 @@ static void show_dump(FILE *fp)
 	dump_rp_set(fp);
 }
 
-static void ipc_generic(int sd, char *fn, void (*cb)(FILE *))
+static void ipc_show(int sd, void (*cb)(FILE *))
 {
 	struct ipc msg = { 0 };
 	FILE *fp;
+	char fn[256];
+
+	snprintf(fn, sizeof(fn), _PATH_PIMD_DUMP, ident);
 
 	fp = fopen(fn, "w");
 	if (!fp) {
@@ -431,12 +434,24 @@ fail:
 		logit(LOG_WARNING, errno, "Failed sending IPC reply");
 }
 
+static void ipc_generic(int sd, int (*cb)(void *), void *arg)
+{
+	struct ipc msg = { 0 };
+
+	if (cb(arg))
+		msg.cmd = IPC_ERR_CMD;
+	else
+		msg.cmd = IPC_OK_CMD;
+
+	if (write(sd, &msg, sizeof(msg)) == -1)
+		logit(LOG_WARNING, errno, "Failed sending IPC reply");
+}
+
 static void ipc_handle(int sd)
 {
 	socklen_t socklen = 0;
 	struct ipc msg;
 	ssize_t len;
-	char fn[256];
 	int client;
 
 	client = accept(sd, NULL, &socklen);
@@ -452,34 +467,37 @@ static void ipc_handle(int sd)
 	/* Set requested detail level */
 	detail = msg.detail;
 
-	snprintf(fn, sizeof(fn), _PATH_PIMD_DUMP, ident);
 	switch (msg.cmd) {
+	case IPC_RESTART:
+		ipc_generic(client, daemon_restart, NULL);
+		break;
+
 	case IPC_SHOW_IFACE_CMD:
-		ipc_generic(client, fn, show_interfaces);
+		ipc_show(client, show_interfaces);
 		break;
 
 	case IPC_SHOW_NEIGH_CMD:
-		ipc_generic(client, fn, show_neighbors);
+		ipc_show(client, show_neighbors);
 		break;
 
 	case IPC_SHOW_ROUTE_CMD:
-		ipc_generic(client, fn, show_pim_mrt);
+		ipc_show(client, show_pim_mrt);
 		break;
 
 	case IPC_SHOW_RP_CMD:
-		ipc_generic(client, fn, show_rp);
+		ipc_show(client, show_rp);
 		break;
 
 	case IPC_SHOW_CRP_CMD:
-		ipc_generic(client, fn, show_crp);
+		ipc_show(client, show_crp);
 		break;
 
 	case IPC_SHOW_STAT_CMD:
-		ipc_generic(client, fn, show_status);
+		ipc_show(client, show_status);
 		break;
 
 	case IPC_SHOW_DUMP_CMD:
-		ipc_generic(client, fn, show_dump);
+		ipc_show(client, show_dump);
 		break;
 
 	default:
