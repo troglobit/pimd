@@ -34,13 +34,15 @@
 # include <termios.h>
 #endif
 
-struct command {
-	char  *cmd;
-	int  (*cb)(char *arg);
-	int    op;
+struct cmd {
+	char        *cmd;
+	struct cmd  *ctx;
+	int        (*cb)(char *arg);
+	int         op;
 };
 
 static int plain = 0;
+static int detail = 0;
 static int heading = 1;
 static int verbose = 0;
 static int interactive = 1;
@@ -207,7 +209,7 @@ static int string_match(const char *a, const char *b)
 static int usage(int rc)
 {
 	fprintf(stderr,
-		"Usage: %s [OPTIONS] [COMMAND]\n"
+		"Usage: pimctl [OPTIONS] [COMMAND]\n"
 		"\n"
 		"Options:\n"
 		"  -b, --batch               Batch mode, no screen size probing\n"
@@ -219,15 +221,35 @@ static int usage(int rc)
 		"  -h, --help                This help text\n"
 		"\n"
 		"Commands:\n"
-		"  interface                 Show PIM interface table\n"
-		"  neighbor                  Show PIM neighbor table\n"
-		"  routes                    Show PIM routing table\n"
-		"  rp                        Show PIM Rendezvous-Point (RP) set\n"
-		"  crp                       Show PIM Candidate Rendezvous-Point (CRP) from BSR\n"
-		"  compat                    Show PIM status, compat mode, previously `pimd -r`\n"
-		"  status                    Show PIM status, default\n",
-		"pimctl");
+		"  show interface            Show PIM interface table\n"
+		"  show neighbor             Show PIM neighbor table\n"
+		"  show routes               Show PIM routing table\n"
+		"  show rp                   Show PIM Rendezvous-Point (RP) set\n"
+		"  show crp                  Show PIM Candidate Rendezvous-Point (CRP) from BSR\n"
+		"  show compat               Show PIM status, compat mode, previously `pimd -r`\n"
+		"  show status               Show PIM status, default\n");
+
 	return 0;
+}
+
+static int cmd_parse(int argc, char *argv[], struct cmd *command)
+{
+	int i;
+
+	for (i = 0; argc > 0 && command[i].cmd; i++) {
+		if (!string_match(command[i].cmd, argv[0]))
+			continue;
+
+		if (command[i].ctx)
+			return cmd_parse(argc - 1, &argv[1], command[i].ctx);
+
+		if (command[i].cb)
+			return command[i].cb(NULL);
+
+		return show_generic(command[i].op, detail);
+	}
+
+	return usage(1);
 }
 
 int main(int argc, char *argv[])
@@ -243,17 +265,20 @@ int main(int argc, char *argv[])
 		{ "verbose",    0, NULL, 'v' },
 		{ NULL, 0, NULL, 0 }
 	};
-	struct command command[] = {
-		{ "interface", NULL, IPC_IFACE_CMD },
-		{ "neighbor",  NULL, IPC_NEIGH_CMD },
-		{ "routes",    NULL, IPC_ROUTE_CMD },
-		{ "rp",        NULL, IPC_RP_CMD    },
-		{ "crp",       NULL, IPC_CRP_CMD   },
-		{ "compat",    NULL, IPC_DUMP_CMD  },
-		{ "status",    NULL, IPC_STAT_CMD  },
-		{ NULL, NULL }
+	struct cmd show[] = {
+		{ "interface", NULL, NULL, IPC_IFACE_CMD },
+		{ "neighbor",  NULL, NULL, IPC_NEIGH_CMD },
+		{ "routes",    NULL, NULL, IPC_ROUTE_CMD },
+		{ "rp",        NULL, NULL, IPC_RP_CMD    },
+		{ "crp",       NULL, NULL, IPC_CRP_CMD   },
+		{ "compat",    NULL, NULL, IPC_DUMP_CMD  },
+		{ "status",    NULL, NULL, IPC_STAT_CMD  },
+		{ NULL }
 	};
-	int detail = 0;
+	struct cmd command[] = {
+		{ "show",      show, NULL },
+		{ NULL }
+	};
 	int c;
 
 	while ((c = getopt_long(argc, argv, "bdh?I:ptv", long_options, NULL)) != EOF) {
@@ -291,17 +316,7 @@ int main(int argc, char *argv[])
 	if (optind >= argc)
 		return show_generic(IPC_STAT_CMD, detail);
 
-	for (c = 0; command[c].cmd; c++) {
-		if (!string_match(command[c].cmd, argv[optind]))
-			continue;
-
-		if (command[c].cb)
-			return command[c].cb(NULL);
-
-		return show_generic(command[c].op, detail);
-	}
-
-	return usage(1);
+	return cmd_parse(argc - optind, &argv[optind], command);
 }
 
 /**
