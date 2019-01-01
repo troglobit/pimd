@@ -200,10 +200,10 @@ everything works as expected, before adding it to your system's startup
 scripts, with any startup flags it might need.
 
 ```
-    pimd [-n] [-s] [-c file] [-d subsys1[,...,subsysN]] [-l level]
+    pimd [-hnrsv] [-f file] [-d subsys1[,...,subsysN]] [-l level]
 ```
 
-* `-n`: Run in foreground, with logs defaulting to stdout
+* `-n`: Run in foreground, with logs to stdout (for systemd and finit)
 * `-s`: Use syslog, default unless `-n`
 * `-c file`: Utilize the specified configuration file rather than the
    default, `/etc/pimd.conf`
@@ -216,7 +216,7 @@ scripts, with any startup flags it might need.
 **Example:**
 
 ```
-    pimd -c /cfg/pimd.conf
+    pimd -f /cfg/pimd.conf
 ```
 
 When running multiple instances of pimd, make sure to use the `-I ident`
@@ -242,11 +242,14 @@ Monitoring
 To see the virtual interface table, including neighboring PIM routers,
 and the multicast routing table:
 
-    pimctl
+    pimctl show interfaces
+    pimctl show neighbor
+    pimctl show routes
+    ...
 
 or to watch it continually:
 
-    watch pimctl
+    watch pimctl show CMD
 
 See the  `pimctl help` usage text  for more details.  Also,  `pimd` logs
 important events to  the system log file, in particular  at startup when
@@ -324,7 +327,8 @@ Origin & References
 -------------------
 
 Part of this program has been derived from mrouted.  The mrouted program
-is covered by the license in the accompanying file named LICENSE.mrouted
+is covered by the 3-clause BSD license in the accompanying file named
+LICENSE.mrouted
 
 The mrouted program is COPYRIGHT 1989 by The Board of Trustees of Leland
 Stanford Junior University.
