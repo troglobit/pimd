@@ -155,7 +155,7 @@ struct rsrr_rr {
     uint32_t query_id;			/* query ID             */
     uint16_t in_vif;			/* incoming vif         */
     uint16_t reserved;			/* reserved             */
-    uint32_t out_vif_bm;		/* outgoing vif bitmask */
+    uint8_t  out_vifs[MAXVIFS];		/* outgoing vif bitmask */
 };
 
 
