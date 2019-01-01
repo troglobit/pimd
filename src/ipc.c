@@ -454,31 +454,31 @@ static void ipc_handle(int sd)
 
 	snprintf(fn, sizeof(fn), _PATH_PIMD_DUMP, ident);
 	switch (msg.cmd) {
-	case IPC_IFACE_CMD:
+	case IPC_SHOW_IFACE_CMD:
 		ipc_generic(client, fn, show_interfaces);
 		break;
 
-	case IPC_NEIGH_CMD:
+	case IPC_SHOW_NEIGH_CMD:
 		ipc_generic(client, fn, show_neighbors);
 		break;
 
-	case IPC_ROUTE_CMD:
+	case IPC_SHOW_ROUTE_CMD:
 		ipc_generic(client, fn, show_pim_mrt);
 		break;
 
-	case IPC_RP_CMD:
+	case IPC_SHOW_RP_CMD:
 		ipc_generic(client, fn, show_rp);
 		break;
 
-	case IPC_CRP_CMD:
+	case IPC_SHOW_CRP_CMD:
 		ipc_generic(client, fn, show_crp);
 		break;
 
-	case IPC_STAT_CMD:
+	case IPC_SHOW_STAT_CMD:
 		ipc_generic(client, fn, show_status);
 		break;
 
-	case IPC_DUMP_CMD:
+	case IPC_SHOW_DUMP_CMD:
 		ipc_generic(client, fn, show_dump);
 		break;
 

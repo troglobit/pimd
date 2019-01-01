@@ -266,13 +266,13 @@ int main(int argc, char *argv[])
 		{ NULL, 0, NULL, 0 }
 	};
 	struct cmd show[] = {
-		{ "interface", NULL, NULL, IPC_IFACE_CMD },
-		{ "neighbor",  NULL, NULL, IPC_NEIGH_CMD },
-		{ "routes",    NULL, NULL, IPC_ROUTE_CMD },
-		{ "rp",        NULL, NULL, IPC_RP_CMD    },
-		{ "crp",       NULL, NULL, IPC_CRP_CMD   },
-		{ "compat",    NULL, NULL, IPC_DUMP_CMD  },
-		{ "status",    NULL, NULL, IPC_STAT_CMD  },
+		{ "interface", NULL, NULL, IPC_SHOW_IFACE_CMD },
+		{ "neighbor",  NULL, NULL, IPC_SHOW_NEIGH_CMD },
+		{ "routes",    NULL, NULL, IPC_SHOW_ROUTE_CMD },
+		{ "rp",        NULL, NULL, IPC_SHOW_RP_CMD    },
+		{ "crp",       NULL, NULL, IPC_SHOW_CRP_CMD   },
+		{ "compat",    NULL, NULL, IPC_SHOW_DUMP_CMD  },
+		{ "status",    NULL, NULL, IPC_SHOW_STAT_CMD  },
 		{ NULL }
 	};
 	struct cmd command[] = {
@@ -314,7 +314,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (optind >= argc)
-		return show_generic(IPC_STAT_CMD, detail);
+		return show_generic(IPC_SHOW_STAT_CMD, detail);
 
 	return cmd_parse(argc - optind, &argv[optind], command);
 }
