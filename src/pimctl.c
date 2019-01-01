@@ -196,7 +196,7 @@ static int show_generic(int cmd, int detail)
 		}
 	}
 
-	return fclose(fp);
+	return fclose(fp) || remove(msg->buf);
 }
 
 static int string_match(const char *a, const char *b)

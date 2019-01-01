@@ -758,6 +758,8 @@ static void cleanup(void)
 
     if (pid_file)
 	free(pid_file);
+
+    ipc_exit();
 }
 
 
