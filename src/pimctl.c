@@ -223,6 +223,7 @@ static int usage(int rc)
 		"Commands:\n"
 		"  help                      This help text\n"
 		"  restart                   Restart pimd and reload .conf file, like SIGHUP\n"
+		"  version                   Show pimd version\n"
 		"  show interface            Show PIM interface table\n"
 		"  show neighbor             Show PIM neighbor table\n"
 		"  show routes               Show PIM routing table\n"
@@ -238,6 +239,14 @@ static int help(char *arg)
 {
 	(void)arg;
 	return usage(0);
+}
+
+static int version(char *arg)
+{
+	(void)arg;
+	printf("v%s\n", PACKAGE_VERSION);
+
+	return 0;
 }
 
 static int cmd_parse(int argc, char *argv[], struct cmd *command)
@@ -286,6 +295,7 @@ int main(int argc, char *argv[])
 	struct cmd command[] = {
 		{ "help",      NULL, help },
 		{ "restart",   NULL, NULL, IPC_RESTART },
+		{ "version",   NULL, version },
 		{ "show",      show, NULL },
 		{ NULL }
 	};
