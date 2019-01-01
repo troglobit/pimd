@@ -504,7 +504,7 @@ may be given, but max number of records supported in pimd is 255.
 The
 .Nm rp-address
 setting is for static rendezvous point (RP) configurations.  It defines
-the RP for a given group, or range or groups.  The argument can be
+the RP for a given group, or range of groups.  The argument can be
 either a unicast address or a multicast group, with an optional group
 address and netmask.  Default group and netmask is 224.0.0.0/16.
 .Nm Note:
@@ -523,7 +523,10 @@ packet, but only after 100 seconds.  If
 is specified the shortest path switch-over is disabled.
 .Sh SIGNALS
 .Nm
-responds to the following signals:
+responds to the following signals.  However, consider using
+.Nm pimctl
+instead since this gives more and better output, and is also less prone
+to race conditions.
 .Pp
 .Bl -tag -width TERM -compact
 .It HUP
@@ -552,9 +555,18 @@ Dumps internal state of VIFs and multicast routing tables to
 For convenience in sending signals,
 .Nm
 writes its process ID to
-.Pa /var/run/pimd.pid
-upon startup.
+.Pa /var/run/pimd/pimd.pid
+upon startup.  If started with a different identy,
+.Fl i Ar NAME ,
+then
+.Ar NAME
+is used as basename of the PID file.
 .Sh FILES
+The basename of the following files change if
+.Nm
+is started with a different identity,
+.Fl i Ar NAME :
+.Pp
 .Bl -tag -width /var/run/pimd/pimd.cache -compact
 .It Pa /etc/pimd.conf
 .\" .It Pa /var/run/pimd/pimd.cache
@@ -562,6 +574,7 @@ upon startup.
 .It Pa /var/run/pimd/pimd.pid
 .El
 .Sh SEE ALSO
+.Xr pimctl 8 ,
 .Xr mrouted 8 ,
 .Xr smcroute 8 ,
 .Xr /usr/share/doc/pimd/
