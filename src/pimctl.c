@@ -222,6 +222,7 @@ static int usage(int rc)
 		"\n"
 		"Commands:\n"
 		"  help                      This help text\n"
+		"  kill                      Kill running daemon, like SIGTERM\n"
 		"  restart                   Restart pimd and reload .conf file, like SIGHUP\n"
 		"  version                   Show pimd version\n"
 		"  show interface            Show PIM interface table\n"
@@ -294,7 +295,8 @@ int main(int argc, char *argv[])
 	};
 	struct cmd command[] = {
 		{ "help",      NULL, help },
-		{ "restart",   NULL, NULL, IPC_RESTART },
+		{ "kill",      NULL, NULL, IPC_KILL_CMD    },
+		{ "restart",   NULL, NULL, IPC_RESTART_CMD },
 		{ "version",   NULL, version },
 		{ "show",      show, NULL },
 		{ NULL }

@@ -468,7 +468,11 @@ static void ipc_handle(int sd)
 	detail = msg.detail;
 
 	switch (msg.cmd) {
-	case IPC_RESTART:
+	case IPC_KILL_CMD:
+		ipc_generic(client, daemon_kill, NULL);
+		break;
+
+	case IPC_RESTART_CMD:
 		ipc_generic(client, daemon_restart, NULL);
 		break;
 

@@ -919,6 +919,14 @@ int daemon_restart(void *arg)
     return 0;
 }
 
+int daemon_kill(void *arg)
+{
+    (void)arg;
+    handle_signals(SIGTERM);
+
+    return 0;
+}
+
 static void resetlogging(void *arg)
 {
     static int disabled = 0;

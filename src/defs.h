@@ -321,7 +321,8 @@ extern int mrt_table_id;
  * pimd <--> pimctl IPC
  */
 #define IPC_OK_CMD          0
-#define IPC_RESTART         1
+#define IPC_RESTART_CMD     1
+#define IPC_KILL_CMD        9
 #define IPC_SHOW_STAT_CMD   20
 #define IPC_SHOW_IFACE_CMD  21
 #define IPC_SHOW_NEIGH_CMD  22
@@ -554,6 +555,7 @@ extern int	k_get_sg_cnt		(int socket, uint32_t source, uint32_t group, struct sg
 /* main.c */
 extern int	register_input_handler	(int fd, ihfunc_t func);
 extern int      daemon_restart          (void *arg);
+extern int      daemon_kill             (void *arg);
 
 /* ipc.c */
 extern void     ipc_init                (void);
