@@ -235,18 +235,18 @@ static int usage(int code)
     else
 	snprintf(pidfn, sizeof(pidfn), "%s", pid_file);
 
-    printf("Usage: %s [-DhlNnv] [-f FILE] [-d [SYS][,SYS...]] [-s LEVEL]\n\n", prognm);
+    printf("Usage: %s [-hNnsv] [-f FILE] [-i NAME] [-d [SYS][,SYS...]] [-l LEVEL]\n\n", prognm);
     printf(" -f, --config=FILE   Configuration file, default uses ident NAME: %s\n", config_file);
     printf("     --no-fallback   When started without a config file, skip RP/BSR fallbacks\n");
     printf(" -n, --foreground    Run in foreground, do not detach from calling terminal\n");
-    printf(" -d SYS[,SYS,SYS..]  Enable debug for SYS, see below for valid systems\n");
+    printf(" -d, --debug=SYS     Enable debug for subystem(s) SYS, separate more with comma\n");
     printf(" -l, --loglevel=LVL  Set log level: none, err, info, notice (default), debug\n");
-    printf(" -I, --ident=NAME    Identity for config + PID file, and syslog, default: %s\n", ident);
-    printf(" -N, --disable-vifs  Disable all virtual interfaces (phyint) by default\n");
-    printf(" -P, --pidfile=FILE  File to store process ID for signaling %s\n"
+    printf(" -i, --ident=NAME    Identity for config + PID file, and syslog, default: %s\n", ident);
+    printf("     --pidfile=FILE  File to store process ID for signaling %s\n"
 	   "                     Default uses ident NAME: %s\n", prognm, pidfn);
-    printf(" -r                  Retry (forever) if not all phyint interfaces are available\n"
-	   "                     yet when starting up, e.g. wait for DHCP lease\n");
+    printf(" -r                  Retry (forever) if not all configured phyint interfaces are\n"
+	   "                     available when starting up, e.g. wait for DHCP lease\n");
+    printf("     --disable-vifs  Disable all virtual interfaces (phyint) by default\n");
     printf(" -s, --syslog        Use syslog, default unless running in foreground, -n\n");
     printf(" -t, --table-id=ID   Set multicast routing table ID.  Allowed table ID#:\n"
 	   "                      0 .. 999999999.  Default: 0 (use default table)\n");
@@ -254,7 +254,6 @@ static int usage(int code)
     printf(" -v, --version       Show %s version\n", prognm);
     printf("\n");
 
-    /* From pimd v2.3.0 we show *all* the debug levels again */
     printf("Available subsystems for debug:\n");
     for (i = 0, d = debugnames; i < ARRAY_LEN(debugnames); i++, d++) {
 	if (strlen(line) + strlen(d->name) + 3 >= sizeof(line)) {
@@ -310,13 +309,14 @@ int main(int argc, char *argv[])
     struct sigaction sa;
     struct option long_options[] = {
 	{ "config",        1, 0, 'f' },
+	{ "debug",         1, 0, 'd' },
 	{ "no-fallback",   0, 0, 500 },
-	{ "disable-vifs",  0, 0, 'N' },
+	{ "disable-vifs",  0, 0, 501 },
 	{ "foreground",    0, 0, 'n' },
 	{ "help",          0, 0, 'h' },
-	{ "ident",         1, 0, 'I' },
+	{ "ident",         1, 0, 'i' },
 	{ "loglevel",      1, 0, 'l' },
-	{ "pidfile",       1, 0, 'P' },
+	{ "pidfile",       1, 0, 502 },
 	{ "syslog",        0, 0, 's' },
 	{ "table-id",      1, 0, 't' },
 	{ "version",       0, 0, 'v' },
@@ -326,7 +326,7 @@ int main(int argc, char *argv[])
     snprintf(versionstring, sizeof (versionstring), "pimd version %s", PACKAGE_VERSION);
 
     prognm = ident = progname(argv[0]);
-    while ((ch = getopt_long(argc, argv, "d:f:hI:l:nNP:rst:v", long_options, NULL)) != EOF) {
+    while ((ch = getopt_long(argc, argv, "d:f:hi:l:nrst:v", long_options, NULL)) != EOF) {
 	const char *errstr;
 
 	switch (ch) {
@@ -369,7 +369,7 @@ int main(int argc, char *argv[])
 	    case 'h':
 		return usage(0);
 
-	    case 'I':	/* --ident=NAME */
+	    case 'i':	/* --ident=NAME */
 		ident = optarg;
 		break;
 
@@ -384,11 +384,11 @@ int main(int argc, char *argv[])
 		foreground = 1;
 		break;
 
-	    case 'N':
+	    case 501:	/* --disable-vifs */
 		do_vifs = 0;
 		break;
 
-	    case 'P':	/* --pidfile=NAME */
+	    case 502:	/* --pidfile=NAME */
 		pid_file = strdup(optarg);
 		break;
 

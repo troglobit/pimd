@@ -11,11 +11,13 @@
 .Nd PIM-SM/SSM v2 dynamic multicast routing daemon
 .Sh SYNOPSIS
 .Nm pimd
-.Op Fl hNnrsv
+.Op Fl hnrsv
 .Op Fl f Ar FILE
-.Op Fl d Ar [SYS[,SYS,...]
-.Op Fl I Ar NAME
-.Op Fl P Ar FILE
+.Op Fl -no-fallback
+.Op Fl d Ar SYS[,SYS,...]
+.Op Fl i Ar NAME
+.Op Fl -pidfile Ar FILE
+.Op Fl -disable-vifs
 .Op Fl l Ar LEVEL
 .Op Fl t Ar ID
 .Sh DESCRIPTION
@@ -142,7 +144,7 @@ Run in the foreground, do not detach from calling terminal and do not
 fork to background.  Useful not only when debugging (above) but also
 when running under a process monitor like daemontools, runit, finit, or
 systemd.
-.It Fl I, Fl -ident=NAME
+.It Fl i, Fl -ident=NAME
 Specify program identity (name) to be used for configuration file, PID
 file and syslog messages.  Useful with multiple instances of
 .Nm ,
@@ -155,7 +157,7 @@ or
 .Pa /run/pimd.pid
 and
 .Pa /etc/pimd.conf .
-.It Fl N, -disable-vifs
+.It Fl -disable-vifs
 This prevents
 .Nm
 from running on all interfaces by default.  When this command line
@@ -163,7 +165,7 @@ option is given, use
 .Cm phyint IFNAME enable
 to selectively activate PIM services on an interface.  This command line
 option is also available as a setting in the configuration file.
-.It Fl P, -pidfile=FILE
+.It Fl -pidfile=FILE
 Set PID file name and location, defaults to
 .Pa /run/pimd/pimd.pid ,
 derived from
@@ -197,7 +199,7 @@ interfaces listed in
 .Pa /etc/pimd.conf .
 Useful at startup when not all interfaces may be up or have an IP
 address assigned yet.
-.It Fl s, --syslog
+.It Fl s, -syslog
 Use syslog, default unless running in foreground,
 .Fl n .
 .It Fl t, -table-id=ID
@@ -263,6 +265,7 @@ interface configuration setting below.
 .Cm <address | ifname>
 .Bl -item -offset indent
 .Op Cm disable | enable
+.br
 .Op Cm igmpv2 | igmpv3
 .br
 .Op Cm dr-priority Ar <1-4294967294>
