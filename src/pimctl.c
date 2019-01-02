@@ -226,6 +226,7 @@ static int usage(int rc)
 		"  restart                   Restart pimd and reload .conf file, like SIGHUP\n"
 		"  version                   Show pimd version\n"
 		"  show igmp groups          Show IGMP group memberships\n"
+		"  show igmp interface       Show IGMP interface status\n"
 		"  show interface            Show PIM interface table\n"
 		"  show neighbor             Show PIM neighbor table\n"
 		"  show routes               Show PIM routing table\n"
