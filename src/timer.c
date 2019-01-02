@@ -170,7 +170,7 @@ void age_vifs(void)
 	IF_TIMEOUT(v->uv_gq_timer)
 	    query_groups(v);
 
-	if (v->uv_querier)
+	if (v->uv_querier) {
 	    v->uv_querier->al_timer += TIMER_INTERVAL;
 	    if (v->uv_querier->al_timer > igmp_querier_timeout) {
 		/*
