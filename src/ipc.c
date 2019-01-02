@@ -401,6 +401,36 @@ static void show_status(FILE *fp)
 	fprintf(fp, "SPT Threshold        : %s\n", spt_threshold.mode == SPT_INF ? "Disabled" : "Enabled");
 }
 
+static void show_igmp_groups(FILE *fp)
+{
+	struct listaddr *group, *source;
+	struct uvif *uv;
+	vifi_t vifi;
+
+	fprintf(fp, "Interface         Group            Source           Last Reported    Timeout=\n");
+	for (vifi = 0, uv = uvifs; vifi < numvifs; vifi++, uv++) {
+		for (group = uv->uv_groups; group; group = group->al_next) {
+			char pre[40], post[40];
+
+			snprintf(pre, sizeof(pre), "%-16s  %-15s  ",
+				 uv->uv_name, inet_fmt(group->al_addr, s1, sizeof(s1)));
+
+			snprintf(post, sizeof(post), "%-15s  %7u",
+				 inet_fmt(group->al_reporter, s1, sizeof(s1)),
+				 group->al_timer);
+
+			if (!group->al_sources) {
+				fprintf(fp, "%s%-15s  %s\n", pre, "ANY", post);
+				continue;
+			}
+
+			for (source = group->al_sources; source; source = source->al_next)
+				fprintf(fp, "%s%-15s  %s\n",
+					pre, inet_fmt(source->al_addr, s1, sizeof(s1)), post);
+		}
+	}
+}
+
 static void show_dump(FILE *fp)
 {
 	dump_vifs(fp);
@@ -474,6 +504,10 @@ static void ipc_handle(int sd)
 
 	case IPC_RESTART_CMD:
 		ipc_generic(client, daemon_restart, NULL);
+		break;
+
+	case IPC_SHOW_IGMP_GROUPS_CMD:
+		ipc_show(client, show_igmp_groups);
 		break;
 
 	case IPC_SHOW_IFACE_CMD:

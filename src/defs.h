@@ -320,17 +320,18 @@ extern int mrt_table_id;
 /*
  * pimd <--> pimctl IPC
  */
-#define IPC_OK_CMD          0
-#define IPC_RESTART_CMD     1
-#define IPC_KILL_CMD        9
-#define IPC_SHOW_STAT_CMD   20
-#define IPC_SHOW_IFACE_CMD  21
-#define IPC_SHOW_NEIGH_CMD  22
-#define IPC_SHOW_ROUTE_CMD  23
-#define IPC_SHOW_RP_CMD     24
-#define IPC_SHOW_CRP_CMD    25
-#define IPC_SHOW_DUMP_CMD   250
-#define IPC_ERR_CMD         255
+#define IPC_OK_CMD                0
+#define IPC_RESTART_CMD           1
+#define IPC_KILL_CMD              9
+#define IPC_SHOW_IGMP_GROUPS_CMD  10
+#define IPC_SHOW_STAT_CMD         20
+#define IPC_SHOW_IFACE_CMD        21
+#define IPC_SHOW_NEIGH_CMD        22
+#define IPC_SHOW_ROUTE_CMD        23
+#define IPC_SHOW_RP_CMD           24
+#define IPC_SHOW_CRP_CMD          25
+#define IPC_SHOW_DUMP_CMD         250
+#define IPC_ERR_CMD               255
 
 struct ipc {
     uint8_t cmd;

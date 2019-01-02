@@ -225,6 +225,7 @@ static int usage(int rc)
 		"  kill                      Kill running daemon, like SIGTERM\n"
 		"  restart                   Restart pimd and reload .conf file, like SIGHUP\n"
 		"  version                   Show pimd version\n"
+		"  show igmp groups          Show IGMP group memberships\n"
 		"  show interface            Show PIM interface table\n"
 		"  show neighbor             Show PIM neighbor table\n"
 		"  show routes               Show PIM routing table\n"
@@ -283,7 +284,12 @@ int main(int argc, char *argv[])
 		{ "verbose",    0, NULL, 'v' },
 		{ NULL, 0, NULL, 0 }
 	};
+	struct cmd igmp[] = {
+		{ "groups",    NULL, NULL, IPC_SHOW_IGMP_GROUPS_CMD },
+		{ NULL }
+	};
 	struct cmd show[] = {
+		{ "igmp",      igmp, NULL },
 		{ "interface", NULL, NULL, IPC_SHOW_IFACE_CMD },
 		{ "neighbor",  NULL, NULL, IPC_SHOW_NEIGH_CMD },
 		{ "routes",    NULL, NULL, IPC_SHOW_ROUTE_CMD },
