@@ -287,11 +287,13 @@ int main(int argc, char *argv[])
 	struct cmd igmp[] = {
 		{ "groups",    NULL, NULL, IPC_SHOW_IGMP_GROUPS_CMD },
 		{ "interface", NULL, NULL, IPC_SHOW_IGMP_IFACE_CMD  },
+		{ "iface",     NULL, NULL, IPC_SHOW_IGMP_IFACE_CMD  }, /* ALIAS */
 		{ NULL }
 	};
 	struct cmd show[] = {
 		{ "igmp",      igmp, NULL },
 		{ "interface", NULL, NULL, IPC_SHOW_IFACE_CMD },
+		{ "iface",     NULL, NULL, IPC_SHOW_IFACE_CMD }, /* ALIAS */
 		{ "neighbor",  NULL, NULL, IPC_SHOW_NEIGH_CMD },
 		{ "routes",    NULL, NULL, IPC_SHOW_ROUTE_CMD },
 		{ "rp",        NULL, NULL, IPC_SHOW_RP_CMD    },
