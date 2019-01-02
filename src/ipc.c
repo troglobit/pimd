@@ -473,7 +473,7 @@ static void show_igmp_iface(FILE *fp)
 		else
 			version = 3;
 
-		fprintf(fp, "%-16s  %-8s  %-15s  %7s %7d  %5zd\n", uv->uv_name,
+		fprintf(fp, "%-16s  %-8s  %-15s  %7s %7d  %6zd\n", uv->uv_name,
 			ifstate(uv), s1, timeout, version, num);
 	}
 }
