@@ -214,7 +214,7 @@ static int usage(int rc)
 		"Options:\n"
 		"  -b, --batch               Batch mode, no screen size probing\n"
 		"  -d, --detail              Detailed output, where applicable\n"
-		"  -I, --ident=NAME          Connect to named pimd instance\n"
+		"  -i, --ident=NAME          Connect to named pimd instance\n"
 		"  -p, --plain               Use plain table headings, no ctrl chars\n"
 		"  -t, --no-heading          Skip table headings\n"
 		"  -v, --verbose             Verbose output\n"
@@ -277,7 +277,7 @@ int main(int argc, char *argv[])
 	struct option long_options[] = {
 		{ "batch",      0, NULL, 'b' },
 		{ "detail",     0, NULL, 'd' },
-		{ "ident",      1, NULL, 'I' },
+		{ "ident",      1, NULL, 'i' },
 		{ "no-heading", 0, NULL, 't' },
 		{ "plain",      0, NULL, 'p' },
 		{ "help",       0, NULL, 'h' },
@@ -313,7 +313,7 @@ int main(int argc, char *argv[])
 	};
 	int c;
 
-	while ((c = getopt_long(argc, argv, "bdh?I:ptv", long_options, NULL)) != EOF) {
+	while ((c = getopt_long(argc, argv, "bdh?i:ptv", long_options, NULL)) != EOF) {
 		switch(c) {
 		case 'b':
 			interactive = 0;
@@ -327,7 +327,7 @@ int main(int argc, char *argv[])
 		case '?':
 			return usage(0);
 
-		case 'I':	/* --ident=NAME */
+		case 'i':	/* --ident=NAME */
 			ident = optarg;
 			break;
 
