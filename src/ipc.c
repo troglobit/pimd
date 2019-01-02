@@ -431,6 +431,53 @@ static void show_igmp_groups(FILE *fp)
 	}
 }
 
+static const char *ifstate(struct uvif *uv)
+{
+	if (uv->uv_flags & VIFF_DOWN)
+		return "Down";
+
+	if (uv->uv_flags & VIFF_DISABLED)
+		return "Disabled";
+
+	return "Up";
+}
+
+static void show_igmp_iface(FILE *fp)
+{
+	struct listaddr *group;
+	struct uvif *uv;
+	vifi_t vifi;
+
+	fprintf(fp, "Interface         State     Querier          Timeout Version  Groups=\n");
+
+	for (vifi = 0, uv = uvifs; vifi < numvifs; vifi++, uv++) {
+		size_t num = 0;
+		char timeout[10];
+		int version;
+
+		if (!uv->uv_querier) {
+			strlcpy(s1, "Local", sizeof(s1));
+			snprintf(timeout, sizeof(timeout), "None");
+		} else {
+			inet_fmt(uv->uv_querier->al_addr, s1, sizeof(s1));
+			snprintf(timeout, sizeof(timeout), "%u", igmp_querier_timeout - uv->uv_querier->al_timer);
+		}
+
+		for (group = uv->uv_groups; group; group = group->al_next)
+			num++;
+
+		if (uv->uv_flags & VIFF_IGMPV1)
+			version = 1;
+		else if (uv->uv_flags & VIFF_IGMPV2)
+			version = 2;
+		else
+			version = 3;
+
+		fprintf(fp, "%-16s  %-8s  %-15s  %7s %7d  %5zd\n", uv->uv_name,
+			ifstate(uv), s1, timeout, version, num);
+	}
+}
+
 static void show_dump(FILE *fp)
 {
 	dump_vifs(fp);
@@ -508,6 +555,10 @@ static void ipc_handle(int sd)
 
 	case IPC_SHOW_IGMP_GROUPS_CMD:
 		ipc_show(client, show_igmp_groups);
+		break;
+
+	case IPC_SHOW_IGMP_IFACE_CMD:
+		ipc_show(client, show_igmp_iface);
 		break;
 
 	case IPC_SHOW_IFACE_CMD:

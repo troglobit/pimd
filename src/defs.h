@@ -324,6 +324,7 @@ extern int mrt_table_id;
 #define IPC_RESTART_CMD           1
 #define IPC_KILL_CMD              9
 #define IPC_SHOW_IGMP_GROUPS_CMD  10
+#define IPC_SHOW_IGMP_IFACE_CMD   11
 #define IPC_SHOW_STAT_CMD         20
 #define IPC_SHOW_IFACE_CMD        21
 #define IPC_SHOW_NEIGH_CMD        22

@@ -286,6 +286,7 @@ int main(int argc, char *argv[])
 	};
 	struct cmd igmp[] = {
 		{ "groups",    NULL, NULL, IPC_SHOW_IGMP_GROUPS_CMD },
+		{ "interface", NULL, NULL, IPC_SHOW_IGMP_IFACE_CMD  },
 		{ NULL }
 	};
 	struct cmd show[] = {
