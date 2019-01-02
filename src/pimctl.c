@@ -190,7 +190,7 @@ static int show_generic(int cmd, int detail)
 			puts(line);
 
 		if (head && plain) {
-			while (--len)
+			while (len--)
 				fputc('=', stdout);
 			fputs("\n", stdout);
 		}
