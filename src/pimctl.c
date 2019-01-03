@@ -236,7 +236,7 @@ static int usage(int rc)
 		"  show pim compat           Show PIM status, compat mode, previously `pimd -r`\n"
 		);
 
-	return 0;
+	return rc;
 }
 
 static int help(char *arg)
