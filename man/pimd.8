@@ -8,7 +8,7 @@
 .Os
 .Sh NAME
 .Nm pimd
-.Nd PIM-SM/SSM v2 dynamic multicast routing daemon
+.Nd PIM-SM/SSM multicast routing daemon
 .Sh SYNOPSIS
 .Nm pimd
 .Op Fl hnrsv
@@ -22,10 +22,10 @@
 .Op Fl t Ar ID
 .Sh DESCRIPTION
 .Nm
-is a lightweight, stand-alone PIM-SM/SSM v2 multicast routing daemon
-available under the free 3-clause BSD license.  This is the restored
-original from University of Southern California, by Ahmed Helmy, Rusty
-Eddy and Pavlin Ivanov Radoslavov.
+is a stand-alone PIM-SM/SSM multicast routing daemon available under the
+free 3-clause BSD license.  This is the restored original from
+University of Southern California, by Ahmed Helmy, Rusty Eddy and Pavlin
+Ivanov Radoslavov.
 .Pp
 Protocol Independent Multicast - Sparse Mode (PIM-SM):
 .Bl -bullet -width 1n -compact
@@ -58,11 +58,11 @@ options starting with two dashes (`-').  The options are as follows:
 .Bl -tag -width Ds
 .It Fl h, -help
 Print a help message and exit.
-.It Fl f, -config=FILE
+.It Fl f, -config Ar FILE
 Specify an alternative configuration file, the default
 .Pa /etc/pimd.conf ,
 is derived from
-.Fl -ident=NAME ,
+.Fl -ident Ar NAME ,
 which is strongly recommended to use over this option.
 .It Fl -no-fallback
 If
@@ -83,7 +83,7 @@ finds an empty configuration file, or when
 and
 .Cm rp-candidate
 are commented out.
-.It Fl d Ar SYS[,SYS...]
+.It Fl d, -debug Ar SYS[,SYS...]
 By default,
 .Nm
 daemonizes itself by detaching from the invoking terminal and forking to
@@ -144,7 +144,7 @@ Run in the foreground, do not detach from calling terminal and do not
 fork to background.  Useful not only when debugging (above) but also
 when running under a process monitor like daemontools, runit, finit, or
 systemd.
-.It Fl i, Fl -ident=NAME
+.It Fl i, Fl -ident Ar NAME
 Specify program identity (name) to be used for configuration file, PID
 file and syslog messages.  Useful with multiple instances of
 .Nm ,
@@ -152,9 +152,9 @@ or to simply adapt to site specific practices, e.g. "PIM", without
 renaming the binary.  Note, this option only changes the base name of
 the PID or configuration files, not the location, which is system
 specific.  Usually
-.Pa /var/run/pimd/pimd.pid
+.Pa /var/run/pimd/pimd.pid ,
 or
-.Pa /run/pimd.pid
+.Pa /run/pimd.pid ,
 and
 .Pa /etc/pimd.conf .
 .It Fl -disable-vifs
@@ -165,13 +165,13 @@ option is given, use
 .Cm phyint IFNAME enable
 to selectively activate PIM services on an interface.  This command line
 option is also available as a setting in the configuration file.
-.It Fl -pidfile=FILE
+.It Fl -pidfile Ar FILE
 Set PID file name and location, defaults to
-.Pa /run/pimd/pimd.pid ,
+.Pa /var/run/pimd/pimd.pid ,
 derived from
-.Fl -ident=NAME ,
+.Fl -ident Ar NAME ,
 which is strongly recommended to change over this option.
-.It Fl l, -loglevel=LEVEL
+.It Fl l, -loglevel Ar LEVEL
 Set log level to one of the following, default
 .Nm notice :
 .Pp
@@ -202,7 +202,7 @@ address assigned yet.
 .It Fl s, -syslog
 Use syslog, default unless running in foreground,
 .Fl n .
-.It Fl t, -table-id=ID
+.It Fl t, -table-id Ar ID
 Set multicast routing table ID.  Remember to also create routing rules
 directing packets to the table.  This example uses routing table ID 123:
 .Bd -unfilled -offset left
@@ -572,6 +572,7 @@ is started with a different identity,
 .\" .It Pa /var/run/pimd/pimd.cache
 .It Pa /var/run/pimd/pimd.dump
 .It Pa /var/run/pimd/pimd.pid
+.It Pa /var/run/pimd/pimd.sock
 .El
 .Sh SEE ALSO
 .Xr pimctl 8 ,
