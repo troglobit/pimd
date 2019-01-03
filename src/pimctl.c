@@ -225,15 +225,16 @@ static int usage(int rc)
 		"  kill                      Kill running daemon, like SIGTERM\n"
 		"  restart                   Restart pimd and reload .conf file, like SIGHUP\n"
 		"  version                   Show pimd version\n"
+		"  show status               Show pimd status, default\n"
 		"  show igmp groups          Show IGMP group memberships\n"
 		"  show igmp interface       Show IGMP interface status\n"
-		"  show interface            Show PIM interface table\n"
-		"  show neighbor             Show PIM neighbor table\n"
-		"  show routes               Show PIM routing table\n"
-		"  show rp                   Show PIM Rendezvous-Point (RP) set\n"
-		"  show crp                  Show PIM Candidate Rendezvous-Point (CRP) from BSR\n"
-		"  show compat               Show PIM status, compat mode, previously `pimd -r`\n"
-		"  show status               Show PIM status, default\n");
+		"  show pim interface        Show PIM interface table\n"
+		"  show pim neighbor         Show PIM neighbor table\n"
+		"  show pim routes           Show PIM routing table\n"
+		"  show pim rp               Show PIM Rendezvous-Point (RP) set\n"
+		"  show pim crp              Show PIM Candidate Rendezvous-Point (CRP) from BSR\n"
+		"  show pim compat           Show PIM status, compat mode, previously `pimd -r`\n"
+		);
 
 	return 0;
 }
@@ -291,16 +292,20 @@ int main(int argc, char *argv[])
 		{ "iface",     NULL, NULL, IPC_SHOW_IGMP_IFACE_CMD  }, /* ALIAS */
 		{ NULL }
 	};
+	struct cmd pim[] = {
+		{ "interface", NULL, NULL, IPC_SHOW_PIM_IFACE_CMD },
+		{ "iface",     NULL, NULL, IPC_SHOW_PIM_IFACE_CMD }, /* ALIAS */
+		{ "neighbor",  NULL, NULL, IPC_SHOW_PIM_NEIGH_CMD },
+		{ "routes",    NULL, NULL, IPC_SHOW_PIM_ROUTE_CMD },
+		{ "rp",        NULL, NULL, IPC_SHOW_PIM_RP_CMD    },
+		{ "crp",       NULL, NULL, IPC_SHOW_PIM_CRP_CMD   },
+		{ "compat",    NULL, NULL, IPC_SHOW_PIM_DUMP_CMD  },
+		{ NULL }
+	};
 	struct cmd show[] = {
 		{ "igmp",      igmp, NULL },
-		{ "interface", NULL, NULL, IPC_SHOW_IFACE_CMD },
-		{ "iface",     NULL, NULL, IPC_SHOW_IFACE_CMD }, /* ALIAS */
-		{ "neighbor",  NULL, NULL, IPC_SHOW_NEIGH_CMD },
-		{ "routes",    NULL, NULL, IPC_SHOW_ROUTE_CMD },
-		{ "rp",        NULL, NULL, IPC_SHOW_RP_CMD    },
-		{ "crp",       NULL, NULL, IPC_SHOW_CRP_CMD   },
-		{ "compat",    NULL, NULL, IPC_SHOW_DUMP_CMD  },
-		{ "status",    NULL, NULL, IPC_SHOW_STAT_CMD  },
+		{ "pim",       pim,  NULL },
+		{ "status",    NULL, NULL, IPC_SHOW_STATUS_CMD  },
 		{ NULL }
 	};
 	struct cmd command[] = {
@@ -346,7 +351,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (optind >= argc)
-		return show_generic(IPC_SHOW_STAT_CMD, detail);
+		return show_generic(IPC_SHOW_STATUS_CMD, detail);
 
 	return cmd_parse(argc - optind, &argv[optind], command);
 }

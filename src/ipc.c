@@ -561,31 +561,31 @@ static void ipc_handle(int sd)
 		ipc_show(client, show_igmp_iface);
 		break;
 
-	case IPC_SHOW_IFACE_CMD:
+	case IPC_SHOW_PIM_IFACE_CMD:
 		ipc_show(client, show_interfaces);
 		break;
 
-	case IPC_SHOW_NEIGH_CMD:
+	case IPC_SHOW_PIM_NEIGH_CMD:
 		ipc_show(client, show_neighbors);
 		break;
 
-	case IPC_SHOW_ROUTE_CMD:
+	case IPC_SHOW_PIM_ROUTE_CMD:
 		ipc_show(client, show_pim_mrt);
 		break;
 
-	case IPC_SHOW_RP_CMD:
+	case IPC_SHOW_PIM_RP_CMD:
 		ipc_show(client, show_rp);
 		break;
 
-	case IPC_SHOW_CRP_CMD:
+	case IPC_SHOW_PIM_CRP_CMD:
 		ipc_show(client, show_crp);
 		break;
 
-	case IPC_SHOW_STAT_CMD:
+	case IPC_SHOW_STATUS_CMD:
 		ipc_show(client, show_status);
 		break;
 
-	case IPC_SHOW_DUMP_CMD:
+	case IPC_SHOW_PIM_DUMP_CMD:
 		ipc_show(client, show_dump);
 		break;
 

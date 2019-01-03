@@ -322,16 +322,16 @@ extern int mrt_table_id;
  */
 #define IPC_OK_CMD                0
 #define IPC_RESTART_CMD           1
+#define IPC_SHOW_STATUS_CMD       2
 #define IPC_KILL_CMD              9
 #define IPC_SHOW_IGMP_GROUPS_CMD  10
 #define IPC_SHOW_IGMP_IFACE_CMD   11
-#define IPC_SHOW_STAT_CMD         20
-#define IPC_SHOW_IFACE_CMD        21
-#define IPC_SHOW_NEIGH_CMD        22
-#define IPC_SHOW_ROUTE_CMD        23
-#define IPC_SHOW_RP_CMD           24
-#define IPC_SHOW_CRP_CMD          25
-#define IPC_SHOW_DUMP_CMD         250
+#define IPC_SHOW_PIM_IFACE_CMD    20
+#define IPC_SHOW_PIM_NEIGH_CMD    21
+#define IPC_SHOW_PIM_ROUTE_CMD    22
+#define IPC_SHOW_PIM_RP_CMD       23
+#define IPC_SHOW_PIM_CRP_CMD      24
+#define IPC_SHOW_PIM_DUMP_CMD     250
 #define IPC_ERR_CMD               255
 
 struct ipc {
