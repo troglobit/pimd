@@ -1,1 +1,1 @@
-dist_man8_MANS = pimd.8
+dist_man8_MANS = pimd.8 pimctl.8
