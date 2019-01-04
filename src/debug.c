@@ -258,47 +258,8 @@ log_level(int proto, int type, int code)
     return LOG_WARNING;
 }
 
-
 /*
- * Dump internal data structures to a file.
- */
-void fdump(char *fmt)
-{
-    FILE *fp;
-    char file[90];
-
-    snprintf(file, sizeof(file), fmt, ident);
-    fp = fopen(file, "w");
-    if (fp) {
-	dump_vifs(fp);
-	dump_ssm(fp);
-	dump_pim_mrt(fp);
-	dump_rp_set(fp);
-	fclose(fp);
-    }
-}
-
-/* TODO: dummy, to be used in the future. */
-/*
- * Dump local cache contents to a file.
- */
-void cdump(char *fmt)
-{
-    FILE *fp;
-    char file[90];
-
-    snprintf(file, sizeof(file), fmt, ident);
-    fp = fopen(file, "w");
-    if (fp) {
-	/* XXX: TODO: implement it:
-	   dump_cache(fp);
-	*/
-	fclose(fp);
-    }
-}
-
-/*
-  1         2         3         4         5         6         7         8
+            1         2         3         4         5         6         7         8
   012345678901234567890123456789012345678901234567890123456789012345678901234567890
   Virtual Interface Table
   Vif  Local-Address    Subnet                Thresh  Flags          Neighbors

@@ -496,8 +496,6 @@ extern void	log_init		(int log_stdout);
 extern void	logit			(int, int, const char *, ...);
 extern void	dump_frame		(char *desc, void *dump, size_t len);
 extern int	log_level		(int proto, int type, int code);
-extern void	fdump			(char *fmt);
-extern void	cdump			(char *fmt);
 extern void	dump_vifs		(FILE *fp);
 extern void	dump_ssm		(FILE *fp);
 extern void	dump_pim_mrt		(FILE *fp);

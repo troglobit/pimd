@@ -64,8 +64,6 @@ extern int loglevel;
 static int sighandled = 0;
 #define GOT_SIGINT      0x01
 #define GOT_SIGHUP      0x02
-#define GOT_SIGUSR1     0x04
-#define GOT_SIGUSR2     0x08
 #define GOT_SIGALRM     0x10
 
 #define NHANDLERS       3
@@ -784,11 +782,7 @@ static void handle_signals(int sig)
 	break;
 
     case SIGUSR1:
-	sighandled |= GOT_SIGUSR1;
-	break;
-
-    case SIGUSR2:
-	sighandled |= GOT_SIGUSR2;
+	/* Ignore, don't die, backwards compat. */
 	break;
     }
 }
@@ -808,16 +802,6 @@ static int check_signals(void)
     if (sighandled & GOT_SIGHUP) {
 	sighandled &= ~GOT_SIGHUP;
 	restart(SIGHUP);
-    }
-
-    if (sighandled & GOT_SIGUSR1) {
-	sighandled &= ~GOT_SIGUSR1;
-	fdump(_PATH_PIMD_DUMP);
-    }
-
-    if (sighandled & GOT_SIGUSR2) {
-	sighandled &= ~GOT_SIGUSR2;
-	cdump(_PATH_PIMD_CACHE);
     }
 
     if (sighandled & GOT_SIGALRM) {

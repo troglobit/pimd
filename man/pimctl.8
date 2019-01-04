@@ -90,8 +90,12 @@ Show PIM Rendezvous-Point (RP) set
 .It Nm Ar show pim crp
 Show PIM Candidate Rendezvous-Point (CRP) from BSR
 .It Nm Ar show pim compat
-Show PIM status, compat mode, previously available as
-.Nm pimd Fl r
+Show PIM status, compat mode.  Previously available as
+.Nm pimd Fl r ,
+as well as sending
+.Xr pimd 8
+SIGUSR1 to get output in
+.Pa /var/run/pimd/pimd.dump
 .It Nm Op Ar show status
 Show
 .Xr pimd 8

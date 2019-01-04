@@ -538,18 +538,6 @@ Terminate execution gracefully, i.e. by sending good-bye messages to neighboring
 routers
 .It INT
 The same as TERM
-.It USR1
-Dumps internal state of VIFs and multicast routing tables to
-.Pa /var/run/pimd/pimd.dump .
-.\" Not implemented yet, still TODO
-.\" .It USR2
-.\" Dumps the internal cache tables to
-.\" .Pa /var/run/pimd/pimd.cache .
-.\" Also not implemented yet, TODO
-.\" .It QUIT
-.\" Dumps the internal routing tables to stderr (only if
-.\" .Nm
-.\" was invoked with a non-zero debug level).
 .El
 .Pp
 For convenience in sending signals,
@@ -569,8 +557,6 @@ is started with a different identity,
 .Pp
 .Bl -tag -width /var/run/pimd/pimd.cache -compact
 .It Pa /etc/pimd.conf
-.\" .It Pa /var/run/pimd/pimd.cache
-.It Pa /var/run/pimd/pimd.dump
 .It Pa /var/run/pimd/pimd.pid
 .It Pa /var/run/pimd/pimd.sock
 .El
