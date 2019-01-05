@@ -44,7 +44,8 @@
 #define PIMD_DEBUG_H_
 
 extern unsigned long	debug;
-extern int log_nmsgs;
+extern int              loglevel;
+extern int              log_nmsgs;
 #define IF_DEBUG(l)	if (debug && (debug & (l)))
 
 #define LOG_MAX_MSGS	100	/* if > 100/minute then shut up for a while */
@@ -104,6 +105,7 @@ extern int log_nmsgs;
 #define DEBUG_ASSERT          ( DEBUG_PIM_ASSERT )
 #define DEBUG_ALL             0xffffffff
 
-int loglvl(char *level);
+extern int   log_str2lvl(char *level);
+extern char *log_lvl2str(int val);
 
 #endif /* PIMD_DEBUG_H_ */

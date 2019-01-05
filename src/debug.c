@@ -376,7 +376,7 @@ void log_init(int log_stdout)
 #endif
 }
 
-int loglvl(char *level)
+int log_str2lvl(char *level)
 {
     int i;
 
@@ -388,6 +388,18 @@ int loglvl(char *level)
     }
 
     return atoi(level);
+}
+
+char *log_lvl2str(int val)
+{
+    int i;
+
+    for (i = 0; prioritynames[i].c_name; i++) {
+	if (prioritynames[i].c_val == val)
+	    return prioritynames[i].c_name;
+    }
+
+    return "unknown";
 }
 
 /*

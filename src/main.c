@@ -59,8 +59,6 @@ char *prognm      = NULL;
 char *pid_file    = NULL;
 char *config_file = NULL;
 
-extern int loglevel;
-
 static int sighandled = 0;
 #define GOT_SIGINT      0x01
 #define GOT_SIGHUP      0x02
@@ -238,7 +236,7 @@ static int usage(int code)
     printf("     --no-fallback   When started without a config file, skip RP/BSR fallbacks\n");
     printf(" -n, --foreground    Run in foreground, do not detach from calling terminal\n");
     printf(" -d, --debug=SYS     Enable debug for subystem(s) SYS, separate more with comma\n");
-    printf(" -l, --loglevel=LVL  Set log level: none, err, info, notice (default), debug\n");
+    printf(" -l, --loglevel=LVL  Set log level: none, err, notice (default), info, debug\n");
     printf(" -i, --ident=NAME    Identity for config + PID file, and syslog, default: %s\n", ident);
     printf("     --pidfile=FILE  File to store process ID for signaling %s\n"
 	   "                     Default uses ident NAME: %s\n", prognm, pidfn);
@@ -372,7 +370,7 @@ int main(int argc, char *argv[])
 		break;
 
 	    case 'l':
-		loglevel = loglvl(optarg);
+		loglevel = log_str2lvl(optarg);
 		if (-1 == loglevel)
 		    return usage(1);
 		break;
