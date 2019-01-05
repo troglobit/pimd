@@ -14,6 +14,9 @@
 .Ar help | kill | restart | version
 .Pp
 .Nm
+.Ar log LEVEL
+.Pp
+.Nm
 .Ar show igmp groups
 .Nm
 .Ar show igmp interface
@@ -70,6 +73,26 @@ Show usage instructions and exit.
 .It Nm Ar kill
 Kill running daemon, like sending SIGTERM to
 .Xr pimd 8
+.It Nm Ar log LEVEL
+Set
+.Xr pimd 8
+log level to one of the following, default
+.Nm notice :
+.Pp
+.Bl -tag -width WARNING -compact -offset indent
+.It Cm none
+Disable all logging
+.It Cm error
+Error conditions
+.It Cm warning
+Warning conditions
+.It Cm notice
+Normal but significant condition (Default)
+.It Cm info
+Informational
+.It Cm debug
+Debug-level messages
+.El
 .It Nm Ar restart
 Restart daemon and reload
 .Pa /etc/pimd.conf ,

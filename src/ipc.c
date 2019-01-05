@@ -489,6 +489,21 @@ static void show_dump(FILE *fp)
 	dump_rp_set(fp);
 }
 
+static int do_loglevel(void *arg)
+{
+	struct ipc *msg = (struct ipc *)arg;
+	int rc;
+
+	rc = log_str2lvl(msg->buf);
+	if (-1 == rc)
+		return 1;
+
+	logit(LOG_NOTICE, 0, "Setting new log level %s", log_lvl2str(rc));
+	loglevel = rc;
+
+	return 0;
+}
+
 static void ipc_show(int sd, void (*cb)(FILE *))
 {
 	struct ipc msg = { 0 };
@@ -548,6 +563,10 @@ static void ipc_handle(int sd)
 	detail = msg.detail;
 
 	switch (msg.cmd) {
+	case IPC_LOGLEVEL_CMD:
+		ipc_generic(client, do_loglevel, &msg);
+		break;
+
 	case IPC_KILL_CMD:
 		ipc_generic(client, daemon_kill, NULL);
 		break;

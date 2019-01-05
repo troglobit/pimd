@@ -76,11 +76,16 @@ error:
 	return -1;
 }
 
-static struct ipc *do_cmd(uint8_t cmd, int detail)
+static struct ipc *do_cmd(uint8_t cmd, int detail, char *buf, size_t len)
 {
-	static struct ipc msg;
+	static struct ipc msg = { 0 };
 	struct pollfd pfd;
 	int sd;
+
+	if (buf && len >= sizeof(msg.buf)) {
+		errno = EINVAL;
+		return NULL;
+	}
 
 	sd = do_connect(ident);
 	if (-1 == sd)
@@ -88,6 +93,9 @@ static struct ipc *do_cmd(uint8_t cmd, int detail)
 
 	msg.cmd = cmd;
 	msg.detail = detail;
+	if (buf)
+		memcpy(msg.buf, buf, len);
+
 	if (write(sd, &msg, sizeof(msg)) == -1)
 		goto fail;
 
@@ -106,6 +114,17 @@ static struct ipc *do_cmd(uint8_t cmd, int detail)
 fail:
 	close(sd);
 	return NULL;
+}
+
+static int set_loglevel(char *arg)
+{
+	if (!arg)
+		arg = "";
+
+	if (!do_cmd(IPC_LOGLEVEL_CMD, 0, arg, strlen(arg)))
+		return 1;
+
+	return 0;
 }
 
 #define ESC "\033"
@@ -160,7 +179,7 @@ static int show_generic(int cmd, int detail)
 	FILE *fp;
 	char line[512];
 
-	msg = do_cmd(cmd, detail);
+	msg = do_cmd(cmd, detail, NULL, 0);
 	if (!msg)
 		return -1;
 
@@ -223,6 +242,7 @@ static int usage(int rc)
 		"Commands:\n"
 		"  help                      This help text\n"
 		"  kill                      Kill running daemon, like SIGTERM\n"
+		"  log LEVEL                 Set pimd log level: none, err, notice*, info, debug\n"
 		"  restart                   Restart pimd and reload .conf file, like SIGHUP\n"
 		"  version                   Show pimd version\n"
 		"  show status               Show pimd status, default\n"
@@ -264,8 +284,18 @@ static int cmd_parse(int argc, char *argv[], struct cmd *command)
 		if (command[i].ctx)
 			return cmd_parse(argc - 1, &argv[1], command[i].ctx);
 
-		if (command[i].cb)
-			return command[i].cb(NULL);
+		if (command[i].cb) {
+			char arg[80] = "";
+			int j;
+
+			for (j = 1; j < argc; j++) {
+				if (j > 1)
+					strlcat(arg, " ", sizeof(arg));
+				strlcat(arg, argv[j], sizeof(arg));
+			}
+
+			return command[i].cb(arg);
+		}
 
 		return show_generic(command[i].op, detail);
 	}
@@ -311,6 +341,7 @@ int main(int argc, char *argv[])
 	struct cmd command[] = {
 		{ "help",      NULL, help },
 		{ "kill",      NULL, NULL, IPC_KILL_CMD        },
+		{ "log",       NULL, set_loglevel },
 		{ "status",    NULL, NULL, IPC_SHOW_STATUS_CMD },
 		{ "restart",   NULL, NULL, IPC_RESTART_CMD     },
 		{ "version",   NULL, version },
