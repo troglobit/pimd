@@ -47,7 +47,6 @@ static void pidfile_cleanup(void);
 
 const  char *__pidfile_path = _PATH_PIMD_RUNDIR;
 const  char *__pidfile_name = NULL;
-extern char *prognm;
 
 int
 pidfile(const char *basename)
@@ -56,9 +55,6 @@ pidfile(const char *basename)
 	int atexit_already;
 	pid_t pid;
 	FILE *f;
-
-	if (basename == NULL)
-		basename = prognm;
 
 	pid = getpid();
 	atexit_already = 0;
