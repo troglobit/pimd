@@ -205,14 +205,17 @@ static void show_crp(FILE *fp)
 		struct rp_grp_entry *rp_grp = rp->rp_grp_next;
 		struct grp_mask *grp = rp_grp->group;
 		rpentry_t *entry = rp->rpentry;
+		char buf[10];
 
 		if (entry->adv_holdtime == (uint16_t)0xffffff)
-			continue; /* Skip configured entries */
+			snprintf(buf, sizeof(buf), "%8s", "Static");
+		else
+			snprintf(buf, sizeof(buf), "%8d", entry->adv_holdtime);
 
-		fprintf(fp, "%-15s  %-18s  %4d  %8d  %s\n",
+		fprintf(fp, "%-15s  %-18s  %4d  %s  %s\n",
 			inet_fmt(entry->address, s1, sizeof(s1)),
 			netname(grp->group_addr, grp->group_mask),
-			rp_grp->priority, entry->adv_holdtime,
+			rp_grp->priority, buf,
 			timetostr(rp_grp->holdtime, NULL, 0));
 	}
 
