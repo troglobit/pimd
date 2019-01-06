@@ -186,7 +186,7 @@ Debug-level messages
 .El
 .It Fl r
 With this option, and
-.Fl N ,
+.Fl -disable-vifs ,
 .Nm
 will retry (forever) querying the kernel for all required
 .Cm phyint
@@ -231,8 +231,6 @@ setting and the
 setting can be used to control this behavior.  The former can also be
 set from the command line using the
 .Fl -disable-vifs
-or
-.Fl N
 option.  More on the
 .Cm phyint
 interface configuration setting below.
@@ -376,7 +374,7 @@ are some additional settings:
 Selectively enable this interface for
 .Nm .
 Useful with the
-.Fl N, -disable-vifs
+.Fl -disable-vifs
 command line option and the
 .Cm disable-vifs
 configuration file setting.
@@ -385,7 +383,7 @@ configuration file setting.
 Do not use this interface in
 .Nm .
 Default enable, unless
-.Fl N, -disable-vifs .
+.Fl -disable-vifs .
 .It
 .Nm igmpv2 :
 Force interface to use IGMPv2, or
@@ -437,9 +435,10 @@ Add one
 line per interface on this router.  If you don't do this,
 .Nm pimd
 will either be completely silent (if you provide the
-.Fl N
-command line option), or simply assume that you want it to utilize all interfaces
-using default settings.
+.Fl -disable-vifs
+command line option), or simply assume that you want to run
+.Nm
+on all interfaces using default settings.
 .Pp
 Both the
 .Cm bsr-candidate
