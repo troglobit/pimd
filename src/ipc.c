@@ -489,6 +489,32 @@ static void show_dump(FILE *fp)
 	dump_rp_set(fp);
 }
 
+static int do_debug(void *arg)
+{
+	struct ipc *msg = (struct ipc *)arg;
+
+	if (!strcmp(msg->buf, "?"))
+		return debug_list(DEBUG_ALL, msg->buf, sizeof(msg->buf));
+
+	if (strlen(msg->buf)) {
+		int rc = debug_parse(msg->buf);
+
+		if ((int)DEBUG_PARSE_FAIL == rc)
+			return 1;
+
+		/* Activate debugging of new subsystems */
+		debug = rc;
+	}
+
+	/* Return list of activated subsystems */
+	if (debug)
+		debug_list(debug, msg->buf, sizeof(msg->buf));
+	else
+		snprintf(msg->buf, sizeof(msg->buf), "none");
+
+	return 0;
+}
+
 static int do_loglevel(void *arg)
 {
 	struct ipc *msg = (struct ipc *)arg;
@@ -529,16 +555,14 @@ fail:
 		logit(LOG_WARNING, errno, "Failed sending IPC reply");
 }
 
-static void ipc_generic(int sd, int (*cb)(void *), void *arg)
+static void ipc_generic(int sd, struct ipc *msg, int (*cb)(void *), void *arg)
 {
-	struct ipc msg = { 0 };
-
 	if (cb(arg))
-		msg.cmd = IPC_ERR_CMD;
+		msg->cmd = IPC_ERR_CMD;
 	else
-		msg.cmd = IPC_OK_CMD;
+		msg->cmd = IPC_OK_CMD;
 
-	if (write(sd, &msg, sizeof(msg)) == -1)
+	if (write(sd, msg, sizeof(*msg)) == -1)
 		logit(LOG_WARNING, errno, "Failed sending IPC reply");
 }
 
@@ -563,16 +587,20 @@ static void ipc_handle(int sd)
 	detail = msg.detail;
 
 	switch (msg.cmd) {
+	case IPC_DEBUG_CMD:
+		ipc_generic(client, &msg, do_debug, &msg);
+		break;
+
 	case IPC_LOGLEVEL_CMD:
-		ipc_generic(client, do_loglevel, &msg);
+		ipc_generic(client, &msg, do_loglevel, &msg);
 		break;
 
 	case IPC_KILL_CMD:
-		ipc_generic(client, daemon_kill, NULL);
+		ipc_generic(client, &msg, daemon_kill, NULL);
 		break;
 
 	case IPC_RESTART_CMD:
-		ipc_generic(client, daemon_restart, NULL);
+		ipc_generic(client, &msg, daemon_restart, NULL);
 		break;
 
 	case IPC_SHOW_IGMP_GROUPS_CMD:

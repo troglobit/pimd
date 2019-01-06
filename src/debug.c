@@ -312,7 +312,7 @@ int debug_parse(char *arg)
     char *next = NULL;
     int sys = 0;
 
-    if (!arg || arg[0] == 0 || strstr(arg, "none"))
+    if (!arg || !strlen(arg) || strstr(arg, "none"))
 	return sys;
 
     while (arg) {

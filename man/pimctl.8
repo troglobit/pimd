@@ -14,6 +14,8 @@
 .Ar help | kill | restart | version
 .Pp
 .Nm
+.Ar debug Op ? | none | SYSTEM Op ,SYSTEM
+.Nm
 .Ar log LEVEL
 .Pp
 .Nm
@@ -73,6 +75,67 @@ Show usage instructions and exit.
 .It Nm Ar kill
 Kill running daemon, like sending SIGTERM to
 .Xr pimd 8
+.It Nm Ar debug Op ? | none | SYSTEM Op ,SYSTEM
+Control subystem debugging at runtime.  Multiple subsystems can be
+enabled, separate with comma.  E.g.
+.Bd -unfilled -offset indent
+pimctl debug igmp,pim
+.Ed
+.Pp
+The command returns a list of enabled subsystems.  Without any debug
+argument, the command lists the currently enabled subsystems.  To list
+all available subsystems, use
+.Bd -unfilled -offset indent
+pimctl debug ?
+.Ed
+.Pp
+To disable all subsystems, use
+.Bd -unfilled -offset indent
+pimctl debug none
+.Ed
+.Pp
+Subsystems:
+.Pp
+.Bl -tag -width pim_routes -compact -offset indent
+.It Cm packet
+Debug inbound/outbout packets
+.It Cm prunes
+Pruning operations, or pruned routes
+.It Cm routes
+Routing messages
+.It Cm rtdetail
+Detailed routing information
+.It Cm peers
+Neighbor gossip
+.It Cm cache
+Debug routing cache
+.It Cm timeout
+Debug timeouts
+.It Cm interface
+Show interface (VIF) debug messages
+.It Cm groups
+Debug group memberships
+.It Cm mtrace
+Multicast traceroute information
+.It Cm igmp
+Debug IGMP messages
+.It Cm icmp
+Debug ICMP messages
+.It Cm rsrr
+Debug RSRR messages
+.It Cm pim
+All PIM messages
+.It Cm pim_routes
+PIM routing messages
+.It Cm pim_bsr
+PIM bootstrap router messages
+.It Cm pim_detail
+Detailed PIM debug
+.It Cm pim_hello
+Debug hello messages to/from neighbors
+.It Cm all
+Enable all subsystems (may trigger log rate limiter)
+.El
 .It Nm Ar log LEVEL
 Set
 .Xr pimd 8

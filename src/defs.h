@@ -323,6 +323,7 @@ extern int mrt_table_id;
 #define IPC_OK_CMD                0
 #define IPC_RESTART_CMD           1
 #define IPC_SHOW_STATUS_CMD       2
+#define IPC_DEBUG_CMD             3
 #define IPC_LOGLEVEL_CMD          4
 #define IPC_KILL_CMD              9
 #define IPC_SHOW_IGMP_GROUPS_CMD  10
@@ -338,7 +339,7 @@ extern int mrt_table_id;
 struct ipc {
     uint8_t cmd;
     uint8_t detail;
-    char    buf[254];
+    char    buf[766];
 };
 
 /*

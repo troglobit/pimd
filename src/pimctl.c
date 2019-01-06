@@ -116,15 +116,31 @@ fail:
 	return NULL;
 }
 
-static int set_loglevel(char *arg)
+static int do_set(int cmd, char *arg)
 {
+	struct ipc *msg;
+
 	if (!arg)
 		arg = "";
 
-	if (!do_cmd(IPC_LOGLEVEL_CMD, 0, arg, strlen(arg)))
+	msg = do_cmd(cmd, 0, arg, strlen(arg));
+	if (!msg)
 		return 1;
 
+	if (strlen(msg->buf) > 1)
+		puts(msg->buf);
+
 	return 0;
+}
+
+static int set_debug(char *arg)
+{
+	return do_set(IPC_DEBUG_CMD, arg);
+}
+
+static int set_loglevel(char *arg)
+{
+	return do_set(IPC_LOGLEVEL_CMD, arg);
 }
 
 #define ESC "\033"
@@ -240,6 +256,7 @@ static int usage(int rc)
 		"  -h, --help                This help text\n"
 		"\n"
 		"Commands:\n"
+		"  debug [? | none | SYS]    Debug subystem(s), separate multiple with comma\n"
 		"  help                      This help text\n"
 		"  kill                      Kill running daemon, like SIGTERM\n"
 		"  log LEVEL                 Set pimd log level: none, err, notice*, info, debug\n"
@@ -339,6 +356,7 @@ int main(int argc, char *argv[])
 		{ NULL }
 	};
 	struct cmd command[] = {
+		{ "debug",     NULL, set_debug },
 		{ "help",      NULL, help },
 		{ "kill",      NULL, NULL, IPC_KILL_CMD        },
 		{ "log",       NULL, set_loglevel },
