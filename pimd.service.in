@@ -1,6 +1,7 @@
 [Unit]
 Description=PIM-SM/SSM multicast routing daemon
 Documentation=man:pimd
+Documentation=man:pimctl
 Documentation=file:@DOCDIR@/README.md
 Documentation=https://github.com/troglobit/pimd
 # ConditionPathExists=@SYSCONFDIR@/pimd.conf
