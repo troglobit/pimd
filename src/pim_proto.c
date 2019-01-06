@@ -3170,7 +3170,7 @@ int receive_pim_bootstrap(uint32_t src, uint32_t dst, char *msg, size_t len)
 
     /* sanity check for the minimum length */
     if (len < PIM_BOOTSTRAP_MINLEN) {
-	logit(LOG_NOTICE, 0, "receive_pim_bootstrap: Bootstrap message size(%u) is too short from %s",
+	logit(LOG_NOTICE, 0, "Bootstrap message size(%u) is too short from %s",
 	      len, inet_fmt(src, s1, sizeof(s1)));
 
 	return FALSE;
