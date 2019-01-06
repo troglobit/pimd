@@ -119,7 +119,8 @@ extern void	dump_ssm		(FILE *fp);
 extern void	dump_pim_mrt		(FILE *fp);
 extern int	dump_rp_set		(FILE *fp);
 
-extern int   log_str2lvl(char *level);
-extern char *log_lvl2str(int val);
+extern int      log_str2lvl             (char *level);
+extern char    *log_lvl2str             (int val);
+extern int      log_list                (char *buf, size_t len);
 
 #endif /* PIMD_DEBUG_H_ */

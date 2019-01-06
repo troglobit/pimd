@@ -16,7 +16,7 @@
 .Nm
 .Ar debug Op ? | none | SYSTEM Op ,SYSTEM
 .Nm
-.Ar log LEVEL
+.Ar log Op ? | none | LEVEL
 .Pp
 .Nm
 .Ar show igmp groups
@@ -136,11 +136,10 @@ Debug hello messages to/from neighbors
 .It Cm all
 Enable all subsystems (may trigger log rate limiter)
 .El
-.It Nm Ar log LEVEL
-Set
+.It Nm Ar log Op ? | none | LEVEL
+Control, query, or disable
 .Xr pimd 8
-log level to one of the following, default
-.Nm notice :
+log level:
 .Pp
 .Bl -tag -width WARNING -compact -offset indent
 .It Cm none

@@ -520,6 +520,14 @@ static int do_loglevel(void *arg)
 	struct ipc *msg = (struct ipc *)arg;
 	int rc;
 
+	if (!strcmp(msg->buf, "?"))
+		return log_list(msg->buf, sizeof(msg->buf));
+
+	if (!strlen(msg->buf)) {
+		strlcpy(msg->buf, log_lvl2str(loglevel), sizeof(msg->buf));
+		return 0;
+	}
+
 	rc = log_str2lvl(msg->buf);
 	if (-1 == rc)
 		return 1;

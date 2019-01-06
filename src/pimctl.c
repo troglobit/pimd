@@ -259,7 +259,7 @@ static int usage(int rc)
 		"  debug [? | none | SYS]    Debug subystem(s), separate multiple with comma\n"
 		"  help                      This help text\n"
 		"  kill                      Kill running daemon, like SIGTERM\n"
-		"  log LEVEL                 Set pimd log level: none, err, notice*, info, debug\n"
+		"  log [? | none | LEVEL]    Set pimd log level: none, err, notice*, info, debug\n"
 		"  restart                   Restart pimd and reload .conf file, like SIGHUP\n"
 		"  version                   Show pimd version\n"
 		"  show status               Show pimd status, default\n"

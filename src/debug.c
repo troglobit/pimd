@@ -529,6 +529,20 @@ char *log_lvl2str(int val)
     return "unknown";
 }
 
+int log_list(char *buf, size_t len)
+{
+    int i;
+
+    memset(buf, 0, len);
+    for (i = 0; prioritynames[i].c_name; i++) {
+	if (i > 0)
+	    strlcat(buf, ", ", len);
+	strlcat(buf, prioritynames[i].c_name, len);
+    }
+
+    return 0;
+}
+
 /*
  * Log errors and other messages to the system log daemon and to stderr,
  * according to the severity of the message and the current debug level.
