@@ -53,7 +53,6 @@ char *ident = "pimd";
 static int do_connect(char *ident)
 {
 	struct sockaddr_un sun;
-	char path[256];
 	int sd;
 
 #ifdef HAVE_SOCKADDR_UN_SUN_LEN
@@ -350,20 +349,20 @@ int main(int argc, char *argv[])
 		{ NULL }
 	};
 	struct cmd show[] = {
-		{ "igmp",      igmp, NULL },
-		{ "pim",       pim,  NULL },
+		{ "igmp",      igmp, NULL, 0                    },
+		{ "pim",       pim,  NULL, 0                    },
 		{ "status",    NULL, NULL, IPC_SHOW_STATUS_CMD  },
 		{ NULL }
 	};
 	struct cmd command[] = {
-		{ "debug",     NULL, set_debug },
-		{ "help",      NULL, help },
-		{ "kill",      NULL, NULL, IPC_KILL_CMD        },
-		{ "log",       NULL, set_loglevel },
-		{ "status",    NULL, NULL, IPC_SHOW_STATUS_CMD },
-		{ "restart",   NULL, NULL, IPC_RESTART_CMD     },
-		{ "version",   NULL, version },
-		{ "show",      show, NULL },
+		{ "debug",     NULL, set_debug,    0                   },
+		{ "help",      NULL, help,         0                   },
+		{ "kill",      NULL, NULL,         IPC_KILL_CMD        },
+		{ "log",       NULL, set_loglevel, 0                   },
+		{ "status",    NULL, NULL,         IPC_SHOW_STATUS_CMD },
+		{ "restart",   NULL, NULL,         IPC_RESTART_CMD     },
+		{ "version",   NULL, version,      0                   },
+		{ "show",      show, NULL,         0                   },
 		{ NULL }
 	};
 	int c;
