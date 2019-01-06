@@ -11,6 +11,8 @@ As of this release =pimd= is not guaranteed to be backwards compatible
 with earlier releases.  It is recommended to run the same version of
 =pimd= on all routers in the same domain.  See issue #93 for details.
 
+*Note:* command line arguments have changed in a non-backwards fashion.
+
 ** Changes
 - Converted to GNU Configure & Build system
 - Replace libite (=-lite=) GIT submodule with compatibility functions.
@@ -28,9 +30,13 @@ with earlier releases.  It is recommended to run the same version of
 - Added systemd unit file, issue #41
 - Support for =disable-vifs= in =pimd.conf=, issue #56
 - PID file is touched to acknowledge =SIGHUP=
-- Add =-I IDENT= to change name of =pimd= in syslog, =.conf= file, and
+- Completely changed command line arguments, in part to alert users that
+  this release may not be compatible with their existing PIM routers
+- New pimctl(8) tool completely replaces =pimd -r= and SIGUSR1 support,
+  pimd no longer dumps internal state in a pimd.dump file
+- Add =-i IDENT= to change name of =pimd= in syslog, =.conf= file, and
   PID file.  Useful when running multiple daemons, one per multicast
-  routing table.
+  routing table
 - Converted to use =getifaddrs()= when scanning for interfaces.  This is
   required on at least FreeBSD 9, since =SIOCGIFCONF= seems to be really
   broken there, at least on systems with lots of interfaces (>30).
