@@ -500,7 +500,7 @@ typedef struct pim_jp_encod_grp_ {
             PUT_NETLONG((addr), (cp));          \
         } while(0)
 
-/* Check if group is in PIM-SSM range, x must be in network byte order */
+/* Check if group is in PIM-SSM range, 232/8, x must be in network byte order */
 #define IN_PIM_SSM_RANGE(x) ((ntohl((unsigned)(x)) & 0xff000000) == 0xe8000000)
 
 /* Check if address is in link-local range, x must be in network byte order */
