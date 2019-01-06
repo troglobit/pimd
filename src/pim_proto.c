@@ -3245,10 +3245,19 @@ int receive_pim_bootstrap(uint32_t src, uint32_t dst, char *msg, size_t len)
 
 	/* Probably unicasted from the current DR */
 	if (cand_rp_list) {
-	    /* Hmmm, I do have a Cand-RP-list, but some neighbor has a
-	     * different opinion and is unicasting it to me. Ignore this guy.
-	     */
-	    return FALSE;
+	    struct cand_rp *rp;
+
+	    /* We have a Cand-RP-list already, check for static ones ... */
+	    for (rp = cand_rp_list; rp; rp = rp->next) {
+		rpentry_t *entry = rp->rpentry;
+
+		/* Skip static/configured ones */
+		if (entry->adv_holdtime == (uint16_t)0xffffff)
+		    continue;
+
+		/* Ignore this guy. */
+		return FALSE;
+	    }
 	}
 
 	for (vifi = 0; vifi < numvifs; vifi++) {
