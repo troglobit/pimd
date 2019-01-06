@@ -110,8 +110,6 @@ extern char	*packet_kind		(int proto, int type, int code);
 extern int	debug_kind		(int proto, int type, int code);
 extern int      debug_list              (int mask, char *buf, size_t len);
 extern int      debug_parse             (char *arg);
-extern void	log_init		(int log_stdout);
-extern void	logit			(int, int, const char *, ...);
 extern void	dump_frame		(char *desc, void *dump, size_t len);
 extern int	log_level		(int proto, int type, int code);
 extern void	dump_vifs		(FILE *fp);
@@ -119,8 +117,11 @@ extern void	dump_ssm		(FILE *fp);
 extern void	dump_pim_mrt		(FILE *fp);
 extern int	dump_rp_set		(FILE *fp);
 
+extern void	log_init		(int do_syslog);
 extern int      log_str2lvl             (char *level);
 extern char    *log_lvl2str             (int val);
 extern int      log_list                (char *buf, size_t len);
+
+extern void	logit			(int severity, int syserr, const char *fmt, ...);
 
 #endif /* PIMD_DEBUG_H_ */

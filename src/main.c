@@ -50,7 +50,6 @@ char versionstring[100];
 int do_vifs       = 1;
 int no_fallback   = 0;
 int retry_forever = 0;
-int haveterminal  = 1;
 struct rp_hold *g_rp_hold = NULL;
 int mrt_table_id = 0;
 
@@ -250,7 +249,7 @@ int main(int argc, char *argv[])
 	{ NULL, 0, 0, 0 }
     };
 
-    snprintf(versionstring, sizeof (versionstring), "pimd version %s", PACKAGE_VERSION);
+    snprintf(versionstring, sizeof(versionstring), "pimd version %s", PACKAGE_VERSION);
 
     prognm = ident = progname(argv[0]);
     while ((ch = getopt_long(argc, argv, "d:f:hi:l:nrst:v", long_options, NULL)) != EOF) {
@@ -340,9 +339,8 @@ int main(int argc, char *argv[])
 	printf("debug level 0x%lx (%s)\n", debug, buf);
     }
 
-    if (!debug && !foreground) {
+    if (!foreground) {
 	/* Detach from the terminal */
-	haveterminal = 0;
 	if (fork())
 	    exit(0);
 
@@ -382,7 +380,7 @@ int main(int argc, char *argv[])
     /*
      * Setup logging
      */
-    log_init(haveterminal && do_syslog > 0);
+    log_init(do_syslog);
     logit(LOG_NOTICE, 0, "%s starting ...", versionstring);
 
     do_randomize();
@@ -416,11 +414,6 @@ int main(int argc, char *argv[])
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGUSR1, &sa, NULL);
     sigaction(SIGUSR2, &sa, NULL);
-
-    IF_DEBUG(DEBUG_IF)
-	dump_vifs(stderr);
-    IF_DEBUG(DEBUG_PIM_MRT)
-	dump_pim_mrt(stderr);
 
     /* schedule first timer interrupt */
     timer_setTimer(TIMER_INTERVAL, timer, NULL);

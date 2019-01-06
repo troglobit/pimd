@@ -302,7 +302,6 @@ extern int		build_jp_message_pool_counter;
 extern uint32_t		virtual_time;
 extern char            *ident;
 extern char	       *config_file;
-extern int              haveterminal;
 extern char            *prognm;
 
 extern struct cand_rp_adv_message_ {

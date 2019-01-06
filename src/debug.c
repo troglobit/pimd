@@ -129,6 +129,7 @@ unsigned long debug = 0x00000000;        /* If (long) is smaller than
 					  * 4 bytes, then we are in
 					  * trouble.
 					  */
+static int log_syslog = 0;
 
 
 char *packet_kind(int proto, int type, int code)
@@ -342,8 +343,7 @@ int debug_parse(char *arg)
  * "No route to host").  This is important when there is asymmetric
  * reachability and someone is trying to, i.e., mrinfo me periodically.
  */
-int
-log_level(int proto, int type, int code)
+int log_level(int proto, int type, int code)
 {
     switch (proto) {
 	case IPPROTO_IGMP:
@@ -486,14 +486,11 @@ void dump_ssm(FILE *fp)
     }
 }
 
-void log_init(int log_stdout)
+void log_init(int do_syslog)
 {
     int log_opts = LOG_PID;
 
-#ifdef LOG_PERROR
-    if (log_stdout)
-	log_opts |= LOG_PERROR;
-#endif
+    log_syslog = do_syslog;
 
 #ifdef LOG_DAEMON
     openlog(ident, log_opts, LOG_DAEMON);
@@ -560,11 +557,11 @@ void logit(int severity, int syserr, const char *format, ...)
     vsnprintf(msg, sizeof(msg), format, ap);
     va_end(ap);
 
-    /*
-     * Log to stderr if we haven't forked yet and it's a warning or
-     * worse, or if we're debugging.
-     */
-    if (haveterminal && (debug || severity <= LOG_WARNING)) {
+    /* pimd running in foreground */
+    if (!log_syslog) {
+	if (!debug && severity > loglevel)
+	    return;
+
 	gettimeofday(&now, NULL);
 	lt = now.tv_sec;
 	thyme = localtime(&lt);
@@ -579,6 +576,7 @@ void logit(int severity, int syserr, const char *format, ...)
 	    fprintf(stderr, ": %s", strerror(syserr));
 
 	fprintf(stderr, "\n");
+	return;
     }
 
     /*

@@ -235,9 +235,6 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
      * Need to trigger joins?
      */
 
-    IF_DEBUG(DEBUG_PIM_HELLO)
-	dump_vifs(stderr);      /* Show we got a new neighbor */
-
     return TRUE;
 }
 

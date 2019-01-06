@@ -84,16 +84,7 @@ and
 .Cm rp-candidate
 are commented out.
 .It Fl d, -debug Ar SYS[,SYS...]
-By default,
-.Nm
-daemonizes itself by detaching from the invoking terminal and forking to
-the background.  However, if
-.Fl d
-or
-.Fl n, -foreground
-is specified,
-.Nm
-runs in the foreground of the starting terminal.  If
+This option controls extended subsystem debugging.  If
 .Fl d
 is given without any argument
 .Nm
@@ -143,7 +134,11 @@ Debug hello messages to/from neighbors
 Run in the foreground, do not detach from calling terminal and do not
 fork to background.  Useful not only when debugging (above) but also
 when running under a process monitor like daemontools, runit, finit, or
-systemd.
+systemd.  Remember to also use
+.Fl s ,
+to send all logs to the syslog daemon, unless you want to debug
+.Nm
+and run in the foreground.
 .It Fl i, Fl -ident Ar NAME
 Specify program identity (name) to be used for configuration file, PID
 file and syslog messages.  Useful with multiple instances of

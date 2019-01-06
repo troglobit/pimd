@@ -188,11 +188,6 @@ void age_vifs(void)
 	    }
 	}
     }
-
-    IF_DEBUG(DEBUG_IF) {
-	fputs("\n", stderr);
-	dump_vifs(stderr);
-    }
 }
 
 #define MRT_IS_LASTHOP(mrt) PIMD_VIFM_LASTHOP_ROUTER(mrt->leaves, mrt->oifs)
@@ -779,11 +774,6 @@ void age_routes(void)
 	for (nbr = v->uv_pim_neighbors; nbr; nbr = nbr->next)
 	    pack_and_send_jp_message(nbr);
     }
-
-    IF_DEBUG(DEBUG_PIM_MRT) {
-	fputs("\n", stderr);
-	dump_pim_mrt(stderr);
-    }
 }
 
 
@@ -852,10 +842,6 @@ void age_misc(void)
 	    }
 	}
     }
-
-    IF_DEBUG(DEBUG_PIM_BOOTSTRAP | DEBUG_PIM_CAND_RP)
-	dump_rp_set(stderr);
-    /* TODO: XXX: anything else to timeout */
 }
 
 /**
