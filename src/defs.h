@@ -490,18 +490,6 @@ extern int	timer_leftTimer		(int);
 extern void	config_vifs_from_kernel	(void);
 extern void	config_vifs_from_file	(void);
 
-/* debug.c */
-extern char	*packet_kind		(int proto, int type, int code);
-extern int	debug_kind		(int proto, int type, int code);
-extern void	log_init		(int log_stdout);
-extern void	logit			(int, int, const char *, ...);
-extern void	dump_frame		(char *desc, void *dump, size_t len);
-extern int	log_level		(int proto, int type, int code);
-extern void	dump_vifs		(FILE *fp);
-extern void	dump_ssm		(FILE *fp);
-extern void	dump_pim_mrt		(FILE *fp);
-extern int	dump_rp_set		(FILE *fp);
-
 /* dvmrp_proto.c */
 extern void	dvmrp_accept_probe	(uint32_t src, uint32_t dst, uint8_t *p, int datalen, uint32_t level);
 extern void	dvmrp_accept_report	(uint32_t src, uint32_t dst, uint8_t *p, int datalen, uint32_t level);

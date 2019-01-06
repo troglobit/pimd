@@ -71,82 +71,6 @@ static struct ihandler {
 } ihandlers[NHANDLERS];
 static int nhandlers = 0;
 
-static struct debugname {
-    char	*name;
-    uint32_t	 level;
-    size_t	 nchars;
-} debugnames[] = {
-    {   "dvmrp_detail",	    DEBUG_DVMRP_DETAIL,   5	    },
-    {   "dvmrp_prunes",	    DEBUG_DVMRP_PRUNE,    8	    },
-    {   "dvmrp_pruning",    DEBUG_DVMRP_PRUNE,    8	    },
-    {   "dvmrp_routes",	    DEBUG_DVMRP_ROUTE,    7	    },
-    {   "dvmrp_routing",    DEBUG_DVMRP_ROUTE,    7	    },
-    {	"dvmrp_mrt",	    DEBUG_DVMRP_ROUTE,	  7	    },
-    {	"dvmrp_neighbors",  DEBUG_DVMRP_PEER,	  7	    },
-    {	"dvmrp_peers",	    DEBUG_DVMRP_PEER,	  8	    },
-    {	"dvmrp_hello",	    DEBUG_DVMRP_PEER,	  7	    },
-    {	"dvmrp_timers",	    DEBUG_DVMRP_TIMER,	  7	    },
-    {	"dvmrp",	    DEBUG_DVMRP,	  1	    },
-    {	"igmp_proto",	    DEBUG_IGMP_PROTO,	  6	    },
-    {	"igmp_timers",	    DEBUG_IGMP_TIMER,	  6	    },
-    {	"igmp_members",	    DEBUG_IGMP_MEMBER,	  6	    },
-    {	"groups",	    DEBUG_MEMBER,	  1	    },
-    {	"membership",	    DEBUG_MEMBER,	  2	    },
-    {	"igmp",		    DEBUG_IGMP,		  1	    },
-    {	"trace",	    DEBUG_TRACE,	  2	    },
-    {	"mtrace",	    DEBUG_TRACE,	  2	    },
-    {	"traceroute",	    DEBUG_TRACE,	  2	    },
-    {	"timeout",	    DEBUG_TIMEOUT,	  2	    },
-    {	"callout",	    DEBUG_TIMEOUT,	  3	    },
-    {	"packets",	    DEBUG_PKT,		  2	    },
-    {	"pkt",		    DEBUG_PKT,		  2	    },
-    {	"interfaces",	    DEBUG_IF,		  2	    },
-    {	"vif",		    DEBUG_IF,		  1	    },
-    {	"kernel",	    DEBUG_KERN,		  2	    },
-    {	"cache",	    DEBUG_MFC,		  1	    },
-    {	"mfc",		    DEBUG_MFC,		  2	    },
-    {	"k_cache",	    DEBUG_MFC,		  2	    },
-    {	"k_mfc",	    DEBUG_MFC,		  2	    },
-    {	"rsrr",		    DEBUG_RSRR,		  2	    },
-    {	"pim_detail",	    DEBUG_PIM_DETAIL,	  5	    },
-    {	"pim_hello",	    DEBUG_PIM_HELLO,	  5	    },
-    {	"pim_neighbors",    DEBUG_PIM_HELLO,	  5	    },
-    {	"pim_peers",	    DEBUG_PIM_HELLO,	  5	    },
-    {	"pim_register",	    DEBUG_PIM_REGISTER,	  5	    },
-    {	"registers",	    DEBUG_PIM_REGISTER,	  2	    },
-    {	"pim_join_prune",   DEBUG_PIM_JOIN_PRUNE, 5	    },
-    {	"pim_j_p",	    DEBUG_PIM_JOIN_PRUNE, 5	    },
-    {	"pim_jp",	    DEBUG_PIM_JOIN_PRUNE, 5	    },
-    {	"pim_bootstrap",    DEBUG_PIM_BOOTSTRAP,  5	    },
-    {	"pim_bsr",	    DEBUG_PIM_BOOTSTRAP,  5	    },
-    {	"bsr",		    DEBUG_PIM_BOOTSTRAP,  1	    },
-    {	"bootstrap",	    DEBUG_PIM_BOOTSTRAP,  1	    },
-    {	"pim_asserts",	    DEBUG_PIM_ASSERT,	  5	    },
-    {	"pim_cand_rp",	    DEBUG_PIM_CAND_RP,	  5	    },
-    {	"pim_c_rp",	    DEBUG_PIM_CAND_RP,	  5	    },
-    {	"pim_rp",	    DEBUG_PIM_CAND_RP,	  6	    },
-    {	"rp",		    DEBUG_PIM_CAND_RP,	  2	    },
-    {	"pim_routes",	    DEBUG_PIM_MRT,	  6	    },
-    {	"pim_routing",	    DEBUG_PIM_MRT,	  6	    },
-    {	"pim_mrt",	    DEBUG_PIM_MRT,	  5	    },
-    {	"pim_timers",	    DEBUG_PIM_TIMER,	  5	    },
-    {	"pim_rpf",	    DEBUG_PIM_RPF,	  6	    },
-    {	"rpf",		    DEBUG_RPF,		  3	    },
-    {	"pim",		    DEBUG_PIM,		  1	    },
-    {	"routes",	    DEBUG_MRT,		  1	    },
-    {	"routing",	    DEBUG_MRT,		  1	    },
-    {	"mrt",		    DEBUG_MRT,		  1	    },
-    {	"neighbors",	    DEBUG_NEIGHBORS,	  1	    },
-    {	"routers",	    DEBUG_NEIGHBORS,	  6	    },
-    {	"mrouters",	    DEBUG_NEIGHBORS,	  7	    },
-    {	"peers",	    DEBUG_NEIGHBORS,	  1	    },
-    {	"timers",	    DEBUG_TIMER,	  1	    },
-    {	"asserts",	    DEBUG_ASSERT,	  1	    },
-    {	"all",		    DEBUG_ALL,		  2	    },
-    {	"3",		    0xffffffff,		  1	    }	 /* compat. */
-};
-
-
 /*
  * Forward declarations.
  */
@@ -220,10 +144,8 @@ static int compose_paths(void)
 
 static int usage(int code)
 {
-    size_t i;
-    char line[76] = "  ";
     char pidfn[80];
-    struct debugname *d;
+    char buf[768];
 
     compose_paths();
     if (pid_file && pid_file[0] != '/')
@@ -251,24 +173,33 @@ static int usage(int code)
     printf("\n");
 
     printf("Available subsystems for debug:\n");
-    for (i = 0, d = debugnames; i < ARRAY_LEN(debugnames); i++, d++) {
-	if (strlen(line) + strlen(d->name) + 3 >= sizeof(line)) {
-	    /* Finish this line and send to console */
-	    strlcat(line, "\n", sizeof(line));
-	    printf("%s", line);
+    if (!debug_list(DEBUG_ALL, buf, sizeof(buf))) {
+	char line[82] = "  ";
+	char *ptr;
 
-	    /* Prepare for next line */
-	    strlcpy(line, "  ", sizeof(line));
+	ptr = strtok(buf, " ");
+	while (ptr) {
+	    char *sys = ptr;
+	    char buf[20];
+
+	    ptr = strtok(NULL, " ");
+
+	    /* Flush line */
+	    if (strlen(line) + strlen(sys) + 3 >= sizeof(line)) {
+		puts(line);
+		strlcpy(line, "  ", sizeof(line));
+	    }
+
+	    if (ptr)
+		snprintf(buf, sizeof(buf), "%s ", sys);
+	    else
+		snprintf(buf, sizeof(buf), "%s", sys);
+
+	    strlcat(line, buf, sizeof(line));
 	}
 
-	strlcat(line, d->name, sizeof(line));
-
-	if (i + 1 < ARRAY_LEN(debugnames))
-	    strlcat(line, ", ", sizeof(line));
+	puts(line);
     }
-    /* Flush remaining line. */
-    strlcat(line, "\n", sizeof(line));
-    printf("%s", line);
 
     printf("\nBug report address: %-40s\n", PACKAGE_BUGREPORT);
 #ifdef PACKAGE_URL
@@ -301,7 +232,7 @@ int main(int argc, char *argv[])
 {
     int foreground = 0, do_syslog = 1;
     fd_set fds;
-    int nfds, fd, n = -1, i, ch;
+    int nfds, fd, n = -1, i, ch, rc;
     struct sigaction sa;
     struct option long_options[] = {
 	{ "config",        1, 0, 'f' },
@@ -327,31 +258,10 @@ int main(int argc, char *argv[])
 
 	switch (ch) {
 	    case 'd':
-		{
-		    char *p,*q;
-		    size_t i, len;
-		    struct debugname *d;
-
-		    debug = 0;
-		    p = optarg;
-		    q = NULL;
-		    while (p) {
-			q = strchr(p, ',');
-			if (q)
-			    *q++ = '\0';
-			len = strlen(p);
-			for (i = 0, d = debugnames; i < ARRAY_LEN(debugnames); i++, d++) {
-			    if (len >= d->nchars && strncmp(d->name, p, len) == 0)
-				break;
-			}
-
-			if (i == ARRAY_LEN(debugnames))
-			    return usage(1);
-
-			debug |= d->level;
-			p = q;
-		    }
-		}
+		rc = debug_parse(optarg);
+		if ((int)DEBUG_PARSE_FAIL == rc)
+		    return usage(1);
+		debug = rc;
 		break;
 
 	    case 'f':
@@ -423,21 +333,11 @@ int main(int argc, char *argv[])
     compose_paths();
     setlinebuf(stderr);
 
-    if (debug != 0) {
-	struct debugname *d;
-	char c;
-	int tmpd = debug;
+    if (debug) {
+	char buf[350];
 
-	fprintf(stderr, "debug level 0x%lx ", debug);
-	c = '(';
-	for (d = debugnames; d < debugnames + ARRAY_LEN(debugnames); d++) {
-	    if ((tmpd & d->level) == d->level) {
-		tmpd &= ~d->level;
-		fprintf(stderr, "%c%s", c, d->name);
-		c = ',';
-	    }
-	}
-	fprintf(stderr, ")\n");
+	debug_list(debug, buf, sizeof(buf));
+	printf("debug level 0x%lx (%s)\n", debug, buf);
     }
 
     if (!debug && !foreground) {

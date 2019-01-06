@@ -48,6 +48,81 @@
 
 #define MAX_MSG_SIZE 64                  /* Max for dump_frame() */
 
+static struct debugname {
+    char	*name;
+    uint32_t	 level;
+    size_t	 nchars;
+} debugnames[] = {
+    {   "dvmrp_detail",	    DEBUG_DVMRP_DETAIL,   5	    },
+    {   "dvmrp_prunes",	    DEBUG_DVMRP_PRUNE,    8	    },
+    {   "dvmrp_pruning",    DEBUG_DVMRP_PRUNE,    8	    },
+    {   "dvmrp_routes",	    DEBUG_DVMRP_ROUTE,    7	    },
+    {   "dvmrp_routing",    DEBUG_DVMRP_ROUTE,    7	    },
+    {	"dvmrp_mrt",	    DEBUG_DVMRP_ROUTE,	  7	    },
+    {	"dvmrp_neighbors",  DEBUG_DVMRP_PEER,	  7	    },
+    {	"dvmrp_peers",	    DEBUG_DVMRP_PEER,	  8	    },
+    {	"dvmrp_hello",	    DEBUG_DVMRP_PEER,	  7	    },
+    {	"dvmrp_timers",	    DEBUG_DVMRP_TIMER,	  7	    },
+    {	"dvmrp",	    DEBUG_DVMRP,	  1	    },
+    {	"igmp_proto",	    DEBUG_IGMP_PROTO,	  6	    },
+    {	"igmp_timers",	    DEBUG_IGMP_TIMER,	  6	    },
+    {	"igmp_members",	    DEBUG_IGMP_MEMBER,	  6	    },
+    {	"groups",	    DEBUG_MEMBER,	  1	    },
+    {	"membership",	    DEBUG_MEMBER,	  2	    },
+    {	"igmp",		    DEBUG_IGMP,		  1	    },
+    {	"trace",	    DEBUG_TRACE,	  2	    },
+    {	"mtrace",	    DEBUG_TRACE,	  2	    },
+    {	"traceroute",	    DEBUG_TRACE,	  2	    },
+    {	"timeout",	    DEBUG_TIMEOUT,	  2	    },
+    {	"callout",	    DEBUG_TIMEOUT,	  3	    },
+    {	"packets",	    DEBUG_PKT,		  2	    },
+    {	"pkt",		    DEBUG_PKT,		  2	    },
+    {	"interfaces",	    DEBUG_IF,		  2	    },
+    {	"vif",		    DEBUG_IF,		  1	    },
+    {	"kernel",	    DEBUG_KERN,		  2	    },
+    {	"cache",	    DEBUG_MFC,		  1	    },
+    {	"mfc",		    DEBUG_MFC,		  2	    },
+    {	"k_cache",	    DEBUG_MFC,		  2	    },
+    {	"k_mfc",	    DEBUG_MFC,		  2	    },
+    {	"rsrr",		    DEBUG_RSRR,		  2	    },
+    {	"pim_detail",	    DEBUG_PIM_DETAIL,	  5	    },
+    {	"pim_hello",	    DEBUG_PIM_HELLO,	  5	    },
+    {	"pim_neighbors",    DEBUG_PIM_HELLO,	  5	    },
+    {	"pim_peers",	    DEBUG_PIM_HELLO,	  5	    },
+    {	"pim_register",	    DEBUG_PIM_REGISTER,	  5	    },
+    {	"registers",	    DEBUG_PIM_REGISTER,	  2	    },
+    {	"pim_join_prune",   DEBUG_PIM_JOIN_PRUNE, 5	    },
+    {	"pim_j_p",	    DEBUG_PIM_JOIN_PRUNE, 5	    },
+    {	"pim_jp",	    DEBUG_PIM_JOIN_PRUNE, 5	    },
+    {	"pim_bootstrap",    DEBUG_PIM_BOOTSTRAP,  5	    },
+    {	"pim_bsr",	    DEBUG_PIM_BOOTSTRAP,  5	    },
+    {	"bsr",		    DEBUG_PIM_BOOTSTRAP,  1	    },
+    {	"bootstrap",	    DEBUG_PIM_BOOTSTRAP,  1	    },
+    {	"pim_asserts",	    DEBUG_PIM_ASSERT,	  5	    },
+    {	"pim_cand_rp",	    DEBUG_PIM_CAND_RP,	  5	    },
+    {	"pim_c_rp",	    DEBUG_PIM_CAND_RP,	  5	    },
+    {	"pim_rp",	    DEBUG_PIM_CAND_RP,	  6	    },
+    {	"rp",		    DEBUG_PIM_CAND_RP,	  2	    },
+    {	"pim_routes",	    DEBUG_PIM_MRT,	  6	    },
+    {	"pim_routing",	    DEBUG_PIM_MRT,	  6	    },
+    {	"pim_mrt",	    DEBUG_PIM_MRT,	  5	    },
+    {	"pim_timers",	    DEBUG_PIM_TIMER,	  5	    },
+    {	"pim_rpf",	    DEBUG_PIM_RPF,	  6	    },
+    {	"rpf",		    DEBUG_RPF,		  3	    },
+    {	"pim",		    DEBUG_PIM,		  1	    },
+    {	"routes",	    DEBUG_MRT,		  1	    },
+    {	"routing",	    DEBUG_MRT,		  1	    },
+    {	"mrt",		    DEBUG_MRT,		  1	    },
+    {	"neighbors",	    DEBUG_NEIGHBORS,	  1	    },
+    {	"routers",	    DEBUG_NEIGHBORS,	  6	    },
+    {	"mrouters",	    DEBUG_NEIGHBORS,	  7	    },
+    {	"peers",	    DEBUG_NEIGHBORS,	  1	    },
+    {	"timers",	    DEBUG_TIMER,	  1	    },
+    {	"asserts",	    DEBUG_ASSERT,	  1	    },
+    {	"all",		    DEBUG_ALL,		  2	    },
+    {	"3",		    DEBUG_ALL,		  1	    }	 /* compat. */
+};
+
 int log_nmsgs = 0;
 int loglevel = LOG_NOTICE;
 unsigned long debug = 0x00000000;        /* If (long) is smaller than
@@ -208,6 +283,58 @@ int debug_kind(int proto, int type, int code)
     return 0;
 }
 
+int debug_list(int mask, char *buf, size_t len)
+{
+    struct debugname *d;
+    size_t i;
+
+    memset(buf, 0, len);
+    for (i = 0, d = debugnames; i < ARRAY_LEN(debugnames); i++, d++) {
+	if (!(mask & d->level))
+	    continue;
+
+	if (mask != (int)DEBUG_ALL)
+	    mask &= ~d->level;
+
+	strlcat(buf, d->name, len);
+
+	if (mask && i + 1 < ARRAY_LEN(debugnames))
+	    strlcat(buf, ", ", len);
+    }
+
+    return 0;
+}
+
+int debug_parse(char *arg)
+{
+    struct debugname *d;
+    size_t i, len;
+    char *next = NULL;
+    int sys = 0;
+
+    if (!arg || arg[0] == 0 || strstr(arg, "none"))
+	return sys;
+
+    while (arg) {
+	next = strchr(arg, ',');
+	if (next)
+	    *next++ = '\0';
+
+	len = strlen(arg);
+	for (i = 0, d = debugnames; i < ARRAY_LEN(debugnames); i++, d++) {
+	    if (len >= d->nchars && strncmp(d->name, arg, len) == 0)
+		break;
+	}
+
+	if (i == ARRAY_LEN(debugnames))
+	    return DEBUG_PARSE_FAIL;
+
+	sys |= d->level;
+	arg = next;
+    }
+
+    return sys;
+}
 
 /*
  * Some messages are more important than others.  This routine
