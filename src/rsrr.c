@@ -70,12 +70,18 @@ void rsrr_init(void)
 
     rsrr_recv_buf = calloc(1, RSRR_MAX_LEN);
     rsrr_send_buf = calloc(1, RSRR_MAX_LEN);
-    if (!rsrr_recv_buf || !rsrr_send_buf)
+    if (!rsrr_recv_buf || !rsrr_send_buf) {
 	logit(LOG_ERR, 0, "Ran out of memory in rsrr_init()");
+	return;
+    }
 
     rsrr_socket = socket(AF_UNIX, SOCK_DGRAM, 0);
-    if (rsrr_socket < 0)
+    if (rsrr_socket < 0) {
 	logit(LOG_ERR, errno, "Cannot create RSRR socket");
+	free(rsrr_recv_buf);
+	free(rsrr_send_buf);
+	return;
+    }
 
     unlink(RSRR_SERV_PATH);
     memset(&serv_addr, 0, sizeof(serv_addr));
@@ -500,8 +506,10 @@ static void rsrr_cache(struct gtable *gt, struct rsrr_rq *route_query)
      * front of list.
      */
     rc = calloc(1, sizeof(struct rsrr_cache));
-    if (!rc)
+    if (!rc) {
 	logit(LOG_ERR, 0, "Ran out of memory in rsrr_cache()");
+	return;
+    }
 
     rc->route_query.source_addr = route_query->source_addr;
     rc->route_query.dest_addr = route_query->dest_addr;
@@ -515,6 +523,7 @@ static void rsrr_cache(struct gtable *gt, struct rsrr_rq *route_query)
     rc->next = gt->gt_rsrr_cache;
     gt->gt_rsrr_cache = rc;
 #endif /* PIM */
+
     IF_DEBUG(DEBUG_RSRR) {
 	logit(LOG_DEBUG, 0, "Cached query id %ld from client %s",
 	      rc->route_query.query_id, rc->client_addr.sun_path);

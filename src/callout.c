@@ -140,6 +140,7 @@ int timer_setTimer(int delay, cfunc_t action, void *data)
 	logit(LOG_ERR, 0, "Ran out of memory in %s()", __func__);
 	return -1;
     }
+
     node->func = action; 
     node->data = data;
     node->time = delay; 

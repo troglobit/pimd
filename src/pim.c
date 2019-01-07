@@ -70,8 +70,12 @@ void init_pim(void)
     struct ip *ip;
 
     /* Setup the PIM raw socket */
-    if ((pim_socket = socket(AF_INET, SOCK_RAW, IPPROTO_PIM)) < 0)
+    pim_socket = socket(AF_INET, SOCK_RAW, IPPROTO_PIM);
+    if (pim_socket < 0) {
 	logit(LOG_ERR, errno, "Failed creating PIM socket");
+	return;
+    }
+
     k_hdr_include(pim_socket, TRUE);      /* include IP header when sending */
     k_set_sndbuf(pim_socket, SO_SEND_BUF_SIZE_MAX,
 		 SO_SEND_BUF_SIZE_MIN);   /* lots of output buffering        */
@@ -84,8 +88,11 @@ void init_pim(void)
 
     pim_recv_buf = calloc(1, RECV_BUF_SIZE);
     pim_send_buf = calloc(1, SEND_BUF_SIZE);
-    if (!pim_recv_buf || !pim_send_buf)
+    if (!pim_recv_buf || !pim_send_buf) {
 	logit(LOG_ERR, 0, "Ran out of memory in init_pim()");
+	close(pim_socket);
+	return;
+    }
 
     /* One time setup in the buffers */
     ip		 = (struct ip *)pim_send_buf;

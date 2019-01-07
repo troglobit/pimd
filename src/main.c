@@ -128,8 +128,10 @@ static int compose_paths(void)
 	size_t len = strlen(SYSCONFDIR) + strlen(ident) + 7;
 
 	config_file = malloc(len);
-	if (!config_file)
+	if (!config_file) {
 	    logit(LOG_ERR, errno, "Failed allocating memory, exiting.");
+	    exit(1);
+	}
 
 	snprintf(config_file, len, _PATH_PIMD_CONF, ident);
     }

@@ -74,11 +74,18 @@ void init_igmp(void)
 
     igmp_recv_buf = calloc(1, RECV_BUF_SIZE);
     igmp_send_buf = calloc(1, SEND_BUF_SIZE);
-    if (!igmp_recv_buf || !igmp_send_buf)
+    if (!igmp_recv_buf || !igmp_send_buf) {
 	logit(LOG_ERR, 0, "Ran out of memory in init_igmp()");
+	return;
+    }
 
-    if ((igmp_socket = socket(AF_INET, SOCK_RAW, IPPROTO_IGMP)) < 0)
+    igmp_socket = socket(AF_INET, SOCK_RAW, IPPROTO_IGMP);
+    if (igmp_socket < 0) {
 	logit(LOG_ERR, errno, "Failed creating IGMP socket in init_igmp()");
+	free(igmp_recv_buf);
+	free(igmp_send_buf);
+	return;
+    }
 
     k_hdr_include(igmp_socket, TRUE);	/* include IP header when sending */
     k_set_sndbuf(igmp_socket, SO_SEND_BUF_SIZE_MAX,

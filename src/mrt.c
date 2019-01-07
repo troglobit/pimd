@@ -65,8 +65,10 @@ void init_pim_mrt(void)
     /* The first entry has address 'INADDR_ANY' and is not used */
     /* The order is the smallest address first. */
     srclist		= calloc(1, sizeof(srcentry_t));
-    if (!srclist)
+    if (!srclist) {
 	logit(LOG_ERR, 0, "Ran out of memory in init_pim_mrt()");
+	return;
+    }
     srclist->next       = NULL;
     srclist->prev       = NULL;
     srclist->address	= INADDR_ANY_N;
@@ -81,8 +83,10 @@ void init_pim_mrt(void)
     /* The first entry has address 'INADDR_ANY' and is not used */
     /* The order is the smallest address first. */
     grplist		= calloc(1, sizeof(grpentry_t));
-    if (!grplist)
+    if (!grplist) {
 	logit(LOG_ERR, 0, "Ran out of memory in init_pim_mrt()");
+	return;
+    }
     grplist->next       = NULL;
     grplist->prev       = NULL;
     grplist->rpnext     = NULL;
@@ -1054,8 +1058,11 @@ void add_kernel_cache(mrtentry_t *mrt, uint32_t source, uint32_t group, uint16_t
 	    return;
 
 	node = calloc(1, sizeof(kernel_cache_t));
-	if (!node)
+	if (!node) {
 	    logit(LOG_ERR, 0, "Ran out of memory in %s()", __func__);
+	    return;
+	}
+
 	node->next = NULL;
 	node->prev = NULL;
 	node->source = source;
@@ -1089,8 +1096,12 @@ void add_kernel_cache(mrtentry_t *mrt, uint32_t source, uint32_t group, uint16_t
 
     /* The new entry must be placed between prev and next */
     node = calloc(1, sizeof(kernel_cache_t));
-    if (!node)
+    if (!node) {
 	logit(LOG_ERR, 0, "Ran out of memory in %s()", __func__);
+	return;
+
+    }
+
     if (prev)
 	prev->next = node;
     else

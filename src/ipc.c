@@ -663,8 +663,10 @@ void ipc_init(void)
 	int sd;
 
 	sd = socket(AF_UNIX, SOCK_STREAM, 0);
-	if (sd < 0)
+	if (sd < 0) {
 		logit(LOG_ERR, errno, "Failed creating IPC socket");
+		return;
+	}
 
 	if (register_input_handler(sd, ipc_handle) < 0)
 		logit(LOG_ERR, 0, "Failed registering IPC handler");
