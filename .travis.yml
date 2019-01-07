@@ -5,8 +5,10 @@ language: c
 # Use docker for quicker builds, it now allows https://docs.travis-ci.com/user/apt/
 sudo: false
 
+# Test build with both GCC and Clang (LLVM)
 compiler:
   - gcc
+  - clang
 
 env:
   global:
