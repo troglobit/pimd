@@ -588,6 +588,7 @@ static void ipc_handle(int sd)
 	len = read(client, &msg, sizeof(msg));
 	if (len < 0) {
 		logit(LOG_WARNING, errno, "Failed reading IPC command");
+		close(client);
 		return;
 	}
 
