@@ -696,6 +696,7 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
 	/* TODO: XXX: shouldn't it be inner_src=INADDR_ANY? Not in the spec. */
 	send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
 
+#if 0 /* Disabled due to regression, see https://github.com/troglobit/pimd/issues/128 */
 	/* Create mrtentry for forthcoming join requests. Once one occurs
 	 * we know who is sending to this group and can send join to
 	 * that immediately. Saves 0 - 60 seconds not to wait next
@@ -713,6 +714,7 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
                           mrtentry->pruned_oifs,
                           mrtentry->leaves,
                           mrtentry->asserted_oifs, 0);
+#endif
 
 	return TRUE;
     }
