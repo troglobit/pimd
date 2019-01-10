@@ -141,7 +141,7 @@ static void show_interface(FILE *fp, struct uvif *uv)
 		uv->uv_flags & VIFF_DOWN ? "DOWN" : "UP",
 		inet_fmt(uv->uv_lcl_addr, s1, sizeof(s1)),
 		num, pim_timer_hello_interval,
-		pri, inet_fmt(addr, s1, sizeof(s2)));
+		pri, inet_fmt(addr, s2, sizeof(s2)));
 }
 
 /* PIM Interface Table */
