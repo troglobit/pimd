@@ -121,7 +121,8 @@ static void show_interface(FILE *fp, struct uvif *uv)
 	pim_nbr_entry_t *n;
 	uint32_t addr = 0;
 	size_t num  = 0;
-	char tmp[5], *pri;
+	char *pri = "N/A";
+	char tmp[5];
 
 	if (uv->uv_flags & VIFF_DR) {
 		addr = uv->uv_lcl_addr;
