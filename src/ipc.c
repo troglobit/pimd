@@ -336,7 +336,7 @@ static void show_pim_mrt(FILE *fp)
 				IN_PIM_SSM_RANGE(g->group)
 				? "SSM"
 				: (g->active_rp_grp
-				   ? inet_fmt(g->rpaddr, s2, sizeof(s2))
+				   ? inet_fmt(g->rpaddr, s3, sizeof(s3))
 				   : "NULL"));
 
 			dump_route(fp, r);
