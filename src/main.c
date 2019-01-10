@@ -731,6 +731,8 @@ static void del_static_rp(void)
 
 	rph = next;
     }
+
+    g_rp_hold = NULL;
 }
 
 /* TODO: not verified */
