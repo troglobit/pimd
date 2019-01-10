@@ -188,13 +188,14 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
     v->uv_flags &= ~VIFF_NONBRS;
     v->uv_flags |= VIFF_PIM_NBR;
 
-    /* Since a new neighbour has come up, let it know your existence */
-    /* XXX: TODO: not in the spec,
-     * but probably should send the message after a short random period?
+  rebooted:
+    /*
+     * A new neighbour has come up, let it know we exist too.  First
+     * we must send a proper greeting, then we can send bootstrap.
+     * See RFC 5059, section 3.5
      */
     send_pim_hello(v, pim_timer_hello_holdtime);
 
-  rebooted:
     if (v->uv_flags & VIFF_DR) {
 	/*
 	 * If I am the current DR on that interface, so
