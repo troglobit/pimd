@@ -291,6 +291,19 @@ static grp_mask_t *add_grp_mask(grp_mask_t **used_grp_mask_list, uint32_t group_
     return ptr;
 }
 
+/* When C-RP-set is changed it is recommended to send a bootstrap message.
+ * There MUST however be a minimum of BS_Min_Interval between each time
+ * a BSM is sent.
+ */
+void update_bootstrap_timer(void)
+{
+    if (cand_bsr_flag == TRUE && curr_bsr_address == my_bsr_address) {
+	if (pim_bootstrap_timer > PIM_MIN_BOOTSTRAP_PERIOD) {
+	    logit(LOG_DEBUG, 0, "RP-set changed; Reducing bootstrap timer.");
+	    SET_TIMER(pim_bootstrap_timer, PIM_MIN_BOOTSTRAP_PERIOD);
+	}
+    }
+}
 
 /* TODO: XXX: BUG: a remapping for some groups currently using some other
  * grp_mask may be required by the addition of the new entry!!!
@@ -449,6 +462,8 @@ rp_grp_entry_t *add_rp_grp_entry(cand_rp_t  **used_cand_rp_list,
 	}
     }
 
+    update_bootstrap_timer();
+
     return entry_new;
 }
 
@@ -492,6 +507,8 @@ void delete_rp_grp_entry(cand_rp_t **used_cand_rp_list, grp_mask_t **used_grp_ma
     }
 
     free((char *)entry);
+
+    update_bootstrap_timer();
 }
 
 /* TODO: XXX: the affected group entries will be partially
