@@ -23,8 +23,6 @@ with earlier releases.  It is recommended to run the same version of
   - Switch directly to shortest path only in the case of PIM-SSM
   - For new IGMP group reports, send PIM Join immediately, saves 0-5 sec
   - Forward PIM Join messages immediately
-  - Create MRT entry once PIM Register is received even if no joins
-    exists, saves 0-60 sec
 - Allow use of loopback interface as long as MULTICAST flag is set,
   issue #89 by Vincent Bernat
 - Added systemd unit file, issue #41
