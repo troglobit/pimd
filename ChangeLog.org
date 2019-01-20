@@ -11,22 +11,12 @@ As of this release =pimd= is not guaranteed to be backwards compatible
 with earlier releases.  It is recommended to run the same version of
 =pimd= on all routers in the same domain.  See issue #93 for details.
 
-*Note:* command line arguments have changed in a non-backwards fashion.
+*Note:* command line arguments in v3.0 are not compatible with v2.x!
 
 ** Changes
 - Converted to GNU Configure & Build system
 - Replace libite (=-lite=) GIT submodule with compatibility functions.
   I.e., as of this release =pimd= is self-hosting again.
-- Modify Join/Prune send logic to allow more than ~75 mcast receivers,
-  issue #62, by Joonas Ruohonen <mailto:joonas.ruohonen@insta.fi>
-- Stream optimization, issue #67, by Mika Joutsenvirta:
-  - Switch directly to shortest path only in the case of PIM-SSM
-  - For new IGMP group reports, send PIM Join immediately, saves 0-5 sec
-  - Forward PIM Join messages immediately
-- Allow use of loopback interface as long as MULTICAST flag is set,
-  issue #89 by Vincent Bernat
-- Added systemd unit file, issue #41
-- Support for =disable-vifs= in =pimd.conf=, issue #56
 - PID file is touched to acknowledge =SIGHUP=
 - Completely changed command line arguments, in part to alert users that
   this release may not be compatible with their existing PIM routers
@@ -39,6 +29,16 @@ with earlier releases.  It is recommended to run the same version of
   required on at least FreeBSD 9, since =SIOCGIFCONF= seems to be really
   broken there, at least on systems with lots of interfaces (>30).
   Problem repored by Vladimir Shunkov
+- Issue #41: Added systemd unit file
+- Issue #56: Support for =disable-vifs= in =pimd.conf=
+- Issue #62: Modify Join/Prune send logic to allow more than ~75 mcast
+  receivers, by Joonas Ruohonen <mailto:joonas.ruohonen@insta.fi>
+- Issue #67: Stream optimization, by Mika Joutsenvirta:
+  - Switch directly to shortest path only in the case of PIM-SSM
+  - For new IGMP group reports, send PIM Join immediately, saves 0-5 sec
+  - Forward PIM Join messages immediately
+- Issue #89: Allow use of loopback interface as long as MULTICAST flag
+  is set, by Vincent Bernat
 
 ** Bug Fixes
 - Remove GNU:isms like =%m= and =__progname= to be able to build on
