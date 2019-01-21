@@ -531,6 +531,7 @@ static struct timeval *timeout(int n)
 	    if (init) {
 		init = 0;	/* First time only */
 		lasttime = curtime;
+		difftime.tv_usec = 0;
 	    }
 	}
 
