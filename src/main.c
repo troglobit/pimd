@@ -510,11 +510,6 @@ static struct timeval *timeout(int n)
     int secs;
 
     secs = timer_nextTimer();
-    if (secs != -1) {
-	result = &tv;
-	tv.tv_sec  = secs;
-	tv.tv_usec = 0;
-    }
 
     do {
 	/*
@@ -550,8 +545,15 @@ static struct timeval *timeout(int n)
 
 	if (secs == 0 || difftime.tv_sec > 0)
 	    age_callout_queue(difftime.tv_sec);
+
 	secs = -1;
     } while (difftime.tv_sec > 0);
+
+    if (secs != -1) {
+	result = &tv;
+	tv.tv_sec  = secs;
+	tv.tv_usec = 0;
+    }
 
     return result;
 }
