@@ -221,7 +221,7 @@ static void accept_igmp(ssize_t recvlen)
 	    } else if (ipdatalen >= 12) {
 		igmp_version = 3;
 	    } else {
-		logit(LOG_DEBUG, 0, "Received invalid IGMP Membership query: Max Resp Code = %d, length = %d",
+		logit(LOG_INFO, 0, "Received invalid IGMP query: Max Resp Code = %d, length = %d",
 		      igmp->igmp_code, ipdatalen);
 	    }
 	    accept_membership_query(src, dst, group, igmp->igmp_code, igmp_version);
@@ -238,7 +238,8 @@ static void accept_igmp(ssize_t recvlen)
 
 	case IGMP_V3_MEMBERSHIP_REPORT:
 	    if (igmpdatalen < IGMP_V3_GROUP_RECORD_MIN_SIZE) {
-		logit(LOG_DEBUG, 0, "Too short IGMP v3 Membership report: igmpdatalen(%d) < MIN(%d)", igmpdatalen, IGMP_V3_GROUP_RECORD_MIN_SIZE);
+		logit(LOG_INFO, 0, "Too short IGMP v3 Membership report: igmpdatalen(%d) < MIN(%d)",
+		      igmpdatalen, IGMP_V3_GROUP_RECORD_MIN_SIZE);
 		return;
 	    }
 	    accept_membership_report(src, dst, (struct igmpv3_report *)(igmp_recv_buf + iphdrlen), recvlen - iphdrlen);
