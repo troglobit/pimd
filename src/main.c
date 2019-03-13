@@ -374,12 +374,6 @@ int main(int argc, char *argv[])
     } /* End of child process code */
 
     /*
-     * Create directory for runtime files
-     */
-    if (-1 == mkdir(_PATH_PIMD_RUNDIR, 0755) && errno != EEXIST)
-	err(1, "Failed creating %s directory for runtime files", _PATH_PIMD_RUNDIR);
-
-    /*
      * Setup logging
      */
     log_init(do_syslog);
