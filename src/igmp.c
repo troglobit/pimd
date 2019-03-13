@@ -48,7 +48,7 @@
 char   *igmp_recv_buf;		/* input packet buffer               */
 char   *igmp_send_buf;		/* output packet buffer              */
 int     igmp_socket;		/* socket for all network I/O        */
-uint32_t allhosts_group;		/* allhosts  addr in net order       */
+uint32_t allhosts_group;	/* allhosts  addr in net order       */
 uint32_t allrouters_group;	/* All-Routers addr in net order     */
 uint32_t allreports_group;	/* All IGMP routers in net order     */
 

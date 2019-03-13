@@ -115,7 +115,7 @@ void query_groups(struct uvif *v)
 /*
  * Process an incoming host membership query
  */
-void accept_membership_query(uint32_t src, uint32_t dst __attribute__((unused)), uint32_t group, int tmo, int igmp_version)
+void accept_membership_query(uint32_t src, uint32_t dst, uint32_t group, int tmo, int igmp_version)
 {
     vifi_t vifi;
     struct uvif *v;
@@ -434,7 +434,7 @@ void accept_group_report(uint32_t igmp_src, uint32_t ssm_src, uint32_t group, in
 
 
 /* TODO: send PIM prune message if the last member? */
-void accept_leave_message(uint32_t src, uint32_t dst __attribute__((unused)), uint32_t group)
+void accept_leave_message(uint32_t src, uint32_t dst, uint32_t group)
 {
     vifi_t vifi;
     struct uvif *v;

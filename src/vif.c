@@ -328,17 +328,21 @@ static void start_vif(vifi_t vifi)
 	/* Join the PIM multicast group on the interface. */
 	k_join(pim_socket, allpimrouters_group, v);
 
-	/* Join the ALL-ROUTERS multicast group on the interface.  This
+	/*
+	 * Join the ALL-ROUTERS multicast group on the interface.  This
 	 * allows mtrace requests to loop back if they are run on the
-	 * multicast router. */
+	 * multicast router.
+	 */
 	k_join(igmp_socket, allrouters_group, v);
 
 	/* Join INADDR_ALLRPTS_GROUP to support IGMPv3 membership reports */
 	k_join(igmp_socket, allreports_group, v);
 
-	/* Until neighbors are discovered, assume responsibility for sending
+	/*
+	 * Until neighbors are discovered, assume responsibility for sending
 	 * periodic group membership queries to the subnet.  Send the first
-	 * query. */
+	 * query.
+	 */
 	v->uv_flags |= VIFF_QUERIER;
 	query_groups(v);
 
