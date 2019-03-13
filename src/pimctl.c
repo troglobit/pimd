@@ -44,8 +44,6 @@ struct cmd {
 static int plain = 0;
 static int detail = 0;
 static int heading = 1;
-static int verbose = 0;
-static int interactive = 1;
 
 char *ident = "pimd";
 
@@ -246,12 +244,10 @@ static int usage(int rc)
 		"Usage: pimctl [OPTIONS] [COMMAND]\n"
 		"\n"
 		"Options:\n"
-		"  -b, --batch               Batch mode, no screen size probing\n"
 		"  -d, --detail              Detailed output, where applicable\n"
 		"  -i, --ident=NAME          Connect to named pimd instance\n"
 		"  -p, --plain               Use plain table headings, no ctrl chars\n"
 		"  -t, --no-heading          Skip table headings\n"
-		"  -v, --verbose             Verbose output\n"
 		"  -h, --help                This help text\n"
 		"\n"
 		"Commands:\n"
@@ -322,14 +318,11 @@ static int cmd_parse(int argc, char *argv[], struct cmd *command)
 int main(int argc, char *argv[])
 {
 	struct option long_options[] = {
-		{ "batch",      0, NULL, 'b' },
 		{ "detail",     0, NULL, 'd' },
 		{ "ident",      1, NULL, 'i' },
 		{ "no-heading", 0, NULL, 't' },
 		{ "plain",      0, NULL, 'p' },
 		{ "help",       0, NULL, 'h' },
-		{ "debug",      0, NULL, 'd' },
-		{ "verbose",    0, NULL, 'v' },
 		{ NULL, 0, NULL, 0 }
 	};
 	struct cmd igmp[] = {
@@ -367,12 +360,8 @@ int main(int argc, char *argv[])
 	};
 	int c;
 
-	while ((c = getopt_long(argc, argv, "bdh?i:ptv", long_options, NULL)) != EOF) {
+	while ((c = getopt_long(argc, argv, "dh?i:pt", long_options, NULL)) != EOF) {
 		switch(c) {
-		case 'b':
-			interactive = 0;
-			break;
-
 		case 'd':
 			detail = 1;
 			break;
@@ -391,10 +380,6 @@ int main(int argc, char *argv[])
 
 		case 't':
 			heading = 0;
-			break;
-
-		case 'v':
-			verbose = 1;
 			break;
 		}
 	}
