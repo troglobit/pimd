@@ -549,10 +549,17 @@ The basename of the following files change if
 is started with a different identity,
 .Fl i Ar NAME :
 .Pp
-.Bl -tag -width /var/run/pimd/pimd.cache -compact
+.Bl -tag -width /var/run/pimd.sock -compact
 .It Pa /etc/pimd.conf
-.It Pa /var/run/pimd/pimd.pid
-.It Pa /var/run/pimd/pimd.sock
+Main configuration file.
+.It Pa /var/run/pimd.pid
+Pidfile (re)created by
+.Nm
+daemon when it has started up and is ready to receive commands.
+.It Pa /var/run/pimd.sock
+.Ux Ns -domain
+socket used for communication with
+.Xr pimctl 8
 .El
 .Sh SEE ALSO
 .Xr pimctl 8 ,

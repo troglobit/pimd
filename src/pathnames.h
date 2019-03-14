@@ -42,7 +42,5 @@
 #define _PATH_PIMD_CONF         SYSCONFDIR        "/%s.conf"
 #define _PATH_PIMD_RUNDIR       LOCALSTATEDIR     "/run"
 #define _PATH_PIMD_SOCK         _PATH_PIMD_RUNDIR "/%s.sock"
-#define _PATH_PIMD_DUMP         _PATH_PIMD_RUNDIR "/%s.dump"
-#define _PATH_PIMD_CACHE        _PATH_PIMD_RUNDIR "/%s.cache"
 
 #endif /* PIMD_PATHNAMES_H_ */
