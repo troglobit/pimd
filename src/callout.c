@@ -1,13 +1,11 @@
-/*
+/* callout queue implementation
+ *
  * The mrouted program is covered by the license in the accompanying file
  * named "LICENSE.mrouted". Use of the mrouted program represents acceptance
  * of the terms and conditions listed in that file.
  *
  * The mrouted program is COPYRIGHT 1989 by The Board of Trustees of
  * Leland Stanford Junior University.
- *
- *
- * callout.c,v 3.8.4.5 1997/05/16 20:18:25 fenner Exp
  */
 
 #include "defs.h"
@@ -50,13 +48,13 @@ static int next_id(void)
     return id;
 }
 
-void callout_init(void)
+void timer_init(void)
 {
     Q = NULL;
     id = 0;
 }
 
-void free_all_callouts(void)
+void timer_free_all(void)
 {
     struct timeout_q *p;
     
@@ -68,14 +66,14 @@ void free_all_callouts(void)
 	free(p);
     }
 
-    callout_init();
+    timer_init();
 }
 
 /*
  * elapsed_time seconds have passed; perform all the events that should
  * happen.
  */
-void age_callout_queue(int elapsed_time)
+void timer_age_queue(int elapsed_time)
 {
     struct timeout_q *ptr;
 
@@ -102,10 +100,10 @@ void age_callout_queue(int elapsed_time)
 }
 
 /*
- * Return in how many seconds age_callout_queue() would like to be called.
+ * Return in how many seconds timer_age_queue() would like to be called.
  * Return -1 if there are no events pending.
  */
-int timer_nextTimer(void)
+int timer_next_delay(void)
 {
     if (!Q)
 	return -1;
@@ -124,7 +122,7 @@ int timer_nextTimer(void)
  * @action: Timer callback
  * @data: Optional callback data, must be a dynically allocated ptr
  */
-int timer_setTimer(int delay, cfunc_t action, void *data)
+int timer_set(int delay, cfunc_t action, void *data)
 {
     struct timeout_q *ptr, *node, *prev;
     
@@ -183,7 +181,7 @@ int timer_setTimer(int delay, cfunc_t action, void *data)
 }
 
 /* returns the time until the timer is scheduled */
-int timer_leftTimer(int timer_id)
+int timer_get(int timer_id)
 {
     struct timeout_q *ptr;
     int left = 0;
@@ -201,7 +199,7 @@ int timer_leftTimer(int timer_id)
 }
 
 /* clears the associated timer */
-void timer_clearTimer(int timer_id)
+void timer_clear(int timer_id)
 {
     struct timeout_q  *ptr, *prev;
     

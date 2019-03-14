@@ -381,7 +381,7 @@ int main(int argc, char *argv[])
 
     do_randomize();
 
-    callout_init();
+    timer_init();
     init_igmp();
     init_pim();
     init_routesock(); /* Both for Linux netlink and BSD routing socket */
@@ -412,7 +412,7 @@ int main(int argc, char *argv[])
     sigaction(SIGUSR2, &sa, NULL);
 
     /* schedule first timer interrupt */
-    timer_setTimer(TIMER_INTERVAL, timer, NULL);
+    timer_set(TIMER_INTERVAL, timer, NULL);
 
     if (pidfile(pid_file))
 	warn("Cannot create pidfile");
@@ -480,7 +480,7 @@ static void timer(void *i __attribute__((unused)))
     age_misc();		/* Timeout the rest (Cand-RP list, etc) */
 
     virtual_time += TIMER_INTERVAL;
-    timer_setTimer(TIMER_INTERVAL, timer, NULL);
+    timer_set(TIMER_INTERVAL, timer, NULL);
 }
 
 /*
@@ -536,13 +536,13 @@ static struct timeval *timeout(int n)
 	lasttime = curtime;
 
 	if (secs == 0 || difftime.tv_sec > 0)
-	    age_callout_queue(difftime.tv_sec);
+	    timer_age_queue(difftime.tv_sec);
 
 	secs = -1;
     } while (difftime.tv_sec > 0);
 
     /* Next timer to wait for */
-    secs = timer_nextTimer();
+    secs = timer_next_delay();
     if (secs != -1) {
 	result = &tv;
 	tv.tv_sec  = secs;
@@ -745,7 +745,7 @@ static void restart(int signo)
        free_all_routes();
     */
     del_static_rp();
-    free_all_callouts();
+    timer_free_all();
     stop_all_vifs();
     k_stop_pim(igmp_socket);
     nhandlers = 0;
@@ -784,7 +784,7 @@ static void restart(int signo)
     pidfile(pid_file);
 
     /* schedule timer interrupts */
-    timer_setTimer(TIMER_INTERVAL, timer, NULL);
+    timer_set(TIMER_INTERVAL, timer, NULL);
 }
 
 int daemon_restart(void *arg)
@@ -825,7 +825,7 @@ static void resetlogging(void *arg)
 	log_nmsgs = 0;
     }
 
-    timer_setTimer(nxttime, resetlogging, NULL);
+    timer_set(nxttime, resetlogging, NULL);
 }
 
 /**

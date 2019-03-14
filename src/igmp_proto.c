@@ -768,7 +768,7 @@ static void DelVif(void *arg)
 		    prev->al_next = curr->al_next;
 
 		/* Stop any SwitchVersion() timer */
-		timer_clearTimer(curr->al_versiontimer);
+		timer_clear(curr->al_versiontimer);
 
 		free(curr);
 		break;
@@ -842,7 +842,7 @@ static int SetVersionTimer(vifi_t vifi, struct listaddr *g)
     cbk->vifi = vifi;
     cbk->g = g;
 
-    return timer_setTimer(igmp_group_membership_timeout(), SwitchVersion, cbk);
+    return timer_set(igmp_group_membership_timeout(), SwitchVersion, cbk);
 }
 
 /*
@@ -865,7 +865,7 @@ static int SetTimer(vifi_t vifi, struct listaddr *g, uint32_t source)
     IF_DEBUG(DEBUG_IGMP)
 	logit(LOG_DEBUG, 0, "Set delete timer for group: %s", inet_ntoa(*((struct in_addr *)&g->al_addr)));
 
-    return timer_setTimer(g->al_timer, DelVif, cbk);
+    return timer_set(g->al_timer, DelVif, cbk);
 }
 
 
@@ -874,7 +874,7 @@ static int SetTimer(vifi_t vifi, struct listaddr *g, uint32_t source)
  */
 static int DeleteTimer(int id)
 {
-    timer_clearTimer(id);
+    timer_clear(id);
 
     return 0;
 }
@@ -924,7 +924,7 @@ static int SetQueryTimer(struct listaddr *g, vifi_t vifi, int to_expire, int q_t
     cbk->q_len = q_len;
     cbk->vifi = vifi;
 
-    return timer_setTimer(to_expire, SendQuery, cbk);
+    return timer_set(to_expire, SendQuery, cbk);
 }
 
 /**

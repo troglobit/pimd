@@ -481,13 +481,13 @@ extern int		errno;
  */
 
 /* callout.c */
-extern void	callout_init		(void);
-extern void	free_all_callouts	(void);
-extern void	age_callout_queue	(int);
-extern int	timer_nextTimer		(void);
-extern int	timer_setTimer		(int, cfunc_t, void *);
-extern void	timer_clearTimer	(int);
-extern int	timer_leftTimer		(int);
+extern void	timer_init		(void);
+extern void	timer_free_all		(void);
+extern void	timer_age_queue		(int);
+extern int	timer_next_delay	(void);
+extern int	timer_set		(int, cfunc_t, void *);
+extern void	timer_clear		(int);
+extern int	timer_get		(int);
 
 /* config.c */
 extern void	config_vifs_from_kernel	(void);
