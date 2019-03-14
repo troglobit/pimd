@@ -333,12 +333,15 @@ extern int mrt_table_id;
 #define IPC_SHOW_PIM_RP_CMD       23
 #define IPC_SHOW_PIM_CRP_CMD      24
 #define IPC_SHOW_PIM_DUMP_CMD     250
+#define IPC_EOF_CMD               254
 #define IPC_ERR_CMD               255
 
 struct ipc {
     uint8_t cmd;
     uint8_t detail;
+
     char    buf[766];
+    char    sentry;
 };
 
 /*

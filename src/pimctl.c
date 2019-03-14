@@ -73,73 +73,6 @@ error:
 	return -1;
 }
 
-static struct ipc *do_cmd(uint8_t cmd, int detail, char *buf, size_t len)
-{
-	static struct ipc msg = { 0 };
-	struct pollfd pfd;
-	int sd;
-
-	if (buf && len >= sizeof(msg.buf)) {
-		errno = EINVAL;
-		return NULL;
-	}
-
-	sd = do_connect(ident);
-	if (-1 == sd)
-		return NULL;
-
-	msg.cmd = cmd;
-	msg.detail = detail;
-	if (buf)
-		memcpy(msg.buf, buf, len);
-
-	if (write(sd, &msg, sizeof(msg)) == -1)
-		goto fail;
-
-	pfd.fd = sd;
-	pfd.events = POLLIN;
-	if (poll(&pfd, 1, 2000) <= 0)
-		goto fail;
-
-	if (read(sd, &msg, sizeof(msg)) == -1)
-		goto fail;
-
-	msg.buf[sizeof(msg.buf) - 1] = 0;
-	close(sd);
-
-	return &msg;
-fail:
-	close(sd);
-	return NULL;
-}
-
-static int do_set(int cmd, char *arg)
-{
-	struct ipc *msg;
-
-	if (!arg)
-		arg = "";
-
-	msg = do_cmd(cmd, 0, arg, strlen(arg));
-	if (!msg)
-		return 1;
-
-	if (strlen(msg->buf) > 1)
-		puts(msg->buf);
-
-	return 0;
-}
-
-static int set_debug(char *arg)
-{
-	return do_set(IPC_DEBUG_CMD, arg);
-}
-
-static int set_loglevel(char *arg)
-{
-	return do_set(IPC_LOGLEVEL_CMD, arg);
-}
-
 #define ESC "\033"
 static int get_width(void)
 {
@@ -186,49 +119,105 @@ static char *chomp(char *str)
 	return str;
 }
 
-static int show_generic(int cmd, int detail)
+static void print(char *line)
 {
-	struct ipc *msg;
-	FILE *fp;
-	char line[512];
+	int len, head = 0;
 
-	msg = do_cmd(cmd, detail, NULL, 0);
-	if (!msg)
-		return -1;
+	chomp(line);
 
-	fp = fopen(msg->buf, "r");
-	if (!fp)
-		return 1;
-
-	while (fgets(line, sizeof(line), fp)) {
-		int len, head = 0;
-
-		chomp(line);
-
-		/* Table headings, or repeat headers, end with a '=' */
-		len = (int)strlen(line) - 1;
-		if (len > 0 && line[len] == '=') {
-			if (!heading)
-				continue;
-			line[len] = 0;
-			head = 1;
-			if (!plain)
-				len = get_width() - len;
-		}
-
-		if (head && !plain)
-			fprintf(stdout, "\e[7m%s%*s\e[0m\n", line, len < 0 ? 0 : len, "");
-		else
-			puts(line);
-
-		if (head && plain) {
-			while (len--)
-				fputc('=', stdout);
-			fputs("\n", stdout);
-		}
+	/* Table headings, or repeat headers, end with a '=' */
+	len = (int)strlen(line) - 1;
+	if (len > 0 && line[len] == '=') {
+		if (!heading)
+			return;
+		line[len] = 0;
+		head = 1;
+		if (!plain)
+			len = get_width() - len;
 	}
 
-	return fclose(fp) || remove(msg->buf);
+	if (!head) {
+		puts(line);
+		return;
+	}
+
+	if (!plain) {
+		fprintf(stdout, "\e[7m%s%*s\e[0m\n", line, len < 0 ? 0 : len, "");
+	} else {
+		while (len--)
+			fputc('=', stdout);
+		fputs("\n", stdout);
+	}
+}
+
+static struct ipc *do_cmd(uint8_t cmd, int detail, char *buf, size_t len)
+{
+	static struct ipc msg;
+	struct pollfd pfd;
+	int sd;
+
+	if (buf && len >= sizeof(msg.buf)) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	sd = do_connect(ident);
+	if (-1 == sd)
+		return NULL;
+
+	memset(&msg, 0, sizeof(msg));
+	msg.cmd = cmd;
+	msg.detail = detail;
+	if (buf)
+		memcpy(msg.buf, buf, len);
+
+	if (write(sd, &msg, sizeof(msg)) == -1)
+		goto fail;
+
+	pfd.fd = sd;
+	pfd.events = POLLIN;
+	while (poll(&pfd, 1, 2000) > 0) {
+		ssize_t len;
+
+		len = read(sd, &msg, sizeof(msg));
+		if (len != sizeof(msg) || msg.cmd)
+			break;
+
+		msg.sentry = 0;
+		print(msg.buf);
+	}
+
+	close(sd);
+	return &msg;
+fail:
+	close(sd);
+	return NULL;
+}
+
+static int do_set(int cmd, char *arg)
+{
+	if (!do_cmd(cmd, 0, arg, strlen(arg)))
+		return 1;
+
+	return 0;
+}
+
+static int set_debug(char *arg)
+{
+	return do_set(IPC_DEBUG_CMD, arg);
+}
+
+static int set_loglevel(char *arg)
+{
+	return do_set(IPC_LOGLEVEL_CMD, arg);
+}
+
+static int show_generic(int cmd, int detail)
+{
+	if (!do_cmd(cmd, detail, NULL, 0))
+		return -1;
+
+	return 0;
 }
 
 static int string_match(const char *a, const char *b)

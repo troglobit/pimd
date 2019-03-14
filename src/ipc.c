@@ -539,29 +539,62 @@ static int do_loglevel(void *arg)
 	return 0;
 }
 
-static void ipc_show(int sd, void (*cb)(FILE *))
+static int ipc_write(int sd, struct ipc *msg)
 {
-	struct ipc msg = { 0 };
+	ssize_t len;
+
+	while ((len = write(sd, msg, sizeof(*msg)))) {
+		if (-1 == len && EINTR == errno)
+			continue;
+		break;
+	}
+
+	if (len != sizeof(*msg))
+		return -1;
+
+	return 0;
+}
+
+static int ipc_close(int sd, struct ipc *msg, int status)
+{
+	msg->cmd = status;
+	if (ipc_write(sd, msg)) {
+		logit(LOG_WARNING, errno, "Failed sending EOF/ACK to client");
+		return -1;
+	}
+
+	return 0;
+}
+
+static int ipc_send(int sd, struct ipc *msg, FILE *fp)
+{
+	msg->cmd = IPC_OK_CMD;
+	while (fgets(msg->buf, sizeof(msg->buf), fp)) {
+		if (!ipc_write(sd, msg))
+			continue;
+
+		logit(LOG_WARNING, errno, "Failed communicating with client");
+		return -1;
+	}
+
+	return ipc_close(sd, msg, IPC_EOF_CMD);
+}
+
+static void ipc_show(int sd, struct ipc *msg, void (*cb)(FILE *))
+{
 	FILE *fp;
-	char fn[256];
 
-	snprintf(fn, sizeof(fn), _PATH_PIMD_DUMP, ident);
-
-	fp = fopen(fn, "w");
+	fp = tmpfile();
 	if (!fp) {
-		logit(LOG_WARNING, errno, "Cannot open %s for writing");
-		msg.cmd = IPC_ERR_CMD;
-		goto fail;
+		logit(LOG_WARNING, errno, "Failed opening temporary file");
+		ipc_close(sd, msg, IPC_ERR_CMD);
+		return;
 	}
 
 	cb(fp);
+	rewind(fp);
+	ipc_send(sd, msg, fp);
 	fclose(fp);
-
-	msg.cmd = IPC_OK_CMD;
-	strlcpy(msg.buf, fn, sizeof(msg.buf));
-fail:
-	if (write(sd, &msg, sizeof(msg)) == -1)
-		logit(LOG_WARNING, errno, "Failed sending IPC reply");
 }
 
 static void ipc_generic(int sd, struct ipc *msg, int (*cb)(void *), void *arg)
@@ -614,39 +647,39 @@ static void ipc_handle(int sd)
 		break;
 
 	case IPC_SHOW_IGMP_GROUPS_CMD:
-		ipc_show(client, show_igmp_groups);
+		ipc_show(client, &msg, show_igmp_groups);
 		break;
 
 	case IPC_SHOW_IGMP_IFACE_CMD:
-		ipc_show(client, show_igmp_iface);
+		ipc_show(client, &msg, show_igmp_iface);
 		break;
 
 	case IPC_SHOW_PIM_IFACE_CMD:
-		ipc_show(client, show_interfaces);
+		ipc_show(client, &msg, show_interfaces);
 		break;
 
 	case IPC_SHOW_PIM_NEIGH_CMD:
-		ipc_show(client, show_neighbors);
+		ipc_show(client, &msg, show_neighbors);
 		break;
 
 	case IPC_SHOW_PIM_ROUTE_CMD:
-		ipc_show(client, show_pim_mrt);
+		ipc_show(client, &msg, show_pim_mrt);
 		break;
 
 	case IPC_SHOW_PIM_RP_CMD:
-		ipc_show(client, show_rp);
+		ipc_show(client, &msg, show_rp);
 		break;
 
 	case IPC_SHOW_PIM_CRP_CMD:
-		ipc_show(client, show_crp);
+		ipc_show(client, &msg, show_crp);
 		break;
 
 	case IPC_SHOW_STATUS_CMD:
-		ipc_show(client, show_status);
+		ipc_show(client, &msg, show_status);
 		break;
 
 	case IPC_SHOW_PIM_DUMP_CMD:
-		ipc_show(client, show_dump);
+		ipc_show(client, &msg, show_dump);
 		break;
 
 	default:
