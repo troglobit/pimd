@@ -207,8 +207,9 @@ static void accept_pim(ssize_t recvlen)
 
 	case PIM_GRAFT:
 	case PIM_GRAFT_ACK:
-	    logit(LOG_INFO, 0, "ignore %s from %s to %s", packet_kind(IPPROTO_PIM, pim->pim_type, 0),
-		  inet_fmt(src, source, sizeof(source)), inet_fmt(dst, dest, sizeof(dest)));
+	    IF_DEBUG(DEBUG_PIM_DETAIL)
+		logit(LOG_INFO, 0, "ignore %s from %s to %s", packet_kind(IPPROTO_PIM, pim->pim_type, 0),
+		      inet_fmt(src, source, sizeof(source)), inet_fmt(dst, dest, sizeof(dest)));
 	    break;
 
 	case PIM_CAND_RP_ADV:
@@ -216,8 +217,9 @@ static void accept_pim(ssize_t recvlen)
 	    break;
 
 	default:
-	    logit(LOG_INFO, 0, "ignore unknown PIM message code %u from %s to %s", pim->pim_type,
-		  inet_fmt(src, source, sizeof(source)), inet_fmt(dst, dest, sizeof(dest)));
+	    IF_DEBUG(DEBUG_PIM_DETAIL)
+		logit(LOG_INFO, 0, "ignore unknown PIM message code %u from %s to %s", pim->pim_type,
+		      inet_fmt(src, source, sizeof(source)), inet_fmt(dst, dest, sizeof(dest)));
 	    break;
     }
 }
@@ -415,7 +417,7 @@ static int send_frame(char *buf, size_t len, size_t frag, size_t mtu, struct soc
     char source[20], dest[20];
 
     IF_DEBUG(DEBUG_PIM_REGISTER) {
-	logit(LOG_INFO, 0, "Sending unicast: len = %d, frag %zd, mtu %zd, to %s",
+	logit(LOG_DEBUG, 0, "Sending unicast: len = %d, frag %zd, mtu %zd, to %s",
 	      len, frag, mtu, inet_fmt(ip->ip_dst.s_addr, source, sizeof(source)));
 	dump_frame(NULL, buf, len);
     }
@@ -501,7 +503,7 @@ static int send_frame(char *buf, size_t len, size_t frag, size_t mtu, struct soc
     ip->ip_len = htons(xferlen);
 
     IF_DEBUG(DEBUG_PIM_REGISTER) {
-	logit(LOG_INFO, 0, "Sending %-4d bytes %sunicast (MTU %-4d, offset %zd) to %s",
+	logit(LOG_DEBUG, 0, "Sending %-4d bytes %sunicast (MTU %-4d, offset %zd) to %s",
 	      xferlen, len ? "fragmented " : "", mtu, offset,
 	      inet_fmt(ip->ip_dst.s_addr, source, sizeof(source)));
 	dump_frame(NULL, buf, xferlen);
