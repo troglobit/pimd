@@ -499,12 +499,10 @@ static void timer(void *i __attribute__((unused)))
 static struct timeval *timeout(int n)
 {
     static struct timeval tv, difftime, curtime, lasttime;
-    static int init = 1;
+    static int init = 1, secs = 0;
     struct timeval *result = NULL;
-    int secs;
 
-    secs = timer_nextTimer();
-
+    /* Age queue */
     do {
 	/*
 	 * If select() timed out, then there's no other
@@ -543,6 +541,8 @@ static struct timeval *timeout(int n)
 	secs = -1;
     } while (difftime.tv_sec > 0);
 
+    /* Next timer to wait for */
+    secs = timer_nextTimer();
     if (secs != -1) {
 	result = &tv;
 	tv.tv_sec  = secs;
