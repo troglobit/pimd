@@ -7,7 +7,7 @@
 .Xr pimd 8
 .Sh SYNOPSIS
 .Nm pimctl
-.Op Fl bdptvh
+.Op Fl dpth
 .Op Fl i Ar NAME
 .Op COMMAND
 .Nm
@@ -52,8 +52,6 @@ for
 This program follows the usual UNIX command line syntax, with long
 options starting with two dashes (`-').  The options are as follows:
 .Bl -tag -width Ds
-.It Fl b, -batch
-Batch mode, no screen size probing is performed on the TTY.
 .It Fl d, -detail
 Detailed output, where applicable, see each command below.
 .It Fl h, -help
@@ -64,8 +62,6 @@ Connect to named pimd instance.
 Use plain table headings, no ANSI ctrl characters.
 .It Fl t, -no-heading
 Skip table headings altogether.
-.It Fl v, -verbose
-Verbose output.
 .El
 .Sh COMMANDS
 The following commands are available:
