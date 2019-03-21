@@ -458,6 +458,10 @@ static void show_igmp_iface(FILE *fp, int detail)
 		char timeout[10];
 		int version;
 
+		/* The register_vif is never used for IGMP messages */
+		if (v->uv_flags & VIFF_REGISTER)
+			continue;
+
 		if (!uv->uv_querier) {
 			strlcpy(s1, "Local", sizeof(s1));
 			snprintf(timeout, sizeof(timeout), "None");
