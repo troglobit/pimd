@@ -31,7 +31,6 @@
 
 static struct sockaddr_un sun;
 static int ipc_socket = -1;
-static int detail = 0;
 
 static char *timetostr(time_t t, char *buf, size_t len)
 {
@@ -96,7 +95,7 @@ static void show_neighbor(FILE *fp, struct uvif *uv, pim_nbr_entry_t *n)
 }
 
 /* PIM Neighbor Table */
-static void show_neighbors(FILE *fp)
+static void show_neighbors(FILE *fp, int detail)
 {
 	pim_nbr_entry_t *n;
 	struct uvif *uv;
@@ -145,7 +144,7 @@ static void show_interface(FILE *fp, struct uvif *uv)
 }
 
 /* PIM Interface Table */
-static void show_interfaces(FILE *fp)
+static void show_interfaces(FILE *fp, int detail)
 {
 	vifi_t vifi;
 
@@ -157,7 +156,7 @@ static void show_interfaces(FILE *fp)
 }
 
 /* PIM RP Set Table */
-static void show_rp(FILE *fp)
+static void show_rp(FILE *fp, int detail)
 {
 	grp_mask_t *grp;
 
@@ -195,7 +194,7 @@ static void show_rp(FILE *fp)
 }
 
 /* PIM Cand-RP Table */
-static void show_crp(FILE *fp)
+static void show_crp(FILE *fp, int detail)
 {
 	struct cand_rp *rp;
 
@@ -223,7 +222,7 @@ static void show_crp(FILE *fp)
 	fprintf(fp, "\nCurrent BSR address: %s\n", inet_fmt(curr_bsr_address, s1, sizeof(s1)));
 }
 
-static void dump_route(FILE *fp, mrtentry_t *r)
+static void dump_route(FILE *fp, mrtentry_t *r, int detail)
 {
 	vifi_t vifi;
 	char oifs[MAXVIFS+1];
@@ -289,7 +288,7 @@ static void dump_route(FILE *fp, mrtentry_t *r)
 }
 
 /* PIM Multicast Routing Table */
-static void show_pim_mrt(FILE *fp)
+static void show_pim_mrt(FILE *fp, int detail)
 {
 	grpentry_t *g;
 	mrtentry_t *r;
@@ -322,7 +321,7 @@ static void show_pim_mrt(FILE *fp)
 				   ? inet_fmt(g->rpaddr, s2, sizeof(s2))
 				   : "NULL"));
 
-			dump_route(fp, r);
+			dump_route(fp, r, detail);
 		}
 
 		for (r = g->mrtlink; r; r = r->grpnext) {
@@ -340,7 +339,7 @@ static void show_pim_mrt(FILE *fp)
 				   ? inet_fmt(g->rpaddr, s3, sizeof(s3))
 				   : "NULL"));
 
-			dump_route(fp, r);
+			dump_route(fp, r, detail);
 		}
 	}
 
@@ -359,7 +358,7 @@ static void show_pim_mrt(FILE *fp)
 				"ANY",
 				"");
 
-			dump_route(fp, r);
+			dump_route(fp, r, detail);
 		}
 	}
 
@@ -369,7 +368,7 @@ static void show_pim_mrt(FILE *fp)
 
 #define ENABLED(v) (v ? "Enabled" : "Disabled")
 
-static void show_status(FILE *fp)
+static void show_status(FILE *fp, int detail)
 {
 	char buf[10];
 	int len;
@@ -405,7 +404,7 @@ static void show_status(FILE *fp)
 	fprintf(fp, "SPT Threshold        : %s\n", spt_threshold.mode == SPT_INF ? "Disabled" : "Enabled");
 }
 
-static void show_igmp_groups(FILE *fp)
+static void show_igmp_groups(FILE *fp, int detail)
 {
 	struct listaddr *group, *source;
 	struct uvif *uv;
@@ -446,7 +445,7 @@ static const char *ifstate(struct uvif *uv)
 	return "Up";
 }
 
-static void show_igmp_iface(FILE *fp)
+static void show_igmp_iface(FILE *fp, int detail)
 {
 	struct listaddr *group;
 	struct uvif *uv;
@@ -482,12 +481,12 @@ static void show_igmp_iface(FILE *fp)
 	}
 }
 
-static void show_dump(FILE *fp)
+static void show_dump(FILE *fp, int detail)
 {
-	dump_vifs(fp);
-	dump_ssm(fp);
-	dump_pim_mrt(fp);
-	dump_rp_set(fp);
+	dump_vifs(fp, detail);
+	dump_ssm(fp, detail);
+	dump_pim_mrt(fp, detail);
+	dump_rp_set(fp, detail);
 }
 
 static int do_debug(void *arg)
@@ -580,7 +579,7 @@ static int ipc_send(int sd, struct ipc *msg, FILE *fp)
 	return ipc_close(sd, msg, IPC_EOF_CMD);
 }
 
-static void ipc_show(int sd, struct ipc *msg, void (*cb)(FILE *))
+static void ipc_show(int sd, struct ipc *msg, void (*cb)(FILE *, int))
 {
 	FILE *fp;
 
@@ -591,7 +590,7 @@ static void ipc_show(int sd, struct ipc *msg, void (*cb)(FILE *))
 		return;
 	}
 
-	cb(fp);
+	cb(fp, msg->detail);
 	rewind(fp);
 	ipc_send(sd, msg, fp);
 	fclose(fp);
@@ -625,9 +624,6 @@ static void ipc_handle(int sd)
 		close(client);
 		return;
 	}
-
-	/* Set requested detail level */
-	detail = msg.detail;
 
 	switch (msg.cmd) {
 	case IPC_DEBUG_CMD:

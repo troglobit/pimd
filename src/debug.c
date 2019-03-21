@@ -395,7 +395,7 @@ int log_level(int proto, int type, int code)
                                                                    172.16.12.3
   2  192.168.122.147  register_vif0         1
 */
-void dump_vifs(FILE *fp)
+void dump_vifs(FILE *fp, int detail)
 {
     vifi_t vifi;
     struct uvif *v;
@@ -460,7 +460,7 @@ void dump_vifs(FILE *fp)
     }
 }
 
-void dump_ssm(FILE *fp)
+void dump_ssm(FILE *fp, int detail)
 {
     struct listaddr *group, *source;
     struct uvif *v;
@@ -700,7 +700,7 @@ static void dump_route(FILE *fp, mrtentry_t *r)
     fprintf(fp, "\n");
 }
 
-void dump_pim_mrt(FILE *fp)
+void dump_pim_mrt(FILE *fp, int detail)
 {
     grpentry_t *g;
     mrtentry_t *r;
@@ -790,7 +790,7 @@ static void dump_rpgrp(FILE *fp, rp_grp_entry_t *rpgrp)
 /*
  * Dumps the local RP-set
  */
-int dump_rp_set(FILE *fp)
+int dump_rp_set(FILE *fp, int detail)
 {
     cand_rp_t      *rp;
     rp_grp_entry_t *rpgrp;
