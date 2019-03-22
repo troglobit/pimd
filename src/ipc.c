@@ -459,7 +459,7 @@ static void show_igmp_iface(FILE *fp, int detail)
 		int version;
 
 		/* The register_vif is never used for IGMP messages */
-		if (v->uv_flags & VIFF_REGISTER)
+		if (uv->uv_flags & VIFF_REGISTER)
 			continue;
 
 		if (!uv->uv_querier) {
