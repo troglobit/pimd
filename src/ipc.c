@@ -404,6 +404,8 @@ static void show_status(FILE *fp, int detail)
 	fprintf(fp, "IGMP query interval  : %d sec\n", igmp_query_interval);
 	fprintf(fp, "IGMP querier timeout : %d sec\n", igmp_querier_timeout);
 	fprintf(fp, "SPT Threshold        : %s\n", spt_threshold.mode == SPT_INF ? "Disabled" : "Enabled");
+	if (spt_threshold.mode != SPT_INF)
+		fprintf(fp, "SPT Interval         : %d sec\n", spt_threshold.interval);
 }
 
 static void show_igmp_groups(FILE *fp, int detail)
