@@ -387,7 +387,6 @@ int main(int argc, char *argv[])
     init_routesock(); /* Both for Linux netlink and BSD routing socket */
     init_pim_mrt();
     init_timers();
-    ipc_init();
 
     /* Start up the log rate-limiter */
     resetlogging(NULL);
@@ -414,6 +413,10 @@ int main(int argc, char *argv[])
     /* schedule first timer interrupt */
     timer_set(TIMER_INTERVAL, timer, NULL);
 
+    /* Open channel to pimctl */
+    ipc_init();
+
+    /* Everything up and running, create PID file */
     if (pidfile(pid_file))
 	warn("Cannot create pidfile");
 
