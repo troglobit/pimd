@@ -8,7 +8,8 @@ Table of Contents
 * [Introduction](#introduction)
 * [Configuration](#configuration)
 * [Example](#example)
-* [Starting](#starting)
+* [Running pimd](#running-pimd)
+* [Troubleshooting Checklist](#troubleshooting-checklist)
 * [Monitoring](#monitoring)
 * [Large Setups](#large-setups)
 * [Build & Install](#build--install)
@@ -170,8 +171,7 @@ is set to zero packets, which will cause a switch over to the SPT after
 the first multicast packet is received.
 
 
-Example
--------
+### Example
 
     # Interface eth0 is disabled, i.e., pimd will not run there.
     phyint eth0 disable
@@ -191,8 +191,8 @@ Example
     spt-threshold packets 0 interval 100
 
 
-Starting
---------
+Running pimd
+------------
 
 Having set up the configuration file, you are ready to run `pimd`.  As
 usual, it is recommended that you start it manually first, to make sure
@@ -234,6 +234,20 @@ when running in the foreground (`-n`).
 ```
     pimd -d igmp_proto,pim_jp,kernel,pim_register -l debug -n -s
 ```
+
+## Troubleshooting Checklist
+
+1. Check the TTL of incoming multicast  
+   Remember, the TTL of the multicast stream must be >1 to be routed.
+
+2. Check the Linux `rp_filter` setting  
+   Many Linux systems have the 'strict' setting enabled, which can
+   cause problems in some setups.
+
+3. Check the underlying unicast routing table  
+   PIM is protocol *independent* so you must have a unicast route
+   in both directions for `pimd` to work.  Use `ping` to verify
+   connectivitiy between multicast sender and receiver.
 
 
 Monitoring
@@ -328,7 +342,7 @@ Origin & References
 
 Part of this program has been derived from mrouted.  The mrouted program
 is covered by the 3-clause BSD license in the accompanying file named
-LICENSE.mrouted
+[LICENSE.mrouted](docs/LICENSE.mrouted).
 
 The mrouted program is COPYRIGHT 1989 by The Board of Trustees of Leland
 Stanford Junior University.
