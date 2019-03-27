@@ -7,7 +7,6 @@ Table of Contents
 
 * [Introduction](#introduction)
 * [Configuration](#configuration)
-* [Example](#example)
 * [Running pimd](#running-pimd)
 * [Troubleshooting Checklist](#troubleshooting-checklist)
 * [Monitoring](#monitoring)
