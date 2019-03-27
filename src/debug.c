@@ -560,7 +560,7 @@ void logit(int severity, int syserr, const char *format, ...)
     /* pimd running in foreground */
     if (!log_syslog) {
 	if (!debug && severity > loglevel)
-	    return;
+	    goto done;
 
 	gettimeofday(&now, NULL);
 	lt = now.tv_sec;
@@ -576,7 +576,7 @@ void logit(int severity, int syserr, const char *format, ...)
 	    fprintf(stderr, ": %s", strerror(syserr));
 
 	fprintf(stderr, "\n");
-	return;
+	goto done;
     }
 
     /*
@@ -598,6 +598,7 @@ void logit(int severity, int syserr, const char *format, ...)
 	    syslog(severity, "%s", msg);
     }
 
+  done:
 #ifndef CONTINUE_ON_ERROR
     if (severity <= LOG_ERR)
 	exit(-1);		/* Exit status: 255 */
