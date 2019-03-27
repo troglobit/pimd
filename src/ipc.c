@@ -123,6 +123,9 @@ static void show_interface(FILE *fp, struct uvif *uv)
 	char *pri = "N/A";
 	char tmp[5];
 
+	if (uv->uv_flags & VIFF_REGISTER)
+		return;
+
 	if (uv->uv_flags & VIFF_DR) {
 		addr = uv->uv_lcl_addr;
 		snprintf(tmp, sizeof(tmp), "%d", uv->uv_dr_prio);
