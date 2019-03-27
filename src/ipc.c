@@ -176,9 +176,9 @@ static void show_rp(FILE *fp, int detail)
 			else
 				fprintf(fp, "%-18s  ", "");
 
-			if (ht == (uint16_t)0xffffff) {
+			if (ht == PIM_HELLO_HOLDTIME_FOREVER) {
 				snprintf(type, sizeof(type), "Static");
-				snprintf(htstr, sizeof(htstr), "N/A");
+				snprintf(htstr, sizeof(htstr), "Forever");
 			} else {
 				snprintf(type, sizeof(type), "Dynamic");
 				snprintf(htstr, sizeof(htstr), "%d", ht);
@@ -216,7 +216,9 @@ static void show_crp(FILE *fp, int detail)
 			inet_fmt(entry->address, s1, sizeof(s1)),
 			netname(grp->group_addr, grp->group_mask),
 			rp_grp->priority, buf,
-			timetostr(rp_grp->holdtime, NULL, 0));
+			PIM_HELLO_HOLDTIME_FOREVER == rp_grp->holdtime
+			? "Never"
+			: timetostr(rp_grp->holdtime, NULL, 0));
 	}
 
 	fprintf(fp, "\nCurrent BSR address: %s\n", inet_fmt(curr_bsr_address, s1, sizeof(s1)));
