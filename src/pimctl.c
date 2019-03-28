@@ -220,6 +220,18 @@ static int show_generic(int cmd, int detail)
 	return 0;
 }
 
+static int show_igmp(char *arg)
+{
+	(void)arg;
+	return show_generic(IPC_SHOW_IGMP_GROUPS_CMD, 0);
+}
+
+static int show_pim(char *arg)
+{
+	(void)arg;
+	return show_generic(IPC_SHOW_PIM_DUMP_CMD, 0);
+}
+
 static int string_match(const char *a, const char *b)
 {
    size_t min = MIN(strlen(a), strlen(b));
@@ -325,26 +337,26 @@ int main(int argc, char *argv[])
 		{ NULL, 0, NULL, 0 }
 	};
 	struct cmd igmp[] = {
-		{ "groups",    NULL, NULL, IPC_SHOW_IGMP_GROUPS_CMD },
-		{ "interface", NULL, NULL, IPC_SHOW_IGMP_IFACE_CMD  },
-		{ "iface",     NULL, NULL, IPC_SHOW_IGMP_IFACE_CMD  }, /* ALIAS */
-		{ NULL }
+		{ "groups",    NULL, NULL,         IPC_SHOW_IGMP_GROUPS_CMD },
+		{ "interface", NULL, NULL,         IPC_SHOW_IGMP_IFACE_CMD  },
+		{ "iface",     NULL, NULL,         IPC_SHOW_IGMP_IFACE_CMD  }, /* ALIAS */
+		{ NULL,        NULL, show_igmp,    0                        }
 	};
 	struct cmd pim[] = {
-		{ "interface", NULL, NULL, IPC_SHOW_PIM_IFACE_CMD },
-		{ "iface",     NULL, NULL, IPC_SHOW_PIM_IFACE_CMD }, /* ALIAS */
-		{ "neighbor",  NULL, NULL, IPC_SHOW_PIM_NEIGH_CMD },
-		{ "routes",    NULL, NULL, IPC_SHOW_PIM_ROUTE_CMD },
-		{ "rp",        NULL, NULL, IPC_SHOW_PIM_RP_CMD    },
-		{ "crp",       NULL, NULL, IPC_SHOW_PIM_CRP_CMD   },
-		{ "compat",    NULL, NULL, IPC_SHOW_PIM_DUMP_CMD  },
-		{ NULL }
+		{ "interface", NULL, NULL,         IPC_SHOW_PIM_IFACE_CMD },
+		{ "iface",     NULL, NULL,         IPC_SHOW_PIM_IFACE_CMD }, /* ALIAS */
+		{ "neighbor",  NULL, NULL,         IPC_SHOW_PIM_NEIGH_CMD },
+		{ "routes",    NULL, NULL,         IPC_SHOW_PIM_ROUTE_CMD },
+		{ "rp",        NULL, NULL,         IPC_SHOW_PIM_RP_CMD    },
+		{ "crp",       NULL, NULL,         IPC_SHOW_PIM_CRP_CMD   },
+		{ "compat",    NULL, NULL,         IPC_SHOW_PIM_DUMP_CMD  },
+		{ NULL,        NULL, show_pim,     0                      }
 	};
 	struct cmd show[] = {
-		{ "igmp",      igmp, NULL, 0                    },
-		{ "pim",       pim,  NULL, 0                    },
-		{ "status",    NULL, NULL, IPC_SHOW_STATUS_CMD  },
-		{ NULL }
+		{ "igmp",      igmp, NULL,         0                   },
+		{ "pim",       pim,  NULL,         0                   },
+		{ "status",    NULL, NULL,         IPC_SHOW_STATUS_CMD },
+		{ NULL,        NULL, show_pim,     0                   }
 	};
 	struct cmd command[] = {
 		{ "debug",     NULL, set_debug,    0                   },
