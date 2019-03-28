@@ -779,10 +779,18 @@ void dump_pim_mrt(FILE *fp, int detail)
 static void dump_rpgrp(FILE *fp, rp_grp_entry_t *rpgrp)
 {
     grp_mask_t *grp = rpgrp->group;
+    char htstr[10];
+    uint16_t ht;
 
-    fprintf(fp, "                           %-18.18s  %-8u  %-8u\n",
+    ht = rpgrp->holdtime;
+    if (ht == PIM_HELLO_HOLDTIME_FOREVER)
+	snprintf(htstr, sizeof(htstr), "Forever");
+    else
+	snprintf(htstr, sizeof(htstr), "%d", ht);
+
+    fprintf(fp, "                           %-18.18s  %-8u  %s\n",
 	    netname(grp->group_addr, grp->group_mask),
-	    rpgrp->priority, rpgrp->holdtime);
+	    rpgrp->priority, htstr);
 }
 
 /*
@@ -800,10 +808,16 @@ int dump_rp_set(FILE *fp, int detail)
     fprintf(fp, "RP address       Incoming  Group Prefix        Priority  Holdtime=\n");
 
     for (rp = cand_rp_list; rp; rp = rp->next) {
-	fprintf(fp, "%-15s  %-8d                                %-8u\n",
+	char buf[10];
+
+	if (rp->rpentry->adv_holdtime == PIM_HELLO_HOLDTIME_FOREVER)
+	    snprintf(buf, sizeof(buf), "%s", "Static");
+	else
+	    snprintf(buf, sizeof(buf), "%d", rp->rpentry->adv_holdtime);
+
+	fprintf(fp, "%-15s  %-8d                                %s\n",
 		inet_fmt(rp->rpentry->address, s1, sizeof(s1)),
-		rp->rpentry->incoming,
-		rp->rpentry->adv_holdtime);
+		rp->rpentry->incoming, buf);
 
 	for (rpgrp = rp->rp_grp_next; rpgrp; rpgrp = rpgrp->rp_grp_next)
 		dump_rpgrp(fp, rpgrp);

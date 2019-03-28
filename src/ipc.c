@@ -210,7 +210,7 @@ static void show_crp(FILE *fp, int detail)
 		rpentry_t *entry = rp->rpentry;
 		char buf[10];
 
-		if (entry->adv_holdtime == (uint16_t)0xffffff)
+		if (entry->adv_holdtime == PIM_HELLO_HOLDTIME_FOREVER)
 			snprintf(buf, sizeof(buf), "%8s", "Static");
 		else
 			snprintf(buf, sizeof(buf), "%8d", entry->adv_holdtime);
