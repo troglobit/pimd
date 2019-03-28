@@ -403,9 +403,9 @@ void dump_vifs(FILE *fp, int detail)
     int width;
     int i;
 
-    fprintf(fp, "Virtual Interface Table ======================================================\n");
-    fprintf(fp, "Vif  Local Address    Subnet              Thresh  Flags      Neighbors\n");
-    fprintf(fp, "---  ---------------  ------------------  ------  ---------  -----------------\n");
+    if (detail)
+	fprintf(fp, "\nVirtual Interface Table\n");
+    fprintf(fp, "VIF  Local Address    Subnet              Thresh  Flags      Neighbors=\n");
 
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
 	int down = 0;
@@ -474,7 +474,7 @@ void dump_ssm(FILE *fp, int detail)
 		continue;
 
 	    if (first) {
-		fprintf(fp, "\n %-3s  %-15s  %-20s\n", "Vif", "SSM Group", "Sources");
+		fprintf(fp, "\n %-3s  %-15s  %-20s=\n", "VIF", "SSM Group", "Sources");
 		first = 0;
 	    }
 
@@ -710,7 +710,8 @@ void dump_pim_mrt(FILE *fp, int detail)
     cand_rp_t *rp;
     kernel_cache_t *kc;
 
-    fprintf(fp, "Multicast Routing Table ======================================================\n");
+    if (detail)
+	fprintf(fp, "\nMulticast Routing Table");
 
     /* TODO: remove the dummy 0.0.0.0 group (first in the chain) */
     for (g = grplist->next; g; g = g->next) {
@@ -724,10 +725,9 @@ void dump_pim_mrt(FILE *fp, int detail)
 	    }
 
 	    /* Print the (*,G) routing info */
-	    fprintf(fp, "----------------------------------- (*,G) ------------------------------------\n");
-	    fprintf(fp, "Source           Group            RP Address       Flags\n");
-	    fprintf(fp, "---------------  ---------------  ---------------  ---------------------------\n");
-	    fprintf(fp, "%-15s  ", "INADDR_ANY");
+	    fprintf(fp, "\n");
+	    fprintf(fp, "Source           Group            RP Address       Flags              (*,G)=\n");
+	    fprintf(fp, "%-15s  ", "*");
 	    fprintf(fp, "%-15s  ", inet_fmt(g->group, s1, sizeof(s1)));
 	    fprintf(fp, "%-15s ", IN_PIM_SSM_RANGE(g->group) ? "SSM" :
 		    (g->active_rp_grp ? inet_fmt(g->rpaddr, s2, sizeof(s2)) : "NULL"));
@@ -736,14 +736,13 @@ void dump_pim_mrt(FILE *fp, int detail)
 	}
 
 	/* Print all (S,G) routing info */
-	fprintf(fp, "----------------------------------- (S,G) ------------------------------------\n");
 	for (r = g->mrtlink; r; r = r->grpnext) {
 	    if (r->flags & MRTF_KERNEL_CACHE)
 		number_of_cache_mirrors++;
 
 	    /* Print the routing info */
-	    fprintf(fp, "Source           Group            RP Address       Flags\n");
-	    fprintf(fp, "---------------  ---------------  ---------------  ---------------------------\n");
+	    fprintf(fp, "\n");
+	    fprintf(fp, "Source           Group            RP Address       Flags              (S,G)=\n");
 	    fprintf(fp, "%-15s  ", inet_fmt(r->source->address, s1, sizeof(s1)));
 	    fprintf(fp, "%-15s  ", inet_fmt(g->group, s2, sizeof(s2)));
 	    fprintf(fp, "%-15s ", IN_PIM_SSM_RANGE(g->group) ? "SSM" :
@@ -754,7 +753,6 @@ void dump_pim_mrt(FILE *fp, int detail)
     }/* for all groups */
 
     /* Print the (*,*,R) routing entries */
-    fprintf(fp, "--------------------------------- (*,*,G) ------------------------------------\n");
     for (rp = cand_rp_list; rp; rp = rp->next) {
 	r = rp->rpentry->mrtlink;
 	if (r) {
@@ -764,10 +762,10 @@ void dump_pim_mrt(FILE *fp, int detail)
 	    }
 
 	    /* Print the (*,*,RP) routing info */
-	    fprintf(fp, "Source           Group            RP Address       Flags\n");
-	    fprintf(fp, "---------------  ---------------  ---------------  ---------------------------\n");
+	    fprintf(fp, "\n");
+	    fprintf(fp, "Source           Group            RP Address       Flags              (*,*,RP)=\n");
 	    fprintf(fp, "%-15s  ", inet_fmt(r->source->address, s1, sizeof(s1)));
-	    fprintf(fp, "%-15s  ", "INADDR_ANY");
+	    fprintf(fp, "%-15s  ", "*");
 	    fprintf(fp, "%-15s ", "");
 
 	    dump_route(fp, r);
@@ -776,7 +774,6 @@ void dump_pim_mrt(FILE *fp, int detail)
 
     fprintf(fp, "Number of Groups: %u\n", number_of_groups);
     fprintf(fp, "Number of Cache MIRRORs: %u\n", number_of_cache_mirrors);
-    fprintf(fp, "------------------------------------------------------------------------------\n\n");
 }
 
 static void dump_rpgrp(FILE *fp, rp_grp_entry_t *rpgrp)
@@ -796,9 +793,12 @@ int dump_rp_set(FILE *fp, int detail)
     cand_rp_t      *rp;
     rp_grp_entry_t *rpgrp;
 
-    fprintf(fp, "Rendezvous-Point Set =========================================================\n");
-    fprintf(fp, "RP address       Incoming  Group Prefix        Priority  Holdtime\n");
-    fprintf(fp, "---------------  --------  ------------------  --------  ---------------------\n");
+    if (detail)
+	fprintf(fp, "\nRendezvous-Point Set\n");
+    else
+	fprintf(fp, "\n");
+    fprintf(fp, "RP address       Incoming  Group Prefix        Priority  Holdtime=\n");
+
     for (rp = cand_rp_list; rp; rp = rp->next) {
 	fprintf(fp, "%-15s  %-8d                                %-8u\n",
 		inet_fmt(rp->rpentry->address, s1, sizeof(s1)),
@@ -809,8 +809,7 @@ int dump_rp_set(FILE *fp, int detail)
 		dump_rpgrp(fp, rpgrp);
     }
 
-    fprintf(fp, "------------------------------------------------------------------------------\n");
-    fprintf(fp, "Current BSR address: %s\n\n", inet_fmt(curr_bsr_address, s1, sizeof(s1)));
+    fprintf(fp, "\nCurrent BSR address: %s\n", inet_fmt(curr_bsr_address, s1, sizeof(s1)));
 
     return TRUE;
 }
