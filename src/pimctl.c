@@ -278,7 +278,12 @@ static int cmd_parse(int argc, char *argv[], struct cmd *command)
 {
 	int i;
 
-	for (i = 0; argc > 0 && command[i].cmd; i++) {
+//	printf("-> argv[0]: %s cmd[0]: %s\n", argv[0], command[0].cmd);
+	for (i = 0; command[i].cmd; i++) {
+		/* If no arg then skip to end of commands for fallback */
+		if (!argv[0])
+			continue;
+
 		if (!string_match(command[i].cmd, argv[0]))
 			continue;
 
@@ -300,6 +305,11 @@ static int cmd_parse(int argc, char *argv[], struct cmd *command)
 
 		return show_generic(command[i].op, detail);
 	}
+
+//	printf("-> argv[0]: %s cmd[%d]: %s\n", argv[0], i, command[i].cmd);
+	/* End of command list, do we have a fallback listed? */
+	if (command[i].cb)
+		return command[i].cb(NULL);
 
 	return usage(1);
 }
