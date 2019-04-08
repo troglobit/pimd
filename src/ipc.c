@@ -709,9 +709,6 @@ void ipc_init(void)
 		return;
 	}
 
-	if (register_input_handler(sd, ipc_handle) < 0)
-		logit(LOG_ERR, 0, "Failed registering IPC handler");
-
 #ifdef HAVE_SOCKADDR_UN_SUN_LEN
 	sun.sun_len = 0;	/* <- correct length is set by the OS */
 #endif
@@ -727,6 +724,9 @@ void ipc_init(void)
 		close(sd);
 		return;
 	}
+
+	if (register_input_handler(sd, ipc_handle) < 0)
+		logit(LOG_ERR, 0, "Failed registering IPC handler");
 
 	ipc_socket = sd;
 }
