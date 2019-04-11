@@ -69,8 +69,8 @@ static void accept_igmp (ssize_t recvlen);
  */
 void init_igmp(void)
 {
-    struct ip *ip;
     char *router_alert;
+    struct ip *ip;
 
     igmp_recv_buf = calloc(1, RECV_BUF_SIZE);
     igmp_send_buf = calloc(1, SEND_BUF_SIZE);
@@ -96,7 +96,6 @@ void init_igmp(void)
     k_set_loop(igmp_socket, FALSE);	/* disable multicast loopback     */
 
     ip	       = (struct ip *)igmp_send_buf;
-    memset(ip, 0, IP_IGMP_HEADER_LEN);
     ip->ip_v   = IPVERSION;
     ip->ip_hl  = IP_IGMP_HEADER_LEN >> 2;
     ip->ip_tos = 0xc0;			/* Internet Control   */
@@ -106,8 +105,10 @@ void init_igmp(void)
     ip->ip_p   = IPPROTO_IGMP;
     ip->ip_sum = 0;			/* let kernel fill in */
 
-    /* Enable RFC2113 IP Router Alert.  Per spec this is required to
-     * force certain routers/switches to inspect this frame. */
+    /*
+     * Enable RFC2113 IP Router Alert.  Per spec this is required to
+     * force certain routers/switches to inspect this frame.
+     */
     router_alert    = igmp_send_buf + sizeof(struct ip);
     router_alert[0] = IPOPT_RA;
     router_alert[1] = 4;
