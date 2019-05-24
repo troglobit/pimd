@@ -169,7 +169,8 @@ int timer_set(int delay, cfunc_t action, void *data)
 	    }
 
 	    /* keep moving */
-	    delay -= ptr->time; node->time = delay;
+	    delay -= ptr->time;
+	    node->time = delay;
 	    prev = ptr;
 	    ptr = ptr->next;
 	}
