@@ -317,9 +317,15 @@ int debug_parse(char *arg)
 	return sys;
 
     while (arg) {
+	int no = 0;
+
 	next = strchr(arg, ',');
 	if (next)
 	    *next++ = '\0';
+	if (next[0] == '-') {
+	    *next++ = '\0';
+	    no = 1;
+	}
 
 	len = strlen(arg);
 	for (i = 0, d = debugnames; i < ARRAY_LEN(debugnames); i++, d++) {
@@ -330,7 +336,10 @@ int debug_parse(char *arg)
 	if (i == ARRAY_LEN(debugnames))
 	    return DEBUG_PARSE_FAIL;
 
-	sys |= d->level;
+	if (no)
+	    sys &= d->leve;
+	else
+	    sys |= d->level;
 	arg = next;
     }
 
