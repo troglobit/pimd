@@ -337,7 +337,7 @@ int debug_parse(char *arg)
 	    return DEBUG_PARSE_FAIL;
 
 	if (no)
-	    sys &= d->leve;
+	    sys &= d->level;
 	else
 	    sys |= d->level;
 	arg = next;
