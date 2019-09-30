@@ -322,8 +322,9 @@ int debug_parse(char *arg)
 	next = strchr(arg, ',');
 	if (next)
 	    *next++ = '\0';
-	if (next[0] == '-') {
-	    *next++ = '\0';
+	/* disable log level if flag preceded by '-' */
+	if (arg[0] == '-') {
+	    arg++;
 	    no = 1;
 	}
 
@@ -337,7 +338,7 @@ int debug_parse(char *arg)
 	    return DEBUG_PARSE_FAIL;
 
 	if (no)
-	    sys &= d->level;
+	    sys &= ~d->level;
 	else
 	    sys |= d->level;
 	arg = next;
