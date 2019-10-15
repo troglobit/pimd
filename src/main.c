@@ -751,6 +751,7 @@ static void restart(int signo)
     timer_free_all();
     stop_all_vifs();
     k_stop_pim(igmp_socket);
+	ipc_exit();
     nhandlers = 0;
     close(igmp_socket);
     close(pim_socket);
@@ -782,7 +783,8 @@ static void restart(int signo)
     init_pim_mrt();
     init_vifs();
     add_static_rp();	 /* Must be after init_vifs() */
-
+	ipc_init();
+	
     /* Touch PID file to acknowledge SIGHUP */
     pidfile(pid_file);
 
