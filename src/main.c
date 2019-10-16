@@ -752,6 +752,7 @@ static void restart(int signo)
     stop_all_vifs();
     k_stop_pim(igmp_socket);
 	ipc_exit();
+	
     nhandlers = 0;
     close(igmp_socket);
     close(pim_socket);
