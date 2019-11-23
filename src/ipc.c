@@ -102,6 +102,8 @@ static void show_neighbors(FILE *fp, int detail)
 	vifi_t vifi;
 	int first = 1;
 
+	(void)detail;
+
 	for (vifi = 0; vifi < numvifs; vifi++) {
 		uv = &uvifs[vifi];
 
@@ -151,6 +153,8 @@ static void show_interfaces(FILE *fp, int detail)
 {
 	vifi_t vifi;
 
+	(void)detail;
+
 	if (numvifs)
 		fprintf(fp, "Interface         State  Address          Nbr  Hello  Prio  DR Address =\n");
 
@@ -162,6 +166,8 @@ static void show_interfaces(FILE *fp, int detail)
 static void show_rp(FILE *fp, int detail)
 {
 	grp_mask_t *grp;
+
+	(void)detail;
 
 	if (grp_mask_list)
 		fprintf(fp, "Group Address       RP Address       Type     Prio  Holdtime =\n");
@@ -200,6 +206,8 @@ static void show_rp(FILE *fp, int detail)
 static void show_crp(FILE *fp, int detail)
 {
 	struct cand_rp *rp;
+
+	(void)detail;
 
 	if (cand_rp_list)
 		fprintf(fp, "RP Address       Group Address       Prio  Holdtime  Expires =\n");
@@ -378,6 +386,8 @@ static void show_status(FILE *fp, int detail)
 	char buf[10];
 	int len;
 
+	(void)detail;
+
 	snprintf(buf, sizeof(buf), "%d", curr_bsr_priority);
 	MASK_TO_MASKLEN(curr_bsr_hash_mask, len);
 
@@ -416,6 +426,8 @@ static void show_igmp_groups(FILE *fp, int detail)
 	struct listaddr *group, *source;
 	struct uvif *uv;
 	vifi_t vifi;
+
+	(void)detail;
 
 	fprintf(fp, "Interface         Group            Source           Last Reported    Timeout=\n");
 	for (vifi = 0, uv = uvifs; vifi < numvifs; vifi++, uv++) {
@@ -458,6 +470,7 @@ static void show_igmp_iface(FILE *fp, int detail)
 	struct uvif *uv;
 	vifi_t vifi;
 
+	(void)detail;
 	fprintf(fp, "Interface         State     Querier          Timeout Version  Groups=\n");
 
 	for (vifi = 0, uv = uvifs; vifi < numvifs; vifi++, uv++) {

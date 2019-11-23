@@ -477,6 +477,8 @@ void dump_ssm(FILE *fp, int detail)
     vifi_t vifi;
     int first = 1;
 
+    (void)detail;
+
     /* Dump groups and sources */
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
 	for (group = v->uv_groups; group != NULL; group = group->al_next) {
