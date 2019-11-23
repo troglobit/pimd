@@ -526,7 +526,7 @@ int log_str2lvl(char *level)
     return atoi(level);
 }
 
-char *log_lvl2str(int val)
+const char *log_lvl2str(int val)
 {
     int i;
 

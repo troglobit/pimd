@@ -119,7 +119,7 @@ extern int	dump_rp_set		(FILE *fp, int detail);
 
 extern void	log_init		(int do_syslog);
 extern int      log_str2lvl             (char *level);
-extern char    *log_lvl2str             (int val);
+extern const char *log_lvl2str          (int val);
 extern int      log_list                (char *buf, size_t len);
 
 extern void	logit			(int severity, int syserr, const char *fmt, ...);
