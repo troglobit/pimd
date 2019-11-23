@@ -152,6 +152,7 @@ Optional features:
   Memory save...........: $enable_memory_save
   RSRR (experimental)...: $enable_rsrr
   Exit on error.........: $enable_exit_on_error
+  systemd...............: $with_systemd
 
 ------------- Compiler version --------------
 $($CC --version || true)
