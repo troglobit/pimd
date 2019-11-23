@@ -120,6 +120,8 @@ void accept_membership_query(uint32_t src, uint32_t dst, uint32_t group, int tmo
     vifi_t vifi;
     struct uvif *v;
 
+    (void)dst;
+
     /* Ignore my own membership query */
     if (local_address(src) != NO_VIF)
 	return;

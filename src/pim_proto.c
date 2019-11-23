@@ -2795,6 +2795,8 @@ int receive_pim_assert(uint32_t src, uint32_t dst, char *msg, size_t len)
     uint8_t  local_wins;
     pim_nbr_entry_t *original_upstream_router;
 
+    (void)dst;
+
     vifi = find_vif_direct(src);
     if (vifi == NO_VIF) {
 	/* Either a local vif or somehow received PIM_ASSERT from
