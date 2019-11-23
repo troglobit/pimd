@@ -110,7 +110,7 @@ void init_igmp(void)
      * force certain routers/switches to inspect this frame.
      */
     router_alert    = igmp_send_buf + sizeof(struct ip);
-    router_alert[0] = IPOPT_RA;
+    router_alert[0] = (uint8_t)IPOPT_RA;
     router_alert[1] = 4;
     router_alert[2] = 0;
     router_alert[3] = 0;

@@ -265,10 +265,10 @@ void k_set_if(int socket, uint32_t ifa)
  */
 void k_set_router_alert(int socket)
 {
-    char router_alert[4];	/* Router Alert IP Option	    */
+    char router_alert[4];
 
-    router_alert[0] = IPOPT_RA;	/* Router Alert */
-    router_alert[1] = 4;	/* 4 bytes */
+    router_alert[0] = (uint8_t)IPOPT_RA;
+    router_alert[1] = 4;
     router_alert[2] = 0;
     router_alert[3] = 0;
 
