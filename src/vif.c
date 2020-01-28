@@ -590,6 +590,7 @@ vifi_t find_vif_direct(uint32_t src)
     vifi_t vifi;
     struct uvif *v;
     struct phaddr *p;
+    struct rpfctl rpf;
 
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
 	if (v->uv_flags & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER | VIFF_TUNNEL))
@@ -611,6 +612,13 @@ vifi_t find_vif_direct(uint32_t src)
 	/* POINTOPOINT but not VIFF_TUNNEL interface (e.g., GRE) */
 	if ((v->uv_flags & VIFF_POINT_TO_POINT) && (src == v->uv_rmt_addr))
 	    return vifi;
+    }
+
+    /* Check if the routing table has a direct route (no gateway). */
+    if (k_req_incoming(src, &rpf)) {
+	if (rpf.source.s_addr == rpf.rpfneighbor.s_addr) {
+	    return rpf.iif;
+	}
     }
 
     return NO_VIF;
@@ -650,6 +658,7 @@ vifi_t find_vif_direct_local(uint32_t src)
     vifi_t vifi;
     struct uvif *v;
     struct phaddr *p;
+    struct rpfctl rpf;
 
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
 	/* TODO: XXX: what about VIFF_TUNNEL? */
@@ -672,6 +681,13 @@ vifi_t find_vif_direct_local(uint32_t src)
 	/* POINTOPOINT but not VIFF_TUNNEL interface (e.g., GRE) */
 	if ((v->uv_flags & VIFF_POINT_TO_POINT) && (src == v->uv_rmt_addr))
 	    return vifi;
+    }
+
+    /* Check if the routing table has a direct route (no gateway). */
+    if (k_req_incoming(src, &rpf)) {
+	if (rpf.source.s_addr == rpf.rpfneighbor.s_addr) {
+	    return rpf.iif;
+	}
     }
 
     return NO_VIF;
