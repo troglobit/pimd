@@ -214,9 +214,13 @@ static struct iflist *iface_find(char *ifname, uint32_t addr)
 static int getifmtu(char *ifname)
 {
     struct ifreq ifr;
+    size_t iflen = strlen(ifr.ifr_name);
 
-    memset (&ifr, 0, sizeof (ifr));
-    strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name));
+    if (iflen > sizeof(ifr.ifr_name))
+	return 1500;		/* We will never get here ... */
+
+    memset(&ifr, 0, sizeof(ifr));
+    memcpy(ifr.ifr_name, ifname, iflen);
 
     if (ioctl(udp_socket, SIOCGIFMTU, &ifr) < 0)
 	return 1500;
@@ -1595,7 +1599,7 @@ void config_vifs_from_file(void)
   nofile:
     /* A static RP address is needed for SSM.  We use a link-local
      * address. It is not required to be configured on any interface. */
-    strncpy(linebuf, "169.254.0.1 232.0.0.0/8\n", sizeof(linebuf));
+    strlcpy(linebuf, "169.254.0.1 232.0.0.0/8\n", sizeof(linebuf));
     s = linebuf;
     parse_rp_address(s);
 
