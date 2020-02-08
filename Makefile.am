@@ -46,7 +46,5 @@ release: distcheck release-hook package md5-dist
 	@for file in $(DIST_ARCHIVES); do						\
 		printf "$$file    \tDistribution tarball\n";				\
 		printf "$$file.md5\t"; cat $$file.md5 | cut -f1 -d' ';			\
-		printf "$$file.asc\tGPG signature "; gpg --verify $$file.asc 2>&1	\
-			| grep 'key ID' | sed 's/.*using \(.*\)/\1/'; echo;		\
 	done
 
