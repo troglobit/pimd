@@ -16,6 +16,10 @@ md5-dist:
 		$(MD5) $$file > $$file.md5;	\
 	done
 
+# lintian --profile debian -i -I --show-overrides ../$PKG.changes
+package build-deb:
+	@dpkg-buildpackage -uc -us -B
+
 ## Check if tagged in git
 release-hook:
 	if [ ! `git tag | grep $(PACKAGE_VERSION)` ]; then				\
@@ -35,7 +39,7 @@ release-hook:
 	fi
 
 ## Target to run when building a release
-release: distcheck release-hook md5-dist
+release: distcheck release-hook package md5-dist
 	@echo
 	@echo "Resulting release files:"
 	@echo "================================================================="
