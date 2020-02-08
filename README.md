@@ -349,14 +349,13 @@ Stanford Junior University.
 
 [License]:         https://en.wikipedia.org/wiki/BSD_licenses
 [License Badge]:   https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
-[github]:          http://github.com/troglobit/pimd
-[homepage]:        http://troglobit.com/pimd.html
+[github]:          https://github.com/troglobit/pimd
+[homepage]:        https://troglobit.com/pimd.html
 [ChangeLog]:       https://github.com/troglobit/pimd/blob/master/ChangeLog.org
-[the FTP]:         http://ftp.troglobit.com/pimd/
 [releases page]:   https://github.com/troglobit/pimd/releases
 [buildsystem]:     https://airs.com/ian/configure/
 [contrib]:         https://github.com/troglobit/pimd/blob/master/docs/CONTRIBUTING.md
-[Joachim Nilsson]: http://troglobit.com
+[Joachim Nilsson]: https://troglobit.com
 [Travis]:          https://travis-ci.org/troglobit/pimd
 [Travis Status]:   https://travis-ci.org/troglobit/pimd.png?branch=master
 [Coverity Scan]:   https://scan.coverity.com/projects/3319
