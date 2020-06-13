@@ -130,6 +130,7 @@ typedef void (*ihfunc_t) (int);
 #include "mrt.h"
 #include "igmpv2.h"
 #include "igmpv3.h"
+#include "ipc.h"
 #include "vif.h"
 #include "debug.h"
 #include "pathnames.h"
@@ -315,34 +316,6 @@ extern int do_vifs;
 extern int no_fallback;
 extern int retry_forever;
 extern int mrt_table_id;
-
-/*
- * pimd <--> pimctl IPC
- */
-#define IPC_OK_CMD                0
-#define IPC_RESTART_CMD           1
-#define IPC_SHOW_STATUS_CMD       2
-#define IPC_DEBUG_CMD             3
-#define IPC_LOGLEVEL_CMD          4
-#define IPC_KILL_CMD              9
-#define IPC_SHOW_IGMP_GROUPS_CMD  10
-#define IPC_SHOW_IGMP_IFACE_CMD   11
-#define IPC_SHOW_PIM_IFACE_CMD    20
-#define IPC_SHOW_PIM_NEIGH_CMD    21
-#define IPC_SHOW_PIM_ROUTE_CMD    22
-#define IPC_SHOW_PIM_RP_CMD       23
-#define IPC_SHOW_PIM_CRP_CMD      24
-#define IPC_SHOW_PIM_DUMP_CMD     250
-#define IPC_EOF_CMD               254
-#define IPC_ERR_CMD               255
-
-struct ipc {
-    uint8_t cmd;
-    uint8_t detail;
-
-    char    buf[766];
-    char    sentry;
-};
 
 /*
  * Used to contol the switching to the shortest path:
@@ -548,10 +521,6 @@ extern int	k_get_sg_cnt		(int socket, uint32_t source, uint32_t group, struct sg
 extern int	register_input_handler	(int fd, ihfunc_t func);
 extern int      daemon_restart          (void *arg);
 extern int      daemon_kill             (void *arg);
-
-/* ipc.c */
-extern void     ipc_init                (void);
-extern void     ipc_exit                (void);
 
 /* mrt.c */
 extern void	init_pim_mrt		(void);
