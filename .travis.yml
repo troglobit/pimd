@@ -20,6 +20,7 @@ addons:
   apt:
     packages:
       - tree
+      - libsystemd-dev
   coverity_scan:
     project:
       name: "troglobit/pimd"
