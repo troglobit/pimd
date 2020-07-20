@@ -243,6 +243,7 @@ int debug_kind(int proto, int type, int code)
 			case DVMRP_INFO_REPLY:         return 0;
 			default:                       return 0;
 		    }
+		    break;
 
 		case IGMP_PIM:
 		    /* PIM v1 is not implemented */
@@ -257,6 +258,7 @@ int debug_kind(int proto, int type, int code)
 			case PIM_V1_GRAFT_ACK:         return DEBUG_PIM;
 			default:                       return DEBUG_PIM;
 		    }
+		    break;
 
 		case IGMP_MTRACE:                  return DEBUG_TRACE;
 		case IGMP_MTRACE_RESP:             return DEBUG_TRACE;
@@ -277,6 +279,7 @@ int debug_kind(int proto, int type, int code)
 		case PIM_V2_CAND_RP_ADV:       return DEBUG_PIM_CAND_RP;
 		default:                       return DEBUG_PIM;
 	    }
+	    break;
 
 	default:                               return 0;
     }
