@@ -83,7 +83,7 @@ AC_ARG_WITH([systemd],
      [AS_HELP_STRING([--with-systemd=DIR], [Directory for systemd service files])],,
      [with_systemd=auto])
 
-# Create config.h from selected features and fallback defautls
+# Create config.h from selected features and fallback defaults
 AS_IF([test "x$enable_kernel_encap" = "xyes"], [
         AC_DEFINE(PIM_REG_KERNEL_ENCAP, 1, [Use kernel accelerated PIM register encap/decapsulation.])])
 
