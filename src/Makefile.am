@@ -35,5 +35,5 @@ AM_CPPFLAGS     += -DPIM
 pimd_SOURCES    += rsrr.c		rsrr_var.h	rsrr.h
 endif
 
-pimctl_SOURCES   = pimctl.c		ipc.h
+pimctl_SOURCES   = pimctl.c		defs.h		ipc.h
 pimctl_LDADD     = $(LIBS) $(LIBOBJS)
