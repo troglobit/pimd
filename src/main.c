@@ -357,13 +357,13 @@ int main(int argc, char *argv[])
 	    dup2(fd, STDERR_FILENO);
 	    close(fd);
 	}
-#ifdef SYSV
+#if defined(SYSV) || defined(__linux__)
 	setpgrp();
 #else
 #ifdef TIOCNOTTY
 	fd = open("/dev/tty", 2);
 	if (fd >= 0) {
-	    (void)ioctl(fd, TIOCNOTTY, (char *)0);
+	    (void)ioctl(fd, TIOCNOTTY, NULL);
 	    close(fd);
 	}
 #else
