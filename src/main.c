@@ -154,7 +154,7 @@ static int usage(int code)
     else
 	snprintf(pidfn, sizeof(pidfn), "%s", pid_file);
 
-    printf("Usage: %s [-hnrsv] [-f FILE] [-i NAME] [-d [SYS][,SYS...]] [-l LEVEL]\n\n", prognm);
+    printf("Usage: %s [-hnrsv] [-f FILE] [-i NAME] [-d SYS[,SYS...]] [-l LEVEL]\n\n", prognm);
     printf(" -f, --config=FILE   Configuration file, default uses ident NAME: %s\n", config_file);
     printf("     --no-fallback   When started without a config file, skip RP/BSR fallbacks\n");
     printf(" -n, --foreground    Run in foreground, do not detach from calling terminal\n");
