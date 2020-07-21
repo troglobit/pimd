@@ -341,7 +341,7 @@ Origin & References
 
 Part of this program has been derived from mrouted.  The mrouted program
 is covered by the 3-clause BSD license in the accompanying file named
-[LICENSE.mrouted](docs/LICENSE.mrouted).
+[LICENSE.mrouted](doc/LICENSE.mrouted).
 
 The mrouted program is COPYRIGHT 2002 by The Board of Trustees of Leland
 Stanford Junior University.
