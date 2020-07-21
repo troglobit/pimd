@@ -21,15 +21,7 @@ struct timeout_q {
     int              time;		/* time offset to next event*/
 };
 
-#if 0
-#define CALLOUT_DEBUG 1
-#define CALLOUT_DEBUG2 1
-#endif /* 0 */
-#ifdef CALLOUT_DEBUG2
 static void print_Q(void);
-#else
-#define	print_Q()	
-#endif
 
 /* Get next free (non-zero) ID
  *
@@ -77,11 +69,9 @@ void timer_age_queue(int elapsed_time)
 {
     struct timeout_q *ptr;
 
-#ifdef CALLOUT_DEBUG
     IF_DEBUG(DEBUG_TIMEOUT)
 	logit(LOG_DEBUG, 0, "aging queue (elapsed time %d):", elapsed_time);
     print_Q();
-#endif
     
     for (ptr = Q; Q; ptr = Q) {
 	if (ptr->time  > elapsed_time) {
@@ -126,11 +116,9 @@ int timer_set(int delay, cfunc_t action, void *data)
 {
     struct timeout_q *ptr, *node, *prev;
     
-#ifdef CALLOUT_DEBUG
     IF_DEBUG(DEBUG_TIMEOUT)
 	logit(LOG_DEBUG, 0, "setting timer:");
     print_Q();
-#endif
     
     /* create a node */	
     node = calloc(1, sizeof(struct timeout_q));
@@ -240,7 +228,6 @@ void timer_clear(int timer_id)
     print_Q();
 }
 
-#ifdef CALLOUT_DEBUG2
 /*
  * debugging utility
  */
@@ -253,7 +240,6 @@ static void print_Q(void)
 	    logit(LOG_DEBUG, 0, "(%d,%d) ", ptr->id, ptr->time);
     }
 }
-#endif /* CALLOUT_DEBUG2 */
 
 /**
  * Local Variables:
