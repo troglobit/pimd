@@ -229,7 +229,7 @@ void timer_clear(int timer_id)
 	    prev->next = ptr->next;
 	    
 	/* increment next node if any */
-	if (ptr->next != 0)
+	if (ptr->next)
 	    (ptr->next)->time += ptr->time;
 	    
 	if (ptr->data)
