@@ -971,6 +971,73 @@ int check_mrtentry_rp(mrtentry_t *mrt, uint32_t addr)
     return FALSE;
 }
 
+/*
+ * TODO: timeout the RP-group mapping entries during the scan of the
+ * whole routing table?
+ */
+void age_misc(void)
+{
+    rp_grp_entry_t *rp;
+    rp_grp_entry_t *rp_next;
+    grp_mask_t     *grp;
+    grp_mask_t     *grp_next;
+
+    /* Timeout the Cand-RP-set entries */
+    for (grp = grp_mask_list; grp; grp = grp_next) {
+	/* If we timeout an entry, the grp entry might be removed */
+	grp_next = grp->next;
+	for (rp = grp->grp_rp_next; rp; rp = rp_next) {
+	    rp_next = rp->grp_rp_next;
+
+	    if (rp->holdtime < 60000) {
+		IF_TIMEOUT(rp->holdtime) {
+		    if (rp->group!=NULL) {
+			logit(LOG_INFO, 0, "Delete RP group entry for group %s (holdtime timeout)",
+			      inet_fmt(rp->group->group_addr, s2, sizeof(s2)));
+		    }
+		    delete_rp_grp_entry(&cand_rp_list, &grp_mask_list, rp);
+		}
+	    }
+	}
+    }
+
+    /* Cand-RP-Adv timer */
+    if (cand_rp_flag == TRUE) {
+	IF_TIMEOUT(pim_cand_rp_adv_timer) {
+	    send_pim_cand_rp_adv();
+	    SET_TIMER(pim_cand_rp_adv_timer, my_cand_rp_adv_period);
+	}
+    }
+
+    /* bootstrap-timer */
+    IF_TIMEOUT(pim_bootstrap_timer) {
+	if (cand_bsr_flag == FALSE) {
+	    /* If I am not Cand-BSR, start accepting Bootstrap messages from anyone.
+	     * XXX: Even if the BSR has timeout, the existing Cand-RP-Set is kept. */
+	    SET_TIMER(pim_bootstrap_timer, my_bsr_timeout);
+	    curr_bsr_fragment_tag = 0;
+	    curr_bsr_priority     = 0;		  /* Lowest priority */
+	    curr_bsr_address      = INADDR_ANY_N; /* Lowest priority */
+	    MASKLEN_TO_MASK(RP_DEFAULT_IPV4_HASHMASKLEN, curr_bsr_hash_mask);
+	} else {
+	    /* I am Cand-BSR, so set the current BSR to me */
+	    if (curr_bsr_address == my_bsr_address) {
+		SET_TIMER(pim_bootstrap_timer, my_bsr_adv_period);
+		send_pim_bootstrap();
+	    } else {
+		/* Short delay before becoming the BSR and start sending
+		 * of the Cand-RP set (to reduce the transient control
+		 * overhead). */
+		SET_TIMER(pim_bootstrap_timer, bootstrap_initial_delay());
+		curr_bsr_fragment_tag = RANDOM();
+		curr_bsr_priority     = my_bsr_priority;
+		curr_bsr_address      = my_bsr_address;
+		curr_bsr_hash_mask    = my_bsr_hash_mask;
+	    }
+	}
+    }
+}
+
 /**
  * Local Variables:
  *  indent-tabs-mode: t
