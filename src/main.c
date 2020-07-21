@@ -386,7 +386,7 @@ int main(int argc, char *argv[])
     init_pim();
     init_routesock(); /* Both for Linux netlink and BSD routing socket */
     init_pim_mrt();
-    init_timers();
+    init_route();
 
     /* Start up the log rate-limiter */
     resetlogging(NULL);

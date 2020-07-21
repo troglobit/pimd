@@ -562,6 +562,7 @@ extern int	send_pim_cand_rp_adv	(void);
 extern void	send_pim_bootstrap	(void);
 
 /* route.c */
+extern void	init_route		(void);
 extern int	set_incoming		(srcentry_t *srcentry_ptr, int srctype);
 extern vifi_t	get_iif			(uint32_t source);
 extern pim_nbr_entry_t *find_pim_nbr	(uint32_t source);
@@ -623,7 +624,6 @@ extern void	rsrr_cache_bring_up	(struct gtable *);
 #endif /* RSRR */
 
 /* timer.c */
-extern void	init_timers		(void);
 extern void	age_vifs		(void);
 extern void	age_routes		(void);
 extern void	age_misc		(void);
