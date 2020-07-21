@@ -111,10 +111,4 @@ Bill & Ted; [be excellent to each other][conduct].
 [KNF]:      https://en.wikipedia.org/wiki/Kernel_Normal_Form
 [gitbook]:  https://git-scm.com/book/ch5-2.html
 [rambling]: http://stopwritingramblingcommitmessages.com/
-[conduct]:  https://github.com/troglobit/pimd/blob/master/CODE-OF-CONDUCT.md
-
-<!--
-  -- Local Variables:
-  -- mode: markdown
-  -- End:
-  -->
+[conduct]:  CODE-OF-CONDUCT.md

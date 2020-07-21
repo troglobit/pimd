@@ -354,7 +354,7 @@ Stanford Junior University.
 [ChangeLog]:       https://github.com/troglobit/pimd/blob/master/ChangeLog.org
 [releases page]:   https://github.com/troglobit/pimd/releases
 [buildsystem]:     https://autotools.io/
-[contrib]:         https://github.com/troglobit/pimd/blob/master/docs/CONTRIBUTING.md
+[contrib]:         https://github.com/troglobit/pimd/blob/master/.github/CONTRIBUTING.md
 [Joachim Nilsson]: https://troglobit.com
 [Travis]:          https://travis-ci.org/troglobit/pimd
 [Travis Status]:   https://travis-ci.org/troglobit/pimd.png?branch=master
