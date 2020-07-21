@@ -16,7 +16,7 @@ pimd_SOURCES     = callout.c		config.c	debug.c		debug.h	    \
 		   kern.c		main.c		pathnames.h		    \
 		   mrt.c		mrt.h		route.c		rp.c	    \
 		   pim_proto.c		pim.c		pimd.h			    \
-		   timer.c		trace.c		trace.h			    \
+		   trace.c		trace.h			    		    \
 		   vif.c		vif.h		queue.h
 pimd_CFLAGS      = -W -Wall -Wextra -Wno-unused
 pimd_LDADD       = $(LIBS) $(LIBOBJS)
