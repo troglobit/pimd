@@ -576,6 +576,7 @@ extern void	calc_oifs		(mrtentry_t *mrtentry_ptr, uint8_t *oifs_ptr);
 extern void	process_kernel_call	(void);
 extern int	delete_vif_from_mrt	(vifi_t vifi);
 extern mrtentry_t *switch_shortest_path	(uint32_t source, uint32_t group);
+extern void	age_routes		(void);
 
 /* routesock.c and netlink.c */
 extern int	k_req_incoming		(uint32_t source, struct rpfctl *rpfp);
@@ -607,6 +608,7 @@ extern rpentry_t *rp_find		(uint32_t rp_address);
 extern int	remap_grpentry		(grpentry_t *grpentry_ptr);
 extern int	create_pim_bootstrap_message (char *send_buff);
 extern int	check_mrtentry_rp	(mrtentry_t *mrtentry_ptr, uint32_t rp_addr);
+extern void	age_misc		(void);
 
 #ifdef RSRR
 #ifdef PIM
@@ -623,13 +625,6 @@ extern void	rsrr_cache_clean	(struct gtable *);
 extern void	rsrr_cache_bring_up	(struct gtable *);
 #endif /* RSRR */
 
-/* timer.c */
-extern void	age_vifs		(void);
-extern void	age_routes		(void);
-extern void	age_misc		(void);
-extern int	unicast_routing_changes	(srcentry_t *src_ent);
-extern int	clean_srclist		(void);
-
 /* trace.c */
 /* u_int is promoted uint8_t */
 extern void	accept_mtrace		(uint32_t src, uint32_t dst, uint32_t group, char *data, u_int no, int datalen);
@@ -645,6 +640,7 @@ extern vifi_t	local_address		(uint32_t src);
 extern vifi_t	find_vif_direct		(uint32_t src);
 extern vifi_t	find_vif_direct_local	(uint32_t src);
 extern uint32_t	max_local_address	(void);
+extern void	age_vifs		(void);
 
 struct rp_hold {
 	struct rp_hold *next;
