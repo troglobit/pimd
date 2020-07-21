@@ -31,9 +31,7 @@
  *  $Id: route.c,v 1.39 2003/02/12 21:56:55 pavlin Exp $
  */
 
-
 #include "defs.h"
-
 
 /* Marian Stagarescu : 07/31/01:
  *
@@ -55,6 +53,17 @@
  * to achieve the filtering with minimal processing (inspect (g) when we
  * are about to install a route for it).
  */
+/*
+ * Contributed by Marian Stagarescu <marian@bile.cidera.com>
+ * adapted from mrouted: check for scoped multicast addresses
+ * install null oif if matched
+ */
+#define APPLY_SCOPE(g, mp) {			\
+	vifi_t i;				\
+	for (i = 0; i < numvifs; i++)		\
+	    if (scoped_addr(i, g))              \
+		PIMD_VIFM_CLRALL((mp)->oifs);	\
+    }
 
 static void   process_cache_miss  (struct igmpmsg *igmpctl);
 static void   process_wrong_iif   (struct igmpmsg *igmpctl);
@@ -72,18 +81,6 @@ static int scoped_addr(vifi_t vifi, uint32_t addr)
 
     return 0;
 }
-
-/*
- * Contributed by Marian Stagarescu <marian@bile.cidera.com>
- * adapted from mrouted: check for scoped multicast addresses
- * install null oif if matched
- */
-#define APPLY_SCOPE(g, mp) {			\
-	vifi_t i;				\
-	for (i = 0; i < numvifs; i++)		\
-	    if (scoped_addr(i, g))              \
-		PIMD_VIFM_CLRALL((mp)->oifs);	\
-    }
 
 /* Return the iif for given address */
 vifi_t get_iif(uint32_t address)
@@ -1037,7 +1034,6 @@ static void process_whole_pkt(char *buf)
     send_pim_register((char *)(buf + sizeof(struct igmpmsg)));
 }
 
-
 mrtentry_t *switch_shortest_path(uint32_t source, uint32_t group)
 {
     mrtentry_t *mrt;
@@ -1078,6 +1074,7 @@ mrtentry_t *switch_shortest_path(uint32_t source, uint32_t group)
 
     return mrt;
 }
+
 
 /**
  * Local Variables:
