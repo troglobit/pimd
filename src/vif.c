@@ -716,6 +716,96 @@ uint32_t max_local_address(void)
     return max_address;
 }
 
+
+/*
+ * On every timer interrupt, advance (i.e. decrease) the timer for each
+ * neighbor and group entry for each vif.
+ */
+void age_vifs(void)
+{
+    vifi_t           vifi;
+    struct uvif     *v;
+    pim_nbr_entry_t *next, *curr;
+
+    /* XXX: TODO: currently, sending to qe* interface which is DOWN
+     * doesn't return error (ENETDOWN) on my Solaris machine,
+     * so have to check periodically the
+     * interfaces status. If this is fixed, just remove the defs around
+     * the "if (vifs_down)" line.
+     */
+
+#if (!((defined SunOS) && (SunOS >= 50)))
+    if (vifs_down)
+#endif /* Solaris */
+	check_vif_state();
+
+    /* Age many things */
+    for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
+	if (v->uv_flags & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER))
+	    continue;
+
+	/* Timeout neighbors */
+	for (curr = v->uv_pim_neighbors; curr; curr = next) {
+	    next = curr->next;
+
+	    /* Never timeout neighbors with holdtime = 0xffff.
+	     * This may be used with ISDN lines to avoid keeping the
+	     * link up with periodic Hello messages.
+	     */
+	    /* TODO: XXX: TIMER implem. dependency! */
+	    if (PIM_HELLO_HOLDTIME_FOREVER == curr->timer)
+		continue;
+	    IF_NOT_TIMEOUT(curr->timer)
+		continue;
+
+	    logit(LOG_INFO, 0, "Delete PIM neighbor %s on %s (holdtime timeout)",
+		  inet_fmt(curr->address, s2, sizeof(s2)), v->uv_name);
+
+	    delete_pim_nbr(curr);
+	}
+
+	/* PIM_HELLO periodic */
+	IF_TIMEOUT(v->uv_hello_timer)
+	    send_pim_hello(v, pim_timer_hello_holdtime);
+
+#ifdef TOBE_DELETED
+	/* PIM_JOIN_PRUNE periodic */
+	/* TODO: XXX: TIMER implem. dependency! */
+	if (v->uv_jp_timer <= TIMER_INTERVAL)
+	    /* TODO: need to scan the whole routing table,
+	     * because different entries have different Join/Prune timer.
+	     * Probably don't need the Join/Prune timer per vif.
+	     */
+	    send_pim_join_prune(vifi, NULL, PIM_JOIN_PRUNE_HOLDTIME);
+	else
+	    /* TODO: XXX: TIMER implem. dependency! */
+	    v->uv_jp_timer -= TIMER_INTERVAL;
+#endif /* TOBE_DELETED */
+
+	/* IGMP query periodic */
+	IF_TIMEOUT(v->uv_gq_timer)
+	    query_groups(v);
+
+	if (v->uv_querier) {
+	    v->uv_querier->al_timer += TIMER_INTERVAL;
+	    if (v->uv_querier->al_timer > igmp_querier_timeout) {
+		/*
+		 * The current querier has timed out.  We must become
+		 * the querier.
+		 */
+		IF_DEBUG(DEBUG_IGMP) {
+		    logit(LOG_DEBUG, 0, "IGMP Querier %s timed out.",
+			  inet_fmt(v->uv_querier->al_addr, s1, sizeof(s1)));
+		}
+		free(v->uv_querier);
+		v->uv_querier = NULL;
+		v->uv_flags |= VIFF_QUERIER;
+		query_groups(v);
+	    }
+	}
+    }
+}
+
 /**
  * Local Variables:
  *  indent-tabs-mode: t
