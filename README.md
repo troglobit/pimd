@@ -353,7 +353,7 @@ Stanford Junior University.
 [homepage]:        https://troglobit.com/pimd.html
 [ChangeLog]:       https://github.com/troglobit/pimd/blob/master/ChangeLog.org
 [releases page]:   https://github.com/troglobit/pimd/releases
-[buildsystem]:     https://airs.com/ian/configure/
+[buildsystem]:     https://autotools.io/
 [contrib]:         https://github.com/troglobit/pimd/blob/master/docs/CONTRIBUTING.md
 [Joachim Nilsson]: https://troglobit.com
 [Travis]:          https://travis-ci.org/troglobit/pimd
