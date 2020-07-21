@@ -10,14 +10,14 @@
 
 #include "defs.h"
 
-static struct timeout_q *Q = NULL;
+static struct tmr *Q = NULL;
 static int id = 0;
 
-struct timeout_q {
-    struct timeout_q *next;		/* next event */
+struct tmr {
+    struct tmr      *next;		/* next event */
     int        	     id;  
     cfunc_t          func;    	        /* function to call */
-    void	     *data;		/* func's data */
+    void	    *data;		/* func's data */
     int              time;		/* time offset to next event*/
 };
 
@@ -48,7 +48,7 @@ void timer_init(void)
 
 void timer_free_all(void)
 {
-    struct timeout_q *p;
+    struct tmr *p;
     
     while (Q) {
 	p = Q;
@@ -67,7 +67,7 @@ void timer_free_all(void)
  */
 void timer_age_queue(int elapsed_time)
 {
-    struct timeout_q *ptr;
+    struct tmr *ptr;
 
     IF_DEBUG(DEBUG_TIMEOUT)
 	logit(LOG_DEBUG, 0, "aging queue (elapsed time %d):", elapsed_time);
@@ -114,14 +114,14 @@ int timer_next_delay(void)
  */
 int timer_set(int delay, cfunc_t action, void *data)
 {
-    struct timeout_q *ptr, *node, *prev;
+    struct tmr *ptr, *node, *prev;
     
     IF_DEBUG(DEBUG_TIMEOUT)
 	logit(LOG_DEBUG, 0, "setting timer:");
     print_Q();
     
     /* create a node */	
-    node = calloc(1, sizeof(struct timeout_q));
+    node = calloc(1, sizeof(struct tmr));
     if (!node) {
 	logit(LOG_ERR, 0, "Ran out of memory in %s()", __func__);
 	return -1;
@@ -172,7 +172,7 @@ int timer_set(int delay, cfunc_t action, void *data)
 /* returns the time until the timer is scheduled */
 int timer_get(int timer_id)
 {
-    struct timeout_q *ptr;
+    struct tmr *ptr;
     int left = 0;
 	
     if (!timer_id)
@@ -190,7 +190,7 @@ int timer_get(int timer_id)
 /* clears the associated timer */
 void timer_clear(int timer_id)
 {
-    struct timeout_q  *ptr, *prev;
+    struct tmr  *ptr, *prev;
     
     if (!timer_id)
 	return;
@@ -233,7 +233,7 @@ void timer_clear(int timer_id)
  */
 static void print_Q(void)
 {
-    struct timeout_q  *ptr;
+    struct tmr  *ptr;
     
     IF_DEBUG(DEBUG_TIMEOUT) {
 	for (ptr = Q; ptr; ptr = ptr->next)
