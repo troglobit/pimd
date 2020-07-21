@@ -455,7 +455,7 @@ extern int		errno;
 
 /* callout.c */
 extern void	timer_init		(void);
-extern void	timer_free_all		(void);
+extern void	timer_exit		(void);
 extern void	timer_age_queue		(int);
 extern int	timer_next_delay	(void);
 extern int	timer_set		(int, cfunc_t, void *);

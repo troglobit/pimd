@@ -46,7 +46,7 @@ void timer_init(void)
     id = 0;
 }
 
-void timer_free_all(void)
+void timer_exit(void)
 {
     struct tmr *p;
     

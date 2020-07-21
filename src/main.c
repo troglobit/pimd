@@ -748,7 +748,7 @@ static void restart(int signo)
        free_all_routes();
     */
     del_static_rp();
-    timer_free_all();
+    timer_exit();
     stop_all_vifs();
     k_stop_pim(igmp_socket);
     ipc_exit();
