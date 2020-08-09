@@ -160,7 +160,7 @@ static int usage(int code)
     printf(" -n, --foreground    Run in foreground, do not detach from calling terminal\n");
     printf(" -d, --debug=SYS     Enable debug for subystem(s) SYS, separate more with comma\n");
     printf(" -l, --loglevel=LVL  Set log level: none, err, notice (default), info, debug\n");
-    printf(" -i, --ident=NAME    Identity for config + PID file, and syslog, default: %s\n", ident);
+    printf(" -i, --ident=NAME    Identity for config + PID file, and syslog, default: %s\n", prognm);
     printf("     --pidfile=FILE  File to store process ID for signaling %s\n"
 	   "                     Default uses ident NAME: %s\n", prognm, pidfn);
     printf(" -r                  Retry (forever) if not all configured phyint interfaces are\n"
