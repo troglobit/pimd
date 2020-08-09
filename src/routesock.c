@@ -151,7 +151,7 @@ int k_req_incoming(uint32_t source, struct rpfctl *rpf)
     /* initialize */
     rpf->source.s_addr      = source;
     rpf->rpfneighbor.s_addr = INADDR_ANY_N;
-
+#if 0
     /*
      * check if local address or directly connected before calling the
      * routing socket
@@ -161,6 +161,17 @@ int k_req_incoming(uint32_t source, struct rpfctl *rpf)
 	rpf->rpfneighbor.s_addr = source;
 	return TRUE;
     }
+#else
+    /*
+     * Cannot call find_vif_direct_local() anymore.  In c8d06b0a this fn
+     * was changed to call k_req_incoming(), i.e. us.  The change was
+     * made in the context of Linux (netlink), which already does not
+     * call find_vif_direct_local().
+     *
+     * XXX: Possibly we should've fixed netlink.c instead, but here we are.
+     */
+    rpf->iif = NO_VIF;
+#endif
 
     /* prepare the routing socket params */
     rtm_addrs |= RTA_DST;
