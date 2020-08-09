@@ -1,5 +1,6 @@
 AC_PREREQ(2.61)
 AC_INIT(pimd, 3.0-beta1, https://github.com/troglobit/pimd/issues, , https://troglobit.com/projects/pimd)
+AC_CONFIG_AUX_DIR(aux)
 AM_INIT_AUTOMAKE([1.11 foreign])
 AM_SILENT_RULES([yes])
 
