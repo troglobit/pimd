@@ -326,7 +326,7 @@ systems, unless you know what you are doing!
 Contributing
 ------------
 
-pimd is maintained by [Joachim Nilsson][] at [GitHub][].  If you find
+pimd is maintained by [Joachim Wiberg][] at [GitHub][].  If you find
 bugs, have feature requests, or want to contribute fixes or features,
 check out the code from GitHub:
 
@@ -355,7 +355,7 @@ Stanford Junior University.
 [releases page]:   https://github.com/troglobit/pimd/releases
 [buildsystem]:     https://autotools.io/
 [contrib]:         https://github.com/troglobit/pimd/blob/master/.github/CONTRIBUTING.md
-[Joachim Nilsson]: https://troglobit.com
+[Joachim Wiberg]:  https://troglobit.com
 [Travis]:          https://travis-ci.org/troglobit/pimd
 [Travis Status]:   https://travis-ci.org/troglobit/pimd.png?branch=master
 [Coverity Scan]:   https://scan.coverity.com/projects/3319
