@@ -142,11 +142,20 @@ static void print(char *line)
 	}
 
 	if (!plain) {
-		fprintf(stdout, "\e[7m%s%*s\e[0m\n", line, len < 0 ? 0 : len, "");
+	/* Reverse the video to highlight the header (ansi/vt100 formatting) */
+	fprintf(stdout, "\e[7m%s%*s\e[0m\n", line, len < 0 ? 0 : len, "");
+
+	/* highlight html using bold. Strong is perhaps an option to (both options do not always work) */
+	/*	fprintf(stdout, "<b>%s%*s<\\b>\n", line, len < 0 ? 0 : len, ""); */
+
 	} else {
+	/* This code provides a line of "_" */
 		while (len--)
-			fputc('=', stdout);
+			fputc('_', stdout);
 		fputs("\n", stdout);
+
+	/* Print the original header */
+		fprintf(stdout, "%s%*s\n", line, len < 0 ? 0 : len, "");
 	}
 }
 

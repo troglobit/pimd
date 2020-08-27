@@ -40,6 +40,10 @@
  *
  */
 
+ /* Table headings, or repeat headers, should(!) end with a '='
+ This controls the header formatting (in pimctl.c) */
+
+
 #define SYSLOG_NAMES
 #include "defs.h"
 
@@ -47,6 +51,7 @@
 #include <stdio.h>
 
 #define MAX_MSG_SIZE 64                  /* Max for dump_frame() */
+
 
 static struct debugname {
     char	*name;
@@ -415,10 +420,10 @@ void dump_vifs(FILE *fp, int detail)
     pim_nbr_entry_t *n;
     int width;
     int i;
-
     if (detail)
 	fprintf(fp, "\nVirtual Interface Table\n");
-    fprintf(fp, "VIF  Local Address    Subnet              Thresh  Flags      Neighbors=\n");
+/*               012345678901234567890123456789012345678901234567890123456789012345678901234567890 */
+    fprintf(fp, "VIF  Local Address    Subnet              Thresh  Flags      Neighbors          =\n");
 
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
 	int down = 0;
@@ -729,6 +734,7 @@ void dump_pim_mrt(FILE *fp, int detail)
 	fprintf(fp, "\nMulticast Routing Table");
 
     /* TODO: remove the dummy 0.0.0.0 group (first in the chain) */
+	/* 20200825 Louis: is that group still there? On my system I do not see that group */
     for (g = grplist->next; g; g = g->next) {
 	number_of_groups++;
 
@@ -741,7 +747,8 @@ void dump_pim_mrt(FILE *fp, int detail)
 
 	    /* Print the (*,G) routing info */
 	    fprintf(fp, "\n");
-	    fprintf(fp, "Source           Group            RP Address       Flags              (*,G)=\n");
+/*                       012345678901234567890123456789012345678901234567890123456789012345678901234567890 */
+	    fprintf(fp, "Source           Group            RP Address       Flags                   (*,G)=\n");
 	    fprintf(fp, "%-15s  ", "*");
 	    fprintf(fp, "%-15s  ", inet_fmt(g->group, s1, sizeof(s1)));
 	    fprintf(fp, "%-15s ", IN_PIM_SSM_RANGE(g->group) ? "SSM" :
@@ -757,7 +764,8 @@ void dump_pim_mrt(FILE *fp, int detail)
 
 	    /* Print the routing info */
 	    fprintf(fp, "\n");
-	    fprintf(fp, "Source           Group            RP Address       Flags              (S,G)=\n");
+/*                       012345678901234567890123456789012345678901234567890123456789012345678901234567890 */
+	    fprintf(fp, "Source           Group            RP Address       Flags                   (S,G)=\n");
 	    fprintf(fp, "%-15s  ", inet_fmt(r->source->address, s1, sizeof(s1)));
 	    fprintf(fp, "%-15s  ", inet_fmt(g->group, s2, sizeof(s2)));
 	    fprintf(fp, "%-15s ", IN_PIM_SSM_RANGE(g->group) ? "SSM" :
@@ -778,7 +786,8 @@ void dump_pim_mrt(FILE *fp, int detail)
 
 	    /* Print the (*,*,RP) routing info */
 	    fprintf(fp, "\n");
-	    fprintf(fp, "Source           Group            RP Address       Flags              (*,*,RP)=\n");
+/*                       012345678901234567890123456789012345678901234567890123456789012345678901234567890 */
+	    fprintf(fp, "Source           Group            RP Address       Flags                (*,*,RP)=\n");
 	    fprintf(fp, "%-15s  ", inet_fmt(r->source->address, s1, sizeof(s1)));
 	    fprintf(fp, "%-15s  ", "*");
 	    fprintf(fp, "%-15s ", "");
@@ -787,6 +796,8 @@ void dump_pim_mrt(FILE *fp, int detail)
 	}
     } /* For all (*,*,RP) */
 
+	/* This is more or less belonging to some overview. It is not belonging to a group, so some free space here */
+	fprintf(fp, "\n\n");
     fprintf(fp, "Number of Groups: %u\n", number_of_groups);
     fprintf(fp, "Number of Cache MIRRORs: %u\n", number_of_cache_mirrors);
 }
@@ -820,7 +831,8 @@ int dump_rp_set(FILE *fp, int detail)
 	fprintf(fp, "\nRendezvous-Point Set\n");
     else
 	fprintf(fp, "\n");
-    fprintf(fp, "RP address       Incoming  Group Prefix        Priority  Holdtime=\n");
+/*               012345678901234567890123456789012345678901234567890123456789012345678901234567890 */
+    fprintf(fp, "RP address       Incoming  Group Prefix        Priority  Holdtime               =\n");
 
     for (rp = cand_rp_list; rp; rp = rp->next) {
 	char buf[10];
@@ -841,7 +853,9 @@ int dump_rp_set(FILE *fp, int detail)
     fprintf(fp, "\nCurrent BSR address: %s\n", inet_fmt(curr_bsr_address, s1, sizeof(s1)));
 
     return TRUE;
+
 }
+
 
 /**
  * Local Variables:
