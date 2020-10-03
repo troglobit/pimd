@@ -46,13 +46,13 @@ AC_CONFIG_LIBOBJ_DIR([lib])
 AC_ARG_ENABLE(kernel_encap,
 	AS_HELP_STRING([--enable-kernel-encap], [Specialized kernels do PIM Register encapsulation
 			by themselves, speeding up processing considerably.
-			Not on Linux/*BSD, needs pimkern-PATCH_6]),,
+			Not available on Linux, but maybe on *BSD, needs pimkern-PATCH_6]),,
 	enable_kernel_encap=no)
 
 #   (*,G) kernel MFC support.  Use it ONLY with (*,G) capable kernel
 AC_ARG_ENABLE(kernel_mfc,
 	AS_HELP_STRING([--enable-kernel-mfc], [Specialized kernels may have (*,G) MFC support.
-			Not on Linux/*BSD, needs pimkern-PATCH_7]),,
+			Not on Linux, but maybe on *BSD, needs pimkern-PATCH_7]),,
 	enable_kernel_mfc=no)
 
 #   Saves 4 bytes per unconfigured interface per routing entry.  If set,
