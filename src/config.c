@@ -921,7 +921,7 @@ int parse_group_prefix(char *s)
      *  --> "config.c:693: warning: promoted ~unsigned is always non-zero"
      * The prefix_cnt_ptr is a uint8_t so it seems this check was to prevent overruns.
      * I've changed the check to see if we've already read 255 entries, if so the cnt
-     * is maximized and we need to tell the user. --Joachim Nilsson 2010-01-16 */
+     * is maximized and we need to tell the user. --Joachim Wiberg 2010-01-16 */
     if (*cand_rp_adv_message.prefix_cnt_ptr == 255) {
 	WARN("Too many multicast groups configured!");
 	return FALSE;

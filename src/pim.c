@@ -471,7 +471,7 @@ static int send_frame(char *buf, size_t len, size_t frag, size_t mtu, struct soc
 #else
 /*
  * send unicast register frames
- * Version: Joachim Nilsson
+ * Version: Joachim Wiberg
  * Staus:   Does not work (yet!)
  * Design:  Fragment IP frames when the frame length exceeds the MTU
  *          reported from the interface.  Optimizes for less fragments
