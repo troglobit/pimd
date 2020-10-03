@@ -652,19 +652,19 @@ struct rp_hold {
 
 /* compat declarations */
 #ifndef strlcpy
-size_t  strlcpy    (char *dst, const char *src, size_t siz);
+extern size_t	strlcpy			(char *, const char *, size_t);
 #endif
 
 #ifndef strlcat
-size_t  strlcat    (char *dst, const char *src, size_t siz);
+extern size_t	strlcat			(char *, const char *, size_t);
 #endif
 
 #ifndef strtonum
-long long strtonum (const char *numstr, long long minval, long long maxval, const char **errstrp);
+extern long long strtonum		(const char *, long long, long long, const char **);
 #endif
 
 #ifndef pidfile
-int     pidfile    (const char *basename);
+extern int	pidfile			(const char *);
 #endif
 
 #endif /* PIMD_DEFS_H_ */
