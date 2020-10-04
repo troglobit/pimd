@@ -293,17 +293,16 @@ int debug_list(int mask, char *buf, size_t len)
     size_t i;
 
     memset(buf, 0, len);
-    for (i = 0, d = debugnames; i < ARRAY_LEN(debugnames); i++, d++) {
+    for (i = 0, d = debugnames; i < NELEMS(debugnames); i++, d++) {
 	if (!(mask & d->level))
 	    continue;
 
 	if (mask != (int)DEBUG_ALL)
 	    mask &= ~d->level;
 
-	strlcat(buf, d->name, len);
-
-	if (mask && i + 1 < ARRAY_LEN(debugnames))
+	if (*buf)
 	    strlcat(buf, ", ", len);
+	strlcat(buf, d->name, len);
     }
 
     return 0;
@@ -332,12 +331,12 @@ int debug_parse(char *arg)
 	}
 
 	len = strlen(arg);
-	for (i = 0, d = debugnames; i < ARRAY_LEN(debugnames); i++, d++) {
+	for (i = 0, d = debugnames; i < NELEMS(debugnames); i++, d++) {
 	    if (len >= d->nchars && strncmp(d->name, arg, len) == 0)
 		break;
 	}
 
-	if (i == ARRAY_LEN(debugnames))
+	if (i == NELEMS(debugnames))
 	    return DEBUG_PARSE_FAIL;
 
 	if (no)
