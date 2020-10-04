@@ -793,17 +793,19 @@ static void restart(int signo)
     timer_set(TIMER_INTERVAL, timer, NULL);
 }
 
-int daemon_restart(void *arg)
+int daemon_restart(char *buf, size_t len)
 {
-    (void)arg;
+    (void)buf;
+    (void)len;
     restart(1);
 
     return 0;
 }
 
-int daemon_kill(void *arg)
+int daemon_kill(char *buf, size_t len)
 {
-    (void)arg;
+    (void)buf;
+    (void)len;
     handle_signals(SIGTERM);
 
     return 0;

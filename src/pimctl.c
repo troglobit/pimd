@@ -27,11 +27,34 @@
  * SUCH DAMAGE.
  */
 
-#include "defs.h"
+#include "config.h"
+
+#include <err.h>
+#include <errno.h>
 #include <getopt.h>
+#include <paths.h>
 #include <poll.h>
+#include <stdio.h>
+#include <string.h>
 #ifdef HAVE_TERMIOS_H
 # include <termios.h>
+#endif
+#include <unistd.h>
+
+#include <sys/types.h>          /* See NOTES */
+#include <sys/socket.h>
+#include <sys/un.h>
+
+#ifndef MIN
+#define MIN(a,b)	(((a) <= (b))? (a) : (b))
+#endif
+
+#ifndef strlcat
+extern size_t strlcat(char *, const char *, size_t);
+#endif
+
+#ifndef strlcat
+extern size_t strlcpy(char *, const char *, size_t);
 #endif
 
 struct cmd {
@@ -45,32 +68,134 @@ static int plain = 0;
 static int detail = 0;
 static int heading = 1;
 
-char *ident = "pimd";
+char *ident = NULL;
 
-
-static int do_connect(char *ident)
+static void dedup(char *arr[])
 {
-	struct sockaddr_un sun;
+	for (int i = 1; arr[i]; i++) {
+		if (!strcmp(arr[i - 1], arr[i])) {
+			arr[i - 1] = arr[i];
+			for (int j = i; arr[j]; j++)
+				arr[j] = arr[j + 1];
+		}
+	}
+}
+
+static int try_connect(struct sockaddr_un *sun)
+{
 	int sd;
 
-#ifdef HAVE_SOCKADDR_UN_SUN_LEN
-	sun.sun_len = 0;	/* <- correct length is set by the OS */
-#endif
-	sun.sun_family = AF_UNIX,
-	snprintf(sun.sun_path, sizeof(sun.sun_path), _PATH_PIMD_SOCK, ident);
 	sd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (-1 == sd)
-		goto error;
+		return -1;
 
-	if (connect(sd, (struct sockaddr*)&sun, sizeof(sun)) == -1) {
+#ifdef HAVE_SOCKADDR_UN_SUN_LEN
+	sun->sun_len = 0; /* <- correct length is set by the OS */
+#endif
+	sun->sun_family = AF_UNIX;
+
+	if (connect(sd, (struct sockaddr*)sun, sizeof(*sun)) == -1) {
 		close(sd);
-		goto error;
+		if (errno == ENOENT) {
+			if (detail)
+				warnx("no pimd at %s", sun->sun_path);
+			return -1;
+		}
+
+		if (detail)
+			warn("failed connecting to %s", sun->sun_path);
+		return -1;
 	}
 
 	return sd;
-error:
-	perror("Failed connecting to pimd");
+}
+
+static void compose_path(struct sockaddr_un *sun, char *dir, char *nm)
+{
+	int n;
+
+	if (*nm == '/') {
+		strlcpy(sun->sun_path, nm, sizeof(sun->sun_path));
+		return;
+	}
+
+	n = snprintf(sun->sun_path, sizeof(sun->sun_path), "%s", dir);
+	if (sun->sun_path[n - 1] != '/')
+		strlcat(sun->sun_path, "/", sizeof(sun->sun_path));
+	strlcat(sun->sun_path, nm, sizeof(sun->sun_path));
+	strlcat(sun->sun_path, ".sock", sizeof(sun->sun_path));
+}
+
+/*
+ * if ident is given, that's the name we're going for
+ * if ident starts with a /, we skip all dirs as well
+ */
+static int ipc_connect(void)
+{
+	struct sockaddr_un sun;
+	char *dirs[] = {
+		RUNSTATEDIR "/",
+		_PATH_VARRUN,
+		NULL
+	};
+	char *names[] = {
+		PACKAGE_NAME,	/* this daemon */
+		"pimd",		/* PIM SM/SSM    */
+		"pimd-dense",	/* PIM DM        */
+		"pim6sd",	/* PIM SM (IPv6) */
+		NULL
+	};
+	int sd;
+
+	if (ident && *ident == '/') {
+		compose_path(&sun, NULL, ident);
+		sd = try_connect(&sun);
+		if (sd == -1 && errno == ENOENT) {
+			/* Check if user forgot .sock suffix */
+			strlcat(sun.sun_path, ".sock", sizeof(sun.sun_path));
+			sd = try_connect(&sun);
+		}
+
+		return sd;
+	}
+
+	/* Remove duplicates */
+	dedup(dirs);
+	dedup(names);
+
+	for (size_t i = 0; dirs[i]; i++) {
+		if (ident) {
+			compose_path(&sun, dirs[i], ident);
+			sd = try_connect(&sun);
+			if (sd == -1)
+				continue;
+
+			return sd;
+		}
+
+		for (size_t j = 0; names[j]; j++) {
+			compose_path(&sun, dirs[i], names[j]);
+			sd = try_connect(&sun);
+			if (sd == -1)
+				continue;
+			
+			return sd;
+		}
+	}
+
 	return -1;
+}
+
+static int ipc_ping(void)
+{
+	int sd;
+
+	sd = ipc_connect();
+	if (sd == -1)
+		return 0;
+
+	close(sd);
+	return 1;
 }
 
 #define ESC "\033"
@@ -150,86 +275,57 @@ static void print(char *line)
 	}
 }
 
-static struct ipc *do_cmd(uint8_t cmd, int detail, char *buf, size_t len)
+static int get(char *cmd)
 {
-	static struct ipc msg;
 	struct pollfd pfd;
+	char buf[768];
+	ssize_t len;
+	FILE *fp;
 	int sd;
 
-	if (buf && len >= sizeof(msg.buf)) {
-		errno = EINVAL;
-		return NULL;
+	sd = ipc_connect();
+	if (-1 == sd) {
+		if (errno == ENOENT)
+			errx(1, "no pimd running.");
+		err(1, "failed connecting to pimd");
+
+		return 1; /* we never get here, make gcc happy */
 	}
 
-	sd = do_connect(ident);
-	if (-1 == sd)
-		return NULL;
+	len = snprintf(buf, sizeof(buf), "%s", chomp(cmd));
+	if (write(sd, buf, len) == -1) {
+		close(sd);
+		return 2;
+	}
 
-	memset(&msg, 0, sizeof(msg));
-	msg.cmd = cmd;
-	msg.detail = detail;
-	if (buf)
-		memcpy(msg.buf, buf, len);
-
-	if (write(sd, &msg, sizeof(msg)) == -1)
-		goto fail;
+	fp = tmpfile();
+	if (!fp) {
+		warn("Failed opening tempfile");
+		close(sd);
+		return 3;
+	}
 
 	pfd.fd = sd;
-	pfd.events = POLLIN;
+	pfd.events = POLLIN | POLLHUP;
 	while (poll(&pfd, 1, 2000) > 0) {
-		ssize_t len;
+		if (pfd.events & POLLIN) {
+			len = read(sd, buf, sizeof(buf));
+			if (len == -1)
+				break;
 
-		len = read(sd, &msg, sizeof(msg));
-		if (len != sizeof(msg) || msg.cmd)
+			fwrite(buf, len, 1, fp);
+		}
+		if (pfd.revents & POLLHUP)
 			break;
-
-		msg.sentry = 0;
-		print(msg.buf);
 	}
-
 	close(sd);
-	return &msg;
-fail:
-	close(sd);
-	return NULL;
-}
 
-static int do_set(int cmd, char *arg)
-{
-	if (!do_cmd(cmd, 0, arg, strlen(arg)))
-		return 1;
+	rewind(fp);
+	while (fgets(buf, sizeof(buf), fp))
+		print(buf);
+	fclose(fp);
 
 	return 0;
-}
-
-static int set_debug(char *arg)
-{
-	return do_set(IPC_DEBUG_CMD, arg);
-}
-
-static int set_loglevel(char *arg)
-{
-	return do_set(IPC_LOGLEVEL_CMD, arg);
-}
-
-static int show_generic(int cmd, int detail)
-{
-	if (!do_cmd(cmd, detail, NULL, 0))
-		return -1;
-
-	return 0;
-}
-
-static int show_igmp(char *arg)
-{
-	(void)arg;
-	return show_generic(IPC_SHOW_IGMP_GROUPS_CMD, 0);
-}
-
-static int show_pim(char *arg)
-{
-	(void)arg;
-	return show_generic(IPC_SHOW_PIM_DUMP_CMD, 0);
 }
 
 static int string_match(const char *a, const char *b)
@@ -241,89 +337,45 @@ static int string_match(const char *a, const char *b)
 
 static int usage(int rc)
 {
-	fprintf(stderr,
-		"Usage: pimctl [OPTIONS] [COMMAND]\n"
-		"\n"
-		"Options:\n"
-		"  -d, --detail              Detailed output, where applicable\n"
-		"  -i, --ident=NAME          Connect to named pimd instance\n"
-		"  -p, --plain               Use plain table headings, no ctrl chars\n"
-		"  -t, --no-heading          Skip table headings\n"
-		"  -h, --help                This help text\n"
-		"\n"
-		"Commands:\n"
-		"  debug [? | none | SYS]    Debug subystem(s), separate multiple with comma\n"
-		"  help                      This help text\n"
-		"  kill                      Kill running daemon, like SIGTERM\n"
-		"  log [? | none | LEVEL]    Set pimd log level: none, err, notice*, info, debug\n"
-		"  restart                   Restart pimd and reload .conf file, like SIGHUP\n"
-		"  version                   Show pimd version\n"
-		"  show status               Show pimd status, default\n"
-		"  show igmp groups          Show IGMP group memberships\n"
-		"  show igmp interface       Show IGMP interface status\n"
-		"  show pim interface        Show PIM interface table\n"
-		"  show pim neighbor         Show PIM neighbor table\n"
-		"  show pim routes           Show PIM routing table\n"
-		"  show pim rp               Show PIM Rendezvous-Point (RP) set\n"
-		"  show pim crp              Show PIM Candidate Rendezvous-Point (CRP) from BSR\n"
-		"  show pim compat           Show PIM status, compat mode, previously `pimd -r`\n"
-		);
+	printf("Usage: pimctl [OPTIONS] [COMMAND]\n"
+	       "\n"
+	       "Options:\n"
+	       "  -d, --detail               Detailed output, where applicable\n"
+	       "  -i, --ident=NAME           Connect to named pimd/pimd-dense instance\n"
+	       "  -p, --plain                Use plain table headings, no ctrl chars\n"
+	       "  -t, --no-heading           Skip table headings\n"
+	       "  -h, --help                 This help text\n"
+	       "\n");
+
+	if (ipc_ping()) {
+		printf("Commands:\n");
+		get("help");
+	} else
+		printf("No pimd running, no commands available.\n");
 
 	return rc;
 }
 
-static int help(char *arg)
+static int version(void)
 {
-	(void)arg;
-	return usage(0);
-}
-
-static int version(char *arg)
-{
-	(void)arg;
-	printf("v%s\n", PACKAGE_VERSION);
-
+	printf("pimctl version %s (%s)\n", PACKAGE_VERSION, PACKAGE_NAME);
 	return 0;
 }
 
-static int cmd_parse(int argc, char *argv[], struct cmd *command)
+static int cmd(int argc, char *argv[])
 {
-	int i;
+	char line[120] = { 0 };
 
-//	printf("-> argv[0]: %s cmd[0]: %s\n", argv[0], command[0].cmd);
-	for (i = 0; command[i].cmd; i++) {
-		/* If no arg then skip to end of commands for fallback */
-		if (!argv[0])
-			continue;
+	if (!strcmp(argv[0], "help"))
+		return usage(0);
 
-		if (!string_match(command[i].cmd, argv[0]))
-			continue;
-
-		if (command[i].ctx)
-			return cmd_parse(argc - 1, &argv[1], command[i].ctx);
-
-		if (command[i].cb) {
-			char arg[80] = "";
-			int j;
-
-			for (j = 1; j < argc; j++) {
-				if (j > 1)
-					strlcat(arg, " ", sizeof(arg));
-				strlcat(arg, argv[j], sizeof(arg));
-			}
-
-			return command[i].cb(arg);
-		}
-
-		return show_generic(command[i].op, detail);
+	for (int i; i < argc; i++) {
+		if (i != 0)
+			strlcat(line, " ", sizeof(line));
+		strlcat(line, argv[i], sizeof(line));
 	}
 
-//	printf("-> argv[0]: %s cmd[%d]: %s\n", argv[0], i, command[i].cmd);
-	/* End of command list, do we have a fallback listed? */
-	if (command[i].cb)
-		return command[i].cb(NULL);
-
-	return usage(1);
+	return get(line);
 }
 
 int main(int argc, char *argv[])
@@ -334,44 +386,12 @@ int main(int argc, char *argv[])
 		{ "no-heading", 0, NULL, 't' },
 		{ "plain",      0, NULL, 'p' },
 		{ "help",       0, NULL, 'h' },
+		{ "version",    0, NULL, 'v' },
 		{ NULL, 0, NULL, 0 }
-	};
-	struct cmd igmp[] = {
-		{ "groups",    NULL, NULL,         IPC_SHOW_IGMP_GROUPS_CMD },
-		{ "interface", NULL, NULL,         IPC_SHOW_IGMP_IFACE_CMD  },
-		{ "iface",     NULL, NULL,         IPC_SHOW_IGMP_IFACE_CMD  }, /* ALIAS */
-		{ NULL,        NULL, show_igmp,    0                        }
-	};
-	struct cmd pim[] = {
-		{ "interface", NULL, NULL,         IPC_SHOW_PIM_IFACE_CMD },
-		{ "iface",     NULL, NULL,         IPC_SHOW_PIM_IFACE_CMD }, /* ALIAS */
-		{ "neighbor",  NULL, NULL,         IPC_SHOW_PIM_NEIGH_CMD },
-		{ "routes",    NULL, NULL,         IPC_SHOW_PIM_ROUTE_CMD },
-		{ "rp",        NULL, NULL,         IPC_SHOW_PIM_RP_CMD    },
-		{ "crp",       NULL, NULL,         IPC_SHOW_PIM_CRP_CMD   },
-		{ "compat",    NULL, NULL,         IPC_SHOW_PIM_DUMP_CMD  },
-		{ NULL,        NULL, show_pim,     0                      }
-	};
-	struct cmd show[] = {
-		{ "igmp",      igmp, NULL,         0                   },
-		{ "pim",       pim,  NULL,         0                   },
-		{ "status",    NULL, NULL,         IPC_SHOW_STATUS_CMD },
-		{ NULL,        NULL, show_pim,     0                   }
-	};
-	struct cmd command[] = {
-		{ "debug",     NULL, set_debug,    0                   },
-		{ "help",      NULL, help,         0                   },
-		{ "kill",      NULL, NULL,         IPC_KILL_CMD        },
-		{ "log",       NULL, set_loglevel, 0                   },
-		{ "status",    NULL, NULL,         IPC_SHOW_STATUS_CMD },
-		{ "restart",   NULL, NULL,         IPC_RESTART_CMD     },
-		{ "version",   NULL, version,      0                   },
-		{ "show",      show, NULL,         0                   },
-		{ NULL }
 	};
 	int c;
 
-	while ((c = getopt_long(argc, argv, "dh?i:pt", long_options, NULL)) != EOF) {
+	while ((c = getopt_long(argc, argv, "dh?i:ptv", long_options, NULL)) != EOF) {
 		switch(c) {
 		case 'd':
 			detail = 1;
@@ -392,13 +412,16 @@ int main(int argc, char *argv[])
 		case 't':
 			heading = 0;
 			break;
+
+		case 'v':
+			return version();
 		}
 	}
 
 	if (optind >= argc)
-		return show_generic(IPC_SHOW_STATUS_CMD, detail);
+		return get("show");
 
-	return cmd_parse(argc - optind, &argv[optind], command);
+	return cmd(argc - optind, &argv[optind]);
 }
 
 /**

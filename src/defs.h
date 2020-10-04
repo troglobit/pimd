@@ -130,7 +130,6 @@ typedef void (*ihfunc_t) (int);
 #include "mrt.h"
 #include "igmpv2.h"
 #include "igmpv3.h"
-#include "ipc.h"
 #include "vif.h"
 #include "debug.h"
 #include "pathnames.h"
@@ -497,6 +496,10 @@ extern char	*inet_fmt		(uint32_t addr, char *s, size_t len);
 extern char	*netname		(uint32_t addr, uint32_t mask);
 extern uint32_t	inet_parse		(char *s, int n);
 
+/* ipc.c */
+extern void	ipc_init		(void);
+extern void	ipc_exit		(void);
+
 /* kern.c */
 extern void	k_set_sndbuf		(int socket, int bufsize, int minsize);
 extern void	k_set_rcvbuf		(int socket, int bufsize, int minsize);
@@ -519,8 +522,8 @@ extern int	k_get_sg_cnt		(int socket, uint32_t source, uint32_t group, struct sg
 
 /* main.c */
 extern int	register_input_handler	(int fd, ihfunc_t func);
-extern int      daemon_restart          (void *arg);
-extern int      daemon_kill             (void *arg);
+extern int      daemon_restart          (char *buf, size_t len);
+extern int      daemon_kill             (char *buf, size_t len);
 
 /* mrt.c */
 extern void	init_pim_mrt		(void);
