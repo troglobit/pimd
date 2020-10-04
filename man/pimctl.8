@@ -7,7 +7,7 @@
 .Xr pimd 8
 .Sh SYNOPSIS
 .Nm pimctl
-.Op Fl dpth
+.Op Fl pth
 .Op Fl i Ar NAME
 .Op COMMAND
 .Nm
@@ -28,13 +28,13 @@
 .Nm
 .Ar show pim neighbor
 .Nm
-.Ar show pim routes
+.Ar show pim routes Op detail
 .Nm
 .Ar show pim rp
 .Nm
 .Ar show pim crp
 .Nm
-.Ar show pim compat
+.Ar show pim compat Op detail
 .Pp
 .Nm
 .Op Ar show status
@@ -52,8 +52,6 @@ for
 This program follows the usual UNIX command line syntax, with long
 options starting with two dashes (`-').  The options are as follows:
 .Bl -tag -width Ds
-.It Fl d, -detail
-Detailed output, where applicable, see each command below.
 .It Fl h, -help
 Show usage instructions and exit.
 .It Fl i, -ident Ar NAME

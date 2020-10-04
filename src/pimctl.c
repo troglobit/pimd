@@ -65,7 +65,7 @@ struct cmd {
 };
 
 static int plain = 0;
-static int detail = 0;
+static int debug = 0;
 static int heading = 1;
 
 char *ident = NULL;
@@ -97,12 +97,12 @@ static int try_connect(struct sockaddr_un *sun)
 	if (connect(sd, (struct sockaddr*)sun, sizeof(*sun)) == -1) {
 		close(sd);
 		if (errno == ENOENT) {
-			if (detail)
+			if (debug)
 				warnx("no pimd at %s", sun->sun_path);
 			return -1;
 		}
 
-		if (detail)
+		if (debug)
 			warn("failed connecting to %s", sun->sun_path);
 		return -1;
 	}
@@ -340,7 +340,6 @@ static int usage(int rc)
 	printf("Usage: pimctl [OPTIONS] [COMMAND]\n"
 	       "\n"
 	       "Options:\n"
-	       "  -d, --detail               Detailed output, where applicable\n"
 	       "  -i, --ident=NAME           Connect to named pimd/pimd-dense instance\n"
 	       "  -p, --plain                Use plain table headings, no ctrl chars\n"
 	       "  -t, --no-heading           Skip table headings\n"
@@ -381,7 +380,7 @@ static int cmd(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
 	struct option long_options[] = {
-		{ "detail",     0, NULL, 'd' },
+		{ "debug",      0, NULL, 'd' },
 		{ "ident",      1, NULL, 'i' },
 		{ "no-heading", 0, NULL, 't' },
 		{ "plain",      0, NULL, 'p' },
@@ -394,7 +393,7 @@ int main(int argc, char *argv[])
 	while ((c = getopt_long(argc, argv, "dh?i:ptv", long_options, NULL)) != EOF) {
 		switch(c) {
 		case 'd':
-			detail = 1;
+			debug = 1;
 			break;
 
 		case 'h':

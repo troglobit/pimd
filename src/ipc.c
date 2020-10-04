@@ -47,6 +47,7 @@
 
 static struct sockaddr_un sun;
 static int ipc_socket = -1;
+static int detail = 0;
 
 enum {
 	IPC_ERR = -1,
@@ -128,6 +129,19 @@ static void strip(char *cmd, size_t len)
 		ptr += len;
 
 	memmove(cmd, ptr, strlen(ptr) + 1);
+
+	ptr = strstr(cmd, "detail");
+	if (ptr) {
+		char *ptr2;
+
+		detail = 1;
+		ptr2 = ptr + 6;
+		len = strspn(ptr2, " \t\n");
+		if (len > 0)
+			ptr2 += len;
+		memmove(ptr, ptr2, strlen(ptr2) + 1);
+	} else
+		detail = 0;
 }
 
 static int ipc_read(int sd, char *cmd, ssize_t len)
@@ -187,7 +201,7 @@ static int ipc_send(int sd, char *buf, size_t len, FILE *fp)
 	return ipc_close(sd);
 }
 
-static void ipc_show(int sd, int (*cb)(FILE *, int), char *buf, size_t len)
+static void ipc_show(int sd, int (*cb)(FILE *), char *buf, size_t len)
 {
 	FILE *fp;
 
@@ -197,7 +211,7 @@ static void ipc_show(int sd, int (*cb)(FILE *, int), char *buf, size_t len)
 		return;
 	}
 
-	if (cb(fp, 0))
+	if (cb(fp))
 		return;
 
 	rewind(fp);
@@ -264,14 +278,12 @@ static int show_neighbor(FILE *fp, struct uvif *uv, pim_nbr_entry_t *n)
 }
 
 /* PIM Neighbor Table */
-static int show_neighbors(FILE *fp, int detail)
+static int show_neighbors(FILE *fp)
 {
 	pim_nbr_entry_t *n;
 	struct uvif *uv;
 	vifi_t vifi;
 	int first = 1;
-
-	(void)detail;
 
 	for (vifi = 0; vifi < numvifs; vifi++) {
 		uv = &uvifs[vifi];
@@ -322,11 +334,9 @@ static int show_interface(FILE *fp, struct uvif *uv)
 }
 
 /* PIM Interface Table */
-static int show_interfaces(FILE *fp, int detail)
+static int show_interfaces(FILE *fp)
 {
 	vifi_t vifi;
-
-	(void)detail;
 
 	if (numvifs)
 		fprintf(fp, "Interface         State     Address          Nbr  Hello  Prio  DR Address =\n");
@@ -338,11 +348,9 @@ static int show_interfaces(FILE *fp, int detail)
 }
 
 /* PIM RP Set Table */
-static int show_rp(FILE *fp, int detail)
+static int show_rp(FILE *fp)
 {
 	grp_mask_t *grp;
-
-	(void)detail;
 
 	if (grp_mask_list)
 		fprintf(fp, "Group Address       RP Address       Type     Prio  Holdtime =\n");
@@ -380,11 +388,9 @@ static int show_rp(FILE *fp, int detail)
 }
 
 /* PIM Cand-RP Table */
-static int show_crp(FILE *fp, int detail)
+static int show_crp(FILE *fp)
 {
 	struct cand_rp *rp;
-
-	(void)detail;
 
 	if (cand_rp_list)
 		fprintf(fp, "RP Address       Group Address       Prio  Holdtime  Expires =\n");
@@ -414,7 +420,7 @@ static int show_crp(FILE *fp, int detail)
 	return 0;
 }
 
-static int dump_route(FILE *fp, mrtentry_t *r, int detail)
+static int dump_route(FILE *fp, mrtentry_t *r)
 {
 	char asserted_oifs[MAXVIFS+1];
 	char incoming_iif[MAXVIFS+1];
@@ -482,7 +488,7 @@ static int dump_route(FILE *fp, mrtentry_t *r, int detail)
 }
 
 /* PIM Multicast Routing Table */
-static int show_pim_mrt(FILE *fp, int detail)
+static int show_pim_mrt(FILE *fp)
 {
 	u_int number_of_cache_mirrors = 0;
 	u_int number_of_groups = 0;
@@ -515,7 +521,7 @@ static int show_pim_mrt(FILE *fp, int detail)
 				   ? inet_fmt(g->rpaddr, s2, sizeof(s2))
 				   : "NULL"));
 
-			dump_route(fp, r, detail);
+			dump_route(fp, r);
 		}
 
 		for (r = g->mrtlink; r; r = r->grpnext) {
@@ -533,7 +539,7 @@ static int show_pim_mrt(FILE *fp, int detail)
 				   ? inet_fmt(g->rpaddr, s3, sizeof(s3))
 				   : "NULL"));
 
-			dump_route(fp, r, detail);
+			dump_route(fp, r);
 		}
 	}
 
@@ -552,7 +558,7 @@ static int show_pim_mrt(FILE *fp, int detail)
 				"ANY",
 				"");
 
-			dump_route(fp, r, detail);
+			dump_route(fp, r);
 		}
 	}
 
@@ -562,12 +568,10 @@ static int show_pim_mrt(FILE *fp, int detail)
 	return 0;
 }
 
-static int show_status(FILE *fp, int detail)
+static int show_status(FILE *fp)
 {
 	char buf[10];
 	int len;
-
-	(void)detail;
 
 	snprintf(buf, sizeof(buf), "%d", curr_bsr_priority);
 	MASK_TO_MASKLEN(curr_bsr_hash_mask, len);
@@ -604,13 +608,11 @@ static int show_status(FILE *fp, int detail)
 	return 0;
 }
 
-static int show_igmp_groups(FILE *fp, int detail)
+static int show_igmp_groups(FILE *fp)
 {
 	struct listaddr *group, *source;
 	struct uvif *uv;
 	vifi_t vifi;
-
-	(void)detail;
 
 	fprintf(fp, "Interface         Group            Source           Last Reported    Timeout=\n");
 	for (vifi = 0, uv = uvifs; vifi < numvifs; vifi++, uv++) {
@@ -638,13 +640,12 @@ static int show_igmp_groups(FILE *fp, int detail)
 	return 0;
 }
 
-static int show_igmp_iface(FILE *fp, int detail)
+static int show_igmp_iface(FILE *fp)
 {
 	struct listaddr *group;
 	struct uvif *uv;
 	vifi_t vifi;
 
-	(void)detail;
 	fprintf(fp, "Interface         State     Querier          Timeout Version  Groups=\n");
 
 	for (vifi = 0, uv = uvifs; vifi < numvifs; vifi++, uv++) {
@@ -681,7 +682,7 @@ static int show_igmp_iface(FILE *fp, int detail)
 	return 0;
 }
 
-static int show_dump(FILE *fp, int detail)
+static int show_dump(FILE *fp)
 {
 	dump_vifs(fp, detail);
 	dump_ssm(fp, detail);
