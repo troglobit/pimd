@@ -6,7 +6,7 @@ AUTOMAKE_OPTIONS = subdir-objects
 #               In GLIBC >= v2.20 this is replaced with -D_DEFAULT_SOURCE,
 #               but to build on older GLIBC systems we now need both ...
 AM_CPPFLAGS      = -D_BSD_SOURCE -D_DEFAULT_SOURCE -D_GNU_SOURCE -I$(top_srcdir)/include
-AM_CPPFLAGS     += -DSYSCONFDIR=\"@sysconfdir@\" -DPRESERVEDIR=\"@localstatedir@\"
+AM_CPPFLAGS     += -DSYSCONFDIR=\"@sysconfdir@\" -DRUNSTATEDIR=\"@runstatedir@\" -DPRESERVEDIR=\"@localstatedir@\"
 
 sbin_PROGRAMS    = pimd pimctl
 pimd_SOURCES     = config.c		debug.c		debug.h			    \

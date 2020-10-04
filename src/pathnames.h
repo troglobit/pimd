@@ -39,8 +39,8 @@
 #ifndef PIMD_PATHNAMES_H_
 #define PIMD_PATHNAMES_H_
 
-#define _PATH_PIMD_CONF         SYSCONFDIR        "/%s.conf"
-#define _PATH_PIMD_RUNDIR       PRESERVEDIR       "/run"
-#define _PATH_PIMD_SOCK         _PATH_PIMD_RUNDIR "/%s.sock"
+#define _PATH_PIMD_CONF         SYSCONFDIR  "/%s.conf"
+#define _PATH_PIMD_RUNDIR       RUNSTATEDIR
+#define _PATH_PIMD_SOCK         RUNSTATEDIR "/%s.sock"
 
 #endif /* PIMD_PATHNAMES_H_ */
