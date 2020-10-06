@@ -119,6 +119,22 @@ static char *timetostr(time_t t, char *buf, size_t len)
 	return buf;
 }
 
+static char *chomp(char *str)
+{
+	char *p;
+
+	if (!str || strlen(str) < 1) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	p = str + strlen(str) - 1;
+        while (*p == '\n')
+		*p-- = 0;
+
+	return str;
+}
+
 static void strip(char *cmd, size_t len)
 {
 	char *ptr;
@@ -142,6 +158,8 @@ static void strip(char *cmd, size_t len)
 		memmove(ptr, ptr2, strlen(ptr2) + 1);
 	} else
 		detail = 0;
+
+	chomp(cmd);
 }
 
 static int ipc_read(int sd, char *cmd, ssize_t len)
