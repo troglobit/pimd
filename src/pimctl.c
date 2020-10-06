@@ -141,7 +141,7 @@ static int ipc_connect(void)
 	char *names[] = {
 		PACKAGE_NAME,	/* this daemon */
 		"pimd",		/* PIM SM/SSM    */
-		"pimd-dense",	/* PIM DM        */
+		"pimdd",	/* PIM DM        */
 		"pim6sd",	/* PIM SM (IPv6) */
 		NULL
 	};
@@ -340,7 +340,7 @@ static int usage(int rc)
 	printf("Usage: pimctl [OPTIONS] [COMMAND]\n"
 	       "\n"
 	       "Options:\n"
-	       "  -i, --ident=NAME           Connect to named pimd/pimd-dense instance\n"
+	       "  -i, --ident=NAME           Connect to named pimd instance\n"
 	       "  -p, --plain                Use plain table headings, no ctrl chars\n"
 	       "  -t, --no-heading           Skip table headings\n"
 	       "  -h, --help                 This help text\n"

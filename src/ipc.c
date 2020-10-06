@@ -52,8 +52,10 @@ static int detail = 0;
 enum {
 	IPC_ERR = -1,
 	IPC_OK  = 0,
-	IPC_RESTART,
+	IPC_HELP,
+	IPC_VERSION,
 	IPC_STATUS,
+	IPC_RESTART,
 	IPC_DEBUG,
 	IPC_LOGLEVEL,
 	IPC_KILL,
@@ -64,8 +66,6 @@ enum {
 	IPC_PIM_ROUTE,
 	IPC_PIM_RP,
 	IPC_PIM_CRP,
-	IPC_HELP,
-	IPC_VERSION,
 	IPC_PIM_DUMP
 };
 
@@ -77,7 +77,7 @@ struct ipcmd {
 } cmds[] = {
 	{ IPC_DEBUG,      "debug", "[? | none | SYS]", "Debug subystem(s), separate multiple with comma"},
 	{ IPC_HELP,       "help", NULL, "This help text" },
-	{ IPC_KILL,       "kill", NULL, "Kill running daemon, like SIGTERM"},
+	{ IPC_KILL,       "kill", NULL, "Kill running pimd daemon, like SIGTERM"},
 	{ IPC_LOGLEVEL,   "log", "[? | none | LEVEL]" , "Set pimd log level: none, err, notice*, info, debug"},
 	{ IPC_RESTART,    "restart", NULL, "Restart pimd and reload the .conf file, like SIGHUP"},
 	{ IPC_VERSION,    "version", NULL, "Show pimd version" },
@@ -148,7 +148,7 @@ static int ipc_read(int sd, char *cmd, ssize_t len)
 {
 	len = read(sd, cmd, len);
 	if (len < 0)
-		return -1;
+		return IPC_ERR;
 	if (len == 0)
 		return IPC_OK;
 
@@ -163,7 +163,7 @@ static int ipc_read(int sd, char *cmd, ssize_t len)
 		}
 	}
 
-	return -1;
+	return IPC_ERR;
 }
 
 static int ipc_write(int sd, void *msg, size_t sz)
@@ -177,7 +177,7 @@ static int ipc_write(int sd, void *msg, size_t sz)
 	}
 
 	if (len != (ssize_t)sz)
-		return -1;
+		return IPC_ERR;
 
 	return 0;
 }
@@ -195,7 +195,7 @@ static int ipc_send(int sd, char *buf, size_t len, FILE *fp)
 			continue;
 
 		logit(LOG_WARNING, errno, "Failed communicating with client");
-		return -1;
+		return IPC_ERR;
 	}
 
 	return ipc_close(sd);
@@ -223,7 +223,7 @@ static void ipc_show(int sd, int (*cb)(FILE *), char *buf, size_t len)
 static int ipc_wrap(int sd, int (*cb)(char *, size_t), char *buf, size_t len)
 {
 	if (cb(buf, len))
-		return -1;
+		return IPC_ERR;
 
 	return ipc_write(sd, buf, strlen(buf));
 }
@@ -748,7 +748,7 @@ static void ipc_help(int sd, char *buf, size_t len)
 
 		sz = snprintf(buf, len, "Cannot create tempfile: %s", strerror(errno));
 		if (write(sd, buf, sz) != sz)
-			logit(LOG_INFO, errno, "Client closed connection: %s");
+			logit(LOG_INFO, errno, "Client closed connection");
 		return;
 	}
 
@@ -765,7 +765,6 @@ static void ipc_help(int sd, char *buf, size_t len)
 	rewind(fp);
 
 	while (fgets(buf, len, fp)) {
-		logit(LOG_WARNING, 0, "BUF: %s", buf);
 		if (!ipc_write(sd, buf, strlen(buf)))
 			continue;
 
@@ -842,7 +841,7 @@ static void ipc_handle(int sd)
 		ipc_show(client, show_dump, cmd, sizeof(cmd));
 		break;
 
-	case -1:
+	case IPC_ERR:
 		logit(LOG_WARNING, errno, "Failed reading command from client");
 		break;
 
