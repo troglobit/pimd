@@ -841,6 +841,10 @@ static void ipc_handle(int sd)
 		ipc_show(client, show_dump, cmd, sizeof(cmd));
 		break;
 
+	case IPC_OK:
+		/* client ping, ignore */
+		break;
+
 	case IPC_ERR:
 		logit(LOG_WARNING, errno, "Failed reading command from client");
 		break;
