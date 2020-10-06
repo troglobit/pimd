@@ -300,7 +300,7 @@ static int show_neighbors(FILE *fp)
 	return 0;
 }
 
-static int show_interface(FILE *fp, struct uvif *uv)
+static void show_interface(FILE *fp, struct uvif *uv)
 {
 	pim_nbr_entry_t *n;
 	uint32_t addr = 0;
@@ -309,7 +309,7 @@ static int show_interface(FILE *fp, struct uvif *uv)
 	char tmp[5];
 
 	if (uv->uv_flags & VIFF_REGISTER)
-		return -1;
+		return;
 
 	if (uv->uv_flags & VIFF_DR) {
 		addr = uv->uv_lcl_addr;
@@ -329,8 +329,6 @@ static int show_interface(FILE *fp, struct uvif *uv)
 		inet_fmt(uv->uv_lcl_addr, s1, sizeof(s1)),
 		num, pim_timer_hello_interval,
 		pri, inet_fmt(addr, s2, sizeof(s2)));
-
-	return 0;
 }
 
 /* PIM Interface Table */
@@ -420,7 +418,7 @@ static int show_crp(FILE *fp)
 	return 0;
 }
 
-static int dump_route(FILE *fp, mrtentry_t *r)
+static void dump_route(FILE *fp, mrtentry_t *r)
 {
 	char asserted_oifs[MAXVIFS+1];
 	char incoming_iif[MAXVIFS+1];
@@ -466,7 +464,7 @@ static int dump_route(FILE *fp, mrtentry_t *r)
 	fprintf(fp, "\n");
 
 	if (!detail)
-		return 0;
+		return;
 
 	fprintf(fp, "Joined   oifs: %-20s\n", joined_oifs);
 	fprintf(fp, "Pruned   oifs: %-20s\n", pruned_oifs);
@@ -483,8 +481,6 @@ static int dump_route(FILE *fp, mrtentry_t *r)
 	for (vifi = 0; vifi < numvifs; vifi++)
 		fprintf(fp, " %2d", r->vif_timers[vifi]);
 	fprintf(fp, "\n");
-
-	return 0;
 }
 
 /* PIM Multicast Routing Table */
