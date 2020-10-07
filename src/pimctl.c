@@ -269,6 +269,7 @@ static void print(char *line)
 	if (!plain) {
 		fprintf(stdout, "\e[7m%s%*s\e[0m\n", line, len < 0 ? 0 : len, "");
 	} else {
+		fprintf(stdout, "%s%*s\n", line, len < 0 ? 0 : len, "");
 		while (len--)
 			fputc('=', stdout);
 		fputs("\n", stdout);
