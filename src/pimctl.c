@@ -360,6 +360,7 @@ static int usage(int rc)
 		get("help");
 	} else
 		printf("No pimd running, no commands available.\n");
+	printf("\n");
 
 	return rc;
 }
