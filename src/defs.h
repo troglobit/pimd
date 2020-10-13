@@ -92,11 +92,10 @@
 #include <strings.h>
 
 #ifndef BYTE_ORDER
-#if (BSD >= 199103)
-#include <machine/endian.h>
-#else
-#ifdef __linux__
+#if defined(__linux__) || defined(SYSV)
 #include <endian.h>
+#elif (BSD >= 199103)
+#include <machine/endian.h>
 #else
 #define LITTLE_ENDIAN	1234	/* least-significant byte first (vax, pc) */
 #define BIG_ENDIAN	4321	/* most-significant byte first (IBM, net) */
@@ -118,8 +117,7 @@
     defined(BIT_ZERO_ON_LEFT) || defined(m68k)
 #define BYTE_ORDER	BIG_ENDIAN
 #endif
-#endif /* linux */
-#endif /* BSD */
+#endif /* __linux__ || SYSV or BSD */
 #endif /* BYTE_ORDER */
 
 typedef void (*cfunc_t)  (void *);
