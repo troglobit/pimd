@@ -2,7 +2,7 @@
 AUTOMAKE_OPTIONS = subdir-objects
 
 AM_CPPFLAGS      = -I$(top_srcdir)/include
-AM_CPPFLAGS     += -DSYSCONFDIR=\"@sysconfdir@\" -DRUNSTATEDIR=\"@runstatedir@\" -DPRESERVEDIR=\"@localstatedir@\"
+AM_CPPFLAGS     += -DSYSCONFDIR=\"@sysconfdir@\" -DRUNSTATEDIR=\"@runstatedir@\"
 
 sbin_PROGRAMS    = pimd pimctl
 pimd_SOURCES     = config.c		debug.c		debug.h			    \
