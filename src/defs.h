@@ -261,10 +261,15 @@ typedef void (*ihfunc_t) (int);
 #define BIT_TST(X,n)		((X) & 1 << (n))
 #endif /* RSRR */
 
-#ifndef __linux__
-#define RANDOM()                arc4random()
+#if defined(SYSV)
+#define bcopy(a, b, c)		memcpy((b), (a), (c))
+#define bzero(s, n)		memset((s), 0, (n))
+#define setlinebuf(s)		setvbuf((s), (NULL), (_IOLBF), 0)
+#define RANDOM()		lrand48()
+#elif defined(BSD)
+#define RANDOM()		arc4random()
 #else
-#define RANDOM()                (uint32_t)random()
+#define RANDOM()		(uint32_t)random()
 #endif
 
 /* NetBSD 6.1, for instance, does not have IPOPT_RA defined. */
