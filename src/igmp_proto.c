@@ -632,7 +632,7 @@ void accept_membership_report(uint32_t src, uint32_t dst, struct igmpv3_report *
 
 	rec_type = record->grec_type;
 	rec_group.s_addr = (in_addr_t)record->grec_mca;
-	sources = (u_int8_t *)record->grec_src;
+	sources = (uint8_t *)record->grec_src;
 
 	switch (rec_type) {
 	    case IGMP_MODE_IS_EXCLUDE:
