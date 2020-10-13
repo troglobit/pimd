@@ -55,6 +55,12 @@
 #include <syslog.h>
 #include <signal.h> 
 #include <string.h> 
+#include <arpa/inet.h>
+#include <net/if.h>
+#include <netinet/in_systm.h>
+#include <netinet/ip.h>
+#include <netinet/igmp.h>
+#include <netinet/in.h>
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -67,12 +73,6 @@
 #endif /* SYSV || bsdi || SunOS 4.x */
 #include <time.h>
 #include <sys/time.h>
-#include <net/if.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netinet/in_systm.h>
-#include <netinet/ip.h>
-#include <netinet/igmp.h>
 #if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
 #include <osreldate.h>
 #endif /* __FreeBSD__ */
