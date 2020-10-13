@@ -100,11 +100,7 @@ static void do_randomize(void)
    unsigned int seed;
 
    /* Setup a fallback seed based on quasi random. */
-#ifdef SYSV
-   seed = time(NULL);
-#else
    seed = time(NULL) ^ gethostid();
-#endif
    seed = rol32(seed, seed);
 
    fd = open("/dev/urandom", O_RDONLY);
