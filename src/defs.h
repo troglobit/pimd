@@ -153,10 +153,11 @@ typedef void (*ihfunc_t) (int);
 
 /* Versions of Solaris older than 2.6 don't have routing sockets. */
 /* XXX TODO: check FreeBSD version and add all other platforms */
-#if defined(__linux__)    || (defined(SunOS) && SunOS >=56) || \
-    defined (IRIX)        || defined (__bsdi__)             || \
-    defined (__FreeBSD__) || defined(__FreeBSD_kernel__)    || \
-    defined(NetBSD)       || defined(OpenBSD)
+#if defined(__linux__)   || (defined(SunOS) && SunOS >=56) || \
+    defined(IRIX)        ||  defined(__bsdi__)             || \
+    defined(__FreeBSD__) ||  defined(__FreeBSD_kernel__)   || \
+    defined(NetBSD)      ||  defined(__DragonFly__)        || \
+    defined(OpenBSD)
 #define HAVE_ROUTING_SOCKETS	1
 #endif
 

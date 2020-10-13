@@ -16,6 +16,9 @@ AC_PROG_INSTALL
 AC_CANONICAL_HOST
 
 case $host_os in
+    dragonfly*)
+	CPPFLAGS="-I../include/dragonfly"
+	;;
     netbsd*)
         CPPFLAGS="$CPPFLAGS -D_OPENBSD_SOURCE"
         ;;
