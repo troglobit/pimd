@@ -23,11 +23,11 @@ case $host_os in
         CPPFLAGS="$CPPFLAGS -D_OPENBSD_SOURCE"
         ;;
     solaris2.5)
-	CPPFLAGS="-DSYSV -DSunOS=55 -Iinclude/sunos-gcc"
+	CPPFLAGS="-DSYSV -DSunOS=55 -I../include/sunos-gcc"
 	LIBS="-lsocket -lnsl"
 	;;
     solaris2.6|solaris2.7|solaris2.8|solaris2.9|solaris2.10|solaris2.11)
-	CPPFLAGS="-DSYSV -DSunOS=56 -Iinclude/sunos-gcc"
+	CPPFLAGS="-DSYSV -DSunOS=56 -I../include/sunos-gcc"
 	LIBS="-lsocket -lnsl"
 	;;
     linux*)
