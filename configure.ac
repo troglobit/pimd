@@ -12,6 +12,32 @@ AC_CONFIG_FILES([Makefile src/Makefile include/Makefile man/Makefile pimd.servic
 AC_PROG_CC
 AC_PROG_INSTALL
 
+# Check build host, differnt for each operating system
+AC_CANONICAL_HOST
+
+case $host_os in
+    netbsd*)
+        CPPFLAGS="$CPPFLAGS -D_OPENBSD_SOURCE"
+        ;;
+    solaris2.5)
+	CPPFLAGS="-DSYSV -DSunOS=55 -Iinclude/sunos-gcc"
+	LIBS="-lsocket -lnsl"
+	;;
+    solaris2.6|solaris2.7|solaris2.8|solaris2.9|solaris2.10|solaris2.11)
+	CPPFLAGS="-DSYSV -DSunOS=56 -Iinclude/sunos-gcc"
+	LIBS="-lsocket -lnsl"
+	;;
+    linux*)
+	# -D_GNU_SOURCE Use GNU extensions, where possible (GLIBC)
+	# -D_BSD_SOURCE Use functions derived from 4.3 BSD Unix rather than POSIX.1
+	#               In GLIBC >= v2.20 this is replaced with -D_DEFAULT_SOURCE,
+	#               but to build on older GLIBC systems we now need both ...
+	CPPFLAGS="-D_BSD_SOURCE -D_DEFAULT_SOURCE -D_GNU_SOURCE"
+	;;
+    *)
+        ;;
+esac
+
 # Required to check for libsystemd-dev
 PKG_PROG_PKG_CONFIG
 
