@@ -41,7 +41,7 @@
 
 #include "config.h"
 
-#ifndef __linux__
+#ifdef BSD		/* Neither Linux or SunOS has this BSDism */
 # include <sys/cdefs.h>	/* Defines __BSD_VISIBLE, needed for arc4random() etc. */
 #endif
 
