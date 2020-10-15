@@ -267,7 +267,11 @@ static void print(char *line)
 		head = 1;
 		if (!plain)
 			len = get_width() - len;
+		else
+			len = len < 79 ? 79 : len;
 	}
+	if (len < 0)
+		len = 0;
 
 	if (!head) {
 		puts(line);
@@ -275,9 +279,9 @@ static void print(char *line)
 	}
 
 	if (!plain) {
-		fprintf(stdout, "\e[7m%s%*s\e[0m\n", line, len < 0 ? 0 : len, "");
+		fprintf(stdout, "\e[7m%s%*s\e[0m\n", line, len, "");
 	} else {
-		fprintf(stdout, "%s%*s\n", line, len < 0 ? 0 : len, "");
+		fprintf(stdout, "%s\n", line);
 		while (len--)
 			fputc('=', stdout);
 		fputs("\n", stdout);
