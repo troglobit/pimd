@@ -8,12 +8,12 @@ sbin_PROGRAMS    = pimd pimctl
 pimd_SOURCES     = config.c		debug.c		debug.h			    \
 		   defs.h		dvmrp_proto.c	dvmrp.h			    \
 		   igmp_proto.c		igmp.c		igmpv2.h	igmpv3.h    \
-		   inet.c		ipc.c		ipc.h			    \
-		   kern.c		main.c		pathnames.h		    \
-		   mrt.c		mrt.h		route.c		rp.c	    \
-		   pim_proto.c		pim.c		pimd.h			    \
+		   inet.c		ipc.c		kern.c			    \
+		   main.c		mrt.c		mrt.h		    	    \
+		   pathnames.h		pim_proto.c	pim.c		pimd.h	    \
+		   queue.h		route.c		rp.c			    \
 		   timer.c		trace.c		trace.h	    		    \
-		   vif.c		vif.h		queue.h
+		   vif.c		vif.h
 pimd_CFLAGS      = -W -Wall -Wextra -Wno-unused
 pimd_LDADD       = $(LIBS) $(LIBOBJS)
 
