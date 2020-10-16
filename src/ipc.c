@@ -181,6 +181,7 @@ static int ipc_read(int sd, char *cmd, ssize_t len)
 		}
 	}
 
+	errno = EBADMSG;
 	return IPC_ERR;
 }
 
