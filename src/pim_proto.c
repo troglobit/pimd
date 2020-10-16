@@ -100,15 +100,15 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
     if (parse_pim_hello(msg, len, src, &opts) == FALSE)
 	return FALSE;
 
-    IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER)
+    IF_DEBUG(DEBUG_PIM_HELLO)
 	logit(LOG_DEBUG, 0, "PIM HELLO holdtime from %s is %u",
 	      inet_fmt(src, s1, sizeof(s1)), opts.holdtime);
 
-    IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER)
+    IF_DEBUG(DEBUG_PIM_HELLO)
 	logit(LOG_DEBUG, 0, "PIM DR PRIORITY from %s is %u",
 	      inet_fmt(src, s1, sizeof(s1)), opts.dr_prio);
 
-    IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER)
+    IF_DEBUG(DEBUG_PIM_HELLO)
 	logit(LOG_DEBUG, 0, "PIM GenID from %s is %u",
 	      inet_fmt(src, s1, sizeof(s1)), opts.genid);
 
@@ -160,7 +160,7 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
      * This is a new neighbor. Create a new entry for it.
      * It must be added right after `prev_nbr`
      */
-    IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER)
+    IF_DEBUG(DEBUG_PIM_HELLO)
 	logit(LOG_INFO, 0, "Received PIM HELLO from new neighbor %s", inet_fmt(src, s1, sizeof(s1)));
 
     new_nbr = calloc(1, sizeof(pim_nbr_entry_t));
@@ -259,7 +259,7 @@ void delete_pim_nbr(pim_nbr_entry_t *nbr_delete)
     rpentry_t  *rp;
     struct uvif *v;
 
-    IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER)
+    IF_DEBUG(DEBUG_PIM_HELLO)
 	logit(LOG_INFO, 0, "Deleting PIM neighbor %s", inet_fmt(nbr_delete->address, s1, sizeof(s1)));
 
     v = &uvifs[nbr_delete->vifi];
@@ -414,7 +414,7 @@ static int restart_dr_election(struct uvif *v)
 
     if (!v->uv_pim_neighbors) {
 	/* This was our last neighbor, now we're it. */
-	IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER)
+	IF_DEBUG(DEBUG_PIM_HELLO)
 	    logit(LOG_INFO, 0, "All neighbor PIM routers on %s lost, we are the DR now.", v->uv_name);
 
 	v->uv_flags &= ~VIFF_PIM_NBR;
@@ -439,7 +439,7 @@ static int restart_dr_election(struct uvif *v)
      * RFC4601 sec. 4.3.2
      */
     if (use_dr_prio) {
-	IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER)
+	IF_DEBUG(DEBUG_PIM_HELLO)
 	    logit(LOG_INFO, 0, "All routers in %s segment support DR Priority based DR election.",
 		  inet_fmt(v->uv_lcl_addr, s1, sizeof(s1)));
 
@@ -452,7 +452,7 @@ static int restart_dr_election(struct uvif *v)
 	    goto tiebreak;
     } else {
       tiebreak:
-	IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER)
+	IF_DEBUG(DEBUG_PIM_HELLO)
 	    logit(LOG_INFO, 0, "Using fallback DR election on %s.", v->uv_name);
 
 	if (ntohl(v->uv_lcl_addr) > ntohl(v->uv_pim_neighbors->address)) {
@@ -464,7 +464,7 @@ static int restart_dr_election(struct uvif *v)
     }
 
     if (was_dr) {
-	IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER)
+	IF_DEBUG(DEBUG_PIM_HELLO)
 	    logit(LOG_INFO, 0, "We lost DR role on %s in election.", v->uv_name);
 
 	v->uv_flags &= ~VIFF_DR;
@@ -477,7 +477,7 @@ static int restart_dr_election(struct uvif *v)
 static int validate_pim_opt(uint32_t src, char *str, uint16_t len, uint16_t opt_len)
 {
     if (len != opt_len) {
-	IF_DEBUG(DEBUG_PIM_HELLO | DEBUG_PIM_TIMER)
+	IF_DEBUG(DEBUG_PIM_HELLO)
 	    logit(LOG_INFO, 0, "PIM HELLO %s from %s: invalid OptionLength = %u",
 		  str, inet_fmt(src, s1, sizeof(s1)), opt_len);
 

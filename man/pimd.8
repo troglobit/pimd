@@ -91,42 +91,44 @@ to enable all subsystems.
 Available subsystems are:
 .Pp
 .Bl -tag -width pim_routes -compact -offset indent
-.It Cm packet
-Debug inbound/outbout packets
-.It Cm prunes
-Pruning operations, or pruned routes
-.It Cm routes
-Routing messages
-.It Cm rtdetail
-Detailed routing information
-.It Cm peers
-Neighbor gossip
-.It Cm cache
-Debug routing cache
-.It Cm timeout
-Debug timeouts
-.It Cm interface
-Show interface (VIF) debug messages
-.It Cm groups
-Debug group memberships
-.It Cm mtrace
-Multicast traceroute information
+.It Cm all
+All subsystems
+.It Cm asserts
+PIM assert messages
+.It Cm bsr
+PIM bootstrap router messages
+.It Cm crp
+PIM Candidate Rendez-Vous Point messages
+.It Cm detail
+Detailed PIM debug messages
 .It Cm igmp
-Debug IGMP messages
-.It Cm icmp
-Debug ICMP messages
-.It Cm rsrr
-Debug RSRR messages
+IGMP messages
+.It Cm interfaces
+Interface (VIF) debug messages
+.It Cm jp
+PIM join-prune messages
+.It Cm kernel
+Kernel messages
+.It Cm mfc
+Multicast forwarding cache messages
+.It Cm mrt
+Routing messages
+.It Cm neighbors
+PIM hello messages to/from neighbors
+.It Cm packets
+All inbound/outbout packets
 .It Cm pim
 All PIM messages
-.It Cm pim_routes
-PIM routing messages
-.It Cm pim_bsr
-PIM bootstrap router messages
-.It Cm pim_detail
-Detailed PIM debug
-.It Cm pim_hello
-Debug hello messages to/from neighbors
+.It Cm registers
+PIM register tunnel messages
+.It Cm rpf
+PIM reverse-path forwarding messages
+.It Cm rsrr
+RSRR messages (if enabled)
+.It Cm timers
+PIM timer events
+.It Cm traceroute
+Multicast traceroute information
 .El
 .It Fl n, -foreground
 Run in the foreground, do not detach from calling terminal and do not
