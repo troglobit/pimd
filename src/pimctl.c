@@ -175,8 +175,11 @@ static int ipc_connect(void)
 		if (ident) {
 			compose_path(&sun, dirs[i], ident);
 			sd = try_connect(&sun);
-			if (sd == -1)
+			if (sd == -1) {
+				if (errno == EACCES)
+					return -1;
 				continue;
+			}
 
 			return sd;
 		}
@@ -184,8 +187,11 @@ static int ipc_connect(void)
 		for (size_t j = 0; names[j]; j++) {
 			compose_path(&sun, dirs[i], names[j]);
 			sd = try_connect(&sun);
-			if (sd == -1)
+			if (sd == -1) {
+				if (errno == EACCES)
+					return -1;
 				continue;
+			}
 			
 			return sd;
 		}
@@ -300,6 +306,8 @@ static int get(char *cmd)
 	if (-1 == sd) {
 		if (errno == ENOENT)
 			errx(1, "no pimd running.");
+		else if (errno == EACCES)
+			errx(1, "not enough permissions.");
 		err(1, "failed connecting to pimd");
 
 		return 1; /* we never get here, make gcc happy */
@@ -362,8 +370,12 @@ static int usage(int rc)
 	if (ipc_ping()) {
 		printf("Commands:\n");
 		get("help");
-	} else
-		printf("No pimd running, no commands available.\n");
+	} else {
+		if (errno == EACCES)
+			printf("Not enough permissions to query pimd for commands.\n");
+		else
+			printf("No pimd running, no commands available.\n");
+	}
 	printf("\n");
 
 	return rc;
