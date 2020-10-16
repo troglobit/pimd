@@ -104,7 +104,7 @@ extern int              log_nmsgs;
 				DEBUG_PIM_TIMER )
 #define DEBUG_ASSERT          ( DEBUG_PIM_ASSERT )
 #define DEBUG_PARSE_FAIL      0x80000000
-#define DEBUG_ALL             0xffffffff
+#define DEBUG_ALL             0xfffffeff /* All except noisy timer */
 
 extern char	*packet_kind		(int proto, int type, int code);
 extern int	debug_kind		(int proto, int type, int code);
