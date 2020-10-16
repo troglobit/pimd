@@ -163,8 +163,10 @@ static int usage(int code)
 	   "                     available when starting up, e.g. wait for DHCP lease\n");
     printf("     --disable-vifs  Disable all virtual interfaces (phyint) by default\n");
     printf(" -s, --syslog        Use syslog, default unless running in foreground, -n\n");
+#ifdef __linux__
     printf(" -t, --table-id=ID   Set multicast routing table ID.  Allowed table ID#:\n"
 	   "                      0 .. 999999999.  Default: 0 (use default table)\n");
+#endif
     printf(" -h, --help          Show this help text\n");
     printf(" -v, --version       Show %s version\n", prognm);
     printf("\n");
@@ -242,7 +244,9 @@ int main(int argc, char *argv[])
 	{ "loglevel",      1, 0, 'l' },
 	{ "pidfile",       1, 0, 502 },
 	{ "syslog",        0, 0, 's' },
+#ifdef __linux__
 	{ "table-id",      1, 0, 't' },
+#endif
 	{ "version",       0, 0, 'v' },
 	{ NULL, 0, 0, 0 }
     };
@@ -304,11 +308,15 @@ int main(int argc, char *argv[])
 		break;
 
 	    case 't':
+#ifndef __linux__
+		errx(1, "-t ID is currently only supported on Linux");
+#else
 		mrt_table_id = strtonum(optarg, 0, 999999999, &errstr);
 		if (errstr) {
 		    fprintf(stderr, "Table ID %s!\n", errstr);
 		    return usage(1);
 		}
+#endif
 		break;
 
 	    case 'v':
