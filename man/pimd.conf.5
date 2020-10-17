@@ -1,0 +1,340 @@
+.\"                                      Hey, EMACS: -*- nroff -*-
+.\" First parameter, NAME, should be all caps
+.\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
+.\" other parameters are allowed: see man(7), man(1)
+.Dd Oct 17, 2020
+.Dt PIMD.CONF 5
+.Os
+.Sh NAME
+.Nm pimd.conf
+.Nd pimd configuration file
+.Sh SYNOPSIS
+.Nm /etc/pimd.conf
+.Sh DESCRIPTION
+In many cases you do not need to configure
+.Nm pimd .
+It configures itself automatically to forward multicast on all
+multicast-capable interfaces, i.e., interfaces that have the
+.Cm IFF_MULTICAST
+flag set.  It locates other PIM-SM/SSM capable routers directly
+reachable via those interfaces.
+.Pp
+.Nm pimd
+will not start with less than two enabled virtual interfaces (VIFs).  A
+VIF is either a physical multicast-capable interface or a tunnel.  To
+override the default settings, for example to disable some interfaces
+from being used, configuration commands may be placed in
+.Pa /etc/pimd.conf .
+.Pp
+The file format is relatively free-form: whitespace (including newlines)
+is not significant.  However, the order of some statements are
+important, more on this below.
+.Pp
+All <masklen> arguments to an IPv4 address, group or network can also be
+given in the alternative /CIDR format.  E.g., <group>/<masklen>.
+.Pp
+By default,
+.Nm
+runs on all multicast capable interfaces.  The optional
+.Cm disable-vifs
+setting and the
+.Cm phyint
+setting can be used to control this behavior.  The former can also be
+set from the command line using the
+.Fl -disable-vifs
+option.  More on the
+.Cm phyint
+interface configuration setting below.
+.Pp
+.Bl -item -offset indent
+.It
+.Cm default-route-distance
+.Ar <1-255>
+.It
+.Cm default-route-metric
+.Ar <1-1024>
+.It
+.Cm igmp-query-interval
+.Ar <1-65535>
+.It
+.Cm igmp-querier-timeout
+.Ar <8-65535>
+.It
+.Cm hello-interval
+.Ar <30-18724>
+.It
+.Cm disable-vifs
+.It
+.Cm phyint
+.Cm <address | ifname>
+.Bl -item -offset indent
+.Op Cm disable | enable
+.br
+.Op Cm igmpv2 | igmpv3
+.br
+.Op Cm dr-priority Ar <1-4294967294>
+.br
+.Op Cm ttl-threshold Ar <1-255>
+.Op Cm distance Ar <1-255>
+.Op Cm metric Ar <1-1024>
+.br
+.Oo
+.Cm altnet Ar <network> Op Cm /<masklen> | Cm masklen <masklen>
+.Oc
+.br
+.Oo
+.Cm scoped Ar <network> Op Cm /<masklen> | Cm masklen <masklen>
+.Oc
+.El
+.It
+.Cm bsr-candidate
+.Op Ar address | Ar ifname
+.Op Cm priority Ar <number>
+.It
+.Cm rp-candidate
+.Op Ar address | Ar ifname
+.Op Cm priority Ar <0-255>
+.Op Cm time Ar <10-16384>
+.Bl -item -offset indent -compact
+.It
+.Cm group-prefix Ar <group>[/<masklen> | Cm masklen Ar <masklen>]
+.It
+ ...
+.It
+.Cm group-prefix ...
+.El
+.It
+.Cm rp-address Ar <address> [<group-addr>[/<masklen> | masklen <masklen]
+.It
+.Cm spt-threshold
+.Op Cm rate Ar <KBPS> | Cm packets Ar <NUM> | Cm infinity
+.Op Cm interval Ar <SEC>
+.El
+.Pp
+The
+.Cm default-route-distance
+option has nothing to do with the system default route.  It is the
+default value for the unicast routing protocol's administrative
+distance.  It is used in PIM Assert elections to determine upstream
+routers.  Currently
+.Nm
+cannot obtain the admin distance and metric from the unicast routing
+protocols, so a default routing protocol distance (the RFC confusingly
+refers to this as
+.Em metric prefererence )
+may be configured.  In a PIM Assert election, the router advertising the
+lowest assert preference will be selected as the forwarder and upstream
+router for the LAN.  Setting 101 should be sufficiently high so that
+asserts from Cisco or GateD routers are preferred over poor-little pimd.
+.Pp
+It is recommended that distances be set such that metrics are never
+consulted.  However, default routing metrics may also be set using the
+.Cm default-route-metric
+option.  (Again, this has nothing to do with the system default route.)
+This item sets the cost for sending data through this router.  You want
+only PIM-SM data to go to this daemon; so once again, a high value is
+recommended to prevent accidental usage.  The preferred default value is
+1024.  Both defaults can be overridden per phyint, so learned routes, or
+PIM Asserts use the phyint's values.
+.Pp
+Please also note that PIM Assert elections are not the same as the DR
+election.  The PIM Assert election determines the active multicast
+forwarder, whereas the DR election determines the active PIM router.
+.Pp
+Two settings for IGMP behavior are available:
+.Cm igmp-query-interval
+and
+.Cm igmp-querier-timeout
+which are similar, but very different.  The former controls the interval
+between IGMP querys when elected as querier, the latter controls the
+timeout for the elected querier -- before
+.Nm pimd
+decides to take over.  In IGMP the lowest numerical address in a LAN
+becomes the elected querier.  Obviously these settings must be handled
+with care.  The RFC recommends that the querier timeout is set to a
+robustness value times the query interval, plus have the query response
+time.  The pimd robustness value for IGMP is 3 and the default query
+response time is 10 sec.  Since pimd v2.3.0 the default query interval
+is 12 sec, which makes the querier timeut default to 41 sec, but this is
+rounded off to 42 to honor the late Douglas Adams.
+.Pp
+The PIM Hello message interval can be tuned by changing the
+.Cm hello-interval
+setting.  Changing this value also affects the hold-time value included
+in Hello messages.  The hold-time value is 3.5 times hello-interval.
+The default value for the Hello interval is 30 sec.  Anything less than
+30 sec is considered an "aggressive" setting and is unsupported.
+.Pp
+The
+.Nm phyint
+setting refers to a physical interface and must come after the
+.Cm default-route-metric
+and
+.Cm default-route-distance
+settings in the configuration file.  Select the interface either by its
+IP
+.Ar address
+or interface name
+.Ar ifname
+(e.g. eth0).  If you just want to activate this interface with default
+values, you don't need to put anything else on the line.  However, there
+are some additional settings:
+.Bl -bullet -offset indent -width 1n -compact
+.It
+.Nm enable :
+Selectively enable this interface for
+.Nm .
+Useful with the
+.Fl -disable-vifs
+command line option and the
+.Cm disable-vifs
+configuration file setting.
+.It
+.Nm disable :
+Do not use this interface in
+.Nm .
+Default enable, unless
+.Fl -disable-vifs .
+.It
+.Nm igmpv2 :
+Force interface to use IGMPv2, or
+.It
+.Nm igmpv3 :
+Use IGMPv3, this is the default since v2.3.0.
+.It
+.Cm dr-priority Ar <1-4294967294> :
+When there are multiple PIM routers on the same LAN the DR is usually
+elected based on the highest numerical IP address.  This setting can be
+used to control the DR Priority option in PIM Hellow messages, which by
+default otherwise is 1.  When the DR Priority option is advertised by
+.Em all
+PIM routers on the same LAN the highest priority router wins the DR
+election, regardless of its IP.  If any router does
+.Em not
+advertise the DR Priority option, or the same priority is advertised by
+more than one router, the protocol falls back to using the IP address.
+.It
+.Cm ttl-threshold Ar <1-255> :
+The TTL threshold for multicast frames to be forwarded from this
+interface.  Default: 1
+.It
+.Cm distance Ar <1-255> :
+Use this to override the
+.Nm default-route-distance
+(101) on this
+.Nm phyint
+in PIM Assert elections.
+.It
+.Cm metric Ar <1-1024> :
+The cost of sending data through this interface.  Defaults to
+.Nm default-route-metric
+(1024) if not assigned.
+.It
+.Cm altnet Ar <network/len> :
+Alternative host(s)/network(s) to accept as locally attached multicast
+sources on a given interface. If a phyint is attached to multiple IP
+subnets, describe each additional subnet with the altnet keyword.
+.It
+.Cm scoped Ar <network/len> :
+Optional scoping of multicast groups.  This allows interfaces to be
+configured as an administrative boundary for the specified group(s).
+Multicast streams belonging to the scoped groups will not be forwarded.
+.El
+.Pp
+Add one
+.Nm phyint
+line per interface on this router.  If you don't do this,
+.Nm pimd
+will either be completely silent (if you provide the
+.Fl -disable-vifs
+command line option), or simply assume that you want to run
+.Nm
+on all interfaces using default settings.
+.Pp
+Both the
+.Cm bsr-candidate
+(CBSR) and
+.Cm rp-candidate
+(CRP) settings are enabled in the default configuration file.  You can
+disable them by commenting them out, however, make sure at least one
+bootstrap router (BSR) and at least one rendezvous-point (RP) in PIM-SM,
+is available in the network.  Both settings share the following options,
+with priority being interpreted differently:
+.Pp
+.Bl -bullet -offset indent -width 1n -compact
+.It
+.Nm address | ifname :
+Optional local IPv4 address, or interface name to acquire address from.
+If both address and ifname is left out,
+.Nm
+will default to the highest active IP address.
+.It
+.Nm priority Ar <0-255> :
+How important this router is compared to others.  For CRP, the lower the
+value the more important the router is considered.  For BSR it is of
+course the exact opposite: a higher value is preferred.  If the priority
+is left out
+.Nm
+and Cisco IOS defaults to 0 for both, but the standard says 192 for RP.
+.It
+.Nm interval Ar <10-16383> :
+The advertisement interval in seconds for this CRP.  The default value
+is 30 seconds.  Use a lower value for faster convergence.
+.El
+.Pp
+.Bl -item -offset indent -compact
+.It
+The
+.Nm group-prefix
+sub-setting to
+.Nm rp-candidate
+is the set of multicast groups that the CRP will advertise to other
+routers, if it wins an election:
+.Bl -bullet -offset indent -width 1n -compact
+.It
+.Nm group :
+A specific multicast group or network range this router will handle.
+.It
+.Nm masklen :
+Optional number of groups, in prefix length format. Remember that a
+multicast address is a Class D and has a netmask of 240.0.0.0, which
+means its length is 4.
+.El
+.Pp
+Multiple lines of
+.Nm group-prefix
+may be given, but max number of records supported in pimd is 255.
+.El
+.Pp
+The
+.Nm rp-address
+setting is for static rendezvous point (RP) configurations.  It defines
+the RP for a given group, or range of groups.  The argument can be
+either a unicast address or a multicast group, with an optional group
+address and netmask.  Default group and netmask is 224.0.0.0/16.
+.Nm Note:
+all static RP's are announced with priority 1.
+.Pp
+The
+.Nm spt-threshold
+setting replaces two older configuration settings,
+.Nm switch_data_threshold
+and
+.Nm switch_register_threshold .
+It controls the switch-over from the shared tree to the shortest-path
+source tree.  The default is to do the switch-over after the first
+packet, but only after 100 seconds.  If
+.Ar infinity
+is specified the shortest path switch-over is disabled.
+.Sh FILES
+.Bl -tag -width /var/lib/pimd.genid -compact
+.It Pa /etc/pimd.conf
+Main configuration file.
+.El
+.Sh SEE ALSO
+.Xr pimd 8 ,
+.Xr pimd-dense 8 ,
+.Xr pimctl 8
+.Sh AUTHORS
+This manual page was written by
+.An Joachim Wiberg Aq mailto:troglobit@gmail.com .
