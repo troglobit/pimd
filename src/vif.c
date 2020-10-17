@@ -133,8 +133,9 @@ void init_vifs(void)
 	enabled_vifs++;
     }
 
-    if (enabled_vifs < 1) /* XXX: TODO: */
-	logit(LOG_ERR, 0, "Cannot forward: %s", enabled_vifs == 0 ? "no enabled vifs" : "only one enabled vif");
+    if (enabled_vifs < 2)
+	logit(LOG_ERR, 0, "Cannot forward: %s",
+	      enabled_vifs == 0 ? "no enabled vifs" : "only one enabled vif");
 
     k_init_pim(igmp_socket);	/* Call to kernel to initialize structures */
 
