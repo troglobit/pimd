@@ -5,10 +5,12 @@ that came up at the right moment to be written down.
 
 
 * Before 3.0 release:
+** Update man page + split into a pimd.conf(5)
+** Automatically add IP alias as altnet
+ - Grab code from mrouted, 48a7a11
+** Substring matcher for pimctl
 ** Merge patch from Ventus Networks
 ** Update ChangeLog
-** Update man page
-** Implement pimctl tool to read status
 ** .conf file changes?
 - Remove backwards compat?
 - Use yacc implementation from mrouted?
