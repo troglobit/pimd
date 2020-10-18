@@ -258,7 +258,7 @@ static char *chomp(char *str)
 	return str;
 }
 
-static void print(char *line)
+static void print(char *line, int indent)
 {
 	int len, head = 0;
 
@@ -287,7 +287,7 @@ static void print(char *line)
 	if (!plain) {
 		fprintf(stdout, "\e[7m%s%*s\e[0m\n", line, len, "");
 	} else {
-		fprintf(stdout, "%s\n", line);
+		fprintf(stdout, "%*s%s\n", indent, "", line);
 		while (len--)
 			fputc('=', stdout);
 		fputs("\n", stdout);
@@ -297,6 +297,7 @@ static void print(char *line)
 static int get(char *cmd)
 {
 	struct pollfd pfd;
+	int indent = 0;
 	char buf[768];
 	ssize_t len;
 	FILE *fp;
@@ -342,8 +343,10 @@ static int get(char *cmd)
 	close(sd);
 
 	rewind(fp);
+	if (!strcmp(cmd, "help"))
+		indent = 2;
 	while (fgets(buf, sizeof(buf), fp))
-		print(buf);
+		print(buf, indent);
 	fclose(fp);
 
 	return 0;

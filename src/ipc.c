@@ -775,7 +775,7 @@ static void ipc_help(int sd, char *buf, size_t len)
 			continue; /* skip hidden commands */
 
 		snprintf(tmp, sizeof(tmp), "%s%s%s", c->cmd, c->arg ? " " : "", c->arg ?: "");
-		fprintf(fp, "  %-25s  %s\n", tmp, c->help);
+		fprintf(fp, "%-25s  %s\n", tmp, c->help);
 	}
 	rewind(fp);
 
