@@ -14,6 +14,7 @@ that came up at the right moment to be written down.
 ** .conf file changes?
 - Remove backwards compat?
 - Use yacc implementation from mrouted?
+- Maybe do pimd-dense first? It already has yacc code
 ** Add Quagga interface?
 
 * Random issues:
