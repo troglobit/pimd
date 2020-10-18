@@ -31,19 +31,19 @@ Protocol Independent Multicast - Sparse Mode (PIM-SM):
 .Bl -bullet -width 1n -compact
 .It
 maintains the traditional IP multicast service model of
-receiver-initiated membership;
+receiver-initiated membership
 .It
 uses explicit joins that propagate hop-by-hop from members' directly
-connected routers toward the distribution tree.
+connected routers toward the distribution tree
 .It
 builds a shared multicast distribution tree centered at a Rendezvous
 Point (RP), and then builds source-specific trees for those sources
-whose data traffic warrants it.
+whose data traffic warrants it
 .It
-is not dependent on a specific unicast routing protocol; and
+is not dependent on a specific unicast routing protocol, and
 .It
 uses soft-state mechanisms to adapt to underlying network conditions and
-group dynamics.
+group dynamics
 .El
 .Pp
 The robustness, flexibility, and scaling properties of this architecture
@@ -147,7 +147,7 @@ or to simply adapt to site specific practices, e.g. "PIM", without
 renaming the binary.  Note, this option only changes the base name of
 the PID or configuration files, not the location, which is system
 specific.  Usually
-.Pa /var/run/pimd/pimd.pid ,
+.Pa /var/run/pimd.pid ,
 or
 .Pa /run/pimd.pid ,
 and
@@ -162,7 +162,7 @@ to selectively activate PIM services on an interface.  This command line
 option is also available as a setting in the configuration file.
 .It Fl -pidfile Ar FILE
 Set PID file name and location, defaults to
-.Pa /var/run/pimd/pimd.pid ,
+.Pa /var/run/pimd.pid ,
 derived from
 .Fl -ident Ar NAME ,
 which is strongly recommended to change over this option.
@@ -234,7 +234,7 @@ The same as TERM
 For convenience in sending signals,
 .Nm
 writes its process ID to
-.Pa /var/run/pimd/pimd.pid
+.Pa /var/run/pimd.pid
 upon startup.  If started with a different identy,
 .Fl i Ar NAME ,
 then
@@ -248,11 +248,11 @@ is started with a different identity,
 .Pp
 .Bl -tag -width /var/run/pimd.sock -compact
 .It Pa /etc/pimd.conf
-Main configuration file.
+Main configuration file
 .It Pa /var/run/pimd.pid
 Pidfile (re)created by
 .Nm
-daemon when it has started up and is ready to receive commands.
+daemon when it has started up and is ready to receive commands
 .It Pa /var/run/pimd.sock
 .Ux Ns -domain
 socket used for communication with
