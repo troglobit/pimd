@@ -99,7 +99,7 @@ static void do_randomize(void)
    int fd;
    unsigned int seed;
 
-   /* Setup a fallback seed based on quasi random. */
+   /* Set up a fallback seed based on quasi random. */
    seed = time(NULL) ^ gethostid();
    seed = rol32(seed, seed);
 
@@ -346,7 +346,6 @@ int main(int argc, char *argv[])
     }
 
     if (!foreground) {
-	/* Detach from the terminal */
 	if (fork())
 	    exit(0);
 
@@ -373,12 +372,12 @@ int main(int argc, char *argv[])
 #else
 	if (setsid() < 0)
 	    perror("setsid");
-#endif /* TIOCNOTTY */
-#endif /* SYSV */
-    } /* End of child process code */
+#endif
+#endif
+    }
 
     /*
-     * Setup logging
+     * Set up logging
      */
     log_init(do_syslog);
     logit(LOG_NOTICE, 0, "%s starting ...", versionstring);
@@ -388,7 +387,7 @@ int main(int argc, char *argv[])
     timer_init();
     init_igmp();
     init_pim();
-    init_routesock(); /* Both for Linux netlink and BSD routing socket */
+    init_routesock();
     init_pim_mrt();
     init_route();
 
