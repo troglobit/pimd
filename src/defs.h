@@ -315,6 +315,7 @@ extern uint32_t		virtual_time;
 extern char            *ident;
 extern char	       *config_file;
 extern char            *prognm;
+extern char             versionstring[];
 
 extern struct cand_rp_adv_message_ {
     uint8_t  *buffer;

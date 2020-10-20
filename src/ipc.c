@@ -707,6 +707,12 @@ static int show_dump(FILE *fp)
 	return 0;
 }
 
+static int show_version(FILE *fp)
+{
+	fputs(versionstring, fp);
+	return 0;
+}
+
 static int ipc_debug(char *buf, size_t len)
 {
 	if (!strcmp(buf, "?"))
@@ -818,6 +824,10 @@ static void ipc_handle(int sd)
 
 	case IPC_RESTART:
 		ipc_wrap(client, daemon_restart, cmd, sizeof(cmd));
+		break;
+
+	case IPC_VERSION:
+		ipc_show(client, show_version, cmd, sizeof(cmd));
 		break;
 
 	case IPC_IGMP_GRP:
