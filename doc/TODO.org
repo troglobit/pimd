@@ -26,7 +26,7 @@ Group Address       RP Address       Prio  Holdtime  Expires
 ** DONE Update man page + split into a pimd.conf(5)
 ** TODO Automatically add IP alias as altnet
  - Grab code from mrouted, 48a7a11
-** TODO Substring matcher for pimctl
+** DONE Substring matcher for pimctl
 ** TODO Merge patch from Ventus Networks
 ** Update ChangeLog
 ** .conf file changes?
