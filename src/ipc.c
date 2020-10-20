@@ -145,21 +145,24 @@ static void strip(char *cmd, size_t len)
 		ptr += len;
 
 	memmove(cmd, ptr, strlen(ptr) + 1);
+	chomp(cmd);
+}
 
-	ptr = strstr(cmd, "detail");
-	if (ptr) {
-		char *ptr2;
+static void check_detail(char *cmd, size_t len)
+{
+	const char *det = "detail";
+	char *ptr;
+
+	strip(cmd, len);
+
+	len = MIN(strlen(cmd), strlen(det));
+	if (len > 0 && !strncasecmp(cmd, det, len)) {
+		len = strcspn(cmd, " \t\n");
+		strip(cmd, len);
 
 		detail = 1;
-		ptr2 = ptr + 6;
-		len = strspn(ptr2, " \t\n");
-		if (len > 0)
-			ptr2 += len;
-		memmove(ptr, ptr2, strlen(ptr2) + 1);
 	} else
 		detail = 0;
-
-	chomp(cmd);
 }
 
 static int ipc_read(int sd, char *cmd, ssize_t len)
@@ -174,9 +177,10 @@ static int ipc_read(int sd, char *cmd, ssize_t len)
 
 	for (size_t i = 0; i < NELEMS(cmds); i++) {
 		struct ipcmd *c = &cmds[i];
+		size_t len = strlen(c->cmd);
 
-		if (!strncasecmp(cmd, c->cmd, strlen(c->cmd))) {
-			strip(cmd, strlen(c->cmd));
+		if (!strncasecmp(cmd, c->cmd, len)) {
+			check_detail(cmd, len);
 			return c->op;
 		}
 	}
