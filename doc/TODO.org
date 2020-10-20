@@ -5,6 +5,23 @@ that came up at the right moment to be written down.
 
 
 * pimd 3.0 release:
+** Fix layouts of =show pim rp= and =show pim crp=
+
+They are too different to make sense.  Align on one common format, for
+example the following.  Notice the column changes in both outputs and
+the sorting of static entries first.
+
+jocke@luthien:~/src/pimd [master]$ sudo ./src/pimctl sh p rp
+Group Address       RP Address       Prio  Holdtime  Type
+232/8               169.254.0.1         1   Forever  Static
+224/4               192.168.122.1      20        75  Dynamic
+
+jocke@luthien:~/src/pimd [master]$ sudo ./src/pimctl sh p crp
+Group Address       RP Address       Prio  Holdtime  Expires
+232/8               169.254.0.1         1    Static  Never
+224/4               192.168.122.1      20        75  0h1m10s
+
+
 ** DONE Shared pimctl with pimd-dense
 ** DONE Update man page + split into a pimd.conf(5)
 ** TODO Automatically add IP alias as altnet
