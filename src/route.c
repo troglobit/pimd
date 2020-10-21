@@ -638,11 +638,11 @@ int change_interfaces(mrtentry_t *mrt,
 	if (mrt->flags & MRTF_KERNEL_CACHE) {
 	    /* Update the kernel MFC entries */
 	    if (delete_mrt_flag == TRUE) {
-		/* XXX: no need to send RSRR message. Will do it when
-		 * delete the mrtentry.
+		/*
+		 * XXX: no need to send RSRR message. Will do it when
+		 * deleting the mrtentry.
 		 */
-		for (kc = mrt->kernel_cache; kc; kc = kc->next)
-		    delete_mrtentry_all_kernel_cache(mrt);
+		delete_mrtentry_all_kernel_cache(mrt);
 	    } else {
 		/* here mrt->source->address is the RP address */
 		for (kc = mrt->kernel_cache; kc; kc = kc->next)
