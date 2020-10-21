@@ -202,8 +202,8 @@ static void rsrr_accept_iq(void)
      */
     if (numvifs > RSRR_MAX_VIFS) {
 	logit(LOG_WARNING, 0,
-	    "Cannot send RSRR Route Reply because %d is too many vifs %d",
-	    numvifs);
+	      "Cannot send RSRR Route Reply because %d is too many vifs (MAX: %d)",
+	      numvifs, RSRR_MAX_VIFS);
 	return;
     }
     
@@ -620,7 +620,7 @@ void rsrr_cache_bring_up(struct gtable *gt)
 		    if (rsrr_accept_rq(&rc->route_query, flags, gt) < 0) {
 			IF_DEBUG(DEBUG_RSRR) {
 			    logit(LOG_DEBUG, 0,
-				  "Deleting cached query id %ld from client %s",
+				  "Deleting cached query id %u from client %s",
 				  rc->route_query.query_id,
 				  rc->client_addr.sun_path);
 			}
@@ -765,7 +765,7 @@ void rsrr_cache_clean(struct gtable *gt)
 	    if (rsrr_accept_rq(&rc->route_query, flags, gt_wide) < 0) {
 		IF_DEBUG(DEBUG_RSRR) {
 		    logit(LOG_DEBUG, 0,
-			  "Deleting cached query id %ld from client %s",
+			  "Deleting cached query id %u from client %s",
 			  rc->route_query.query_id, rc->client_addr.sun_path);
 		}
 		/* Delete cache entry. */
