@@ -130,7 +130,7 @@ static void rsrr_accept(size_t recvlen)
     struct rsrr_rq *route_query;
     
     if (recvlen < RSRR_HEADER_LEN) {
-	logit(LOG_WARNING, 0, "Received RSRR packet of %zu bytes, which is less than MIN size %d.",
+	logit(LOG_WARNING, 0, "Received RSRR packet of %zu bytes, which is less than MIN size %zu.",
 	      recvlen, RSRR_HEADER_LEN);
 	return;
     }
