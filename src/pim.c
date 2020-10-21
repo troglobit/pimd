@@ -169,7 +169,7 @@ static void accept_pim(ssize_t recvlen)
 
     IF_DEBUG(DEBUG_PIM_DETAIL) {
 	IF_DEBUG(DEBUG_PIM) {
-	    logit(LOG_DEBUG, 0, "RECV %5d bytes %s from %-15s to %s ", recvlen,
+	    logit(LOG_DEBUG, 0, "RECV %5zd bytes %s from %-15s to %s ", recvlen,
 		  packet_kind(IPPROTO_PIM, pim->pim_type, 0),
 		  inet_fmt(src, source, sizeof(source)), inet_fmt(dst, dest, sizeof(dest)));
 	}
@@ -417,7 +417,7 @@ static int send_frame(char *buf, size_t len, size_t frag, size_t mtu, struct soc
     char source[20], dest[20];
 
     IF_DEBUG(DEBUG_PIM_REGISTER) {
-	logit(LOG_DEBUG, 0, "Sending unicast: len = %d, frag %zd, mtu %zd, to %s",
+	logit(LOG_DEBUG, 0, "Sending unicast: len = %zu, frag %zu, mtu %zu, to %s",
 	      len, frag, mtu, inet_fmt(ip->ip_dst.s_addr, source, sizeof(source)));
 	dump_frame(NULL, buf, len);
     }
