@@ -71,7 +71,7 @@ AC_CHECK_LIB([util], [pidfile])
 AC_CHECK_FUNCS([atexit getifaddrs if_nametoindex])
 
 # Check for usually missing API's, which we can replace
-AC_REPLACE_FUNCS([pidfile strlcpy strlcat strtonum utimensat])
+AC_REPLACE_FUNCS([pidfile strlcpy strlcat strtonum tempfile utimensat])
 AC_CONFIG_LIBOBJ_DIR([lib])
 
 #   Register kernel encapsulation.  Your kernel must support registers

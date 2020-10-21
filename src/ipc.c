@@ -228,7 +228,7 @@ static void ipc_show(int sd, int (*cb)(FILE *), char *buf, size_t len)
 {
 	FILE *fp;
 
-	fp = tmpfile();
+	fp = tempfile();
 	if (!fp) {
 		logit(LOG_WARNING, errno, "Failed opening temporary file");
 		return;
@@ -767,7 +767,7 @@ static void ipc_help(int sd, char *buf, size_t len)
 {
 	FILE *fp;
 
-	fp = tmpfile();
+	fp = tempfile();
 	if (!fp) {
 		int sz;
 

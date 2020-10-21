@@ -688,6 +688,10 @@ extern long long strtonum		(const char *, long long, long long, const char **);
 extern int	pidfile			(const char *);
 #endif
 
+#ifndef tempfile
+extern FILE 	*tempfile		(void);
+#endif
+
 #endif /* PIMD_DEFS_H_ */
 
 /**
