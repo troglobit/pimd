@@ -130,7 +130,7 @@ static void rsrr_accept(size_t recvlen)
     struct rsrr_rq *route_query;
     
     if (recvlen < RSRR_HEADER_LEN) {
-	logit(LOG_WARNING, 0, "Received RSRR packet of %d bytes, which is less than MIN size %d.",
+	logit(LOG_WARNING, 0, "Received RSRR packet of %zu bytes, which is less than MIN size %d.",
 	      recvlen, RSRR_HEADER_LEN);
 	return;
     }
@@ -153,7 +153,7 @@ static void rsrr_accept(size_t recvlen)
 	case RSRR_ROUTE_QUERY:
 	    /* Check size */
 	    if (recvlen < RSRR_RQ_LEN) {
-		logit(LOG_WARNING, 0, "Received Route Query of %d bytes, which is too small", recvlen);
+		logit(LOG_WARNING, 0, "Received Route Query of %zu bytes, which is too small", recvlen);
 		break;
 	    }
 	    /* Get the query */
@@ -493,7 +493,7 @@ static void rsrr_cache(struct gtable *gt, struct rsrr_rq *route_query)
 		rc->route_query.query_id = route_query->query_id;
 		IF_DEBUG(DEBUG_RSRR) {
 		    logit(LOG_DEBUG, 0,
-			  "Update cached query id %ld from client %s",
+			  "Update cached query id %u from client %s",
 			  rc->route_query.query_id, rc->client_addr.sun_path);
 		}
 	    }
@@ -525,7 +525,7 @@ static void rsrr_cache(struct gtable *gt, struct rsrr_rq *route_query)
 #endif /* PIM */
 
     IF_DEBUG(DEBUG_RSRR) {
-	logit(LOG_DEBUG, 0, "Cached query id %ld from client %s",
+	logit(LOG_DEBUG, 0, "Cached query id %u from client %s",
 	      rc->route_query.query_id, rc->client_addr.sun_path);
     }
 }
@@ -552,8 +552,8 @@ void rsrr_cache_send(struct gtable *gt, int notify)
     while ((rc = *rcnp) != NULL) {
 	if (rsrr_accept_rq(&rc->route_query, flags, gt) < 0) {
 	    IF_DEBUG(DEBUG_RSRR) {
-		logit(LOG_DEBUG, 0, "Deleting cached query id %ld from client %s",
-		      rc->route_query.query_id,rc->client_addr.sun_path);
+		logit(LOG_DEBUG, 0, "Deleting cached query id %u from client %s",
+		      rc->route_query.query_id, rc->client_addr.sun_path);
 	    }
 	    /* Delete cache entry. */
 	    *rcnp = rc->next;
@@ -669,7 +669,7 @@ void rsrr_cache_bring_up(struct gtable *gt)
 		    if (rsrr_accept_rq(&rc->route_query, flags, gt) < 0) {
 			IF_DEBUG(DEBUG_RSRR) {
 			    logit(LOG_DEBUG, 0,
-				  "Deleting cached query id %ld from client %s",
+				  "Deleting cached query id %u from client %s",
 				  rc->route_query.query_id,
 				  rc->client_addr.sun_path);
 			}
