@@ -619,7 +619,7 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
     }
 
     IF_DEBUG(DEBUG_PIM_REGISTER)
-        logit(LOG_DEBUG, 0, "Received PIM register: len = %d from %s",
+        logit(LOG_DEBUG, 0, "Received PIM register: len = %zu from %s",
               len, inet_fmt(reg_src, s1, sizeof(s1)));
 
     /*
@@ -629,7 +629,7 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
      */
     if (len < sizeof(pim_header_t) + sizeof(pim_register_t) + sizeof(struct ip)) {
 	IF_DEBUG(DEBUG_PIM_REGISTER)
-	    logit(LOG_INFO, 0, "PIM register: short packet (len = %d) from %s",
+	    logit(LOG_INFO, 0, "PIM register: short packet (len = %zu) from %s",
 		  len, inet_fmt(reg_src, s1, sizeof(s1)));
 
 	return FALSE;
@@ -1353,7 +1353,7 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
     /* sanity check for the minimum length */
     if (len < PIM_JOIN_PRUNE_MINLEN) {
 	IF_DEBUG(DEBUG_PIM_JOIN_PRUNE)
-	    logit(LOG_NOTICE, 0, "Too short Join/Prune message (%u bytes) from %s on %s",
+	    logit(LOG_NOTICE, 0, "Too short Join/Prune message (%zu bytes) from %s on %s",
 		  len, inet_fmt(src, s1, sizeof(s1)), v->uv_name);
 
 	return FALSE;
@@ -3205,7 +3205,7 @@ int receive_pim_bootstrap(uint32_t src, uint32_t dst, char *msg, size_t len)
     /* sanity check for the minimum length */
     if (len < PIM_BOOTSTRAP_MINLEN) {
 	IF_DEBUG(DEBUG_PIM_BOOTSTRAP)
-	    logit(LOG_NOTICE, 0, "Bootstrap message size(%u) is too short from %s",
+	    logit(LOG_NOTICE, 0, "Bootstrap message size(%zu) is too short from %s",
 		  len, inet_fmt(src, s1, sizeof(s1)));
 
 	return FALSE;
@@ -3309,7 +3309,7 @@ int receive_pim_bootstrap(uint32_t src, uint32_t dst, char *msg, size_t len)
 	if (incoming == NO_VIF) {
 	    /* Cannot find the receiving iif toward that DR */
 	    IF_DEBUG(DEBUG_RPF | DEBUG_PIM_BOOTSTRAP)
-		logit(LOG_INFO, 0, "Unicast boostrap message from %s to ignored: cannot find iif",
+		logit(LOG_INFO, 0, "Unicast boostrap message from %s to %s ignored: cannot find iif",
 		      inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)));
 
 	    return FALSE;
@@ -3538,7 +3538,7 @@ int receive_pim_cand_rp_adv(uint32_t src, uint32_t dst __attribute__((unused)), 
     /* sanity check for the minimum length */
     if (len < PIM_CAND_RP_ADV_MINLEN) {
 	IF_DEBUG(DEBUG_PIM_CAND_RP)
-	    logit(LOG_NOTICE, 0, "cand_RP message size(%u) is too short from %s",
+	    logit(LOG_NOTICE, 0, "cand_RP message size(%zu) is too short from %s",
 		  len, inet_fmt(src, s1, sizeof(s1)));
 
 	return FALSE;
