@@ -340,6 +340,9 @@ static int get(char *cmd, FILE *fp)
 	ssize_t len;
 	int sd;
 
+	if (debug)
+		warn("Sending cmd %s", cmd);
+
 	sd = ipc_connect();
 	if (-1 == sd) {
 		if (errno == ENOENT)
@@ -542,6 +545,11 @@ static int cmd(int argc, char *argv[])
 	while (cmdind < argc) {
 		strlcat(buf, " ", sizeof(buf));
 		strlcat(buf, argv[cmdind++], sizeof(buf));
+	}
+
+	if (strlen(cmd) < 1) {
+		warnx("Invalid command.");
+		return 1;
 	}
 
 	if (!strcmp(cmd, "help"))
