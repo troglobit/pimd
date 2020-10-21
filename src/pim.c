@@ -148,7 +148,7 @@ static void accept_pim(ssize_t recvlen)
     char source[20], dest[20];
 
     if (recvlen < (ssize_t)sizeof(struct ip)) {
-	logit(LOG_WARNING, 0, "Received PIM packet too short (%u bytes) for IP header", recvlen);
+	logit(LOG_WARNING, 0, "Received PIM packet too short (%zd bytes) for IP header", recvlen);
 	return;
     }
 
