@@ -155,7 +155,7 @@ static void accept_igmp(ssize_t recvlen)
     int igmp_version = 3;
 
     if (recvlen < (ssize_t)sizeof(struct ip)) {
-	logit(LOG_WARNING, 0, "Received IGMP packet too short (%u bytes) for IP header", recvlen);
+	logit(LOG_WARNING, 0, "Received IGMP packet too short (%zd bytes) for IP header", recvlen);
 	return;
     }
 
