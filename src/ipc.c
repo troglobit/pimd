@@ -375,7 +375,7 @@ static int show_rp(FILE *fp)
 	grp_mask_t *grp;
 
 	if (grp_mask_list)
-		fprintf(fp, "Group Address       RP Address       Type     Prio  Holdtime =\n");
+		fprintf(fp, "Group Address       RP Address       Prio  Holdtime  Type=\n");
 
 	for (grp = grp_mask_list; grp; grp = grp->next) {
 		struct rp_grp_entry *rp_grp = grp->grp_rp_next;
@@ -398,9 +398,9 @@ static int show_rp(FILE *fp)
 				snprintf(htstr, sizeof(htstr), "%d", ht);
 			}
 
-			fprintf(fp, "%-15s  %-7s  %4d  %8s\n",
+			fprintf(fp, "%-15s  %4d  %8s  %-7s\n",
 				inet_fmt(rp_grp->rp->rpentry->address, s1, sizeof(s1)),
-				type, rp_grp->priority, htstr);
+				rp_grp->priority, htstr, type);
 
 			rp_grp = rp_grp->grp_rp_next;
 		}
@@ -415,7 +415,7 @@ static int show_crp(FILE *fp)
 	struct cand_rp *rp;
 
 	if (cand_rp_list)
-		fprintf(fp, "RP Address       Group Address       Prio  Holdtime  Expires =\n");
+		fprintf(fp, "Group Address       RP Address       Prio  Holdtime  Expires =\n");
 
 	for (rp = cand_rp_list; rp; rp = rp->next) {
 		struct rp_grp_entry *rp_grp = rp->rp_grp_next;
@@ -428,9 +428,9 @@ static int show_crp(FILE *fp)
 		else
 			snprintf(buf, sizeof(buf), "%8d", entry->adv_holdtime);
 
-		fprintf(fp, "%-15s  %-18s  %4d  %s  %s\n",
-			inet_fmt(entry->address, s1, sizeof(s1)),
+		fprintf(fp, "%-18s  %-15s  %4d  %s  %s\n",
 			netname(grp->group_addr, grp->group_mask),
+			inet_fmt(entry->address, s1, sizeof(s1)),
 			rp_grp->priority, buf,
 			PIM_HELLO_HOLDTIME_FOREVER == rp_grp->holdtime
 			? "Never"
