@@ -63,7 +63,7 @@ static int sighandled = 0;
 #define GOT_SIGHUP      0x02
 #define GOT_SIGALRM     0x10
 
-#define NHANDLERS       3
+#define NHANDLERS       5
 static struct ihandler {
     int fd;			/* File descriptor               */
     ihfunc_t func;		/* Function to call with &fd_set */
