@@ -814,13 +814,13 @@ int parse_rp_candidate(char *s)
     while (!EQUAL((w = next_word(&s)), "")) {
 	if (EQUAL(w, "priority")) {
 	    if (EQUAL((w = next_word(&s)), "")) {
-		WARN("Missing priority, defaulting to %u", w, PIM_DEFAULT_CAND_RP_PRIORITY);
+		WARN("Missing Cand-RP priority, defaulting to %u", PIM_DEFAULT_CAND_RP_PRIORITY);
 		priority = PIM_DEFAULT_CAND_RP_PRIORITY;
 		continue;
 	    }
 
 	    if (sscanf(w, "%u", &priority) != 1) {
-		WARN("Invalid priority %s, defaulting to %u", w, PIM_DEFAULT_CAND_RP_PRIORITY);
+		WARN("Invalid Cand-RP priority %s, defaulting to %u", w, PIM_DEFAULT_CAND_RP_PRIORITY);
 		priority = PIM_DEFAULT_CAND_RP_PRIORITY;
 	    }
 
@@ -967,7 +967,7 @@ int parse_bsr_candidate(char *s)
 	    }
 
 	    if (sscanf(w, "%u", &priority) != 1) {
-		WARN("Invalid Cand-BSR priority %s, defaulting to %u", PIM_DEFAULT_BSR_PRIORITY);
+		WARN("Invalid Cand-BSR priority %s, defaulting to %u", w, PIM_DEFAULT_BSR_PRIORITY);
 		priority = PIM_DEFAULT_BSR_PRIORITY;
 		continue;
 	    }
