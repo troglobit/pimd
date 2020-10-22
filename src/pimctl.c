@@ -252,7 +252,7 @@ static int ipc_ping(void)
 #define ESC "\033"
 static int get_width(void)
 {
-	int ret = 74;
+	int ret = 79;
 #ifdef HAVE_TERMIOS_H
 	char buf[42];
 	struct termios tc, saved;
