@@ -165,27 +165,91 @@ static void check_detail(char *cmd, size_t len)
 		detail = 0;
 }
 
+
+	/* 20201103 Added to trace 'Bad message' Problem
+	 # Nov 2 19:52:21 pfSense pimd[66311]: Failed reading command from client: Bad message
+		
+	https://www-numi.fnal.gov/offline_software/srt_public_context/WebDocs/Errors/unix_system_errors.html  
+	actual file: /usr/include/sys/errno.h 
+	EBADMSG ; ^Not a data message^ 
+	
+	# assumed parameters for function ^ipc_read^ are: 
+	> integer sd = 'file or stream id' ?
+	< ^string cmd = the command string to read
+	< integer ssize_t = memory block ...... of certain size ????	
+	< integer  = integer indicating the commandno (as return value)
+	< integer errno ^as defined by POSIX^ /usr/include/sys/errno.h  (returned via global variable (dirty))
+	 
+	# local variabels
+	 integer len
+	 */
+
 static int ipc_read(int sd, char *cmd, ssize_t len)
 {
+	
 	memset(cmd, 0, len);
 	len = read(sd, cmd, len - 1);
-	if (len < 0)
-		return IPC_ERR;
+
 	if (len == 0)
-		return IPC_OK;
+	{
+		/* 20201103 Added to trace 'Bad message' Problem 
+			Ping received; 
+			This check should first because: 
+			- I noticed a timing problem, when logging pings
+			- its the most frequent message :) 
+		*/	
+		return IPC_OK;	
+	}
+	
+	/* 20201103 Added to trace 'Bad message' Problem 
+	- log command starts excluded the ping :) ! */
+	logit(LOG_DEBUG, 0, "ipc_read 'cmd received'"); 
+	
+	if (len < 0)
+	{
+		/* 20201103 Added to trace 'Bad message' Problem 
+		- strange that ^errno^ is not assigned a value !!
+		which should be "negative command lenght or so
+		I assume ENOTCONN !?
+		*/
+		logit(LOG_DEBUG, 0, "Negative cmd len %d", len);	
+		errno = ENOTCONN; 
 
+		return IPC_ERR;	
+	}
+	
 	cmd[len] = 0;
+	logit(LOG_DEBUG, 0, "Received cmd ^%s^", cmd);
 
-	for (size_t i = 0; i < NELEMS(cmds); i++) {
+	for (size_t i = 0; i < NELEMS(cmds); i++) 
+	{
 		struct ipcmd *c = &cmds[i];
 		size_t len = strlen(c->cmd);
 
-		if (!strncasecmp(cmd, c->cmd, len)) {
+		if (!strncasecmp(cmd, c->cmd, len)) 
+		{
+			/* 20201103 Added to trace 'Bad message' Problem */						
+			/* This loop is processec twice! 
+			- The first time you see the ^help^ messages
+			- The second time the real command
+			It works never the less see trace below 
+			Nov 3 18:40:52 pfSense pimd[48699]: Command Id: 1, len: 4, msg: ^help^
+			Nov 3 18:40:52 pfSense pimd[48699]: Command Id: 11, len: 17, msg: ^show pim neighbor^ 
+			*/
+			
+			logit(LOG_NOTICE, 0, "Command Id: %d, len: %d, msg: ^%s^", c->op, len, cmd);	
+			
+
 			check_detail(cmd, len);
+			/* 20201103 check_detail is destroying the cmd array :( , so I placed logit above that command */
+			
 			return c->op;
 		}
 	}
 
+	/* 20201103 Added to trace 'Bad message' Problem */
+	logit(LOG_NOTICE, 0, "After 'for-statemend' => 'Bad cmd' ^%s^", cmd);	
+	
 	errno = EBADMSG;
 	return IPC_ERR;
 }
@@ -876,6 +940,7 @@ static void ipc_handle(int sd)
 		break;
 
 	case IPC_ERR:
+	
 		logit(LOG_WARNING, errno, "Failed reading command from client");
 		break;
 
