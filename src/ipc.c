@@ -307,18 +307,14 @@ static int show_neighbors(FILE *fp)
 	pim_nbr_entry_t *n;
 	struct uvif *uv;
 	vifi_t vifi;
-	int first = 1;
+
+	fprintf(fp, "Interface         Address          Prio  Mode  Uptime/Expires               =\n");
 
 	for (vifi = 0; vifi < numvifs; vifi++) {
 		uv = &uvifs[vifi];
 
-		for (n = uv->uv_pim_neighbors; n; n = n->next) {
-			if (first) {
-				fprintf(fp, "Interface         Address          Prio  Mode  Uptime/Expires               =\n");
-				first = 0;
-			}
+		for (n = uv->uv_pim_neighbors; n; n = n->next)
 			show_neighbor(fp, uv, n);
-		}
 	}
 
 	return 0;
