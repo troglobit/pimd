@@ -249,7 +249,6 @@ static int ipc_ping(void)
 	return 0;
 }
 
-#define ESC "\033"
 static int get_width(void)
 {
 	int ret = 79;
@@ -264,16 +263,16 @@ static int get_width(void)
 	tc.c_cflag |= (CLOCAL | CREAD);
 	tc.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
 	tcsetattr(STDERR_FILENO, TCSANOW, &tc);
-	fprintf(stderr, ESC "7" ESC "[r" ESC "[999;999H" ESC "[6n");
+	fprintf(stderr, "\e7\e[r\e[999;999H\e[6n");
 
 	if (poll(&fd, 1, 300) > 0) {
 		int row, col;
 
-		if (scanf(ESC "[%d;%dR", &row, &col) == 2)
+		if (scanf("\e[%d;%dR", &row, &col) == 2)
 			ret = col;
 	}
 
-	fprintf(stderr, ESC "8");
+	fprintf(stderr, "\e8");
 	tcsetattr(STDERR_FILENO, TCSANOW, &saved);
 #endif
 	return ret;
