@@ -11,6 +11,10 @@ As of this release =pimd= is not guaranteed to be backwards compatible
 with earlier releases.  It is recommended to run the same version of
 =pimd= on all routers in the same domain.  See issue #93 for details.
 
+Also, systems other than those based on Linux are no longer officially
+supported.  This includes, but is not limited to: FreeBSD, NetBSD, and
+Illumos, which may work, but are no longer actively tested on.
+
 *Note:* command line arguments in v3.0 are not compatible with v2.x!
 
 ** Changes

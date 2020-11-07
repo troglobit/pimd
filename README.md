@@ -1,5 +1,5 @@
-PIM-SM/SSM Multicast Routing for UNIX
-=====================================
+PIM-SM/SSM Multicast Routing for Linux
+======================================
 [![License Badge][]][License] [![Travis Status][]][Travis] [![Coverity Status][]][Coverity Scan]
 
 Table of Contents
@@ -32,8 +32,7 @@ GitHub proejct's release directory.
 
 pimd is primarily developed on Linux and should work as-is out of the
 box on all major distributions.  Other UNIX variants (OpenBSD, NetBSD,
-and FreeBSD) should also work, but are not as thoroughly tested.  For
-some tips and details, see the `configure` script.
+FreeBSD, and Illumos) may also work, but are not supported anymore.
 
 For a summary of changes for each release, see the [ChangeLog][].
 
