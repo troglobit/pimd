@@ -28,6 +28,21 @@ Some platforms don't have sufficient tooling installed by default,
 so a "pimctl show mfc" would be great to have.  This could also
 show counters to help with debugging flows.
 
+** TODO Add aliases for common pimctl commands
+
+- pimctl show
+- pimctl show if
+- pimctl show routes  --> show pim routes
+- pimctl show groups  --> show igmp groups
+
+Including some summary features
+
+- pimctl show if
+- pimctl show interfaces
+
+Show summary of 'pim int' and 'igmp int', because users don't care about
+the distinction between layer-2 and layer-3.
+
 ** TODO Automatically add IP alias as altnet
  - Grab code from mrouted, 48a7a11
 ** DONE Substring matcher for pimctl
