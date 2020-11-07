@@ -23,6 +23,11 @@ Group Address       RP Address       Prio  Holdtime  Expires
 
 ** DONE Shared pimctl with pimd-dense
 ** DONE Update man page + split into a pimd.conf(5)
+** TODO Add "show mfc" to ipc.c
+Some platforms don't have sufficient tooling installed by default,
+so a "pimctl show mfc" would be great to have.  This could also
+show counters to help with debugging flows.
+
 ** TODO Automatically add IP alias as altnet
  - Grab code from mrouted, 48a7a11
 ** DONE Substring matcher for pimctl
