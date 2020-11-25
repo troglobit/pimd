@@ -175,6 +175,7 @@ static int ipc_read(int sd, char *cmd, ssize_t len)
 		return IPC_OK;
 
 	cmd[len] = 0;
+	logit(LOG_DEBUG, 0, "IPC cmd: '%s'", cmd);
 
 	for (size_t i = 0; i < NELEMS(cmds); i++) {
 		struct ipcmd *c = &cmds[i];
@@ -193,6 +194,8 @@ static int ipc_read(int sd, char *cmd, ssize_t len)
 static int ipc_write(int sd, void *msg, size_t sz)
 {
 	ssize_t len;
+
+	logit(LOG_DEBUG, 0, "IPC rpl: '%s'", msg);
 
 	while ((len = write(sd, msg, sz))) {
 		if (-1 == len && EINTR == errno)
@@ -241,6 +244,25 @@ static void ipc_show(int sd, int (*cb)(FILE *), char *buf, size_t len)
 	rewind(fp);
 	ipc_send(sd, buf, len, fp);
 	fclose(fp);
+}
+
+static int ipc_err(int sd, char *buf, size_t len)
+{
+	switch (errno) {
+	case EBADMSG:
+		snprintf(buf, len, "No such command, see 'help' for available commands.");
+		break;
+
+	case EINVAL:
+		snprintf(buf, len, "Invalid argument.");
+		break;
+
+	default:
+		snprintf(buf, len, "Unknown error: %s", strerror(errno));
+		break;
+	}
+
+	return ipc_write(sd, buf, strlen(buf));
 }
 
 /* wrap simple functions that don't use >768 bytes for I/O */
@@ -722,8 +744,10 @@ static int ipc_debug(char *buf, size_t len)
 	if (strlen(buf)) {
 		int rc = debug_parse(buf);
 
-		if ((int)DEBUG_PARSE_FAIL == rc)
+		if ((int)DEBUG_PARSE_FAIL == rc) {
+			errno = EINVAL;
 			return 1;
+		}
 
 		/* Activate debugging of new subsystems */
 		debug = rc;
@@ -751,8 +775,10 @@ static int ipc_loglevel(char *buf, size_t len)
 	}
 
 	rc = log_str2lvl(buf);
-	if (-1 == rc)
+	if (-1 == rc) {
+		errno = EINVAL;
 		return 1;
+	}
 
 	logit(LOG_NOTICE, 0, "Setting new log level %s", log_lvl2str(rc));
 	loglevel = rc;
@@ -801,6 +827,7 @@ static void ipc_handle(int sd)
 	char cmd[768];
 	ssize_t len;
 	int client;
+	int rc = 0;
 
 	client = accept(sd, NULL, NULL);
 	if (client < 0)
@@ -812,19 +839,19 @@ static void ipc_handle(int sd)
 		break;
 
 	case IPC_DEBUG:
-		ipc_wrap(client, ipc_debug, cmd, sizeof(cmd));
+		rc = ipc_wrap(client, ipc_debug, cmd, sizeof(cmd));
 		break;
 
 	case IPC_LOGLEVEL:
-		ipc_wrap(client, ipc_loglevel, cmd, sizeof(cmd));
+		rc = ipc_wrap(client, ipc_loglevel, cmd, sizeof(cmd));
 		break;
 
 	case IPC_KILL:
-		ipc_wrap(client, daemon_kill, cmd, sizeof(cmd));
+		rc = ipc_wrap(client, daemon_kill, cmd, sizeof(cmd));
 		break;
 
 	case IPC_RESTART:
-		ipc_wrap(client, daemon_restart, cmd, sizeof(cmd));
+		rc = ipc_wrap(client, daemon_restart, cmd, sizeof(cmd));
 		break;
 
 	case IPC_VERSION:
@@ -873,12 +900,16 @@ static void ipc_handle(int sd)
 
 	case IPC_ERR:
 		logit(LOG_WARNING, errno, "Failed reading command from client");
+		rc = IPC_ERR;
 		break;
 
 	default:
 		logit(LOG_WARNING, 0, "Invalid IPC command: %s", cmd);
 		break;
 	}
+
+	if (rc == IPC_ERR)
+		ipc_err(sd, cmd, sizeof(cmd));
 
 	ipc_close(client);
 }
