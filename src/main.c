@@ -230,8 +230,9 @@ static char *progname(char *arg0)
 int main(int argc, char *argv[])
 {
     int foreground = 0, do_syslog = 1;
-    fd_set fds;
     int nfds, fd, n = -1, i, ch, rc;
+    int startup_delay = 0;
+    fd_set fds;
     struct sigaction sa;
     struct option long_options[] = {
 	{ "config",        1, 0, 'f' },
@@ -248,13 +249,14 @@ int main(int argc, char *argv[])
 	{ "table-id",      1, 0, 't' },
 #endif
 	{ "version",       0, 0, 'v' },
+	{ "startup-delay", 1, 0, 'w' },
 	{ NULL, 0, 0, 0 }
     };
 
     snprintf(versionstring, sizeof(versionstring), "pimd version %s", PACKAGE_VERSION);
 
     prognm = ident = progname(argv[0]);
-    while ((ch = getopt_long(argc, argv, "d:f:hi:l:nrst:v", long_options, NULL)) != EOF) {
+    while ((ch = getopt_long(argc, argv, "d:f:hi:l:nrst:vw:", long_options, NULL)) != EOF) {
 	const char *errstr;
 
 	switch (ch) {
@@ -322,6 +324,10 @@ int main(int argc, char *argv[])
 	    case 'v':
 		printf("%s\n", versionstring);
 		return 0;
+
+	    case 'w':
+		startup_delay = atoi(optarg);
+		break;
 
 	    default:
 		return usage(1);
@@ -393,6 +399,11 @@ int main(int argc, char *argv[])
 
     /* Start up the log rate-limiter */
     resetlogging(NULL);
+
+    if (startup_delay) {
+	logit(LOG_NOTICE, 0, "Delaying interface probe %d sec ...", startup_delay);
+	sleep(startup_delay);
+    }
 
     /* TODO: check the kernel DVMRP/MROUTED/PIM support version */
 
