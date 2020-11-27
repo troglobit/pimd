@@ -150,25 +150,30 @@ static int usage(int code)
     else
 	snprintf(pidfn, sizeof(pidfn), "%s", pid_file);
 
-    printf("Usage: %s [-hnrsv] [-f FILE] [-i NAME] [-d SYS[,SYS...]] [-l LEVEL]\n\n", prognm);
-    printf(" -f, --config=FILE   Configuration file, default uses ident NAME: %s\n", config_file);
-    printf("     --no-fallback   When started without a config file, skip RP/BSR fallbacks\n");
-    printf(" -n, --foreground    Run in foreground, do not detach from calling terminal\n");
-    printf(" -d, --debug=SYS     Enable debug for subystem(s) SYS, separate more with comma\n");
-    printf(" -l, --loglevel=LVL  Set log level: none, err, notice (default), info, debug\n");
-    printf(" -i, --ident=NAME    Identity for config + PID file, and syslog, default: %s\n", prognm);
-    printf("     --pidfile=FILE  File to store process ID for signaling %s\n"
-	   "                     Default uses ident NAME: %s\n", prognm, pidfn);
-    printf(" -r                  Retry (forever) if not all configured phyint interfaces are\n"
-	   "                     available when starting up, e.g. wait for DHCP lease\n");
-    printf("     --disable-vifs  Disable all virtual interfaces (phyint) by default\n");
-    printf(" -s, --syslog        Use syslog, default unless running in foreground, -n\n");
+    printf("Usage: %s [-hnrsv] [-f FILE] [-i NAME] [-d SYS[,SYS...]] [-l LEVEL]"
 #ifdef __linux__
-    printf(" -t, --table-id=ID   Set multicast routing table ID.  Allowed table ID#:\n"
-	   "                      0 .. 999999999.  Default: 0 (use default table)\n");
+	   " [-t ID]"
 #endif
-    printf(" -h, --help          Show this help text\n");
-    printf(" -v, --version       Show %s version\n", prognm);
+	   " [-w SEC]\n\n", prognm);
+    printf(" -f, --config=FILE        Configuration file, default use ident: %s\n", config_file);
+    printf("     --no-fallback        Skip RP/BSR fallback if started w/o config file\n");
+    printf(" -n, --foreground         Run in foreground do not detach from calling terminal\n");
+    printf(" -d, --debug=SYS          Enable debug for subystem(s) separate more with comma\n");
+    printf(" -l, --loglevel=LVL       Log level: none, err, notice (default), info, debug\n");
+    printf(" -i, --ident=NAME         Identity for syslog, .cfg & .pid file, default: %s\n", prognm);
+    printf("     --pidfile=FILE       File to store process ID for signaling %s\n"
+	   "                          Default uses ident: %s\n", prognm, pidfn);
+    printf(" -r                       Retry (forever) if not all configured interfaces are\n"
+	   "                          available when starting up, e.g. wait for DHCP lease\n");
+    printf("     --disable-vifs       Disable all virtual interfaces (phyint) by default\n");
+    printf(" -s, --syslog             Use syslog, default unless running in foreground, -n\n");
+#ifdef __linux__
+    printf(" -t, --table-id=ID        Set multicast routing table ID.  Allowed table ID#:\n"
+	   "                          0 .. 999999999.  Default: 0 (use default table)\n");
+#endif
+    printf(" -h, --help               Show this help text\n");
+    printf(" -v, --version            Show %s version\n", prognm);
+    printf(" -w, --startup-delay=SEC  Initial startup delay before probing interfaces\n");
     printf("\n");
 
     printf("Available subsystems for debug:\n");
