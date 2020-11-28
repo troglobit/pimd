@@ -20,6 +20,7 @@
 .Op Fl -disable-vifs
 .Op Fl l Ar LEVEL
 .Op Fl t Ar ID
+.Op Fl w Ar SEC
 .Sh DESCRIPTION
 .Nm
 is a stand-alone PIM-SM/SSM multicast routing daemon available under the
@@ -210,7 +211,13 @@ Only available on Linux.
 .It Fl v, -version
 Show
 .Nm
-version
+version.
+.It Fl w, -startup-delay Ar SEC
+Initial startup delay of
+.Ar SEC
+seconds before probing for interfaces.  Useful if
+.Nm
+starts before interfaces are created and have an IP address.
 .El
 .Sh SIGNALS
 .Nm
