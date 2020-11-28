@@ -80,11 +80,19 @@ Please note that PIM Assert elections are not the same as the DR
 election.  The PIM Assert election determines the active multicast
 forwarder, whereas the DR election determines the active PIM router.
 .It Cm igmp-query-interval Ar <1-65535>
-This setting controls the interval between IGMP querys.  It is used only
-when acting as the elected IGMP querier on a LAN.  In IGMP the lowest
-numerical address on the LAN becomes the elected querier.  This value
-must be same across all IGMP capable devices on the same LAN!  Including
-any IGMP snooping switches (bridges) that can act as IGMP querier.
+This setting controls the interval between IGMP querys (QI).  It is used
+only when acting as the elected IGMP querier on a LAN.  In IGMP the
+lowest numerical address on the LAN becomes the elected querier.  This
+value must be same across all IGMP capable devices on the same LAN!
+Including any IGMP snooping switches (bridges) that can act as IGMP
+querier.
+.Pp
+The query response interval (QRI) is hard-coded to 10 seconds, so in
+practice, the query interval should not be less than that.  Also, at
+startup
+.Nm
+sends the first queries at a quicker interval (QI / 4) to speed up
+inital convergence.
 .Pp
 Default value, per RFC2236: 125
 .It Cm igmp-querier-timeout Ar <8-65535>
