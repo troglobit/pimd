@@ -209,6 +209,7 @@ struct uvif {
     uint32_t        uv_genid;       /* Random PIM Hello Generation ID       */
     uint16_t	    uv_gq_timer;    /* Group Query timer        	    */
     uint16_t        uv_jp_timer;    /* The Join/Prune timer                 */
+    uint16_t        uv_stquery_cnt; /* Startup Query Count */
     int             uv_local_pref;  /* default local preference for assert  */
     int             uv_local_metric;/* default local metric for assert      */
     struct pim_nbr_entry *uv_pim_neighbors; /* list of PIM neighbor routers */

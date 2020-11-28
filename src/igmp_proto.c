@@ -77,7 +77,12 @@ void query_groups(struct uvif *v)
     int code = IGMP_MAX_HOST_REPORT_DELAY * IGMP_TIMER_SCALE;
     struct listaddr *g;
 
-    v->uv_gq_timer = igmp_query_interval;
+    if (v->uv_stquery_cnt)
+	v->uv_stquery_cnt--;
+    if (v->uv_stquery_cnt)
+	v->uv_gq_timer = igmp_query_interval / 4;
+    else
+	v->uv_gq_timer = igmp_query_interval;
 
     if (v->uv_flags & VIFF_QUERIER) {
 	/* IGMP version to use depends on the compatibility mode of the interface */

@@ -183,6 +183,7 @@ void zero_vif(struct uvif *v, int t)
 
     RESET_TIMER(v->uv_gq_timer);
     RESET_TIMER(v->uv_jp_timer);
+    v->uv_stquery_cnt   = IGMP_STARTUP_QUERY_COUNT;
     v->uv_pim_neighbors	= (struct pim_nbr_entry *)NULL;
     v->uv_local_pref	= default_route_distance;
     v->uv_local_metric	= default_route_metric;
