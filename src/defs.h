@@ -212,27 +212,25 @@ typedef void (*ihfunc_t) (int);
  * The IGMPv2 <netinet/in.h> defines INADDR_ALLRTRS_GROUP, but earlier
  * ones don't, so we define it conditionally here.
  */
-#ifndef INADDR_ALLRTRS_GROUP
-					/* address for multicast mtrace msg */
-#define INADDR_ALLRTRS_GROUP	(uint32_t)0xe0000002	/* 224.0.0.2 */
+#ifndef INADDR_ALLRTRS_GROUP	/* address for multicast mtrace msg */
+#define INADDR_ALLRTRS_GROUP	(in_addr_t)0xe0000002	/* 224.0.0.2 */
 #endif
 
 #ifndef INADDR_ALLRPTS_GROUP
-#define INADDR_ALLRPTS_GROUP    ((in_addr_t)0xe0000016) /* 224.0.0.22, IGMPv3 */
+#define INADDR_ALLRPTS_GROUP    (in_addr_t)0xe0000016	/* 224.0.0.22, IGMPv3 */
 #endif
 
 #ifndef INADDR_MAX_LOCAL_GROUP
-#define INADDR_MAX_LOCAL_GROUP	(uint32_t)0xe00000ff	/* 224.0.0.255 */
+#define INADDR_MAX_LOCAL_GROUP	(in_addr_t)0xe00000ff	/* 224.0.0.255 */
 #endif
 
-#define INADDR_ANY_N            (uint32_t)0x00000000     /* INADDR_ANY in
-							 * network order */
-#define CLASSD_PREFIX           (uint32_t)0xe0000000     /* 224.0.0.0 */
+#define INADDR_ANY_N            (in_addr_t)0x00000000	/* INADDR_ANY in network order */
+#define CLASSD_PREFIX           (in_addr_t)0xe0000000	/* 224.0.0.0 */
 #define STAR_STAR_RP_MSKLEN     4                       /* Masklen for
 							 * 224.0.0.0 :
 							 * to encode (*,*,RP)
 							 */
-#define ALL_MCAST_GROUPS_ADDR   (uint32_t)0xe0000000     /* 224.0.0.0 */
+#define ALL_MCAST_GROUPS_ADDR   (in_addr_t)0xe0000000     /* 224.0.0.0 */
 #define ALL_MCAST_GROUPS_LEN    4
 
 /* Used by DVMRP */

@@ -397,8 +397,10 @@ static void stop_vif(vifi_t vifi)
 	k_leave(igmp_socket, allrouters_group, v);
 	k_leave(igmp_socket, allreports_group, v);
 
-	/* Discard all group addresses.  (No need to tell kernel;
-	 * the k_del_vif() call will clean up kernel state.) */
+	/*
+	 * Discard all group addresses.  (No need to tell kernel;
+	 * the k_del_vif() call will clean up kernel state.)
+	 */
 	while (v->uv_groups) {
 	    a = v->uv_groups;
 	    v->uv_groups = a->al_next;
