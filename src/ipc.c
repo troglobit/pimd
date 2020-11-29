@@ -190,7 +190,7 @@ static int ipc_read(int sd, char *cmd, ssize_t len)
 	return IPC_ERR;
 }
 
-static int ipc_write(int sd, void *msg, size_t sz)
+static int ipc_write(int sd, char *msg, size_t sz)
 {
 	ssize_t len;
 
