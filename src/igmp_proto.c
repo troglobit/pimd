@@ -73,8 +73,6 @@ uint32_t igmp_querier_timeout = IGMP_OTHER_QUERIER_PRESENT_INTERVAL;
  */
 void query_groups(struct uvif *v)
 {
-    int datalen = 4;
-    int code = IGMP_MAX_HOST_REPORT_DELAY * IGMP_TIMER_SCALE;
     struct listaddr *g;
 
     if (v->uv_stquery_cnt)
@@ -85,20 +83,42 @@ void query_groups(struct uvif *v)
 	v->uv_gq_timer = igmp_query_interval;
 
     if (v->uv_flags & VIFF_QUERIER) {
-	/* IGMP version to use depends on the compatibility mode of the interface */
-	if (v->uv_flags & VIFF_IGMPV2) {
-	    /* RFC 3376: When in IGMPv2 mode, routers MUST send Periodic
-	    Queries truncated at the Group Address field (i.e., 8 bytes long) */
-	    datalen = 0;
-	} else if (v->uv_flags & VIFF_IGMPV1) {
-	    /* RFC 3376: When in IGMPv1 mode, routers MUST send Periodic Queries with a Max Response Time of 0 */
+	int datalen;
+	int code;
+
+	/* IGMPv2 and v3 */
+	code = IGMP_MAX_HOST_REPORT_DELAY * IGMP_TIMER_SCALE;
+
+	/*
+	 * IGMP version to use depends on the compatibility mode of the
+	 * interface, which may channge at runtime depending on version
+	 * of the end devices on a segment.
+	 */
+	if (v->uv_flags & VIFF_IGMPV1) {
+	    /*
+	     * RFC 3376: When in IGMPv1 mode, routers MUST send Periodic
+	     *           Queries with a Max Response Time of 0
+	     */
 	    datalen = 0;
 	    code = 0;
+	} else if (v->uv_flags & VIFF_IGMPV2) {
+	    /*
+	     * RFC 3376: When in IGMPv2 mode, routers MUST send Periodic
+	     *           Queries truncated at the Group Address field
+	     *           (i.e., 8 bytes long)
+	     */
+	    datalen = 0;
+	} else {
+	    /*
+	     * RFC 3376: Length determines v3 or v2 query
+	     */
+	    datalen = 4;
 	}
 
 	IF_DEBUG(DEBUG_IGMP)
 	    logit(LOG_DEBUG, 0, "%s(): Sending IGMP v%s query on %s",
 		  __func__, datalen == 4 ? "3" : "2", v->uv_name);
+
 	send_igmp(igmp_send_buf, v->uv_lcl_addr, allhosts_group,
 		  IGMP_MEMBERSHIP_QUERY,
 		  code, 0, datalen);
@@ -445,9 +465,6 @@ void accept_leave_message(uint32_t src, uint32_t dst, uint32_t group)
     struct uvif *v;
     struct listaddr *g;
 
-    int datalen = 4;
-    int code = IGMP_LAST_MEMBER_QUERY_INTERVAL * IGMP_TIMER_SCALE;
-
     /* TODO: modify for DVMRP ??? */
     if ((vifi = find_vif_direct_local(src)) == NO_VIF) {
 	IF_DEBUG(DEBUG_IGMP)
@@ -477,6 +494,9 @@ void accept_leave_message(uint32_t src, uint32_t dst, uint32_t group)
      * query.
      */
     for (g = v->uv_groups; g; g = g->al_next) {
+	int datalen;
+	int code;
+
 	if (group == g->al_addr) {
 	    IF_DEBUG(DEBUG_IGMP)
 		logit(LOG_DEBUG, 0, "accept_leave_message(): old=%d query=%d", g->al_old, g->al_query);
@@ -510,28 +530,31 @@ void accept_leave_message(uint32_t src, uint32_t dst, uint32_t group)
 */
 #endif
 
-	    if (v->uv_flags & VIFF_QUERIER) {
-		/* Use lowest IGMP version */
-		if (v->uv_flags & VIFF_IGMPV2 || g->al_pv <= 2) {
-		    datalen = 0;
-		} else if (v->uv_flags & VIFF_IGMPV1 || g->al_pv == 1) {
-		    datalen = 0;
-		    code = 0;
-		}
+	    /* IGMPv2 and v3 */
+	    code = IGMP_LAST_MEMBER_QUERY_INTERVAL * IGMP_TIMER_SCALE;
 
+	    /* Use lowest IGMP version */
+	    if (v->uv_flags & VIFF_IGMPV2 || g->al_pv <= 2) {
+		datalen = 0;
+	    } else if (v->uv_flags & VIFF_IGMPV1 || g->al_pv == 1) {
+		datalen = 0;
+		code = 0;
+	    } else {
+		datalen = 4;
+	    }
+
+	    /** send a group specific querry **/
+	    if (v->uv_flags & VIFF_QUERIER) {
 		IF_DEBUG(DEBUG_IGMP)
 		    logit(LOG_DEBUG, 0, "%s(): Sending IGMP v%s query (al_pv=%d)",
 			  __func__, datalen == 4 ? "3" : "2", g->al_pv);
+
 		send_igmp(igmp_send_buf, v->uv_lcl_addr, g->al_addr,
-			  IGMP_MEMBERSHIP_QUERY,
-			  code,
-			  g->al_addr, datalen);
+			  IGMP_MEMBERSHIP_QUERY, code, g->al_addr, datalen);
 	    }
 
 	    g->al_timer = IGMP_LAST_MEMBER_QUERY_INTERVAL * (IGMP_LAST_MEMBER_QUERY_COUNT + 1);
-	    g->al_query = SetQueryTimer(g, vifi,
-					IGMP_LAST_MEMBER_QUERY_INTERVAL,
-					code, datalen);
+	    g->al_query = SetQueryTimer(g, vifi, IGMP_LAST_MEMBER_QUERY_INTERVAL, code, datalen);
 	    g->al_timerid = SetTimer(vifi, g, dst);
 	    break;
 	}
