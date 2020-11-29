@@ -56,7 +56,7 @@ typedef struct {
  */
 static void DelVif       (void *arg);
 static int SetTimer      (vifi_t vifi, struct listaddr *g, uint32_t source);
-static int SetVersionTimer      (vifi_t vifi, struct listaddr *g);
+static int SetVerTimer   (vifi_t vifi, struct listaddr *g);
 static int DeleteTimer   (int id);
 static void send_query   (struct uvif *v, uint32_t group, int interval);
 static void SendQuery    (void *arg);
@@ -324,7 +324,7 @@ void accept_group_report(uint32_t igmp_src, uint32_t ssm_src, uint32_t group, in
 		if (g->al_versiontimer)
 			g->al_versiontimer = DeleteTimer(g->al_versiontimer);
 
-		g->al_versiontimer = SetVersionTimer(vifi, g);
+		g->al_versiontimer = SetVerTimer(vifi, g);
 	    }
 
 	    /* Find source */
@@ -417,7 +417,7 @@ void accept_group_report(uint32_t igmp_src, uint32_t ssm_src, uint32_t group, in
 
 	/* Set timer for swithing version back if an older version report is received */
 	if (g->al_pv < 3)
-	    g->al_versiontimer = SetVersionTimer(vifi, g);
+	    g->al_versiontimer = SetVerTimer(vifi, g);
 
 	g->al_next      = v->uv_groups;
 	v->uv_groups    = g;
@@ -836,13 +836,13 @@ static void DelVif(void *arg)
 /*
  * Set a timer to switch version back on a vif.
  */
-static int SetVersionTimer(vifi_t vifi, struct listaddr *g)
+static int SetVerTimer(vifi_t vifi, struct listaddr *g)
 {
     cbk_t *cbk;
 
     cbk = calloc(1, sizeof(cbk_t));
     if (!cbk) {
-	logit(LOG_ERR, 0, "Failed calloc() in SetVersionTimer()\n");
+	logit(LOG_ERR, 0, "Failed calloc() in SetVerTimer()\n");
 	return -1;
     }
 
