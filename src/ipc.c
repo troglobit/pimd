@@ -167,7 +167,6 @@ static void check_detail(char *cmd, size_t len)
 
 static int ipc_read(int sd, char *cmd, ssize_t len)
 {
-	memset(cmd, 0, len);
 	len = read(sd, cmd, len - 1);
 	if (len < 0)
 		return IPC_ERR;
@@ -824,7 +823,7 @@ static void ipc_help(int sd, char *buf, size_t len)
 
 static void ipc_handle(int sd)
 {
-	char cmd[768];
+	char cmd[768] = { 0 };
 	ssize_t len;
 	int client;
 	int rc = 0;
