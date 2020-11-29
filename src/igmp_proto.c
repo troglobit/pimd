@@ -909,28 +909,26 @@ static int DeleteTimer(int id)
     return 0;
 }
 
-
-/*
- * Send IGMP Query
- */
-static void send_query(struct uvif *v, uint32_t group, int interval)
-{
-    if (v->uv_flags & VIFF_QUERIER) {
-	send_igmp(igmp_send_buf, v->uv_lcl_addr, group,
-		  IGMP_MEMBERSHIP_QUERY, interval, group != allhosts_group ? group : 0, 0);
-    }
-}
-
 /*
  * Send a group-specific query.
  */
 static void SendQuery(void *arg)
 {
     cbk_t *cbk = (cbk_t *)arg;
+    struct uvif *v;
 
-    IF_DEBUG(DEBUG_IGMP)
-	logit(LOG_DEBUG, 0, "SendQuery: Send IGMP v%s query", cbk->q_len == 4 ? "3" : "2");
-    send_query(&uvifs[cbk->vifi], cbk->g->al_addr, cbk->q_time);
+    v = &uvifs[cbk->vifi];
+
+    if (v->uv_flags & VIFF_QUERIER) {
+	uint32_t group = cbk->g->al_addr;
+
+	IF_DEBUG(DEBUG_IGMP)
+	    logit(LOG_DEBUG, 0, "SendQuery: Send IGMP v%s query", cbk->q_len == 4 ? "3" : "2");
+
+	send_igmp(igmp_send_buf, v->uv_lcl_addr, group, IGMP_MEMBERSHIP_QUERY,
+		  cbk->q_time, group != allhosts_group ? group : 0, cbk->q_len);
+    }
+
     cbk->g->al_query = 0;
     free(cbk);
 }
