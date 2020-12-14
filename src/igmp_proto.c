@@ -653,64 +653,38 @@ void accept_membership_report(uint32_t src, uint32_t dst, struct igmpv3_report *
 
 	switch (rec_type) {
 	    case IGMP_MODE_IS_EXCLUDE:
+	    case IGMP_CHANGE_TO_EXCLUDE_MODE:
 		/* RFC 4604: A router SHOULD ignore a group record of
 		 *           type MODE_IS_EXCLUDE if it refers to an SSM
 		 *           destination address.
 		 */
-		if (!IN_PIM_SSM_RANGE(rec_group.s_addr)) {
-		    if (rec_num_sources == 0) {
-			/* RFC 5790: EXCLUDE (*,G) join can be
-			 *           interpreted by the router as a
-			 *           request to include all sources.
-			 */
-			accept_group_report(src, 0 /*dst*/, rec_group.s_addr, report->type);
-		    } else {
-			/* RFC 5790: LW-IGMPv3 does not use EXCLUDE filter-mode with a non-null source address list.*/
-			logit(LOG_INFO, 0, "Record type MODE_IS_EXCLUDE with non-null source list is currently unsupported.");
-		    }
-		}
-		break;
+		if (IN_PIM_SSM_RANGE(rec_group.s_addr))
+		    break;
 
-	    case IGMP_CHANGE_TO_EXCLUDE_MODE:
-		/* RFC 4604: A router SHOULD ignore a group record of
-		 *           type CHANGE_TO_EXCLUDE_MODE if it refers to
-		 *           an SSM destination address.
-		 */
-		if (!IN_PIM_SSM_RANGE(rec_group.s_addr)) {
-		    if (rec_num_sources == 0) {
-			/* RFC 5790: EXCLUDE (*,G) join can be
-			 *           interpreted by the router as a
-			 *           request to include all sources.
-			 */
-			accept_group_report(src, 0 /*dst*/, rec_group.s_addr, report->type);
-		    } else {
-			/* RFC 5790: LW-IGMPv3 does not use EXCLUDE filter-mode with a non-null source address list.*/
-			logit(LOG_DEBUG, 0, "Record type MODE_TO_EXCLUDE with non-null source list is currently unsupported.");
-		    }
+		if (rec_num_sources == 0) {
+		    /* RFC 5790: EXCLUDE (*,G) join can be
+		     *           interpreted by the router as a
+		     *           request to include all sources.
+		     */
+		    accept_group_report(src, 0 /*dst*/, rec_group.s_addr, report->type);
+		} else
+		    /* RFC 5790: LW-IGMPv3 does not use EXCLUDE
+		     *           filter-mode with a non-null source
+		     *           address list.
+		     */
+		    logit(LOG_DEBUG, 0, "Record type IS_EX/TO_EX with non-null source list, not unsupported.");
 		}
 		break;
 
 	    case IGMP_MODE_IS_INCLUDE:
-		if (accept_sources(report->type, src, rec_group.s_addr, sources, canary, rec_num_sources)) {
-		    IF_DEBUG(DEBUG_IGMP)
-			logit(LOG_DEBUG, 0, "Accept sources failed.");
-		    return;
-		}
-		break;
-
 	    case IGMP_CHANGE_TO_INCLUDE_MODE:
-		if (accept_sources(report->type, src, rec_group.s_addr, sources, canary, rec_num_sources)) {
-		    IF_DEBUG(DEBUG_IGMP)
-			logit(LOG_DEBUG, 0, "Accept sources failed.");
+		if (accept_sources(report->type, src, rec_group.s_addr, sources, canary, rec_num_sources))
 		    return;
-		}
 		break;
 
 	    case IGMP_ALLOW_NEW_SOURCES:
-		if (accept_sources(report->type, src, rec_group.s_addr, sources, canary, rec_num_sources)) {
-		    logit(LOG_DEBUG, 0, "Accept sources failed.");
+		if (accept_sources(report->type, src, rec_group.s_addr, sources, canary, rec_num_sources))
 		    return;
-		}
 		break;
 
 	    case IGMP_BLOCK_OLD_SOURCES:
