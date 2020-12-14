@@ -579,42 +579,31 @@ static void SwitchVersion(void *arg)
 
 /*
  * Loop through and process all sources in a v3 record.
- *
- * Parameters:
- *     igmp_report_type   Report type of IGMP message
- *     igmp_src           Src address of IGMP message
- *     group              Multicast group
- *     sources            Pointer to the beginning of sources list in the IGMP message
- *     report_pastend     Pointer to the end of IGMP message
- *
- * Returns:
- *     1 if succeeded, 0 if failed
  */
-int accept_sources(int igmp_report_type, uint32_t igmp_src, uint32_t group, uint8_t *sources,
-    uint8_t *report_pastend, int rec_num_sources) {
+int accept_sources(int type, uint32_t src, uint32_t group, uint8_t *sources, uint8_t *canary, int num_sources)
+{
+    uint8_t *s;
     int j;
-    uint8_t *src;
-    char src_str[200];
 
-    for (j = 0, src = sources; j < rec_num_sources; ++j, src += 4) {
-        if ((src + 4) > report_pastend) {
+    for (j = 0, s = sources; j < num_sources; ++j, s += 4) {
+	in_addr_t ina = ((struct in_addr *)s)->s_addr;
+
+        if ((s + 4) > canary) {
 	    IF_DEBUG(DEBUG_IGMP)
-		logit(LOG_DEBUG, 0, "src +4 > report_pastend");
-            return 0;
+		logit(LOG_DEBUG, 0, "Invalid IGMPv3 report, too many sources, would overflow.");
+            return 1;
         }
 
-        inet_ntop(AF_INET, src, src_str , sizeof(src_str));
-	IF_DEBUG(DEBUG_IGMP)
-	    logit(LOG_DEBUG, 0, "Add source (%s,%s)", src_str, inet_fmt(group, s1, sizeof(s1)));
-
-        accept_group_report(igmp_src, ((struct in_addr*)src)->s_addr, group, igmp_report_type);
+        accept_group_report(src, ina, group, type);
 
 	IF_DEBUG(DEBUG_IGMP)
-	    logit(LOG_DEBUG, 0, "Accepted, switch SPT (%s,%s)", src_str, inet_fmt(group, s1, sizeof(s1)));
-        switch_shortest_path(((struct in_addr*)src)->s_addr, group);
+	    logit(LOG_DEBUG, 0, "Accepted, switch SPT (%s,%s)", inet_fmt(ina, s1, sizeof(s1)),
+		  inet_fmt(group, s2, sizeof(s2)));
+
+        switch_shortest_path(ina, group);
     }
 
-    return 1;
+    return 0;
 }
 
 /*
@@ -622,9 +611,9 @@ int accept_sources(int igmp_report_type, uint32_t igmp_src, uint32_t group, uint
  */
 void accept_membership_report(uint32_t src, uint32_t dst, struct igmpv3_report *report, ssize_t reportlen)
 {
+    uint8_t *canary = (uint8_t *)report + reportlen;
     struct igmpv3_grec *record;
     int num_groups, i;
-    uint8_t *report_pastend = (uint8_t *)report + reportlen;
 
     num_groups = ntohs(report->ngrec);
     if (num_groups < 0) {
@@ -652,9 +641,9 @@ void accept_membership_report(uint32_t src, uint32_t dst, struct igmpv3_report *
 	rec_num_sources = ntohs(record->grec_nsrcs);
 	rec_auxdatalen = record->grec_auxwords;
 	record_size = sizeof(struct igmpv3_grec) + sizeof(uint32_t) * rec_num_sources + rec_auxdatalen;
-	if ((uint8_t *)record + record_size > report_pastend) {
+	if ((uint8_t *)record + record_size > canary) {
 	    logit(LOG_INFO, 0, "Invalid group report %p > %p",
-		  (uint8_t *)record + record_size, report_pastend);
+		  (uint8_t *)record + record_size, canary);
 	    return;
 	}
 
@@ -702,7 +691,7 @@ void accept_membership_report(uint32_t src, uint32_t dst, struct igmpv3_report *
 		break;
 
 	    case IGMP_MODE_IS_INCLUDE:
-		if (!accept_sources(report->type, src, rec_group.s_addr, sources, report_pastend, rec_num_sources)) {
+		if (accept_sources(report->type, src, rec_group.s_addr, sources, canary, rec_num_sources)) {
 		    IF_DEBUG(DEBUG_IGMP)
 			logit(LOG_DEBUG, 0, "Accept sources failed.");
 		    return;
@@ -710,7 +699,7 @@ void accept_membership_report(uint32_t src, uint32_t dst, struct igmpv3_report *
 		break;
 
 	    case IGMP_CHANGE_TO_INCLUDE_MODE:
-		if (!accept_sources(report->type, src, rec_group.s_addr, sources, report_pastend, rec_num_sources)) {
+		if (accept_sources(report->type, src, rec_group.s_addr, sources, canary, rec_num_sources)) {
 		    IF_DEBUG(DEBUG_IGMP)
 			logit(LOG_DEBUG, 0, "Accept sources failed.");
 		    return;
@@ -718,7 +707,7 @@ void accept_membership_report(uint32_t src, uint32_t dst, struct igmpv3_report *
 		break;
 
 	    case IGMP_ALLOW_NEW_SOURCES:
-		if (!accept_sources(report->type, src, rec_group.s_addr, sources, report_pastend, rec_num_sources)) {
+		if (accept_sources(report->type, src, rec_group.s_addr, sources, canary, rec_num_sources)) {
 		    logit(LOG_DEBUG, 0, "Accept sources failed.");
 		    return;
 		}
@@ -728,7 +717,7 @@ void accept_membership_report(uint32_t src, uint32_t dst, struct igmpv3_report *
 		for (j = 0; j < rec_num_sources; j++) {
 		    uint32_t *gsrc = (uint32_t *)&record->grec_src[j];
 
-		    if ((uint8_t *)gsrc > report_pastend) {
+		    if ((uint8_t *)gsrc > canary) {
 			logit(LOG_INFO, 0, "Invalid group record");
 			return;
 		    }
