@@ -678,6 +678,14 @@ void accept_membership_report(uint32_t src, uint32_t dst, struct igmpv3_report *
 
 	    case IGMP_MODE_IS_INCLUDE:
 	    case IGMP_CHANGE_TO_INCLUDE_MODE:
+		if (rec_num_sources == 0) {
+		    /* RFC5790: INCLUDE (*,G) can be interpreted as an
+		     *          IGMPv2 group leave.
+		     */
+		    accept_leave_message(src, dst, rec_group.s_addr);
+		    break;
+		}
+
 		if (accept_sources(report->type, src, rec_group.s_addr, sources, canary, rec_num_sources))
 		    return;
 		break;
