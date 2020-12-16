@@ -116,8 +116,8 @@ void query_groups(struct uvif *v)
 	}
 
 	IF_DEBUG(DEBUG_IGMP)
-	    logit(LOG_DEBUG, 0, "%s(): Sending IGMP v%s query on %s",
-		  __func__, datalen == 4 ? "3" : "2", v->uv_name);
+	    logit(LOG_DEBUG, 0, "Sending IGMP v%s query on %s",
+		  datalen == 4 ? "3" : "2", v->uv_name);
 
 	send_igmp(igmp_send_buf, v->uv_lcl_addr, allhosts_group,
 		  IGMP_MEMBERSHIP_QUERY,
@@ -280,9 +280,16 @@ void accept_group_report(uint32_t igmp_src, uint32_t ssm_src, uint32_t group, in
     struct listaddr *g;
     struct listaddr *s = NULL;
 
+    inet_fmt(igmp_src, s1, sizeof(s1));
+    inet_fmt(ssm_src, s2, sizeof(s2));
+    inet_fmt(group, s3, sizeof(s3));
+
     /* Do not filter LAN scoped groups */
-    if (ntohl(group) <= INADDR_MAX_LOCAL_GROUP) /* group <= 224.0.0.255? */
+    if (ntohl(group) <= INADDR_MAX_LOCAL_GROUP) { /* group <= 224.0.0.255? */
+	IF_DEBUG(DEBUG_IGMP)
+	    logit(LOG_DEBUG, 0, "    %-16s LAN scoped group, skipping.", s3);
 	return;
+    }
 
     if ((vifi = find_vif_direct_local(igmp_src)) == NO_VIF) {
 	IF_DEBUG(DEBUG_IGMP) {
@@ -292,9 +299,6 @@ void accept_group_report(uint32_t igmp_src, uint32_t ssm_src, uint32_t group, in
 	return;
     }
 
-    inet_fmt(igmp_src, s1, sizeof(s1));
-    inet_fmt(ssm_src, s2, sizeof(s2));
-    inet_fmt(group, s3, sizeof(s3));
     IF_DEBUG(DEBUG_IGMP)
 	logit(LOG_DEBUG, 0, "%s(): igmp_src %s ssm_src %s group %s report_type %i",
 	      __func__, s1, s2, s3, igmp_report_type);
@@ -465,6 +469,10 @@ void accept_leave_message(uint32_t src, uint32_t dst, uint32_t group)
     struct uvif *v;
     struct listaddr *g;
 
+    inet_fmt(src, s1, sizeof(s1));
+    inet_fmt(dst, s2, sizeof(s2));
+    inet_fmt(group, s3, sizeof(s3));
+
     /* TODO: modify for DVMRP ??? */
     if ((vifi = find_vif_direct_local(src)) == NO_VIF) {
 	IF_DEBUG(DEBUG_IGMP)
@@ -473,11 +481,9 @@ void accept_leave_message(uint32_t src, uint32_t dst, uint32_t group)
 	return;
     }
 
-    inet_fmt(src, s1, sizeof(s1));
-    inet_fmt(dst, s2, sizeof(s2));
-    inet_fmt(group, s3, sizeof(s3));
     IF_DEBUG(DEBUG_IGMP)
 	logit(LOG_DEBUG, 0, "%s(): src %s dst %s group %s", __func__, s1, s2, s3);
+
     v = &uvifs[vifi];
 
 #if 0
@@ -499,7 +505,7 @@ void accept_leave_message(uint32_t src, uint32_t dst, uint32_t group)
 
 	if (group == g->al_addr) {
 	    IF_DEBUG(DEBUG_IGMP)
-		logit(LOG_DEBUG, 0, "accept_leave_message(): old=%d query=%d", g->al_old, g->al_query);
+		logit(LOG_DEBUG, 0, "%s(): old=%d query=%d", __func__, g->al_old, g->al_query);
 
 	    /* Ignore the leave message if there are old hosts present */
 	    if (g->al_old)
@@ -623,8 +629,8 @@ void accept_membership_report(uint32_t src, uint32_t dst, struct igmpv3_report *
     }
 
     IF_DEBUG(DEBUG_IGMP)
-	logit(LOG_DEBUG, 0, "%s(): IGMP v3 report, %zd bytes, from %s to %s with %d group records.",
-	      __func__, reportlen, inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)), num_groups);
+	logit(LOG_DEBUG, 0, "IGMP v3 report, %zd bytes, from %s to %s with %d group records.",
+	      reportlen, inet_fmt(src, s1, sizeof(s1)), inet_fmt(dst, s2, sizeof(s2)), num_groups);
 
     record = &report->grec[0];
 
@@ -650,16 +656,17 @@ void accept_membership_report(uint32_t src, uint32_t dst, struct igmpv3_report *
 	rec_type = record->grec_type;
 	rec_group.s_addr = (in_addr_t)record->grec_mca;
 	sources = (uint8_t *)record->grec_src;
-
 	switch (rec_type) {
 	    case IGMP_MODE_IS_EXCLUDE:
 	    case IGMP_CHANGE_TO_EXCLUDE_MODE:
 		/* RFC 4604: A router SHOULD ignore a group record of
-		 *           type MODE_IS_EXCLUDE if it refers to an SSM
-		 *           destination address.
+		 *           type TO_EX/IS_EX if it refers to an SSM
+		 *           group.  Use ALLOW/BLOCK instead.
 		 */
-		if (IN_PIM_SSM_RANGE(rec_group.s_addr))
+		if (IN_PIM_SSM_RANGE(rec_group.s_addr)) {
+		    logit(LOG_DEBUG, 0, "TO_EX/IS_EX %s, reserved for SSM", inet_ntoa(rec_group));
 		    break;
+		}
 
 		if (rec_num_sources == 0) {
 		    /* RFC 5790: TO_EX({}) can be interpreted as a (*,G)
