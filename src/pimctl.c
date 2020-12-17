@@ -302,15 +302,24 @@ static void print(char *line, int indent)
 
 	/* Table headings, or repeat headers, end with a '=' */
 	len = (int)strlen(line) - 1;
-	if (len > 0 && line[len] == '=') {
-		if (!heading)
-			return;
-		line[len] = 0;
-		head = 1;
-		if (!plain)
-			len = get_width() - len;
-		else
-			len = len < 79 ? 79 : len;
+	if (len > 0) {
+		if (line[len] == '_') {
+			if (!plain)
+				fprintf(stdout, "\e[4m%*s\e[0m\n", get_width(), "");
+			else
+				fprintf(stdout, "%*s\n", 79, "_");
+		}
+		if (line[len] == '=') {
+			if (!heading)
+				return;
+
+			line[len] = 0;
+			head = 1;
+			if (!plain)
+				len = get_width() - len;
+			else
+				len = len < 79 ? 79 : len;
+		}
 	}
 	if (len < 0)
 		len = 0;
