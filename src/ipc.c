@@ -803,11 +803,8 @@ static void ipc_help(int sd, char *buf, size_t len)
 		struct ipcmd *c = &cmds[i];
 		char tmp[50];
 
-		if (!c->help)
-			continue; /* skip hidden commands */
-
 		snprintf(tmp, sizeof(tmp), "%s%s%s", c->cmd, c->arg ? " " : "", c->arg ?: "");
-		fprintf(fp, "%s\t%s\n", tmp, c->help);
+		fprintf(fp, "%s\t%s\n", tmp, c->help ? c->help : "");
 	}
 	rewind(fp);
 

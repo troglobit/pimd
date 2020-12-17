@@ -531,6 +531,9 @@ static int usage(int rc)
 
 	printf("Commands:\n");
 	TAILQ_FOREACH(c, &cmds, link) {
+		if (!c->desc || !*c->desc)
+			continue;
+
 		compose(c, buf, sizeof(buf));
 		if (c->opt) {
 			strlcat(buf, " [", sizeof(buf));
