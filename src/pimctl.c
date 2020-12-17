@@ -296,46 +296,59 @@ static char *chomp(char *str)
 
 static void print(char *line, int indent)
 {
-	int len, head = 0;
+	int type = 0;
+	int i, len;
 
 	chomp(line);
 
 	/* Table headings, or repeat headers, end with a '=' */
 	len = (int)strlen(line) - 1;
 	if (len > 0) {
-		if (line[len] == '_') {
-			if (!plain)
-				fprintf(stdout, "\e[4m%*s\e[0m\n", get_width(), "");
-			else
-				fprintf(stdout, "%*s\n", 79, "_");
-		}
-		if (line[len] == '=') {
+		if (line[len] == '_')
+			type = 1;
+		if (line[len] == '=')
+			type = 2;
+
+		if (type) {
 			if (!heading)
 				return;
-
 			line[len] = 0;
-			head = 1;
-			if (!plain)
-				len = get_width() - len;
-			else
-				len = len < 79 ? 79 : len;
 		}
 	}
-	if (len < 0)
-		len = 0;
 
-	if (!head) {
-		puts(line);
-		return;
-	}
+	switch (type) {
+	case 1:
+		if (!plain) {
+			fprintf(stdout, "\e[4m%*s\e[0m\n%s\n", get_width(), "", line);
+			return;
 
-	if (!plain) {
-		fprintf(stdout, "\e[7m%s%*s\e[0m\n", line, len, "");
-	} else {
-		fprintf(stdout, "%*s%s\n", indent, "", line);
-		while (len--)
+		}
+
+		len = len < 79 ? 79 : len;
+		for (i = 0; i < len; i++)
+			fputc('_', stdout);
+		fprintf(stdout, "\n%*s%s\n", indent, "", line);
+		break;
+
+	case 2:
+		if (!plain) {
+			len = get_width() - len;
+			fprintf(stdout, "\e[7m%s%*s\e[0m\n", line, len, "");
+			return;
+		}
+
+		len = len < 79 ? 79 : len;
+		for (i = 0; i < len; i++)
+			fputc('=', stdout);
+		fprintf(stdout, "\n%*s%s\n", indent, "", line);
+		for (i = 0; i < len; i++)
 			fputc('=', stdout);
 		fputs("\n", stdout);
+		break;
+
+	default:
+		puts(line);
+		break;
 	}
 }
 
@@ -538,7 +551,6 @@ static int version(void)
 
 static int cmd(int argc, char *argv[])
 {
-	struct cmd *c, *tmp;
 	char buf[768];
 	char *cmd;
 
