@@ -515,15 +515,34 @@ void accept_leave_message(uint32_t src, uint32_t dst, uint32_t group)
 	    if (g->al_query)
 		return;
 
-	    /* TODO: Remove the source. Ignore the leave if there
-	       are still sources left
+	    /*
+	     * Remove source.  Ignore leave if there are more sources
+	     * left.  When processing TO_IN({}), remove all sources.
+	     */
 	    if (IN_PIM_SSM_RANGE(g->al_addr)) {
-		for (s = g->al_sources; s != NULL; s = s->al_next) {
-		    if (dst == s->al_addr) {
-		    }
+		struct listaddr *curr, *prev = NULL;
+		int removed = 0;
+
+		for (curr = g->al_sources; curr; prev = curr, curr = curr->al_next) {
+		    if (dst && dst != curr->al_addr)
+			continue;
+
+		    if (!prev)
+			g->al_sources = curr->al_next; /* Remove from beginning */
+		    else
+			prev->al_next = curr->al_next;
+
+		    /* Stop any SwitchVersion() timer */
+		    timer_clear(curr->al_versiontimer);
+		    free(curr);
+		    removed = 1;
+		    break;
 		}
+
+		/* still sources left, don't remove group */
+		if (removed && g->al_sources)
+		    return;
 	    }
-	    */
 
 	    /** delete old timer set a timer for expiration **/
 	    if (g->al_timerid)
@@ -687,7 +706,7 @@ void accept_membership_report(uint32_t src, uint32_t dst, struct igmpv3_report *
 		    /* RFC5790: TO_IN({}) can be interpreted as an
 		     *          IGMPv2 (*,G) leave.
 		     */
-		    accept_leave_message(src, dst, rec_group.s_addr);
+		    accept_leave_message(src, 0, rec_group.s_addr);
 		    break;
 		} else {
 		    /* RFC5790: TO_IN({x}), regular RFC3376 (S,G)
