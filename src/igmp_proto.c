@@ -532,7 +532,7 @@ void accept_leave_message(uint32_t src, uint32_t dst, uint32_t group)
 		    else
 			prev->al_next = curr->al_next;
 
-		    /* Stop any SwitchVersion() timer */
+		    /* Stop any switch_version() timer */
 		    timer_clear(curr->al_versiontimer);
 		    free(curr);
 		    removed = 1;
@@ -589,7 +589,7 @@ void accept_leave_message(uint32_t src, uint32_t dst, uint32_t group)
 /*
  * Time out old version compatibility mode
  */
-static void SwitchVersion(void *arg)
+static void switch_version(void *arg)
 {
     cbk_t *cbk = (cbk_t *)arg;
 
@@ -802,7 +802,7 @@ static void DelVif(void *arg)
 		else
 		    prev->al_next = curr->al_next;
 
-		/* Stop any SwitchVersion() timer */
+		/* Stop any switch_version() timer */
 		timer_clear(curr->al_versiontimer);
 
 		free(curr);
@@ -877,7 +877,7 @@ static int SetVerTimer(vifi_t vifi, struct listaddr *g)
     cbk->vifi = vifi;
     cbk->g = g;
 
-    return timer_set(igmp_group_membership_timeout(), SwitchVersion, cbk);
+    return timer_set(igmp_group_membership_timeout(), switch_version, cbk);
 }
 
 /*
