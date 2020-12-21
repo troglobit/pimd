@@ -23,6 +23,7 @@ Group Address       RP Address       Prio  Holdtime  Expires
 
 ** DONE Shared pimctl with pimd-dense
 ** DONE Update man page + split into a pimd.conf(5)
+** DONE Allow IGMP report from src 0.0.0.0 (RFC)
 ** TODO Add "show mfc" to ipc.c
 Some platforms don't have sufficient tooling installed by default,
 so a "pimctl show mfc" would be great to have.  This could also

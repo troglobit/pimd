@@ -60,7 +60,7 @@ extern int curttl;
  * Local functions definitions.
  */
 static void igmp_read   (int sd);
-static void accept_igmp (ssize_t recvlen);
+static void accept_igmp (int ifi, ssize_t recvlen);
 
 
 /*
@@ -88,6 +88,7 @@ void init_igmp(void)
     }
 
     k_hdr_include(igmp_socket, TRUE);	/* include IP header when sending */
+    k_set_pktinfo(igmp_socket, TRUE);	/* ifindex in aux data on receive */
     k_set_sndbuf(igmp_socket, SO_SEND_BUF_SIZE_MAX,
 		 SO_SEND_BUF_SIZE_MIN); /* lots of output buffering        */
     k_set_rcvbuf(igmp_socket, SO_RECV_BUF_SIZE_MAX,
@@ -128,10 +129,23 @@ void init_igmp(void)
 /* Read an IGMP message from igmp_socket */
 static void igmp_read(int sd)
 {
+    struct cmsghdr *cmsg;
+    struct msghdr msgh;
+    char cmbuf[0x100];
+    struct iovec iov;
+    int ifi = -1;
     ssize_t len;
-    socklen_t dummy = 0;
 
-    while ((len = recvfrom(sd, igmp_recv_buf, RECV_BUF_SIZE, 0, NULL, &dummy)) < 0) {
+    memset(&msgh, 0, sizeof(msgh));
+    iov.iov_base = igmp_recv_buf;
+    iov.iov_len = RECV_BUF_SIZE;
+    msgh.msg_control = cmbuf;
+    msgh.msg_controllen = sizeof(cmbuf);
+    msgh.msg_iov  = &iov;
+    msgh.msg_iovlen = 1;
+    msgh.msg_flags = 0;
+
+    while ((len = recvmsg(sd, &msgh, 0)) < 0) {
 	if (errno == EINTR)
 	    continue;		/* Received signal, retry syscall. */
 
@@ -139,14 +153,27 @@ static void igmp_read(int sd)
 	return;
     }
 
-    accept_igmp(len);
+    for (cmsg = CMSG_FIRSTHDR(&msgh); cmsg; cmsg = CMSG_NXTHDR(&msgh, cmsg)) {
+#ifdef IP_PKTINFO
+	struct in_pktinfo *ipi = (struct in_pktinfo *)CMSG_DATA(cmsg);
+	char tmp[IF_NAMESIZE + 1] = { 0 };
+
+	if (cmsg->cmsg_level != SOL_IP || cmsg->cmsg_type != IP_PKTINFO)
+	    continue;
+
+	ifi = ipi->ipi_ifindex;
+	break;
+#endif
+    }
+
+    accept_igmp(ifi, len);
 }
 
 /*
  * Process a newly received IGMP packet that is sitting in the input
  * packet buffer.
  */
-static void accept_igmp(ssize_t recvlen)
+static void accept_igmp(int ifi, ssize_t recvlen)
 {
     int ipdatalen, iphdrlen, igmpdatalen;
     uint32_t src, dst, group;
@@ -213,16 +240,16 @@ static void accept_igmp(ssize_t recvlen)
 		logit(LOG_INFO, 0, "Received invalid IGMP query: Max Resp Code = %d, length = %d",
 		      igmp->igmp_code, ipdatalen);
 	    }
-	    accept_membership_query(src, dst, group, igmp->igmp_code, igmp_version);
+	    accept_membership_query(ifi, src, dst, group, igmp->igmp_code, igmp_version);
 	    return;
 
 	case IGMP_V1_MEMBERSHIP_REPORT:
 	case IGMP_V2_MEMBERSHIP_REPORT:
-	    accept_group_report(src, dst, group, igmp->igmp_type);
+	    accept_group_report(ifi, src, dst, group, igmp->igmp_type);
 	    return;
 
 	case IGMP_V2_LEAVE_GROUP:
-	    accept_leave_message(src, dst, group);
+	    accept_leave_message(ifi, src, dst, group);
 	    return;
 
 	case IGMP_V3_MEMBERSHIP_REPORT:
@@ -231,7 +258,7 @@ static void accept_igmp(ssize_t recvlen)
 		      igmpdatalen, IGMP_V3_GROUP_RECORD_MIN_SIZE);
 		return;
 	    }
-	    accept_membership_report(src, dst, (struct igmpv3_report *)(igmp_recv_buf + iphdrlen), recvlen - iphdrlen);
+	    accept_membership_report(ifi, src, dst, (struct igmpv3_report *)(igmp_recv_buf + iphdrlen), recvlen - iphdrlen);
 	    return;
 
 	case IGMP_DVMRP:

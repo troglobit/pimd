@@ -584,6 +584,28 @@ void check_vif_state(void)
 
 
 /*
+ * Find VIF from ifindex
+ */
+vifi_t find_vif(int ifi)
+{
+    vifi_t vifi;
+    struct uvif *v;
+    struct phaddr *p;
+    struct rpfctl rpf;
+
+    if (ifi < 0)
+	return NO_VIF;
+
+    for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
+	if (v->uv_ifindex == ifi)
+	    return vifi;
+    }
+
+    return NO_VIF;
+}
+
+
+/*
  * If the source is directly connected to us, find the vif number for
  * the corresponding physical interface (Register and tunnels excluded).
  * Local addresses are excluded.

@@ -140,7 +140,7 @@ void query_groups(struct uvif *v)
 /*
  * Process an incoming host membership query
  */
-void accept_membership_query(uint32_t src, uint32_t dst, uint32_t group, int tmo, int igmp_version)
+void accept_membership_query(int ifi, uint32_t src, uint32_t dst, uint32_t group, int tmo, int igmp_version)
 {
     vifi_t vifi;
     struct uvif *v;
@@ -152,7 +152,8 @@ void accept_membership_query(uint32_t src, uint32_t dst, uint32_t group, int tmo
 	return;
 
     /* TODO: modify for DVMRP?? */
-    if ((vifi = find_vif_direct(src)) == NO_VIF) {
+    if ((vifi = find_vif(ifi)) == NO_VIF &&
+	 (vifi = find_vif_direct(src)) == NO_VIF) {
 	IF_DEBUG(DEBUG_IGMP)
 	    logit(LOG_INFO, 0, "Ignoring group membership query from non-adjacent host %s",
 		  inet_fmt(src, s1, sizeof(s1)));
@@ -273,7 +274,7 @@ void accept_membership_query(uint32_t src, uint32_t dst, uint32_t group, int tmo
 /*
  * Process an incoming group membership report.
  */
-void accept_group_report(uint32_t igmp_src, uint32_t ssm_src, uint32_t group, int igmp_report_type)
+void accept_group_report(int ifi, uint32_t igmp_src, uint32_t ssm_src, uint32_t group, int igmp_report_type)
 {
     vifi_t vifi;
     struct uvif *v;
@@ -291,7 +292,8 @@ void accept_group_report(uint32_t igmp_src, uint32_t ssm_src, uint32_t group, in
 	return;
     }
 
-    if ((vifi = find_vif_direct_local(igmp_src)) == NO_VIF) {
+    if ((vifi = find_vif(ifi)) == NO_VIF &&
+	 (vifi = find_vif_direct(igmp_src)) == NO_VIF) {
 	IF_DEBUG(DEBUG_IGMP) {
 	    logit(LOG_INFO, 0, "Ignoring group membership report from non-adjacent host %s",
 		  inet_fmt(igmp_src, s1, sizeof(s1)));
@@ -463,7 +465,7 @@ void accept_group_report(uint32_t igmp_src, uint32_t ssm_src, uint32_t group, in
 
 
 /* TODO: send PIM prune message if the last member? */
-void accept_leave_message(uint32_t src, uint32_t dst, uint32_t group)
+void accept_leave_message(int ifi, uint32_t src, uint32_t dst, uint32_t group)
 {
     vifi_t vifi;
     struct uvif *v;
@@ -474,7 +476,8 @@ void accept_leave_message(uint32_t src, uint32_t dst, uint32_t group)
     inet_fmt(group, s3, sizeof(s3));
 
     /* TODO: modify for DVMRP ??? */
-    if ((vifi = find_vif_direct_local(src)) == NO_VIF) {
+    if ((vifi = find_vif(ifi)) == NO_VIF &&
+	 (vifi = find_vif_direct(src)) == NO_VIF) {
 	IF_DEBUG(DEBUG_IGMP)
 	    logit(LOG_INFO, 0, "ignoring group leave report from non-adjacent host %s",
 		  inet_fmt(src, s1, sizeof(s1)));
@@ -605,7 +608,7 @@ static void switch_version(void *arg)
 /*
  * Loop through and process all sources in a v3 record.
  */
-int accept_sources(int type, uint32_t src, uint32_t group, uint8_t *sources, uint8_t *canary, int num_sources)
+int accept_sources(int ifi, int type, uint32_t src, uint32_t group, uint8_t *sources, uint8_t *canary, int num_sources)
 {
     uint8_t *s;
     int j;
@@ -619,7 +622,7 @@ int accept_sources(int type, uint32_t src, uint32_t group, uint8_t *sources, uin
             return 1;
         }
 
-        accept_group_report(src, ina, group, type);
+        accept_group_report(ifi, src, ina, group, type);
 
 	IF_DEBUG(DEBUG_IGMP)
 	    logit(LOG_DEBUG, 0, "Accepted, switch SPT (%s,%s)", inet_fmt(ina, s1, sizeof(s1)),
@@ -634,7 +637,7 @@ int accept_sources(int type, uint32_t src, uint32_t group, uint8_t *sources, uin
 /*
  * Handle IGMP v3 membership reports (join/leave)
  */
-void accept_membership_report(uint32_t src, uint32_t dst, struct igmpv3_report *report, ssize_t reportlen)
+void accept_membership_report(int ifi, uint32_t src, uint32_t dst, struct igmpv3_report *report, ssize_t reportlen)
 {
     uint8_t *canary = (uint8_t *)report + reportlen;
     struct igmpv3_grec *record;
@@ -691,7 +694,7 @@ void accept_membership_report(uint32_t src, uint32_t dst, struct igmpv3_report *
 		    /* RFC 5790: TO_EX({}) can be interpreted as a (*,G)
 		     *           join, i.e., to include all sources.
 		     */
-		    accept_group_report(src, 0, rec_group.s_addr, report->type);
+		    accept_group_report(ifi, src, 0, rec_group.s_addr, report->type);
 		} else {
 		    /* RFC 5790: LW-IGMPv3 does not use TO_EX({x}),
 		     *           i.e., filter with non-null source.
@@ -706,13 +709,13 @@ void accept_membership_report(uint32_t src, uint32_t dst, struct igmpv3_report *
 		    /* RFC5790: TO_IN({}) can be interpreted as an
 		     *          IGMPv2 (*,G) leave.
 		     */
-		    accept_leave_message(src, 0, rec_group.s_addr);
+		    accept_leave_message(ifi, src, 0, rec_group.s_addr);
 		    break;
 		} else {
 		    /* RFC5790: TO_IN({x}), regular RFC3376 (S,G)
 		     *          join with >= 1 source, 'S'.
 		     */
-		    rc = accept_sources(report->type, src, rec_group.s_addr,
+		    rc = accept_sources(ifi, report->type, src, rec_group.s_addr,
 					sources, canary, rec_num_sources);
 		    if (rc)
 			return;
@@ -721,7 +724,7 @@ void accept_membership_report(uint32_t src, uint32_t dst, struct igmpv3_report *
 
 	    case IGMP_ALLOW_NEW_SOURCES:
 		/* RFC5790: Same as TO_IN({x}) */
-		rc = accept_sources(report->type, src, rec_group.s_addr,
+		rc = accept_sources(ifi, report->type, src, rec_group.s_addr,
 				    sources, canary, rec_num_sources);
 		if (rc)
 		    return;
@@ -741,7 +744,7 @@ void accept_membership_report(uint32_t src, uint32_t dst, struct igmpv3_report *
 			logit(LOG_DEBUG, 0, "Remove source[%d] (%s,%s)", j,
 			      inet_fmt(record->grec_src[j], s1, sizeof(s1)),
 			      inet_ntoa(rec_group));
-		    accept_leave_message(src, record->grec_src[j], rec_group.s_addr);
+		    accept_leave_message(ifi, src, record->grec_src[j], rec_group.s_addr);
 		    IF_DEBUG(DEBUG_IGMP)
 			logit(LOG_DEBUG, 0, "Accepted");
 		}

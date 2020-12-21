@@ -498,10 +498,10 @@ extern void	send_igmp		(char *buf, uint32_t src, uint32_t dst, int type, int cod
 
 /* igmp_proto.c */
 extern void	query_groups		(struct uvif *v);
-extern void	accept_membership_query	(uint32_t src, uint32_t dst, uint32_t group, int tmo, int igmp_version);
-extern void	accept_group_report	(uint32_t src, uint32_t dst, uint32_t group, int r_type);
-extern void	accept_leave_message	(uint32_t src, uint32_t dst, uint32_t group);
-extern void     accept_membership_report(uint32_t src, uint32_t dst, struct igmpv3_report *report, ssize_t reportlen);
+extern void	accept_membership_query	(int ifi, uint32_t src, uint32_t dst, uint32_t group, int tmo, int igmp_version);
+extern void	accept_group_report	(int ifi, uint32_t src, uint32_t dst, uint32_t group, int r_type);
+extern void	accept_leave_message	(int ifi, uint32_t src, uint32_t dst, uint32_t group);
+extern void	accept_membership_report(int ifi, uint32_t src, uint32_t dst, struct igmpv3_report *report, ssize_t reportlen);
 
 /* inet.c */
 extern int	inet_cksum		(uint16_t *addr, u_int len);
@@ -520,6 +520,7 @@ extern void	ipc_exit		(void);
 extern void	k_set_sndbuf		(int socket, int bufsize, int minsize);
 extern void	k_set_rcvbuf		(int socket, int bufsize, int minsize);
 extern void	k_hdr_include		(int socket, int val);
+extern void	k_set_pktinfo		(int socket, int val);
 extern void	k_set_ttl		(int socket, int t);
 extern void	k_set_loop		(int socket, int l);
 extern void	k_set_if		(int socket, uint32_t ifa);
@@ -656,6 +657,7 @@ extern void	zero_vif		(struct uvif *, int);
 extern void	stop_all_vifs		(void);
 extern void	check_vif_state		(void);
 extern vifi_t	local_address		(uint32_t src);
+extern vifi_t	find_vif		(int ifi);
 extern vifi_t	find_vif_direct		(uint32_t src);
 extern vifi_t	find_vif_direct_local	(uint32_t src);
 extern uint32_t	max_local_address	(void);

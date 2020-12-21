@@ -210,6 +210,20 @@ void k_hdr_include(int socket, int val)
 
 
 /*
+ * For IGMP reports we need to know incoming interface since proxy reporters
+ * may use source IP 0.0.0.0, so we cannot rely on find_vif_direct_local().
+ */
+void k_set_pktinfo(int socket, int val)
+{
+#ifdef IP_PKTINFO
+    if (setsockopt(socket, SOL_IP, IP_PKTINFO, &val, sizeof(val)) < 0)
+	logit(LOG_ERR, errno, "Failed %s IP_PKTINFO on socket %d",
+	      ENABLINGSTR(val), socket);
+#endif
+}
+
+
+/*
  * Set the default TTL for the multicast packets outgoing from this
  * socket.
  * TODO: Does it affect the unicast packets?
