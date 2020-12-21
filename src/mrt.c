@@ -140,16 +140,16 @@ mrtentry_t *find_route(uint32_t source, uint32_t group, uint16_t flags, char cre
 
     if (flags & (MRTF_SG | MRTF_WC)) {
 	if (!IN_MULTICAST(ntohl(group))) {
-	    logit(LOG_WARNING, 0, "find_route: Not a multicast group address (%s) ...",
-		  inet_fmt(group, s1, sizeof(s1)));
+	    logit(LOG_WARNING, 0, "%s: Not a multicast group address (%s) ...",
+		  __func__, inet_fmt(group, s1, sizeof(s1)));
 	    return NULL;
 	}
     }
 
     if (flags & MRTF_SG) {
 	if (!inet_valid_host(source) && !IN_PIM_SSM_RANGE(group)) {
-	    logit(LOG_WARNING, 0, "find_route: Not a valid host (%s) ...",
-		  inet_fmt(source, s1, sizeof(s1)));
+	    logit(LOG_WARNING, 0, "%s: Not a valid host (%s) ...",
+		  __func__, inet_fmt(source, s1, sizeof(s1)));
 	    return NULL;
 	}
     }
@@ -161,12 +161,15 @@ mrtentry_t *find_route(uint32_t source, uint32_t group, uint16_t flags, char cre
 		if (flags & MRTF_PMBR) {
 		    rp = rp_match(group);
 		    if (rp) {
-			logit(LOG_DEBUG, 0 , "find_route: Group not found. Return the (*,*,RP) entry");
+			logit(LOG_DEBUG, 0 , "%s: Group %s not found. Return the (*,*,RP) entry",
+			      __func__, inet_fmt(group, s1, sizeof(s1)));
 			return rp->mrtlink;
 		    }
 		}
 
-		logit(LOG_DEBUG, 0 , "find_route: Not PMBR, return NULL");
+		/* Not a pim multicast border router */
+		logit(LOG_DEBUG, 0 , "%s: Group %s. Not PMBR, return NULL",
+		      __func__, inet_fmt(group, s1, sizeof(s1)));
 		return NULL;
 	    }
 
@@ -174,16 +177,20 @@ mrtentry_t *find_route(uint32_t source, uint32_t group, uint16_t flags, char cre
 	    if (flags & MRTF_SG) {
 		if (search_grpmrtlink(grp, source, &mrt) == TRUE) {
 		    /* Exact (S,G) entry found */
-		    logit(LOG_DEBUG, 0 , "find_route: exact (S,G) entry found");
+		    logit(LOG_DEBUG, 0 , "%s: exact (S,G) entry for (%s,%s) found",
+			  __func__, inet_fmt(source, s2, sizeof(s2)),
+			  inet_fmt(group, s1, sizeof(s1)));
 		    return mrt;
 		}
 
-		logit(LOG_DEBUG, 0 , "find_route:(S,G) entry not found");
+		logit(LOG_DEBUG, 0 , "%s: (S,G) entry for (%s,%s) *not* found",
+		      __func__, inet_fmt(source, s2, sizeof(s2)), inet_fmt(group, s1, sizeof(s1)));
 	    }
 
 	    /* No (S,G) entry. Return the (*,G) entry (if exist) */
 	    if ((flags & MRTF_WC) && grp->grp_route) {
-		logit(LOG_DEBUG, 0 , "find_route: No (S,G) entry. Return the (*,G) entry");
+		logit(LOG_DEBUG, 0 , "%s: No (S,G) entry. Return the (*,G) for (*,%s) entry",
+		      __func__, inet_fmt(group, s1, sizeof(s1)));
 		return grp->grp_route;
 	    }
 	}
@@ -197,12 +204,12 @@ mrtentry_t *find_route(uint32_t source, uint32_t group, uint16_t flags, char cre
 		rp = rp_find(source);
 
 	    if (rp) {
-		logit(LOG_DEBUG, 0 , "find_route: Return the (*,*,RP) entry");
+		logit(LOG_DEBUG, 0 , "%s: Return the (*,*,RP) entry", __func__);
 		return rp->mrtlink;
 	    }
 	}
 
-	logit(LOG_DEBUG, 0 , "find_route: No SG|WC, return NULL");
+	logit(LOG_DEBUG, 0 , "%s: No SG|WC, return NULL", __func__);
 	return NULL;
     }
 
