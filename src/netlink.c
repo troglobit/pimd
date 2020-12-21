@@ -131,7 +131,7 @@ int k_req_incoming(uint32_t source, struct rpfctl *rpf)
     
     if (!IN_LINK_LOCAL_RANGE(rpf->source.s_addr)) {
 	IF_DEBUG(DEBUG_RPF)
-	    logit(LOG_DEBUG, 0, "NETLINK: ask path to %s", inet_fmt(rpf->source.s_addr, s1, sizeof(s1)));
+	    logit(LOG_DEBUG, 0, "k_req_incoming: ask path to %s", inet_fmt(rpf->source.s_addr, s1, sizeof(s1)));
     }
 
     do {
@@ -142,7 +142,7 @@ int k_req_incoming(uint32_t source, struct rpfctl *rpf)
 	    if (errno == EINTR)
 		continue;	/* Received signal, retry syscall. */
 
-	    logit(LOG_WARNING, errno, "Error writing to routing socket");
+	    logit(LOG_WARNING, errno, "Error writing to netlink socket");
 	    return FALSE;
 	}
     } while (rlen < 0);
@@ -153,19 +153,21 @@ int k_req_incoming(uint32_t source, struct rpfctl *rpf)
 	l = recvfrom(routing_socket, buf, sizeof(buf), 0, (struct sockaddr *)&addr, &alen);
 	if (l < 0) {
 	    if (errno == EINTR)
-		continue;		/* Received signal, retry syscall. */
+		continue;	/* Received signal, retry syscall. */
 
-	    logit(LOG_WARNING, errno, "Error writing to routing socket");
+	    logit(LOG_WARNING, errno, "Error reading from netlink socket");
 	    return FALSE;
 	}
     } while (n->nlmsg_seq != seq || n->nlmsg_pid != pid);
     
     if (n->nlmsg_type != RTM_NEWROUTE) {
+	errno = -(*(int*)NLMSG_DATA(n));
+
 	if (!IN_LINK_LOCAL_RANGE(rpf->source.s_addr)) {
 	    if (n->nlmsg_type != NLMSG_ERROR)
-		logit(LOG_WARNING, 0, "netlink: wrong answer type %d", n->nlmsg_type);
+		logit(LOG_WARNING, 0, "Wrong netlink answer type: %d", n->nlmsg_type);
 	    else
-		logit(LOG_WARNING, -(*(int*)NLMSG_DATA(n)), "netlink get_route");
+		logit(LOG_WARNING, errno, "Failed getting route for %s", inet_fmt(rpf->source.s_addr, s1, sizeof(s1)));
 	}
 
 	return FALSE;
@@ -191,7 +193,7 @@ static int getmsg(struct rtmsg *rtm, int msglen, struct rpfctl *rpf)
 
     if (rtm->rtm_type == RTN_LOCAL) {
 	IF_DEBUG(DEBUG_RPF)
-	    logit(LOG_DEBUG, 0, "NETLINK: local address");
+	    logit(LOG_DEBUG, 0, "netlink: local address");
 
 	if ((rpf->iif = local_address(rpf->source.s_addr)) != MAXVIFS) {
 	    rpf->rpfneighbor.s_addr = rpf->source.s_addr;
@@ -204,7 +206,7 @@ static int getmsg(struct rtmsg *rtm, int msglen, struct rpfctl *rpf)
     
     if (rtm->rtm_type != RTN_UNICAST) {
 	IF_DEBUG(DEBUG_RPF)
-	    logit(LOG_DEBUG, 0, "NETLINK: route type is %d", rtm->rtm_type);
+	    logit(LOG_DEBUG, 0, "netlink: route type is %d", rtm->rtm_type);
 	return FALSE;
     }
     
@@ -212,7 +214,7 @@ static int getmsg(struct rtmsg *rtm, int msglen, struct rpfctl *rpf)
     parse_rtattr(rta, RTA_MAX, RTM_RTA(rtm), msglen - sizeof(*rtm));
     
     if (!rta[RTA_OIF]) {
-	logit(LOG_WARNING, 0, "NETLINK: no outbound interface");
+	logit(LOG_WARNING, 0, "Missing outbound interface in netlink reply");
 	return FALSE;
     }
 
@@ -231,13 +233,13 @@ static int getmsg(struct rtmsg *rtm, int msglen, struct rpfctl *rpf)
     rpf->iif = vifi;
 
     IF_DEBUG(DEBUG_RPF)
-	logit(LOG_DEBUG, 0, "NETLINK: vif %d, ifindex=%d", vifi, ifindex);
+	logit(LOG_DEBUG, 0, "netlink: vif %d, ifindex=%d", vifi, ifindex);
 
     if (rta[RTA_GATEWAY]) {
 	uint32_t gw = *(uint32_t *)RTA_DATA(rta[RTA_GATEWAY]);
 
 	IF_DEBUG(DEBUG_RPF)
-	    logit(LOG_DEBUG, 0, "NETLINK: gateway is %s", inet_fmt(gw, s1, sizeof(s1)));
+	    logit(LOG_DEBUG, 0, "netlink: gateway is %s", inet_fmt(gw, s1, sizeof(s1)));
 	rpf->rpfneighbor.s_addr = gw;
     } else {
 	rpf->rpfneighbor.s_addr = rpf->source.s_addr;
