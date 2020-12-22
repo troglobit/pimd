@@ -95,7 +95,7 @@ struct ipcmd {
 	{ IPC_PIM_CRP,    "show crp", NULL, "Show candidate Rendezvous-Point (CRP) set" },
 	{ IPC_PIM,        "show pim", "[detail]", "Show interfaces, neighbors and routes"},
 	{ IPC_PIM_DUMP,   "show compat", "[detail]", "Show router status, compat mode" },
-	{ IPC_PIM_DUMP,   "show", NULL, NULL }, /* hidden default */
+	{ IPC_PIM,        "show", NULL, NULL }, /* hidden default */
 };
 
 static char *timetostr(time_t t, char *buf, size_t len)
