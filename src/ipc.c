@@ -401,7 +401,7 @@ static int show_rp(FILE *fp)
 
 	fprintf(fp, "PIM Rendez-Vous Point Set Table_\n");
 	if (grp_mask_list)
-		fprintf(fp, "Group Address       RP Address       Prio  Holdtime  Type=\n");
+		fprintf(fp, "Group Address     RP Address       Prio  Holdtime  Type=\n");
 
 	for (grp = grp_mask_list; grp; grp = grp->next) {
 		struct rp_grp_entry *rp_grp = grp->grp_rp_next;
@@ -412,9 +412,9 @@ static int show_rp(FILE *fp)
 			char type[10];
 
 			if (rp_grp == grp->grp_rp_next)
-				fprintf(fp, "%-18s  ", netname(grp->group_addr, grp->group_mask));
+				fprintf(fp, "%-16s  ", netname(grp->group_addr, grp->group_mask));
 			else
-				fprintf(fp, "%-18s  ", "");
+				fprintf(fp, "%-16s  ", "");
 
 			if (ht == PIM_HELLO_HOLDTIME_FOREVER) {
 				snprintf(type, sizeof(type), "Static");
@@ -442,7 +442,7 @@ static int show_crp(FILE *fp)
 
 	fprintf(fp, "PIM Candidate Rendez-Vous Point Table_\n");
 	if (cand_rp_list)
-		fprintf(fp, "Group Address       RP Address       Prio  Holdtime  Expires =\n");
+		fprintf(fp, "Group Address     RP Address       Prio  Holdtime  Expires =\n");
 
 	for (rp = cand_rp_list; rp; rp = rp->next) {
 		struct rp_grp_entry *rp_grp = rp->rp_grp_next;
@@ -455,7 +455,7 @@ static int show_crp(FILE *fp)
 		else
 			snprintf(buf, sizeof(buf), "%8d", entry->adv_holdtime);
 
-		fprintf(fp, "%-18s  %-15s  %4d  %s  %s\n",
+		fprintf(fp, "%-16s  %-15s  %4d  %s  %s\n",
 			netname(grp->group_addr, grp->group_mask),
 			inet_fmt(entry->address, s1, sizeof(s1)),
 			rp_grp->priority, buf,
@@ -546,7 +546,7 @@ static int show_pim_mrt(FILE *fp)
 
 	fprintf(fp, "Multicast Routing Table_\n");
 	if (!detail)
-		fprintf(fp, "Source           Group            RP Address       Flags =\n");
+		fprintf(fp, "Source            Group            RP Address       Flags =\n");
 
 	/* TODO: remove the dummy 0.0.0.0 group (first in the chain) */
 	for (g = grplist->next; g; g = g->next) {
@@ -560,8 +560,8 @@ static int show_pim_mrt(FILE *fp)
 			}
 
 			if (detail)
-				fprintf(fp, "\nSource           Group            RP Address       Flags =\n");
-			fprintf(fp, "%-15s  %-15s  %-15s ",
+				fprintf(fp, "\nSource            Group            RP Address       Flags =\n");
+			fprintf(fp, "%-15s   %-15s  %-15s ",
 				"ANY",
 				inet_fmt(g->group, s1, sizeof(s1)),
 				IN_PIM_SSM_RANGE(g->group)
@@ -578,8 +578,8 @@ static int show_pim_mrt(FILE *fp)
 				number_of_cache_mirrors++;
 
 			if (detail)
-				fprintf(fp, "\nSource           Group            RP Address       Flags =\n");
-			fprintf(fp, "%-15s  %-15s  %-15s ",
+				fprintf(fp, "\nSource            Group            RP Address       Flags =\n");
+			fprintf(fp, "%-15s   %-15s  %-15s ",
 				inet_fmt(r->source->address, s1, sizeof(s1)),
 				inet_fmt(g->group, s2, sizeof(s2)),
 				IN_PIM_SSM_RANGE(g->group)
@@ -601,8 +601,8 @@ static int show_pim_mrt(FILE *fp)
 			}
 
 			if (detail)
-				fprintf(fp, "\nSource           Group            RP Address       Flags =\n");
-			fprintf(fp, "%-15s  %-15s  %-15s ",
+				fprintf(fp, "\nSource            Group            RP Address       Flags =\n");
+			fprintf(fp, "%-15s   %-15s  %-15s ",
 				inet_fmt(r->source->address, s1, sizeof(s1)),
 				"ANY",
 				"");
