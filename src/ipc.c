@@ -62,6 +62,7 @@ enum {
 	IPC_IGMP,
 	IPC_IGMP_GRP,
 	IPC_IGMP_IFACE,
+	IPC_PIM,
 	IPC_PIM_IFACE,
 	IPC_PIM_NEIGH,
 	IPC_PIM_ROUTE,
@@ -92,6 +93,7 @@ struct ipcmd {
 	{ IPC_PIM_ROUTE,  "show mrt", "[detail]", "Show multicast routing table" },
 	{ IPC_PIM_RP,     "show rp", NULL, "Show Rendezvous-Point (RP) set" },
 	{ IPC_PIM_CRP,    "show crp", NULL, "Show candidate Rendezvous-Point (CRP) set" },
+	{ IPC_PIM,        "show pim", "[detail]", "Show interfaces, neighbors and routes"},
 	{ IPC_PIM_DUMP,   "show compat", "[detail]", "Show router status, compat mode" },
 	{ IPC_PIM_DUMP,   "show", NULL, NULL }, /* hidden default */
 };
@@ -615,6 +617,15 @@ static int show_pim_mrt(FILE *fp)
 	return 0;
 }
 
+static int show_pim(FILE *fp)
+{
+	return  show_interfaces (fp) ||
+		show_neighbors  (fp) ||
+		show_pim_mrt    (fp) ||
+		show_crp        (fp) ||
+		show_rp         (fp);
+}
+
 static int show_status(FILE *fp)
 {
 	char buf[10];
@@ -908,6 +919,10 @@ static void ipc_handle(int sd)
 
 	case IPC_PIM_CRP:
 		ipc_show(client, show_crp, cmd, sizeof(cmd));
+		break;
+
+	case IPC_PIM:
+		ipc_show(client, show_pim, cmd, sizeof(cmd));
 		break;
 
 	case IPC_STATUS:
