@@ -332,7 +332,9 @@ static int show_neighbors(FILE *fp)
 	struct uvif *uv;
 	vifi_t vifi;
 
-	fprintf(fp, "Interface         Address          Prio  Mode  Uptime/Expires               =\n");
+	fprintf(fp, "PIM Neighbor Table_\n");
+	if (numvifs)
+		fprintf(fp, "Interface         Address          Prio  Mode  Uptime/Expires               =\n");
 
 	for (vifi = 0; vifi < numvifs; vifi++) {
 		uv = &uvifs[vifi];
@@ -380,6 +382,7 @@ static int show_interfaces(FILE *fp)
 {
 	vifi_t vifi;
 
+	fprintf(fp, "PIM Interface Table_\n");
 	if (numvifs)
 		fprintf(fp, "Interface         State     Address          Nbr  Hello  Prio  DR Address =\n");
 
@@ -394,6 +397,7 @@ static int show_rp(FILE *fp)
 {
 	grp_mask_t *grp;
 
+	fprintf(fp, "PIM Rendez-Vous Point Set Table_\n");
 	if (grp_mask_list)
 		fprintf(fp, "Group Address       RP Address       Prio  Holdtime  Type=\n");
 
@@ -434,6 +438,7 @@ static int show_crp(FILE *fp)
 {
 	struct cand_rp *rp;
 
+	fprintf(fp, "PIM Candidate Rendez-Vous Point Table_\n");
 	if (cand_rp_list)
 		fprintf(fp, "Group Address       RP Address       Prio  Holdtime  Expires =\n");
 
@@ -537,7 +542,9 @@ static int show_pim_mrt(FILE *fp)
 	mrtentry_t *r;
 	cand_rp_t *rp;
 
-	fprintf(fp, "Source           Group            RP Address       Flags =\n");
+	fprintf(fp, "Multicast Routing Table_\n");
+	if (!detail)
+		fprintf(fp, "Source           Group            RP Address       Flags =\n");
 
 	/* TODO: remove the dummy 0.0.0.0 group (first in the chain) */
 	for (g = grplist->next; g; g = g->next) {
@@ -613,6 +620,8 @@ static int show_status(FILE *fp)
 	char buf[10];
 	int len;
 
+	fprintf(fp, "PIM Daemon Status=\n");
+
 	snprintf(buf, sizeof(buf), "%d", curr_bsr_priority);
 	MASK_TO_MASKLEN(curr_bsr_hash_mask, len);
 
@@ -654,6 +663,7 @@ static int show_igmp_groups(FILE *fp)
 	struct uvif *uv;
 	vifi_t vifi;
 
+	fprintf(fp, "IGMP Group Membership Table_\n");
 	fprintf(fp, "Interface         Group            Source           Last Reported    Timeout=\n");
 	for (vifi = 0, uv = uvifs; vifi < numvifs; vifi++, uv++) {
 		for (group = uv->uv_groups; group; group = group->al_next) {
@@ -686,6 +696,7 @@ static int show_igmp_iface(FILE *fp)
 	struct uvif *uv;
 	vifi_t vifi;
 
+	fprintf(fp, "IGMP Interface Table_\n");
 	fprintf(fp, "Interface         State     Querier          Timeout Version  Groups=\n");
 
 	for (vifi = 0, uv = uvifs; vifi < numvifs; vifi++, uv++) {
@@ -727,7 +738,6 @@ static int show_igmp(FILE *fp)
 	int rc = 0;
 
 	rc += show_igmp_iface(fp);
-	fprintf(fp, "\n");
 	rc += show_igmp_groups(fp);
 
 	return rc;
