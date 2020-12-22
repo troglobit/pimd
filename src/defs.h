@@ -67,7 +67,9 @@
 #include <sys/un.h>
 #include <ifaddrs.h>
 #include <sys/ioctl.h>
-#include <fcntl.h>
+#ifdef HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
 #if ((defined(SYSV)) || (defined(__bsdi__)) || ((defined SunOS) && (SunOS < 50)))
 #include <sys/sockio.h>
 #endif /* SYSV || bsdi || SunOS 4.x */

@@ -172,9 +172,16 @@ static void check_detail(char *cmd, size_t len)
 
 static int ipc_read(int sd, char *cmd, ssize_t len)
 {
-	len = read(sd, cmd, len - 1);
-	if (len < 0)
+	while ((len = read(sd, cmd, len - 1)) == -1) {
+		switch (errno) {
+		case EAGAIN:
+		case EINTR:
+			continue;
+		default:
+			break;
+		}
 		return IPC_ERR;
+	}
 	if (len == 0)
 		return IPC_OK;
 
@@ -202,8 +209,15 @@ static int ipc_write(int sd, char *msg, size_t sz)
 	logit(LOG_DEBUG, 0, "IPC rpl: '%s'", msg);
 
 	while ((len = write(sd, msg, sz))) {
-		if (-1 == len && EINTR == errno)
-			continue;
+		if (-1 == len) {
+			switch (errno) {
+			case EINTR:
+			case EAGAIN:
+				continue;
+			default:
+				break;
+			}
+		}
 		break;
 	}
 
@@ -964,6 +978,9 @@ void ipc_init(void)
 		logit(LOG_ERR, errno, "Failed creating IPC socket");
 		return;
 	}
+
+	/* Portable SOCK_NONBLOCK replacement, ignore any error. */
+	fcntl(sd, F_SETFD, fcntl(sd, F_GETFD) | O_NONBLOCK);
 
 #ifdef HAVE_SOCKADDR_UN_SUN_LEN
 	sun.sun_len = 0;	/* <- correct length is set by the OS */

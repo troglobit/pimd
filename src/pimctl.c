@@ -31,6 +31,9 @@
 
 #include <err.h>
 #include <errno.h>
+#ifdef HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
 #include <getopt.h>
 #include <paths.h>
 #include <poll.h>
@@ -131,8 +134,13 @@ static int try_connect(struct sockaddr_un *sun)
 	int sd;
 
 	sd = socket(AF_UNIX, SOCK_STREAM, 0);
-	if (-1 == sd)
+	if (-1 == sd) {
+		warn("failed socket()");
 		return -1;
+	}
+
+	/* Portable SOCK_NONBLOCK replacement, ignore any error. */
+	fcntl(sd, F_SETFD, fcntl(sd, F_GETFD) | O_NONBLOCK);
 
 #ifdef HAVE_SOCKADDR_UN_SUN_LEN
 	sun->sun_len = 0; /* <- correct length is set by the OS */
@@ -376,7 +384,9 @@ static int get(char *cmd, FILE *fp)
 	}
 
 	len = snprintf(buf, sizeof(buf), "%s", chomp(cmd));
-	if (write(sd, buf, len) == -1) {
+	while (write(sd, buf, len) == -1) {
+		if (errno == EAGAIN)
+			continue;
 		close(sd);
 		return 2;
 	}
@@ -398,8 +408,11 @@ static int get(char *cmd, FILE *fp)
 		if (pfd.events & POLLIN) {
 			memset(buf, 0, sizeof(buf));
 			len = read(sd, buf, sizeof(buf) - 1);
-			if (len == -1)
+			if (len == -1) {
+				if (errno == EAGAIN)
+					continue;
 				break;
+			}
 
 			buf[len] = 0;
 			fwrite(buf, len, 1, fp);
