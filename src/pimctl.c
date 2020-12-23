@@ -43,6 +43,7 @@
 #ifdef HAVE_TERMIOS_H
 # include <termios.h>
 #endif
+#include <time.h>
 #include <unistd.h>
 
 #include <sys/types.h>
@@ -531,6 +532,7 @@ static int usage(int rc)
 	       "\n"
 	       "Options:\n"
 	       "  -i, --ident=NAME           Connect to named pimd instance\n"
+	       "  -m, --monitor              Run 'COMMAND' every two seconds, like watch(1)\n"
 	       "  -p, --plain                Use plain table headings, no ctrl chars\n"
 	       "  -t, --no-heading           Skip table headings\n"
 	       "  -h, --help                 This help text\n"
@@ -603,16 +605,18 @@ int main(int argc, char *argv[])
 {
 	struct option long_options[] = {
 		{ "debug",      0, NULL, 'd' },
+		{ "help",       0, NULL, 'h' },
 		{ "ident",      1, NULL, 'i' },
+		{ "monitor",    0, NULL, 'm' },
 		{ "no-heading", 0, NULL, 't' },
 		{ "plain",      0, NULL, 'p' },
-		{ "help",       0, NULL, 'h' },
 		{ "version",    0, NULL, 'v' },
 		{ NULL, 0, NULL, 0 }
 	};
-	int c;
+	int monitor = 0;
+	int c, rc;
 
-	while ((c = getopt_long(argc, argv, "dh?i:ptv", long_options, NULL)) != EOF) {
+	while ((c = getopt_long(argc, argv, "dh?i:mptv", long_options, NULL)) != EOF) {
 		switch(c) {
 		case 'd':
 			debug = 1;
@@ -624,6 +628,10 @@ int main(int argc, char *argv[])
 
 		case 'i':	/* --ident=NAME */
 			ident = optarg;
+			break;
+
+		case 'm':
+			monitor = 1;
 			break;
 
 		case 'p':
@@ -639,10 +647,25 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (optind >= argc)
-		return get("show", NULL);
+	do {
+		if (monitor) {
+			time_t now;
 
-	return cmd(argc - optind, &argv[optind]);
+			fputs("\033[2J\033[1;1H", stderr); /* clear */
+			now = time(NULL);
+			fputs(ctime(&now), stderr);
+		}
+
+		if (optind >= argc)
+			rc = get("show", NULL);
+		else
+			rc = cmd(argc - optind, &argv[optind]);
+
+		if (monitor)
+			rc = sleep(2);
+	} while (rc == 0 && monitor);
+
+	return rc;
 }
 
 /**
