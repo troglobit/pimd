@@ -45,7 +45,9 @@
 #endif
 #include <time.h>
 #include <unistd.h>
-
+#ifdef HAVE_SYS_IOCTL_H
+# include <sys/ioctl.h>
+#endif
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -262,9 +264,24 @@ static int get_width(void)
 {
 	int ret = 79;
 #ifdef HAVE_TERMIOS_H
-	char buf[42];
-	struct termios tc, saved;
 	struct pollfd fd = { STDIN_FILENO, POLLIN, 0 };
+	struct termios tc, saved;
+	struct winsize ws;
+	char buf[42];
+
+	if (!ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws)) {
+		printf("Yay --> %d x %d\n", ws.ws_col, ws.ws_row);
+		return ws.ws_col;
+	} else if (!isatty(STDOUT_FILENO)) {
+		char *columns;
+
+		/* we may be running under watch(1) */
+		columns = getenv("COLUMNS");
+		if (columns)
+			return atoi(columns);
+
+		return ret;
+	}
 
 	memset(buf, 0, sizeof(buf));
 	tcgetattr(STDERR_FILENO, &tc);
