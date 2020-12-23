@@ -25,14 +25,22 @@ available under the free [3-clause BSD license][License].  This is the
 restored original version from University of Southern California, by
 Ahmed Helmy, Rusty Eddy and Pavlin Ivanov Radoslavov.
 
-Today pimd is maintained at [GitHub][].  Use its facilities to access
-the source, report bugs and feature requests, and send patches or pull
-requests.  Official release tarballs at the [homepage][] and at the
-GitHub proejct's release directory.
+Today pimd is maintained at [GitHub][].  This is the preferred way to
+download releases, access the GIT sources, report bugs, and send patches
+or pull requests.  Official release tarballs at the [homepage][] and at
+the GitHub project's release directory.
 
 pimd is primarily developed on Linux and should work as-is out of the
 box on all major distributions.  Other UNIX variants (OpenBSD, NetBSD,
-FreeBSD, and Illumos) may also work, but are not supported anymore.
+FreeBSD, and Illumos) may also work, but are not officially supported.
+
+pimd ships with a useful `pimctl` tool, compatible with all PIM daemons
+from the same family: pimd, pimd-dense, pim6sd. It can be a very helpful
+little tool when debugging and learning PIM setups.  The pimctl API is
+documented in the file `src/ipc.c`, in case you want to use `socat` to
+talk to pimd over its UNIX domain socket:
+
+    echo "help" |socat - UNIX-CONNECT:/var/run/pimd.sock
 
 For a summary of changes for each release, see the [ChangeLog][].
 
@@ -45,10 +53,10 @@ the statements are in some cases important.
 
 PIM-SM is a designed to be a *protocol independent* multicast routing
 protocol.  As such it relies on unicast protocols like, e.g, OSPF, RIP,
-or static routing entries, to figure out the path to all multicast
-capable neighboring routers.  This information is necessary in setups
-with more than one route between a multicast sender and a receiver to
-figure out which PIM router should be the active forwarder.
+or static routing entries to figure out the reverse path to multicast
+sources.  This information is necessary in setups with more than one
+route between a multicast sender and a receiver to figure out which PIM
+router should be the active forwarder.
 
 However, pimd currently cannot retrieve the unicast routing distance
 (preference) and metric of routes from the system, not from the kernel
@@ -256,16 +264,21 @@ and the multicast routing table:
 
     pimctl show interfaces
     pimctl show neighbor
-    pimctl show routes
+    pimctl show mrt
     ...
 
-or to watch it continually:
+The default command is `pimctl show pim`.  To watch it continually
+(notice the `-c` flag to watch(1) to tell it to interpret the ANSI
+escape sequences):
 
-    watch pimctl show CMD
+    watch -cd pimctl
 
-See the  `pimctl help` usage text  for more details.  Also,  `pimd` logs
-important events to  the system log file, in particular  at startup when
-it parses the `pimd.conf` configuration file.
+See the `pimctl help` usage text for more commands (available only when
+a running PIM daemon is available), or the pimctl(8) man page.
+
+Also worth mentioning, `pimd` logs important events to the system log,
+in particular at startup when it parses the `pimd.conf` configuration
+file.
 
 
 Large Setups
@@ -274,8 +287,9 @@ Large Setups
 pimd is limited to the number of `MAXVIFS` interfaces listed in the
 kernel headers.  In Linux see `/usr/include/linux/mroute.h`. 
 
-To overcome this limitation, adjust the kernel `#define` to, e.g.,
-1280, and configure pimd `--with-max-vifs=1280`.
+To overcome this limitation, adjust the kernel `#define` to, e.g., 1280,
+and configure pimd `--with-max-vifs=1280`.  Please note, this has only
+been tested with Linux and will likely not work with other kernels!
 
 With this many interfaces the kernel may run out of memory to let pimd
 to enable IGMP on all interfaces.  In Linux, use sysctl to tweak the
