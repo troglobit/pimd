@@ -406,16 +406,19 @@ static int get(char *cmd, FILE *fp)
 	pfd.events = POLLIN | POLLHUP;
 	while (poll(&pfd, 1, 2000) > 0) {
 		if (pfd.events & POLLIN) {
-			memset(buf, 0, sizeof(buf));
-			len = read(sd, buf, sizeof(buf) - 1);
+			ssize_t blen = sizeof(buf) - 1;
+
+			len = read(sd, buf, blen);
 			if (len == -1) {
-				if (errno == EAGAIN)
+				if (errno == EAGAIN || errno == EINTR)
 					continue;
 				break;
 			}
 
 			buf[len] = 0;
 			fwrite(buf, len, 1, fp);
+			if (len == blen)
+				continue;
 		}
 		if (pfd.revents & POLLHUP)
 			break;
