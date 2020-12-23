@@ -1,4 +1,4 @@
-.Dd Jan 2, 2019
+.Dd Dec 23, 2020
 .Dt PIMCTL 8 SMM
 .Os
 .Sh NAME
@@ -7,11 +7,11 @@
 .Xr pimd 8
 .Sh SYNOPSIS
 .Nm pimctl
-.Op Fl pth
+.Op Fl mpthv
 .Op Fl i Ar NAME
 .Op COMMAND
 .Nm
-.Ar help | kill | restart | version
+.Ar help | kill | restart | status | version
 .Pp
 .Nm
 .Ar debug Op ? | none | SYSTEM Op ,SYSTEM
@@ -19,35 +19,35 @@
 .Ar log Op ? | none | LEVEL
 .Pp
 .Nm
-.Ar show igmp groups
-.Nm
-.Ar show igmp interface
+.Ar show igmp
 .Pp
 .Nm
-.Ar show pim interface
+.Ar show interface
 .Nm
-.Ar show pim neighbor
+.Ar show neighbor
 .Nm
-.Ar show pim routes Op detail
+.Ar show mrt Op detail
 .Nm
-.Ar show pim rp
+.Ar show rp
 .Nm
-.Ar show pim crp
+.Ar show crp
 .Nm
-.Ar show pim compat Op detail
-.Pp
+.Ar show compat Op detail
 .Nm
-.Op Ar show status
+.Ar show pim Op detail
 .Sh DESCRIPTION
 .Nm
 is the friendly control tool for
-.Xr pimd 8 .
+.Xr pimd 8 ,
+.Xr pimd-dense 8 ,
+and
+.Xr pim6sd 8 .
 It can be used to query status, debug, restart, and kill a running pimd.
 Commands can be abbreviated to the minimum unambiguous prefix; for
 example,
-.Cm s s
+.Cm s in
 for
-.Cm show status .
+.Cm show interface .
 .Sh OPTIONS
 This program follows the usual UNIX command line syntax, with long
 options starting with two dashes (`-').  The options are as follows:
@@ -55,20 +55,48 @@ options starting with two dashes (`-').  The options are as follows:
 .It Fl h, -help
 Show usage instructions and exit.
 .It Fl i, -ident Ar NAME
-Connect to named pimd instance.
+Connect to named PIM daemon instance.  Since the same
+.Nm
+is capable supporting all the PIM daemon's it comes with heuristics to
+aid the user, i.e., if only one of the supported daemon's is running
+this option is not required.
+.It Fl m, -monitor
+Run
+.Op Ar COMMAND
+every two seconds, for limited systems that do not have
+.Xr watch 1 ,
+which is highly recommended with
+.Nm .
 .It Fl p, -plain
-Use plain table headings, no ANSI ctrl characters.
+Use plain table headings, no ANSI ctrl characters.  When using
+.Xr watch 1 ,
+use
+.Cm watch Fl c
+option instead, it handles ANSI escape sequences.
 .It Fl t, -no-heading
-Skip table headings altogether.
+Skip table headings altogether.  Useful for scripting
+.Nm .
 .El
 .Sh COMMANDS
-The following commands are available:
+The
+.Nm
+tool from this project can be used with any of the other PIM daemons,
+so the available commands vary.  When a PIM daemon is running the
+.Nm
+tool querys it over IPC for available commands.  The
+.Nm pimd
+daemon comes with the following commands:
 .Bl -tag -width Ds
 .It Nm Ar help
 Show usage instructions and exit.
 .It Nm Ar kill
-Kill running daemon, like sending SIGTERM to
-.Xr pimd 8
+Kill running daemon, like sending SIGTERM to the PIM daemon.
+.It Nm Ar restart
+Restart daemon and reload
+.Pa /etc/pimd.conf ,
+like sending SIGHUP to the PIM daemon.
+.It Nm Ar status
+Show PIM daemon status.
 .It Nm Ar debug Op ? | none | SYSTEM Op ,SYSTEM
 Control subystem debugging at runtime.  Multiple subsystems can be
 enabled, separate with comma.  E.g.
@@ -91,49 +119,49 @@ pimctl debug none
 Subsystems:
 .Pp
 .Bl -tag -width pim_routes -compact -offset indent
-.It Cm packet
-Debug inbound/outbout packets
-.It Cm prunes
-Pruning operations, or pruned routes
-.It Cm routes
-Routing messages
-.It Cm rtdetail
-Detailed routing information
-.It Cm peers
-Neighbor gossip
-.It Cm cache
-Debug routing cache
-.It Cm timeout
-Debug timeouts
-.It Cm interface
-Show interface (VIF) debug messages
-.It Cm groups
-Debug group memberships
-.It Cm mtrace
-Multicast traceroute information
-.It Cm igmp
-Debug IGMP messages
-.It Cm icmp
-Debug ICMP messages
-.It Cm rsrr
-Debug RSRR messages
-.It Cm pim
-All PIM messages
-.It Cm pim_routes
-PIM routing messages
-.It Cm pim_bsr
-PIM bootstrap router messages
-.It Cm pim_detail
-Detailed PIM debug
-.It Cm pim_hello
-Debug hello messages to/from neighbors
 .It Cm all
 Enable all subsystems (may trigger log rate limiter)
+.It Cm asserts
+PIM assert messages
+.It Cm bsr
+PIM bootstrap router messages
+.It Cm crp
+PIM Candidate Rendez-Vous Point messages
+.It Cm detail
+Detailed PIM debug messages
+.It Cm igmp
+Debug IGMP messages
+.It Cm interfaces
+Show interface (VIF) debug messages
+.It Cm jp
+PIM join-prune messages
+.It Cm kernel
+Kernel debug messages
+.It Cm mfc
+Debug messages for the multicast forwarding cache (kernel)
+.It Cm mrt
+PIM routing messages
+.It Cm neighbors
+Debug hello messages to/from neighbors
+.It Cm packets
+Debug inbound/outbout packets
+.It Cm pim
+All PIM messages
+.It Cm prunes
+Pruning operations, or pruned routes
+.It Cm registers
+PIM register tunnel debug messages
+.It Cm rpf
+PIM revers-path forwarding debug messages
+.It Cm rsrr
+Debug RSRR messages
+.It Cm timers
+Debug timers
+.It Cm traceroute
+Multicast traceroute information
 .El
 .It Nm Ar log Op ? | none | LEVEL
-Control, query, or disable
-.Xr pimd 8
-log level:
+Control, query, or disable the log level of the PIM daemon:
 .Pp
 .Bl -tag -width WARNING -compact -offset indent
 .It Cm none
@@ -149,36 +177,45 @@ Informational
 .It Cm debug
 Debug-level messages
 .El
-.It Nm Ar restart
-Restart daemon and reload
-.Pa /etc/pimd.conf ,
-like sending SIGHUP to
-.Xr pimd 8
-.It Nm Ar show igmp groups
-Show IGMP group memberships
-.It Nm Ar show igmp interfaces
-Show IGMP interface status
-.It Nm Ar show pim interfaces
+.It Nm Ar show igmp
+Show IGMP interface status and group memberships.
+.It Nm Ar show interfaces
 Show PIM interface table
-.It Nm Ar show pim neighbor
+.It Nm Ar show neighbor
 Show PIM neighbor table
-.It Nm Ar show pim routes
-Show PIM routing table
-.It Nm Ar show pim rp
+.It Nm Ar show mrt
+Show PIM multicast routing table.  To see the actual multicast
+forwarding cache (mfc), see your operating system specific command.  The
+MROUTING stack (used in most UNIX systems today) never developed socket
+options to query the routing table, so every operating system has its
+own method.  On Linux this is
+.Bd -unfilled -offset indent
+ip mroute show
+.Ed
+.Pp
+on BSD systems it is usually something like
+.Bd -unfilled -offset indent
+netstat -g
+.Ed
+.Pp
+and on SVR4 systems like Illumos it is
+.Bd -unfilled -offset indent
+netstat -M
+.Ed
+.It Nm Ar show rp
 Show PIM Rendezvous-Point (RP) set
-.It Nm Ar show pim crp
-Show PIM Candidate Rendezvous-Point (CRP) from BSR
-.It Nm Ar show pim compat
+.It Nm Ar show crp
+Show PIM Candidate Rendezvous-Point (CRP) set.
+.It Nm Ar show compat
 Show PIM status, compat mode.  Previously available as
 .Nm pimd Fl r ,
-as well as sending
-.Xr pimd 8
-SIGUSR1 to get output in
-.Pa /var/run/pimd/pimd.dump
-.It Nm Op Ar show status
-Show
-.Xr pimd 8
-status, default
+as well as sending SIGUSR1 to the daemon to get output in
+.Pa /var/run/pimd/pimd.dump .
+These methods are no longer available, only this compat command remains.
+.It Nm Ar show pim Op detail
+Modern variant of the
+.Cm show compat
+command.
 .El
 .Sh FILES
 .Bl -tag -width /var/run/pimd.sock -compact
@@ -189,9 +226,12 @@ socket used for communication with
 .El
 .Pp
 Note, the basename used changes when running with a different identity,
-.Fl i Ar NAME
+.Fl i Ar NAME ,
+or when another PIM daemon from the same family is found.
 .Sh SEE ALSO
 .Xr pimd 8 ,
+.Xr pimd-dense 8 ,
+.Xr pim6sd 8 ,
 .Xr /usr/share/doc/pimd/
 .Sh AUTHORS
 .Nm pimd
