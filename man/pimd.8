@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.Dd Oct 17, 2020
+.Dd Dec 23, 2020
 .\" Please adjust this date whenever revising the manpage.
 .Dt PIMD 8 SMM
 .Os
@@ -53,6 +53,15 @@ make it well suited to large heterogeneous internetworks.
 .Nm
 originally only implemented RFC2362, but since v2.3.0 is supporting more
 and more of RFC4601.
+.Pp
+.Nm
+ships with a
+.Xr pimctl 8
+tool, which is compatible with all PIM daemon's from the same family:
+.Xr pimd 8 ,
+.Xr pimd-dense 8 ,
+and
+.Xr pim6sd .
 .Sh OPTIONS
 This program follows the usual UNIX command line syntax, with long
 options starting with two dashes (`-').  The options are as follows:
@@ -267,8 +276,9 @@ socket used for communication with
 .El
 .Sh SEE ALSO
 .Xr pimd.conf 5
-.Xr pimd-dense 8 ,
 .Xr pimctl 8 ,
+.Xr pimd-dense 8 ,
+.Xr pim6sd 8 ,
 .Xr mrouted 8 ,
 .Xr smcroute 8 ,
 .Pp
