@@ -553,6 +553,7 @@ static int usage(int rc)
 	       "  -p, --plain                Use plain table headings, no ctrl chars\n"
 	       "  -t, --no-heading           Skip table headings\n"
 	       "  -h, --help                 This help text\n"
+	       "  -v, --version              Show pimctl version\n"
 	       "\n");
 
 	if (ipc_fetch()) {
