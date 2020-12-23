@@ -980,7 +980,7 @@ void ipc_init(void)
 	}
 
 	/* Portable SOCK_NONBLOCK replacement, ignore any error. */
-	fcntl(sd, F_SETFD, fcntl(sd, F_GETFD) | O_NONBLOCK);
+	(void)fcntl(sd, F_SETFD, fcntl(sd, F_GETFD) | O_NONBLOCK);
 
 #ifdef HAVE_SOCKADDR_UN_SUN_LEN
 	sun.sun_len = 0;	/* <- correct length is set by the OS */
