@@ -270,7 +270,6 @@ static int get_width(void)
 	char buf[42];
 
 	if (!ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws)) {
-		printf("Yay --> %d x %d\n", ws.ws_col, ws.ws_row);
 		return ws.ws_col;
 	} else if (!isatty(STDOUT_FILENO)) {
 		char *columns;
