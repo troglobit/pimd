@@ -577,6 +577,10 @@ int change_interfaces(mrtentry_t *mrt,
     if (!mrt)
 	return 0;
 
+    /* When iif changes, discover new upstream pim nbr */
+    if (new_iif != mrt->incoming && mrt->source && mrt->source->address)
+        mrt->upstream = find_pim_nbr(mrt->source->address);
+
     PIMD_VIFM_COPY(new_joined_oifs_, new_joined_oifs);
     PIMD_VIFM_COPY(new_leaves_, new_leaves);
 
