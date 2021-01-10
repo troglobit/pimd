@@ -590,22 +590,6 @@ void accept_leave_message(int ifi, uint32_t src, uint32_t dst, uint32_t group)
 }
 
 /*
- * Time out old version compatibility mode
- */
-static void switch_version(void *arg)
-{
-    cbk_t *cbk = (cbk_t *)arg;
-
-    if (cbk->g->al_pv < 3)
-	cbk->g->al_pv += 1;
-
-    logit(LOG_INFO, 0, "Switch IGMP compatibility mode back to v%d for group %s",
-	  cbk->g->al_pv, inet_fmt(cbk->g->al_addr, s1, sizeof(s1)));
-
-    free(cbk);
-}
-
-/*
  * Loop through and process all sources in a v3 record.
  */
 int accept_sources(int ifi, int type, uint32_t src, uint32_t group, uint8_t *sources, uint8_t *canary, int num_sources)
@@ -860,6 +844,22 @@ static void DelVif(void *arg)
 	    anp = &g->al_next;
 	}
     }
+
+    free(cbk);
+}
+
+/*
+ * Time out old version compatibility mode
+ */
+static void switch_version(void *arg)
+{
+    cbk_t *cbk = (cbk_t *)arg;
+
+    if (cbk->g->al_pv < 3)
+	cbk->g->al_pv += 1;
+
+    logit(LOG_INFO, 0, "Switch IGMP compatibility mode back to v%d for group %s",
+	  cbk->g->al_pv, inet_fmt(cbk->g->al_addr, s1, sizeof(s1)));
 
     free(cbk);
 }
