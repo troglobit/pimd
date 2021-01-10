@@ -588,10 +588,8 @@ void check_vif_state(void)
  */
 vifi_t find_vif(int ifi)
 {
-    vifi_t vifi;
     struct uvif *v;
-    struct phaddr *p;
-    struct rpfctl rpf;
+    vifi_t vifi;
 
     if (ifi < 0)
 	return NO_VIF;

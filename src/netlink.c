@@ -52,7 +52,7 @@ static int parse_rtattr(struct rtattr *tb[], int max, struct rtattr *rta, int le
     }
 
     if (len)
-	logit(LOG_WARNING, 0, "NETLINK: Deficit in rtattr %d", len);
+	logit(LOG_WARNING, 0, "netlink: Deficit in rtattr %d", len);
 
     return 0;
 }

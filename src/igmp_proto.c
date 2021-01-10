@@ -200,17 +200,17 @@ void accept_membership_query(int ifi, uint32_t src, uint32_t dst, uint32_t group
 			  ? ntohl(v->uv_querier->al_addr)
 			  : ntohl(v->uv_lcl_addr))) {
 	    IF_DEBUG(DEBUG_IGMP) {
-		logit(LOG_DEBUG, 0, "new querier %s (was %s) on vif %d",
+		logit(LOG_DEBUG, 0, "new querier %s (was %s) on %s",
 		      inet_fmt(src, s1, sizeof(s1)),
 		      v->uv_querier
 		      ? inet_fmt(v->uv_querier->al_addr, s2, sizeof(s2))
-		      : "me", vifi);
+		      : "me", v->uv_name);
 	    }
 
 	    if (!v->uv_querier) {
 		v->uv_querier = calloc(1, sizeof(struct listaddr));
 		if (!v->uv_querier) {
-		    logit(LOG_ERR, 0, "Failed calloc() in accept_membership_query()");
+		    logit(LOG_ERR, 0, "%s(): out of memory", __func__);
 		    return;
 		}
 
