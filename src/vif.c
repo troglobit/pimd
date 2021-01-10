@@ -183,7 +183,6 @@ void zero_vif(struct uvif *v, int t)
 
     RESET_TIMER(v->uv_gq_timer);
     RESET_TIMER(v->uv_jp_timer);
-    v->uv_stquery_cnt   = IGMP_STARTUP_QUERY_COUNT;
     v->uv_pim_neighbors	= (struct pim_nbr_entry *)NULL;
     v->uv_local_pref	= default_route_distance;
     v->uv_local_metric	= default_route_metric;
@@ -356,6 +355,7 @@ static void start_vif(vifi_t vifi)
 	 * query.
 	 */
 	v->uv_flags |= VIFF_QUERIER;
+	v->uv_stquery_cnt = IGMP_STARTUP_QUERY_COUNT;
 	query_groups(v);
 
 	/* Send a probe via the new vif to look for neighbors. */
@@ -413,8 +413,10 @@ static void stop_vif(vifi_t vifi)
 	}
     }
 
-    if (v->uv_querier)
+    if (v->uv_querier) {
 	free(v->uv_querier);
+	v->uv_querier = NULL;
+    }
 
     /*
      * TODO: inform (eventually) the neighbors I am going down by sending
