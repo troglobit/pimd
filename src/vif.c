@@ -187,9 +187,7 @@ void zero_vif(struct uvif *v, int t)
     v->uv_pim_neighbors	= (struct pim_nbr_entry *)NULL;
     v->uv_local_pref	= default_route_distance;
     v->uv_local_metric	= default_route_metric;
-#ifdef __linux__
     v->uv_ifindex	= -1;
-#endif /* __linux__ */
 }
 
 

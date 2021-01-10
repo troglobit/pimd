@@ -213,9 +213,7 @@ struct uvif {
     int             uv_local_pref;  /* default local preference for assert  */
     int             uv_local_metric;/* default local metric for assert      */
     struct pim_nbr_entry *uv_pim_neighbors; /* list of PIM neighbor routers */
-#ifdef __linux__
     int             uv_ifindex;     /* because RTNETLINK returns only index */
-#endif /* __linux__ */
 };
 
 /* TODO: define VIFF_KERNEL_FLAGS */

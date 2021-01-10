@@ -429,12 +429,14 @@ init_vif_list:
 		v->uv_rmt_addr = subnet;
 	}
 
-#ifdef __linux__
-	/* On Linux we can enumerate using ifindex, no need for an IP address */
+	/*
+	 * On Linux we can enumerate vifs using ifindex,
+	 * no need for an IP address.  Also used for the
+	 * VIF lookup in find_vif()
+	 */
 	v->uv_ifindex = if_nametoindex(v->uv_name);
 	if (!v->uv_ifindex)
-	    logit(LOG_ERR, errno, "Failed reading interface index for %s", v->uv_name);
-#endif
+	    logit(LOG_ERR, errno, "Failed reading ifindex for %s", v->uv_name);
 
 	if (v->uv_flags & VIFF_POINT_TO_POINT) {
 	    logit(LOG_INFO, 0, "VIF #%u: Installing %s (%s -> %s) rate %d",
