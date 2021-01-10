@@ -174,16 +174,14 @@ void accept_membership_query(int ifi, uint32_t src, uint32_t dst, uint32_t group
 	     * Exponentially back-off warning rate
 	     */
 	    i = ++v->uv_igmpv1_warn;
-	    while (i && !(i & 1)) {
+	    while (i && !(i & 1))
 		i >>= 1;
-		if (i == 1) {
-		    logit(LOG_WARNING, 0, "Received IGMP v%d query from %s on %s,"
-			  " but I am configured for IGMP v%d network compatibility mode",
-			  igmp_version, inet_fmt(src, s1, sizeof(s1)),
-			  v->uv_name, v->uv_flags & VIFF_IGMPV1 ? 1 : 2);
-		}
-		return;
-	    }
+	    if (i == 1)
+		logit(LOG_WARNING, 0, "Received IGMP v%d query from %s on %s,"
+		      " but interface is in IGMP v%d network compatibility mode",
+		      igmp_version, inet_fmt(src, s1, sizeof(s1)),
+		      v->uv_name, v->uv_flags & VIFF_IGMPV1 ? 1 : 2);
+	    return;
 	}
     }
 
