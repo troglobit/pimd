@@ -222,7 +222,17 @@ static int init_reg_vif(void)
 #ifdef PIM_EXPERIMENTAL
     v->uv_flags |= VIFF_REGISTER_KERNEL_ENCAP;
 #endif
+
+#ifdef __linux__
+    if (mrt_table_id != 0)
+	snprintf(v->uv_name, sizeof(v->uv_name), "pimreg%u", mrt_table_id);
+    else
+	strlcpy(v->uv_name, "pimreg", sizeof(v->uv_name));
+
+    logit(LOG_INFO, 0, "Initializing %s", v->uv_name);
+#else
     strlcpy(v->uv_name, "register_vif0", sizeof(v->uv_name));
+#endif /* __linux__ */
 
     /* Use the address of the first available physical interface to
      * create the register vif.
@@ -239,6 +249,8 @@ static int init_reg_vif(void)
 	return -1;
     }
 
+    logit(LOG_DEBUG, 0, "Creating %s from %s using ifaddr %s",
+	  v->uv_name, uvifs[i].uv_name, inet_fmt(uvifs[i].uv_lcl_addr, s1, sizeof(s1)));
     v->uv_lcl_addr = uvifs[i].uv_lcl_addr;
     v->uv_threshold = MINTTL;
 
@@ -353,24 +365,12 @@ static void start_vif(vifi_t vifi)
     }
 #ifdef __linux__
     else {
-	struct ifreq ifr;
-
-	memset(&ifr, 0, sizeof(struct ifreq));
-
-	if (mrt_table_id != 0) {
-	        logit(LOG_INFO, 0, "Initializing pimreg%u", mrt_table_id);
-		snprintf(ifr.ifr_name, IFNAMSIZ, "pimreg%u", mrt_table_id);
-	} else {
-		strlcpy(ifr.ifr_name, "pimreg", IFNAMSIZ);
-	}
-
-	if (ioctl(udp_socket, SIOGIFINDEX, (char *) &ifr) < 0) {
-	    logit(LOG_ERR, errno, "ioctl SIOGIFINDEX for %s", ifr.ifr_name);
+	v->uv_ifindex = if_nametoindex(v->uv_name);
+	if (!v->uv_ifindex) {
+	    logit(LOG_ERR, errno, "Failed reading ifindex for %s", v->uv_name);
 	    /* Not reached */
 	    return;
 	}
-
-	v->uv_ifindex = ifr.ifr_ifindex;
     }
 #endif /* __linux__ */
 }
