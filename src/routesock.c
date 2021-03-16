@@ -48,6 +48,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <stdlib.h>
+#include <sys/time.h>
 
 /* All the BSDs have routing sockets (not Netlink), but only Linux seems
  * to have SIOCGETRPF, which is used in the #else below ... the original
@@ -125,11 +126,13 @@ int init_routesock(void)
 /* get the rpf neighbor info */
 int k_req_incoming(uint32_t source, struct rpfctl *rpf)
 {
-    int rlen, l, flags = RTF_STATIC, retry_count = 3;
+    int rlen, l, flags = RTF_STATIC;
     sup su;
     static int seq;
     char *cp = m_rtmsg.m_space;
     struct rpfctl rpfinfo;
+    struct timeval wtime;
+    fd_set fdbits;
 
 /* TODO: a hack!!!! */
 #ifdef HAVE_SA_LEN
@@ -230,24 +233,54 @@ int k_req_incoming(uint32_t source, struct rpfctl *rpf)
     pid = getpid();
 
     while (1) {
-	rlen = read(routing_socket, &m_rtmsg, sizeof(m_rtmsg));
-	if (rlen < 0) {
-	    if (errno == EINTR)
-		continue;	/* Signalled, retry syscall. */
-	    if (errno == EAGAIN && retry_count--) {
-		logit(LOG_DEBUG, 0, "Kernel busy, retrying (%d/3) routing socket read in one sec ...", 3 - retry_count);
-		sleep(1);
-		continue;
-	    }
+	wtime.tv_sec = 0;
+	wtime.tv_usec = 100 * 1000;
 
-	    IF_DEBUG(DEBUG_RPF | DEBUG_KERN)
-		logit(LOG_DEBUG, errno, "Read from routing socket failed");
+	FD_ZERO(&fdbits);
+	FD_SET(routing_socket, &fdbits);
 
+	rlen = select(routing_socket + 1, &fdbits, 0, 0, &wtime);
+	if (rlen == 0) {
+	    logit(LOG_WARNING, 0, "Timeout waiting for reply from routing socket for %s",
+		  inet_fmt(source, s1, sizeof(s1)));
 	    return FALSE;
 	}
 
-	if (rlen > 0 && (rtm.rtm_seq != seq || rtm.rtm_pid != pid))
-	    continue;
+	if ( rlen < 0) {
+	    switch (errno) {
+		case EINTR:
+		    /* FALLTHROUGH */
+		case EAGAIN:
+		    continue;	/* Signalled, retry syscall. */
+
+		default:
+		    IF_DEBUG(DEBUG_RPF | DEBUG_KERN)
+			logit(LOG_DEBUG, errno, "Select error on routing socket for %s",
+			      inet_fmt(source, s1, sizeof(s1)));
+		    return FALSE;
+	    }
+	}
+
+	if (FD_ISSET(routing_socket, &fdbits)) {
+	    rlen = read(routing_socket, &m_rtmsg, sizeof(m_rtmsg));
+	    if (rlen < 0) {
+		if (errno == EINTR)
+		    continue;	/* Signalled, retry syscall. */
+
+		IF_DEBUG(DEBUG_RPF | DEBUG_KERN)
+		    logit(LOG_DEBUG, errno, "Read from routing socket failed for %s",
+			  inet_fmt(source, s1, sizeof(s1)));
+
+		return FALSE;
+	    }
+
+	    if (rlen > 0 && (rtm.rtm_seq != seq || rtm.rtm_pid != pid)) {
+		IF_DEBUG(DEBUG_RPF | DEBUG_KERN)
+		    logit(LOG_DEBUG, 0, "Reply not for me, retrying: want %d(%ld) got %d(%ld)",
+			  seq, (long) pid, rtm.rtm_seq, (long) rtm.rtm_pid);
+		continue;
+	    }
+	}
 
 	break;
     }
