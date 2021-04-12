@@ -409,6 +409,13 @@ static void stop_vif(vifi_t vifi)
 		free(b);
 	    }
 
+	    /* Clear timers, preventing possible memory double free */
+            if (a->al_timerid)
+                timer_clear(a->al_timerid);
+            if (a->al_versiontimer)
+                timer_clear(a->al_versiontimer);
+            if (a->al_query)
+                timer_clear(a->al_query);
 	    free(a);
 	}
     }
