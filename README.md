@@ -1,6 +1,6 @@
 PIM-SM/SSM Multicast Routing for Linux
 ======================================
-[![License Badge][]][License] [![Travis Status][]][Travis] [![Coverity Status][]][Coverity Scan]
+[![License Badge][]][License] [![GitHub Status][]][GitHub] [![Coverity Status][]][Coverity Scan]
 
 Table of Contents
 -----------------
@@ -369,7 +369,7 @@ Stanford Junior University.
 [buildsystem]:     https://autotools.io/
 [contrib]:         https://github.com/troglobit/pimd/blob/master/.github/CONTRIBUTING.md
 [Joachim Wiberg]:  https://troglobit.com
-[Travis]:          https://travis-ci.org/troglobit/pimd
-[Travis Status]:   https://travis-ci.org/troglobit/pimd.png?branch=master
+[GitHub]:          https://github.com/troglobit/pimd/actions/workflows/build.yml/
+[GitHub Status]:   https://github.com/troglobit/pimd/actions/workflows/build.yml/badge.svg
 [Coverity Scan]:   https://scan.coverity.com/projects/3319
 [Coverity Status]: https://scan.coverity.com/projects/3319/badge.svg
