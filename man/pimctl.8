@@ -9,6 +9,7 @@
 .Nm pimctl
 .Op Fl mpthv
 .Op Fl i Ar NAME
+.Op Fl u Ar FILE
 .Op COMMAND
 .Nm
 .Ar help | kill | restart | status | version
@@ -76,6 +77,12 @@ option instead, it handles ANSI escape sequences.
 .It Fl t, -no-heading
 Skip table headings altogether.  Useful for scripting
 .Nm .
+.It Fl u, -ipc Ar FILE
+Override UNIX domain socket filename, the default is based on the
+identity,
+.Fl i Ar NAME .
+On most systems this is
+.Pa /var/run/pimd.sock .
 .El
 .Sh COMMANDS
 The

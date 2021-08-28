@@ -56,6 +56,7 @@ int mrt_table_id = 0;
 char *ident       = PACKAGE_NAME;
 char *prognm      = NULL;
 char *pid_file    = NULL;
+char *sock_file   = NULL;
 char *config_file = NULL;
 
 static int sighandled = 0;
@@ -154,6 +155,7 @@ static int usage(int code)
 #ifdef __linux__
 	   " [-t ID]"
 #endif
+	   " [-u FILE]"
 	   " [-w SEC]\n\n", prognm);
     printf(" -f, --config=FILE        Configuration file, default use ident: %s\n", config_file);
     printf("     --no-fallback        Skip RP/BSR fallback if started w/o config file\n");
@@ -172,6 +174,7 @@ static int usage(int code)
 	   "                          0 .. 999999999.  Default: 0 (use default table)\n");
 #endif
     printf(" -h, --help               Show this help text\n");
+    printf(" -u, --ipc=FILE           Override UNIX domain socket, default based on identity, -i\n");
     printf(" -v, --version            Show %s version\n", prognm);
     printf(" -w, --startup-delay=SEC  Initial startup delay before probing interfaces\n");
     printf("\n");
@@ -253,6 +256,7 @@ int main(int argc, char *argv[])
 #ifdef __linux__
 	{ "table-id",      1, 0, 't' },
 #endif
+	{ "ipc",           1, 0, 'u' },
 	{ "version",       0, 0, 'v' },
 	{ "startup-delay", 1, 0, 'w' },
 	{ NULL, 0, 0, 0 }
@@ -261,7 +265,7 @@ int main(int argc, char *argv[])
     snprintf(versionstring, sizeof(versionstring), "pimd version %s", PACKAGE_VERSION);
 
     prognm = ident = progname(argv[0]);
-    while ((ch = getopt_long(argc, argv, "d:f:hi:l:nrst:vw:", long_options, NULL)) != EOF) {
+    while ((ch = getopt_long(argc, argv, "d:f:hi:l:nrst:u:vw:", long_options, NULL)) != EOF) {
 	const char *errstr;
 
 	switch (ch) {
@@ -324,6 +328,10 @@ int main(int argc, char *argv[])
 		    return usage(1);
 		}
 #endif
+		break;
+
+	    case 'u':
+		sock_file = strdup(optarg);
 		break;
 
 	    case 'v':
@@ -433,7 +441,7 @@ int main(int argc, char *argv[])
     timer_set(TIMER_INTERVAL, timer, NULL);
 
     /* Open channel to pimctl */
-    ipc_init();
+    ipc_init(sock_file);
 
     /* Everything up and running, create PID file */
     if (pidfile(pid_file))
@@ -666,6 +674,9 @@ static void cleanup(void)
     if (config_file)
 	free(config_file);
 
+    if (sock_file)
+	free(sock_file);
+
     if (pid_file)
 	free(pid_file);
 
@@ -803,7 +814,7 @@ static void restart(int signo)
     init_pim_mrt();
     init_vifs();
     add_static_rp();	 /* Must be after init_vifs() */
-    ipc_init();
+    ipc_init(sock_file);
 	
     /* Touch PID file to acknowledge SIGHUP */
     pidfile(pid_file);

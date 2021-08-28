@@ -96,6 +96,7 @@ static int heading = 1;
 static int cmdind;
 static TAILQ_HEAD(head, cmd) cmds = TAILQ_HEAD_INITIALIZER(cmds);
 
+static char *sock_file = NULL;
 static char *ident = NULL;
 
 
@@ -170,7 +171,7 @@ static void compose_path(struct sockaddr_un *sun, char *dir, char *nm)
 {
 	int n;
 
-	if (*nm == '/') {
+	if (!dir) {
 		strlcpy(sun->sun_path, nm, sizeof(sun->sun_path));
 		return;
 	}
@@ -203,8 +204,12 @@ static int ipc_connect(void)
 	};
 	int sd;
 
-	if (ident && *ident == '/') {
-		compose_path(&sun, NULL, ident);
+	if ((ident && *ident == '/') || sock_file) {
+		if (sock_file)
+			compose_path(&sun, NULL, sock_file);
+		else
+			compose_path(&sun, NULL, ident);
+
 		sd = try_connect(&sun);
 		if (sd == -1 && errno == ENOENT) {
 			/* Check if user forgot .sock suffix */
@@ -552,6 +557,7 @@ static int usage(int rc)
 	       "  -p, --plain                Use plain table headings, no ctrl chars\n"
 	       "  -t, --no-heading           Skip table headings\n"
 	       "  -h, --help                 This help text\n"
+	       "  -u, --ipc=FILE             Override UNIX domain socket file, default based on -i\n"
 	       "  -v, --version              Show pimctl version\n"
 	       "\n");
 
@@ -627,13 +633,14 @@ int main(int argc, char *argv[])
 		{ "monitor",    0, NULL, 'm' },
 		{ "no-heading", 0, NULL, 't' },
 		{ "plain",      0, NULL, 'p' },
+		{ "ipc",        1, NULL, 'u' },
 		{ "version",    0, NULL, 'v' },
 		{ NULL, 0, NULL, 0 }
 	};
 	int monitor = 0;
 	int c, rc;
 
-	while ((c = getopt_long(argc, argv, "dh?i:mptv", long_options, NULL)) != EOF) {
+	while ((c = getopt_long(argc, argv, "dh?i:mptu:v", long_options, NULL)) != EOF) {
 		switch(c) {
 		case 'd':
 			debug = 1;
@@ -657,6 +664,10 @@ int main(int argc, char *argv[])
 
 		case 't':
 			heading = 0;
+			break;
+
+		case 'u':
+			sock_file = optarg;
 			break;
 
 		case 'v':

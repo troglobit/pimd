@@ -515,7 +515,7 @@ extern char	*netname		(uint32_t addr, uint32_t mask);
 extern uint32_t	inet_parse		(char *s, int n);
 
 /* ipc.c */
-extern void	ipc_init		(void);
+extern void	ipc_init		(char *sockfile);
 extern void	ipc_exit		(void);
 
 /* kern.c */

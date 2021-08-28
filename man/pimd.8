@@ -20,6 +20,7 @@
 .Op Fl -disable-vifs
 .Op Fl l Ar LEVEL
 .Op Fl t Ar ID
+.Op Fl u Ar FILE
 .Op Fl w Ar SEC
 .Sh DESCRIPTION
 .Nm
@@ -217,6 +218,12 @@ ip mrule add oif eth0 lookup 123
 .Pp
 .Nm Note:
 Only available on Linux.
+.It Fl u, -ipc Ar FILE
+Override UNIX domain socket filename, the default is based on the
+identity,
+.Fl i Ar NAME .
+On most systems this is
+.Pa /var/run/pimd.sock .
 .It Fl v, -version
 Show
 .Nm
