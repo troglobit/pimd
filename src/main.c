@@ -151,34 +151,36 @@ static int usage(int code)
     else
 	snprintf(pidfn, sizeof(pidfn), "%s", pid_file);
 
-    printf("Usage: %s [-hnrsv] [-f FILE] [-i NAME] [-d SYS[,SYS...]] [-l LEVEL]"
-	   " [-p FILE]"
+    printf("Usage:\n"
+	   "  %s [-hnrsv] [-f FILE] [-i NAME] [-d SYS[,SYS...]] [-l LEVEL] [-p FILE]"
 #ifdef __linux__
 	   " [-t ID]"
 #endif
-	   " [-u FILE]"
-	   " [-w SEC]\n\n", prognm);
-    printf(" -f, --config=FILE        Configuration file, default use ident: %s\n", config_file);
-    printf("     --no-fallback        Skip RP/BSR fallback if started w/o config file\n");
-    printf(" -n, --foreground         Run in foreground do not detach from calling terminal\n");
-    printf(" -d, --debug=SYS          Enable debug for subystem(s) separate more with comma\n");
-    printf(" -l, --loglevel=LVL       Log level: none, err, notice (default), info, debug\n");
-    printf(" -i, --ident=NAME         Identity for syslog, .cfg & .pid file, default: %s\n", prognm);
-    printf(" -p, --pidfile=FILE       File to store process ID for signaling %s\n"
-	   "                          Default uses ident: %s\n", prognm, pidfn);
-    printf(" -r                       Retry (forever) if not all configured interfaces are\n"
-	   "                          available when starting up, e.g. wait for DHCP lease\n");
-    printf("     --disable-vifs       Disable all virtual interfaces (phyint) by default\n");
-    printf(" -s, --syslog             Use syslog, default unless running in foreground, -n\n");
+	   "\n"
+	   "                [-u FILE] [-w SEC]\n"
+	   "\n"
+	   "Options:\n"
+	   "  -f, --config=FILE        Configuration file, default use ident: %s\n"
+	   "      --no-fallback        Skip RP/BSR fallback if started w/o config file\n"
+	   "  -n, --foreground         Run in foreground do not detach from calling terminal\n"
+	   "  -d, --debug=SYS          Enable debug for subystem(s) separate more with comma\n"
+	   "  -l, --loglevel=LVL       Log level: none, err, notice (default), info, debug\n"
+	   "  -i, --ident=NAME         Identity for syslog, .cfg & .pid file, default: %s\n"
+	   "  -p, --pidfile=FILE       File to store process ID for signaling %s\n"
+	   "                           Default uses ident: %s\n"
+	   "  -r                       Retry (forever) if not all configured interfaces are\n"
+	   "                           available when starting up, e.g. wait for DHCP lease\n"
+	   "      --disable-vifs       Disable all virtual interfaces (phyint) by default\n"
+	   "  -s, --syslog             Use syslog, default unless running in foreground, -n\n"
 #ifdef __linux__
-    printf(" -t, --table-id=ID        Set multicast routing table ID.  Allowed table ID#:\n"
-	   "                          0 .. 999999999.  Default: 0 (use default table)\n");
+	   "  -t, --table-id=ID        Set multicast routing table ID.  Allowed table ID#:\n"
+	   "                           0 .. 999999999.  Default: 0 (use default table)\n"
 #endif
-    printf(" -h, --help               Show this help text\n");
-    printf(" -u, --ipc=FILE           Override UNIX domain socket, default based on identity, -i\n");
-    printf(" -v, --version            Show %s version\n", prognm);
-    printf(" -w, --startup-delay=SEC  Initial startup delay before probing interfaces\n");
-    printf("\n");
+	   "  -h, --help               Show this help text\n"
+	   "  -u, --ipc=FILE           Override UNIX domain socket, default from identity, -i\n"
+	   "  -v, --version            Show %s version and support information\n"
+	   "  -w, --startup-delay=SEC  Initial startup delay before probing interfaces\n"
+	   "\n", prognm, config_file, prognm, prognm, pidfn, prognm);
 
     printf("Available subsystems for debug:\n");
     if (!debug_list(DEBUG_ALL, buf, sizeof(buf))) {
@@ -208,11 +210,6 @@ static int usage(int code)
 
 	puts(line);
     }
-
-    printf("\nBug report address: %-40s\n", PACKAGE_BUGREPORT);
-#ifdef PACKAGE_URL
-    printf("Project homepage: %s\n", PACKAGE_URL);
-#endif
 
     if (config_file)
 	free(config_file);
@@ -337,6 +334,10 @@ int main(int argc, char *argv[])
 
 	    case 'v':
 		printf("%s\n", versionstring);
+		printf("\nBug report address: %-40s\n", PACKAGE_BUGREPORT);
+#ifdef PACKAGE_URL
+		printf("Project homepage: %s\n", PACKAGE_URL);
+#endif
 		return 0;
 
 	    case 'w':

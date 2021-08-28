@@ -549,7 +549,8 @@ static int usage(int rc)
 	struct cmd *c;
 	char buf[120];
 
-	printf("Usage: pimctl [OPTIONS] [COMMAND]\n"
+	printf("Usage:\n"
+	       "  pimctl [OPTIONS] [COMMAND]\n"
 	       "\n"
 	       "Options:\n"
 	       "  -i, --ident=NAME           Connect to named pimd instance\n"
