@@ -16,7 +16,7 @@
 .Op Fl -no-fallback
 .Op Fl d Ar SYS[,SYS,...]
 .Op Fl i Ar NAME
-.Op Fl -pidfile Ar FILE
+.Op Fl p Ar FILE
 .Op Fl -disable-vifs
 .Op Fl l Ar LEVEL
 .Op Fl t Ar ID
@@ -171,7 +171,7 @@ option is given, use
 .Cm phyint IFNAME enable
 to selectively activate PIM services on an interface.  This command line
 option is also available as a setting in the configuration file.
-.It Fl -pidfile Ar FILE
+.It Fl p, -pidfile Ar FILE
 Set PID file name and location, defaults to
 .Pa /var/run/pimd.pid ,
 derived from

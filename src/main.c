@@ -152,6 +152,7 @@ static int usage(int code)
 	snprintf(pidfn, sizeof(pidfn), "%s", pid_file);
 
     printf("Usage: %s [-hnrsv] [-f FILE] [-i NAME] [-d SYS[,SYS...]] [-l LEVEL]"
+	   " [-p FILE]"
 #ifdef __linux__
 	   " [-t ID]"
 #endif
@@ -163,7 +164,7 @@ static int usage(int code)
     printf(" -d, --debug=SYS          Enable debug for subystem(s) separate more with comma\n");
     printf(" -l, --loglevel=LVL       Log level: none, err, notice (default), info, debug\n");
     printf(" -i, --ident=NAME         Identity for syslog, .cfg & .pid file, default: %s\n", prognm);
-    printf("     --pidfile=FILE       File to store process ID for signaling %s\n"
+    printf(" -p, --pidfile=FILE       File to store process ID for signaling %s\n"
 	   "                          Default uses ident: %s\n", prognm, pidfn);
     printf(" -r                       Retry (forever) if not all configured interfaces are\n"
 	   "                          available when starting up, e.g. wait for DHCP lease\n");
@@ -251,7 +252,7 @@ int main(int argc, char *argv[])
 	{ "help",          0, 0, 'h' },
 	{ "ident",         1, 0, 'i' },
 	{ "loglevel",      1, 0, 'l' },
-	{ "pidfile",       1, 0, 502 },
+	{ "pidfile",       1, 0, 'p' },
 	{ "syslog",        0, 0, 's' },
 #ifdef __linux__
 	{ "table-id",      1, 0, 't' },
@@ -265,7 +266,7 @@ int main(int argc, char *argv[])
     snprintf(versionstring, sizeof(versionstring), "pimd version %s", PACKAGE_VERSION);
 
     prognm = ident = progname(argv[0]);
-    while ((ch = getopt_long(argc, argv, "d:f:hi:l:nrst:u:vw:", long_options, NULL)) != EOF) {
+    while ((ch = getopt_long(argc, argv, "d:f:hi:l:nprst:u:vw:", long_options, NULL)) != EOF) {
 	const char *errstr;
 
 	switch (ch) {
@@ -306,7 +307,7 @@ int main(int argc, char *argv[])
 		do_vifs = 0;
 		break;
 
-	    case 502:	/* --pidfile=NAME */
+	    case 'p':	/* --pidfile=NAME */
 		pid_file = strdup(optarg);
 		break;
 
