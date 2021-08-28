@@ -316,7 +316,7 @@ static const char *ifstate(struct uvif *uv)
 
 static int show_neighbor(FILE *fp, struct uvif *uv, pim_nbr_entry_t *n)
 {
-	char tmp[20], buf[42];
+	char tmp[20] = { 0 }, buf[42];
 	time_t now, uptime;
 
 	now = time(NULL);
@@ -325,9 +325,7 @@ static int show_neighbor(FILE *fp, struct uvif *uv, pim_nbr_entry_t *n)
 		 timetostr(uptime, tmp, sizeof(tmp)),
 		 timetostr(n->timer, NULL, 0));
 
-	if (uv->uv_flags & VIFF_DR) {
-		memset(tmp, 0, sizeof(tmp));
-	} else {
+	if ((uv->uv_flags & VIFF_DR) == 0) {
 		if (uv->uv_pim_neighbors == n)
 			snprintf(tmp, sizeof(tmp), "DR");
 	}
