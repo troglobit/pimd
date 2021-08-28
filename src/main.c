@@ -263,7 +263,7 @@ int main(int argc, char *argv[])
     snprintf(versionstring, sizeof(versionstring), "pimd version %s", PACKAGE_VERSION);
 
     prognm = ident = progname(argv[0]);
-    while ((ch = getopt_long(argc, argv, "d:f:hi:l:nprst:u:vw:", long_options, NULL)) != EOF) {
+    while ((ch = getopt_long(argc, argv, "d:f:hi:l:np:rst:u:vw:", long_options, NULL)) != EOF) {
 	const char *errstr;
 
 	switch (ch) {
