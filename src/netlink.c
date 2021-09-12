@@ -99,6 +99,13 @@ int init_routesock(void)
     return 0;
 }
 
+void routesock_clean(void)
+{
+    if (routing_socket > 0)
+	close(routing_socket);
+    routing_socket = 0;
+}
+
 /* get the rpf neighbor info */
 int k_req_incoming(uint32_t source, struct rpfctl *rpf)
 {

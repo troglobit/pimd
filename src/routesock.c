@@ -77,7 +77,7 @@ struct {
  */
 static int getmsg(struct rt_msghdr *, int, struct rpfctl *rpfinfo);
 
- /*
+/*
  * TODO: check again!
  */
 #ifdef IRIX
@@ -121,6 +121,13 @@ int init_routesock(void)
 #endif
 
     return 0;
+}
+
+void routesock_clean(void)
+{
+    if (routing_socket >= 0)
+	close(routing_socket);
+    routing_socket = -1;
 }
 
 /* get the rpf neighbor info */
@@ -298,35 +305,36 @@ int k_req_incoming(uint32_t source, struct rpfctl *rpf)
 static void find_sockaddrs(struct rt_msghdr *rtm, struct sockaddr **dst, struct sockaddr **gate,
 			   struct sockaddr **mask, struct sockaddr_dl **ifp)
 {
-    int i;
     char *cp = (char *)(rtm + 1);
     struct sockaddr *sa;
+    int i;
 
-    if (rtm->rtm_addrs) {
-	for (i = 1; i; i <<= 1) {
-	    if (i & rtm->rtm_addrs) {
-		sa = (struct sockaddr *)cp;
+    if (!rtm->rtm_addrs)
+	return;
 
-		switch (i) {
-		    case RTA_DST:
-			*dst = sa;
-			break;
+    for (i = 1; i; i <<= 1) {
+	if (i & rtm->rtm_addrs) {
+	    sa = (struct sockaddr *)cp;
 
-		    case RTA_GATEWAY:
-			*gate = sa;
-			break;
+	    switch (i) {
+		case RTA_DST:
+		    *dst = sa;
+		    break;
 
-		    case RTA_NETMASK:
-			*mask = sa;
-			break;
+		case RTA_GATEWAY:
+		    *gate = sa;
+		    break;
 
-		    case RTA_IFP:
-			if (sa->sa_family == AF_LINK  && ((struct sockaddr_dl *)sa)->sdl_nlen)
-			    *ifp = (struct sockaddr_dl *)sa;
-			break;
-		}
-		ADVANCE(cp, sa);
+		case RTA_NETMASK:
+		    *mask = sa;
+		    break;
+
+		case RTA_IFP:
+		    if (sa->sa_family == AF_LINK  && ((struct sockaddr_dl *)sa)->sdl_nlen)
+			*ifp = (struct sockaddr_dl *)sa;
+		    break;
 	    }
+	    ADVANCE(cp, sa);
 	}
     }
 }
@@ -339,8 +347,8 @@ static int getmsg(struct rt_msghdr *rtm, int msglen __attribute__((unused)), str
     struct sockaddr *dst = NULL, *gate = NULL, *mask = NULL;
     struct sockaddr_dl *ifp = NULL;
     struct in_addr in;
-    vifi_t vifi;
     struct uvif *v;
+    vifi_t vifi;
 
     if (!rpf) {
 	logit(LOG_WARNING, 0, "Missing rpf pointer to routesock.c:getmsg()!");
@@ -410,7 +418,15 @@ static int getmsg(struct rt_msghdr *rtm, int msglen __attribute__((unused)), str
 /* API compat dummy. */
 int init_routesock(void)
 {
-    return dup(udp_socket);
+    routing_socket = dup(udp_socket);
+}
+
+/* API compat dummy. */
+void routesock_clean(void)
+{
+    if (routing_socket >= 0)
+	close(routing_socket);
+    routing_socket = -1;
 }
 
 /*
@@ -424,7 +440,7 @@ int k_req_incoming(uint32_t source, struct rpfctl *rpf)
     rpf->iif                = NO_VIF;     /* Initialize, will be changed in kernel */
     rpf->rpfneighbor.s_addr = INADDR_ANY; /* Initialize */
 
-    if (ioctl(udp_socket, SIOCGETRPF, (char *)rpf) < 0) {
+    if (ioctl(routing_socket, SIOCGETRPF, rpf) < 0) {
 	logit(LOG_WARNING, errno, "Failed ioctl SIOCGETRPF in k_req_incoming()");
 	return FALSE;
     }

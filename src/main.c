@@ -40,7 +40,6 @@
  *
  */
 
-
 #include "defs.h"
 #include <err.h>
 #include <getopt.h>
@@ -799,7 +798,7 @@ static void restart(int signo)
 #endif
 
     /* Both for Linux netlink and BSD routing socket */
-    close(routing_socket);
+    routesock_clean();
 
     /* Exit here if called at cleanup() */
     if (!signo)

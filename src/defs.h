@@ -601,8 +601,9 @@ extern mrtentry_t *switch_shortest_path	(uint32_t source, uint32_t group);
 extern void	age_routes		(void);
 
 /* routesock.c and netlink.c */
-extern int	k_req_incoming		(uint32_t source, struct rpfctl *rpfp);
 extern int	init_routesock		(void);
+extern void     routesock_clean         (void);
+extern int	k_req_incoming		(uint32_t source, struct rpfctl *rpfp);
 extern int	routing_socket;
 
 /* rp.c */
