@@ -1204,19 +1204,19 @@ v2.1.0-alpha1 - 1997-08-26
 First alpha version of the "new, up to date" pimd.  RSRR and Solaris
 support added.  Many functions rewritten and/or modified.
 
-[UNRELEASED]: https://github.com/troglobit/pimd-dense/compare/2.3.2...HEAD
-[v3.0.0]:     https://github.com/troglobit/pimd-dense/compare/2.3.2...3.0.0
-[v2.3.2]:     https://github.com/troglobit/pimd-dense/compare/2.3.1...2.3.2
-[v2.3.1]:     https://github.com/troglobit/pimd-dense/compare/2.3.0...2.3.1
-[v2.3.0]:     https://github.com/troglobit/pimd-dense/compare/2.2.1...2.3.0
-[v2.2.1]:     https://github.com/troglobit/pimd-dense/compare/2.2.0...2.2.1
-[v2.2.0]:     https://github.com/troglobit/pimd-dense/compare/2.1.8...2.2.0
-[v2.1.8]:     https://github.com/troglobit/pimd-dense/compare/2.1.7...2.1.8
-[v2.1.7]:     https://github.com/troglobit/pimd-dense/compare/2.1.6...2.1.7
-[v2.1.6]:     https://github.com/troglobit/pimd-dense/compare/2.1.5...2.1.6
-[v2.1.5]:     https://github.com/troglobit/pimd-dense/compare/2.1.4...2.1.5
-[v2.1.4]:     https://github.com/troglobit/pimd-dense/compare/2.1.3...2.1.4
-[v2.1.3]:     https://github.com/troglobit/pimd-dense/compare/2.1.2...2.1.3
-[v2.1.2]:     https://github.com/troglobit/pimd-dense/compare/2.1.1...2.1.2
-[v2.1.1]:     https://github.com/troglobit/pimd-dense/compare/2.1.0...2.1.1
-[v2.1.0]:     https://github.com/troglobit/pimd-dense/compare/BASE...2.1.0
+[UNRELEASED]: https://github.com/troglobit/pimd/compare/2.3.2...HEAD
+[v3.0.0]:     https://github.com/troglobit/pimd/compare/2.3.2...3.0.0
+[v2.3.2]:     https://github.com/troglobit/pimd/compare/2.3.1...2.3.2
+[v2.3.1]:     https://github.com/troglobit/pimd/compare/2.3.0...2.3.1
+[v2.3.0]:     https://github.com/troglobit/pimd/compare/2.2.1...2.3.0
+[v2.2.1]:     https://github.com/troglobit/pimd/compare/2.2.0...2.2.1
+[v2.2.0]:     https://github.com/troglobit/pimd/compare/2.1.8...2.2.0
+[v2.1.8]:     https://github.com/troglobit/pimd/compare/2.1.7...2.1.8
+[v2.1.7]:     https://github.com/troglobit/pimd/compare/2.1.6...2.1.7
+[v2.1.6]:     https://github.com/troglobit/pimd/compare/2.1.5...2.1.6
+[v2.1.5]:     https://github.com/troglobit/pimd/compare/2.1.4...2.1.5
+[v2.1.4]:     https://github.com/troglobit/pimd/compare/2.1.3...2.1.4
+[v2.1.3]:     https://github.com/troglobit/pimd/compare/2.1.2...2.1.3
+[v2.1.2]:     https://github.com/troglobit/pimd/compare/2.1.1...2.1.2
+[v2.1.1]:     https://github.com/troglobit/pimd/compare/2.1.0...2.1.1
+[v2.1.0]:     https://github.com/troglobit/pimd/compare/BASE...2.1.0
