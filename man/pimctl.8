@@ -1,4 +1,4 @@
-.Dd Dec 23, 2020
+.Dd Sep 12, 2021
 .Dt PIMCTL 8 SMM
 .Os
 .Sh NAME
@@ -40,12 +40,12 @@
 .Nm
 is the friendly control tool for
 .Xr pimd 8 ,
-.Xr pimd-dense 8 ,
+.Xr pimdd 8 ,
 and
 .Xr pim6sd 8 .
-It can be used to query status, debug, restart, and kill a running pimd.
-Commands can be abbreviated to the minimum unambiguous prefix; for
-example,
+It can be used to query status, debug, restart, and kill a running PIM
+daemon.  Commands can be abbreviated to the minimum unambiguous prefix;
+for example,
 .Cm s in
 for
 .Cm show interface .
@@ -237,7 +237,7 @@ Note, the basename used changes when running with a different identity,
 or when another PIM daemon from the same family is found.
 .Sh SEE ALSO
 .Xr pimd 8 ,
-.Xr pimd-dense 8 ,
+.Xr pimdd 8 ,
 .Xr pim6sd 8 ,
 .Xr /usr/share/doc/pimd/
 .Sh AUTHORS
