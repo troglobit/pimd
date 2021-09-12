@@ -2,15 +2,15 @@
 Description=PIM-SM/SSM multicast routing daemon
 Documentation=man:pimd
 Documentation=man:pimctl
-Documentation=file:@DOCDIR@/README.md
-Documentation=https://github.com/troglobit/pimd
+Documentation=man:pimd.conf
 # ConditionPathExists=@SYSCONFDIR@/pimd.conf
 After=network-online.target
 Requires=network-online.target
 
 [Service]
 Type=simple
-ExecStart=@SBINDIR@/pimd -n -s
+EnvironmentFile=-@SYSCONFDIR@/default/pimd
+ExecStart=@SBINDIR@/pimd -ns $PIMD_OPTS
 
 [Install]
 WantedBy=multi-user.target
