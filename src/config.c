@@ -213,16 +213,10 @@ static struct iflist *iface_find(char *ifname, uint32_t addr)
 
 static int getifmtu(char *ifname)
 {
-    struct ifreq ifr;
-    size_t iflen = strlen(ifr.ifr_name);
+    struct ifreq ifr = { 0 };
 
-    if (iflen > sizeof(ifr.ifr_name))
-	return 1500;		/* We will never get here ... */
-
-    memset(&ifr, 0, sizeof(ifr));
-    memcpy(ifr.ifr_name, ifname, iflen);
-
-    if (ioctl(udp_socket, SIOCGIFMTU, &ifr) < 0)
+    strlcpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name));
+    if (ioctl(udp_socket, SIOCGIFMTU, &ifr) == -1)
 	return 1500;
 
     return ifr.ifr_mtu;
