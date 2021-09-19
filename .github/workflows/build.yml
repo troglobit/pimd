@@ -35,7 +35,7 @@ jobs:
         # root dropped and wants to write .trs and .log files.
         run: |
           ./autogen.sh
-          ./configure --prefix= --enable-rsrr
+          ./configure --prefix= --enable-rsrr --enable-test
       - name: Build
         run: |
           make V=1
