@@ -263,7 +263,7 @@ int main(int argc, char *argv[])
 
     prognm = ident = progname(argv[0]);
     while ((ch = getopt_long(argc, argv, "d:f:hi:l:np:rst:u:vw:", long_options, NULL)) != EOF) {
-	const char *errstr;
+	const char *errstr = NULL;
 
 	switch (ch) {
 	    case 'd':
