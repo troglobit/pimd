@@ -185,7 +185,7 @@ static int ipc_read(int sd, char *cmd, ssize_t len)
 		return IPC_OK;
 
 	cmd[len] = 0;
-	logit(LOG_DEBUG, 0, "IPC cmd: '%s'", cmd);
+//	logit(LOG_DEBUG, 0, "IPC cmd: '%s'", cmd);
 
 	for (size_t i = 0; i < NELEMS(cmds); i++) {
 		struct ipcmd *c = &cmds[i];
@@ -205,7 +205,7 @@ static int ipc_write(int sd, char *msg, size_t sz)
 {
 	ssize_t len;
 
-	logit(LOG_DEBUG, 0, "IPC rpl: '%s'", msg);
+//	logit(LOG_DEBUG, 0, "IPC rpl: '%s'", msg);
 
 	while ((len = write(sd, msg, sz))) {
 		if (-1 == len) {
