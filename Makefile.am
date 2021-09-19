@@ -3,6 +3,10 @@ EXTRA_DIST     = README.md ChangeLog.md LICENSE doc/LICENSE.mrouted pimd.conf
 DISTCLEANFILES = *~ DEADJOE semantic.cache *.gdb *.elf core core.* *.d
 SUBDIRS        = src include man
 
+if ENABLE_TEST
+SUBDIRS       += test
+endif
+
 if SYSTEMD
 systemd_DATA   = pimd.service
 endif
