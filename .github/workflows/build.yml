@@ -27,7 +27,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get -y update
-          sudo apt-get -y install pkg-config libsystemd-dev tree
+          sudo apt-get -y install pkg-config libsystemd-dev bird2 ethtool keepalived tshark tree
       - uses: actions/checkout@v2
       - name: Configure
         # Build in a sub-directory so we can safely set a+w on all
@@ -53,3 +53,11 @@ jobs:
           sudo ~/tmp/sbin/pimctl -u ~/tmp/foo.sock -h
           sudo ~/tmp/sbin/pimctl -u ~/tmp/foo.sock
           sudo ~/tmp/sbin/pimctl -u ~/tmp/foo.sock kill
+      - name: Test
+        run: |
+          make check || (cat test/test-suite.log; false)
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v2
+        with:
+          name: pimd-test-${{ matrix.compiler }}
+          path: test/*
