@@ -56,7 +56,7 @@
 #define CONF_RP_ADDRESS                         4
 #define CONF_GROUP_PREFIX                       5
 #define CONF_BOOTSTRAP_RP                       6
-#define CONF_UNUSED1                            7 /* UNUSED AS OF 3.0 */
+#define CONF_NO                                 7
 #define CONF_SPT_THRESHOLD                      8
 #define CONF_DEFAULT_ROUTE_METRIC               9
 #define CONF_DEFAULT_ROUTE_DISTANCE             10
@@ -112,9 +112,10 @@ extern struct rp_hold *g_rp_hold;
  */
 static int build_iflist(void)
 {
-    FILE *fp;
     char buf[LINE_BUFSIZ], *line;
     int count = 0;
+    int no = 0;
+    FILE *fp;
 
     fp = fopen(config_file, "r");
     if (!fp)
@@ -128,6 +129,17 @@ static int build_iflist(void)
 	struct iflist *entry;
 
 	switch (parse_option(next_word(&line))) {
+	    case CONF_NO:
+		switch (parse_option(next_word(&line))) {
+		    case CONF_PHYINT:
+			do_vifs = 0;
+			break;
+
+		    default:
+			break;
+		}
+		continue;
+
 	    case CONF_PHYINT:
 		break;
 
@@ -471,6 +483,8 @@ static int parse_option(char *word)
 {
     if (EQUAL(word, ""))
 	return CONF_EMPTY;
+    if (EQUAL(word, "no"))
+	return CONF_NO;
     if (EQUAL(word, "disable-vifs"))
 	return CONF_DISABLE_VIFS;
     if (EQUAL(word, "phyint"))
@@ -1539,6 +1553,7 @@ void config_vifs_from_file(void)
 		parse_phyint(s);
 		break;
 
+	    case CONF_NO:
 	    case CONF_DISABLE_VIFS:
 		/* Ignore, handled in first stage */
 		break;

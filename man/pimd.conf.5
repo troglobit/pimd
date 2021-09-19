@@ -39,7 +39,7 @@ alternative /CIDR format.  E.g.,
 By default,
 .Nm pimd
 runs on all multicast capable interfaces.  The optional
-.Cm disable-vifs
+.Cm no phyint
 setting and the
 .Cm phyint
 setting can be used to control this behavior.  More on the
@@ -116,7 +116,7 @@ hold-time value is 3.5 times hello-interval.  Anything less than 30 sec
 is considered an "aggressive" setting and is unsupported.
 .Pp
 Default value: 30 sec.
-.It Cm disable-vifs
+.It Cm no phyint
 This setting controls if
 .Nm pimd
 should start up with all multicast-capable interfaces as
