@@ -1738,7 +1738,6 @@ void age_routes(void)
 /**
  * Local Variables:
  *  indent-tabs-mode: t
- *  c-file-style: "ellemtel"
- *  c-basic-offset: 4
+ *  c-file-style: "cc-mode"
  * End:
  */

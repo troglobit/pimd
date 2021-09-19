@@ -962,7 +962,6 @@ static int SetQueryTimer(struct listaddr *g, vifi_t vifi, int to_expire, int q_t
 /**
  * Local Variables:
  *  indent-tabs-mode: t
- *  c-file-style: "ellemtel"
- *  c-basic-offset: 4
+ *  c-file-style: "cc-mode"
  * End:
  */

@@ -1,8 +1,8 @@
 Contributing to pimd
 ====================
 
-pimd is an old project.  As such it has a lot of history that sometimes
-creep up through the cracks.  Bugs!
+pimd is a very old project.  As such it has a lot of history that
+sometimes creep up through the cracks.  Bugs!
 
 Bugs can be missing or unclear documentation, faulty legacy behavior,
 missing key features or support for a new cool operating system.  Or
@@ -32,7 +32,7 @@ re-indent the whole code base.
 
 First of all, lines are allowed to be longer than 72 characters these
 days.  In fact, there exist no enforced maximum, but keeping it around
-100 chars is OK.
+100 chars is good practice.
 
 pimd use leading four spaces in functions and structs.  The next level
 use eight spaces, but the original authors used tab for that level.  A
@@ -45,13 +45,13 @@ footer applied to a C file:
     /**
      * Local Variables:
      *  indent-tabs-mode: t
-     *  c-file-style: "ellemtel"
-     *  c-basic-offset: 4
+     *  c-file-style: "cc-mode"
      * End:
      */
 
 The current maintainer has considered shifting the original coding
-style to FULL [KNF][] several times.
+style to FULL [KNF][] several times, but decided against changing
+to keep with the intent of the original authors.
 
 
 Commit Messages
@@ -86,18 +86,15 @@ how `git commit -s` is used to automatically add a `Signed-off-by`:
     
     Signed-off-by: Jane Doe <jane.doe@example.com>
 
-Another good *counter* example [is this][rambling] ...
-
 
 Target Systems
 --------------
 
-pimd mainly targets modern UNIX systems and we semi-regularly test it on
-both Debian and Ubuntu for Linux, FreeBSD, NetBSD, and OpenBSD.  Please
-consider these targets when submitting new features.  If you cannot test
-on other operating systems yourself, be prepared that your feature/fix
-will likely be delayed by the maintaier, who will attempt to test and in
-some cases port the feature for you.
+pimd mainly targets modern UNIX systems and has been tested on both
+Debian and Ubuntu for Linux, FreeBSD, and NetBSD.  Please consider these
+targets when submitting changes.  If you cannot test on them do this, be
+prepared that your feature/fix will likely be delayed by the maintainer,
+who will attempt to test and in some cases port the feature for you.
 
 
 Code of Conduct
@@ -110,5 +107,4 @@ Bill & Ted; [be excellent to each other][conduct].
 [github]:   https://github.com/troglobit/pimd/
 [KNF]:      https://en.wikipedia.org/wiki/Kernel_Normal_Form
 [gitbook]:  https://git-scm.com/book/ch5-2.html
-[rambling]: http://stopwritingramblingcommitmessages.com/
 [conduct]:  CODE-OF-CONDUCT.md
