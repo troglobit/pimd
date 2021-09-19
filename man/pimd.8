@@ -154,10 +154,11 @@ and run in the foreground.
 Specify program identity (name) to be used for configuration file, PID
 file and syslog messages.  Useful with multiple instances of
 .Nm ,
-or to simply adapt to site specific practices, e.g. "PIM", without
-renaming the binary.  Note, this option only changes the base name of
-the PID or configuration files, not the location, which is system
-specific.  Usually
+or to adapt to site specific practices, e.g. "PIM", without renaming the
+binary.
+.Pp
+Note, this option only changes the base name of the files, not the
+location, which is system specific.  On most systems this is
 .Pa /var/run/pimd.pid ,
 or
 .Pa /run/pimd.pid ,
