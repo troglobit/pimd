@@ -369,13 +369,10 @@ init_vif_list:
 
 	/*
 	 * Ignore any interface that is connected to the same subnet as
-	 * one already installed in the uvifs array.
+	 * one already installed in the uvifs array.  Skip reserved vifi
+	 * for PIMREG_VIF.
 	 */
-	/*
-	 * TODO: XXX: bug or "feature" is to allow only one interface per
-	 * subnet?
-	 */
-	for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
+	for (vifi = 1, v = uvifs; vifi < numvifs; ++vifi, ++v) {
 	    if (strcmp(v->uv_name, ifa->ifa_name) == 0) {
 		logit(LOG_DEBUG, 0, "Ignoring %s (%s on subnet %s) (alias for vif#%u?)",
 		      v->uv_name, inet_fmt(addr, s1, sizeof(s1)), netname(subnet, mask), vifi);

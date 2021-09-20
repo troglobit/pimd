@@ -56,7 +56,6 @@ struct uvif	uvifs[MAXVIFS]; /* array of all virtual interfaces          */
 vifi_t		numvifs;	/* Number of vifs in use                    */
 int             vifs_down;      /* 1=>some interfaces are down              */
 int             phys_vif;       /* An enabled vif                           */
-vifi_t		reg_vif_num;    /* really virtual interface for registers   */
 int		udp_socket;	/* Since the honkin' kernel doesn't support
 				 * ioctls on raw IP sockets, we need a UDP
 				 * socket as well as our IGMP (raw) socket. */
@@ -85,8 +84,7 @@ void init_vifs(void)
     struct uvif *v;
     int enabled_vifs;
 
-    numvifs    = 0;
-    reg_vif_num = NO_VIF;
+    numvifs   = 1;		 /* First one reserved for PIMREG_VIF */
     vifs_down = FALSE;
 
     /* Configure the vifs based on the interface configuration of the the kernel and
@@ -106,24 +104,30 @@ void init_vifs(void)
     config_vifs_from_kernel();
 
     if (!do_vifs) {
-       for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v)
+	/* Disable all VIFs by default (no phyint), except PIMREG_VIF */
+	for (vifi = 1, v = uvifs; vifi < numvifs; ++vifi, ++v)
           v->uv_flags |= VIFF_DISABLED;
     }
 
+    init_reg_vif();
     config_vifs_from_file();
 
     /*
      * Quit if there are fewer than two enabled vifs.
      */
-    enabled_vifs    = 0;
+    enabled_vifs    = 1;
     phys_vif        = -1;
 
-    for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
-	/* Initialize the outgoing timeout for each vif.  Currently use a fixed time
-	 * 'PIM_JOIN_PRUNE_HOLDTIME'.  Later, may add a configurable array to feed
-	 * these parameters, or compute them as function of the i/f bandwidth and the
-	 * overall connectivity...etc. */
+    /* The PIM register tunnel interface should always be vifi 0 */
+    for (vifi = 1, v = uvifs; vifi < numvifs; ++vifi, ++v) {
+	/*
+	 * Initialize the outgoing timeout for each vif.  Currently use
+	 * a fixed time.  Later, we may add a configurable array to feed
+	 * these parameters, or compute them as function of the i/f
+	 * bandwidth and the overall connectivity...etc.
+	 */
 	SET_TIMER(v->uv_jp_timer, PIM_JOIN_PRUNE_HOLDTIME);
+
 	if (v->uv_flags & (VIFF_DISABLED | VIFF_DOWN | VIFF_REGISTER | VIFF_TUNNEL))
 	    continue;
 
@@ -138,12 +142,6 @@ void init_vifs(void)
 	      enabled_vifs == 0 ? "no enabled vifs" : "only one enabled vif");
 
     k_init_pim(igmp_socket);	/* Call to kernel to initialize structures */
-
-    /* Add a dummy virtual interface to support Registers in the kernel.
-     * In order for this to work, the kernel has to have been modified
-     * with the PIM patches to ip_mroute.{c,h} and ip.c
-     */
-    init_reg_vif();
 
     start_all_vifs();
 }
@@ -198,35 +196,20 @@ static int init_reg_vif(void)
     struct uvif *v;
     vifi_t i;
 
-    v = &uvifs[numvifs];
+    v = &uvifs[0];
     v->uv_flags = 0;
 
-    if ((numvifs + 1) == MAXVIFS) {
-        /* Exit the program! The PIM router must have a Register vif */
-	logit(LOG_ERR, 0, "Cannot install the Register VIF: too many interfaces");
-
-	return FALSE;
-    }
-
-    /*
-     * So far in PIM we need only one register vif and we save its number in
-     * the global reg_vif_num.
-     */
-    reg_vif_num = numvifs;
-
-    /* set the REGISTER flag */
     v->uv_flags = VIFF_REGISTER;
 #ifdef PIM_EXPERIMENTAL
     v->uv_flags |= VIFF_REGISTER_KERNEL_ENCAP;
 #endif
+    v->uv_threshold = MINTTL;
 
 #ifdef __linux__
     if (mrt_table_id != 0)
 	snprintf(v->uv_name, sizeof(v->uv_name), "pimreg%u", mrt_table_id);
     else
 	strlcpy(v->uv_name, "pimreg", sizeof(v->uv_name));
-
-    logit(LOG_INFO, 0, "Initializing %s", v->uv_name);
 #else
     strlcpy(v->uv_name, "register_vif0", sizeof(v->uv_name));
 #endif /* __linux__ */
@@ -242,16 +225,15 @@ static int init_reg_vif(void)
     }
 
     if (i >= numvifs) {
-	logit(LOG_ERR, 0, "No physical interface enabled");
+	logit(LOG_ERR, 0, "No physical interface enabled, cannot create %s", v->uv_name);
 	return -1;
     }
 
-    logit(LOG_DEBUG, 0, "Creating %s from %s using ifaddr %s",
-	  v->uv_name, uvifs[i].uv_name, inet_fmt(uvifs[i].uv_lcl_addr, s1, sizeof(s1)));
+    v->uv_ifindex  = 0;
     v->uv_lcl_addr = uvifs[i].uv_lcl_addr;
-    v->uv_threshold = MINTTL;
+    logit(LOG_DEBUG, 0, "VIF #0: Installing %s, using %s with ifaddr %s",
+	  v->uv_name, uvifs[i].uv_name, inet_fmt(v->uv_lcl_addr, s1, sizeof(s1)));
 
-    numvifs++;
     total_interfaces++;
 
     return 0;

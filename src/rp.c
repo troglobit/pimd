@@ -237,7 +237,7 @@ static cand_rp_t *add_cand_rp(cand_rp_t **used_cand_rp_list, uint32_t address)
 	set_incoming(entry, PIM_IIF_RP);
     else
 	/* TODO: XXX: CHECK!!! */
-	entry->incoming = reg_vif_num;
+	entry->incoming = PIMREG_VIF;
 
     return ptr;
 }

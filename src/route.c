@@ -34,7 +34,7 @@
 #include "defs.h"
 
 #define MRT_IS_LASTHOP(mrt) PIMD_VIFM_LASTHOP_ROUTER(mrt->leaves, mrt->oifs)
-#define MRT_IS_RP(mrt)      mrt->incoming == reg_vif_num
+#define MRT_IS_RP(mrt)      mrt->incoming == PIMREG_VIF
 
 /* Marian Stagarescu : 07/31/01:
  *
@@ -232,7 +232,7 @@ int set_incoming(srcentry_t *src, int type)
     if (src->incoming != NO_VIF) {
 	/* iif of (*,G) at RP has to be register_if */
 	if (type == PIM_IIF_RP)
-	    src->incoming = reg_vif_num;
+	    src->incoming = PIMREG_VIF;
 
 	/* TODO: set the upstream to myself? */
 	src->upstream = NULL;
@@ -935,9 +935,9 @@ static void process_cache_miss(struct igmpmsg *igmpctl)
 	    return;
 
 	mrt->flags &= ~MRTF_NEW;
-	/* set reg_vif_num as outgoing interface ONLY if I am not the RP */
+	/* set PIMREG_VIF as outgoing interface ONLY if I am not the RP */
 	if (mrt->group->rpaddr != my_cand_rp_address)
-	    PIMD_VIFM_SET(reg_vif_num, mrt->joined_oifs);
+	    PIMD_VIFM_SET(PIMREG_VIF, mrt->joined_oifs);
 	change_interfaces(mrt,
 			  mrt->incoming,
 			  mrt->joined_oifs,
@@ -1545,7 +1545,7 @@ void age_routes(void)
 		    for (vifi = 0; vifi < numvifs; vifi++) {
 			if (PIMD_VIFM_ISSET(vifi, mrt_srcs->joined_oifs)) {
 			    /* TODO: checking for reg_num_vif is slow! */
-			    if (vifi != reg_vif_num) {
+			    if (vifi != PIMREG_VIF) {
 				IF_TIMEOUT(mrt_srcs->vif_timers[vifi]) {
 				    PIMD_VIFM_CLR(vifi, mrt_srcs->joined_oifs);
 				    change_flag = TRUE;
@@ -1675,7 +1675,7 @@ void age_routes(void)
 			IF_TIMEOUT(mrt_srcs->rs_timer) {
 			    /* Start encapsulating the packets */
 			    PIMD_VIFM_COPY(mrt_srcs->pruned_oifs, new_pruned_oifs);
-			    PIMD_VIFM_CLR(reg_vif_num, new_pruned_oifs);
+			    PIMD_VIFM_CLR(PIMREG_VIF, new_pruned_oifs);
 			    change_interfaces(mrt_srcs,
 					      mrt_srcs->incoming,
 					      mrt_srcs->joined_oifs,

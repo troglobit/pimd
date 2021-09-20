@@ -306,7 +306,8 @@ struct listaddr {
 #define	NBRF_DONTPEER		(NBRF_WAITING|NBRF_ONEWAY|NBRF_TOOOLD| \
 				 NBRF_TOOMANYROUTES|NBRF_NOTPRUNING)
 
-#define NO_VIF		((vifi_t)MAXVIFS)  /* An invalid vif index */
+#define PIMREG_VIF	0		  /* Always first VIF */
+#define NO_VIF		((vifi_t)MAXVIFS) /* An invalid vif index */
   
 
 /*

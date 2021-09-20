@@ -389,7 +389,6 @@ extern grpentry_t 	*grplist;
 extern struct uvif	uvifs[MAXVIFS];
 extern vifi_t		numvifs;
 extern int              total_interfaces;
-extern vifi_t		reg_vif_num;
 extern int              phys_vif;
 extern int		udp_socket;
 

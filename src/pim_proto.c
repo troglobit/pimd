@@ -227,7 +227,7 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
 		    continue;  /* This is not (S,G) entry */
 
 		/* Remove the register oif */
-		PIMD_VIFM_CLR(reg_vif_num, mrtentry->joined_oifs);
+		PIMD_VIFM_CLR(PIMREG_VIF, mrtentry->joined_oifs);
 		change_interfaces(mrtentry,
 				  mrtentry->incoming,
 				  mrtentry->joined_oifs,
@@ -327,7 +327,7 @@ void delete_pim_nbr(pim_nbr_entry_t *nbr_delete)
 	if (local_address(rp->address) == NO_VIF) {
 	    set_incoming(rp, PIM_IIF_RP);
 	} else {
-	    rp->incoming = reg_vif_num;
+	    rp->incoming = PIMREG_VIF;
 	    rp->upstream = NULL;
 	}
 
@@ -743,7 +743,7 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
 	if (!(mrtentry->flags & MRTF_SPT)) { /* The SPT bit is not set */
 	    if (!is_null) {
 		calc_oifs(mrtentry, oifs);
-		if (PIMD_VIFM_ISEMPTY(oifs) && (mrtentry->incoming == reg_vif_num)) {
+		if (PIMD_VIFM_ISEMPTY(oifs) && (mrtentry->incoming == PIMREG_VIF)) {
 		    IF_DEBUG(DEBUG_PIM_REGISTER)
 			logit(LOG_DEBUG, 0, "No output intefaces found for group %s source %s",
 			      inet_fmt(inner_grp, s1, sizeof(s1)), inet_fmt(inner_src, s2, sizeof(s2)));
@@ -1080,7 +1080,7 @@ int receive_pim_register_stop(uint32_t reg_src, uint32_t reg_dst, char *msg, siz
 	      + (RANDOM() % (PIM_REGISTER_SUPPRESSION_TIMEOUT + 1)));
     /* Prune the register_vif from the outgoing list */
     PIMD_VIFM_COPY(mrtentry->pruned_oifs, pruned_oifs);
-    PIMD_VIFM_SET(reg_vif_num, pruned_oifs);
+    PIMD_VIFM_SET(PIMREG_VIF, pruned_oifs);
     change_interfaces(mrtentry, mrtentry->incoming,
 		      mrtentry->joined_oifs, pruned_oifs,
 		      mrtentry->leaves,
