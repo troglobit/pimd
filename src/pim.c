@@ -417,9 +417,9 @@ static int send_frame(char *buf, size_t len, size_t frag, size_t mtu, struct soc
     char source[20], dest[20];
 
     IF_DEBUG(DEBUG_PIM_REGISTER) {
-	logit(LOG_DEBUG, 0, "Sending unicast: len = %zu, frag %zu, mtu %zu, to %s",
-	      len, frag, mtu, inet_fmt(ip->ip_dst.s_addr, source, sizeof(source)));
-	dump_frame(NULL, buf, len);
+//	logit(LOG_DEBUG, 0, "Sending unicast: len = %zu, frag %zu, mtu %zu, to %s",
+//	      len, frag, mtu, inet_fmt(ip->ip_dst.s_addr, source, sizeof(source)));
+//	dump_frame(NULL, buf, len);
     }
 
     while (sendto(pim_socket, buf, len, 0, dst, salen) < 0) {

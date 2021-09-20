@@ -140,10 +140,8 @@ void k_set_sndbuf(int socket, int bufsize, int minsize)
 	}
     }
 
-    IF_DEBUG(DEBUG_KERN) {
-	logit(LOG_DEBUG, 0, "Got %d byte send buffer size in %d iterations",
-	      bufsize, iter);
-    }
+//    IF_DEBUG(DEBUG_KERN)
+//	logit(LOG_DEBUG, 0, "Got %d byte send buffer size in %d iterations", bufsize, iter);
 }
 
 
@@ -184,10 +182,8 @@ void k_set_rcvbuf(int socket, int bufsize, int minsize)
 	}
     }
 
-    IF_DEBUG(DEBUG_KERN) {
-	logit(LOG_DEBUG, 0, "Got %d byte recv buffer size in %d iterations",
-	      bufsize, iter);
-    }
+//    IF_DEBUG(DEBUG_KERN)
+//	logit(LOG_DEBUG, 0, "Got %d byte recv buffer size in %d iterations", bufsize, iter);
 }
 
 
