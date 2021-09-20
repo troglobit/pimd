@@ -306,8 +306,14 @@ nsenter --net="$R4" -- bird -c "/tmp/$NM/bird.conf" -d -s "/tmp/$NM/r4-bird.sock
 echo $! >> "/tmp/$NM/PIDs"
 sleep 1
 
+print "Disabling rp_filter on routers ..."
+nsenter --net="$R1" -- sysctl -w net.ipv4.conf.all.rp_filter=0
+nsenter --net="$R2" -- sysctl -w net.ipv4.conf.all.rp_filter=0
+nsenter --net="$R3" -- sysctl -w net.ipv4.conf.all.rp_filter=0
+nsenter --net="$R4" -- sysctl -w net.ipv4.conf.all.rp_filter=0
 
-print "Creating PIM config ..."
+
+print "Creating PIM configs ..."
 cat <<EOF > "/tmp/$NM/conf1"
 # Bigger value means  "higher" priority
 bsr-candidate priority 5 interval 5
@@ -348,6 +354,8 @@ rp-candidate priority 17 interval 5
 # Switch to shortest-path tree after first packet
 spt-threshold packets 0 interval 0
 EOF
+
+cat "/tmp/$NM/conf1"
 
 print "Starting pimd ..."
 nsenter --net="$R1" -- ../src/pimd -i "one" -f "/tmp/$NM/conf1" -n -p "/tmp/$NM/r1.pid" $DEBUG -u "/tmp/$NM/r1.sock" &

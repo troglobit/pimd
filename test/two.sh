@@ -185,6 +185,10 @@ nsenter --net="$ED2" -- tshark -lni eth0 -w "/tmp/$NM/ed2.pcap" 2>/dev/null &
 echo $! >> "/tmp/$NM/PIDs"
 sleep 1
 
+print "Disabling rp_filter on routers ..."
+nsenter --net="$R1" -- sysctl -w net.ipv4.conf.all.rp_filter=0
+nsenter --net="$R2" -- sysctl -w net.ipv4.conf.all.rp_filter=0
+
 print "Creating PIM config ..."
 cat <<EOF > "/tmp/$NM/conf"
 # Bigger value means  "higher" priority

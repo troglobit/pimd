@@ -114,18 +114,15 @@ nsrename()
 }
 
 # Basic interface setup for PIM-SM multicast routing
-# shellcheck disable=SC2048 disable=SC2086
 ifsetup()
 {
     NS=$1
     shift
 
-    for iface in $*; do
+    for iface in "$@"; do
 	nsenter --net="$NS" -- ip link set "$iface" up
 	nsenter --net="$NS" -- ethtool --offload "$iface" tx off >/dev/null
 	nsenter --net="$NS" -- ethtool --offload "$iface" rx off >/dev/null
-	nsenter --net="$NS" -- sysctl -w net.ipv4.conf.$iface.rp_filter=0
-	nsenter --net="$NS" -- sysctl -w net.ipv6.conf.$iface.disable_ipv6=1
     done
 }
 

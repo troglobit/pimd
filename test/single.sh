@@ -56,6 +56,9 @@ nsenter --net="$right" -- ip route add default via 20.0.0.1
 ip -br l
 ip -br a
 
+print "Disabling rp_filter on router interfaces ..."
+sysctl -w net.ipv4.conf.all.rp_filter=0
+
 print "Creating config ..."
 cat <<EOF > "/tmp/$NM/conf"
 no phyint
@@ -63,10 +66,10 @@ phyint $lif enable
 phyint $rif enable
 
 # Bigger value means  "higher" priority
-bsr-candidate priority 5 interval 5
+bsr-candidate priority 5 interval 3
 
 # Smaller value means "higher" priority
-rp-candidate priority 20 interval 5
+rp-candidate priority 20 interval 3
 
 # Switch to shortest-path tree after first packet, after 3 sec.
 spt-threshold packets 0 interval 3
@@ -82,9 +85,9 @@ sleep 1
 
 print "Starting pimd ..."
 ../src/pimd -i solo -f "/tmp/$NM/conf" -n -p "/tmp/$NM/pid" -l debug -d all -u "/tmp/$NM/sock" &
-sleep 5
+sleep 10
 
-../src/pimctl -u "/tmp/$NM/sock" show int detail
+../src/pimctl -u "/tmp/$NM/sock" show compat detail
 
 print "Starting emitter ..."
 nsenter --net="$right" -- ./mping -qr -d -i eth0 -t 3 -W 30 225.1.2.3 &
