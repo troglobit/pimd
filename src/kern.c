@@ -362,10 +362,20 @@ static void uvif_to_vifctl(struct vifctl *vc, struct uvif *v)
     vc->vifc_flags	     = 0;
     if (v->uv_flags & VIFF_REGISTER)
 	vc->vifc_flags      |= VIFF_REGISTER;
+#ifdef VIFF_USE_IFINDEX
+    else
+	vc->vifc_flags      |= VIFF_USE_IFINDEX;
+
+    vc->vifc_lcl_ifindex     = v->uv_ifindex;
+#else
+    vc->vifc_lcl_addr.s_addr = v->uv_lcl_addr;
+#endif
     vc->vifc_threshold       = v->uv_threshold;
     vc->vifc_rate_limit      = v->uv_rate_limit;
-    vc->vifc_lcl_addr.s_addr = v->uv_lcl_addr;
-    vc->vifc_rmt_addr.s_addr = v->uv_rmt_addr;
+    if (v->uv_flags & VIFF_TUNNEL)
+	vc->vifc_rmt_addr.s_addr = v->uv_rmt_addr;
+    else
+	vc->vifc_rmt_addr.s_addr = 0;
 }
 
 /*
