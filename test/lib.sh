@@ -62,12 +62,18 @@ tenacious()
     FAIL "Timeed out $*"
 }
 
+# Show active routes (and counters)
 show_mroute()
 {
-    # Show active routes (and counters)
-    cat /proc/net/ip_mr_cache
+    if [ -n "$*" ]; then
+	NS="nsenter --net=$*"
+    fi
+
+    $NS cat /proc/net/ip_mr_vif
     echo "-----------------------------------------------------------------------------------"
-    ip mroute
+    $NS cat /proc/net/ip_mr_cache
+    echo "-----------------------------------------------------------------------------------"
+    $NS ip mroute
     echo "-----------------------------------------------------------------------------------"
 }
 
@@ -105,6 +111,22 @@ nsmove()
 nsrename()
 {
     nsenter --net="$1" -- ip link set "$2" name "$3"
+}
+
+# Basic interface setup for PIM-SM multicast routing
+# shellcheck disable=SC2048 disable=SC2086
+ifsetup()
+{
+    NS=$1
+    shift
+
+    for iface in $*; do
+	nsenter --net="$NS" -- ip link set "$iface" up
+	nsenter --net="$NS" -- ethtool --offload "$iface" tx off >/dev/null
+	nsenter --net="$NS" -- ethtool --offload "$iface" rx off >/dev/null
+	nsenter --net="$NS" -- sysctl -w net.ipv4.conf.$iface.rp_filter=0
+	nsenter --net="$NS" -- sysctl -w net.ipv6.conf.$iface.disable_ipv6=1
+    done
 }
 
 # Set up a basic bridge topology, two VETH pairs with one end in the

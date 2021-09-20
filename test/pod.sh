@@ -14,6 +14,9 @@
 #                           10.0.3.0/24
 #
 
+# pimd debug, when enabled pimctl calls at runtime are also enabled
+#DEBUG="-l debug -d all"
+
 # shellcheck source=/dev/null
 . "$(dirname "$0")/lib.sh"
 
@@ -66,17 +69,11 @@ created()
 
     echo "Creating device interfaces $in and $ut ..."
     nsenter --net="$1" -- ip link add "$in" type veth peer "$ut"
-    nsenter --net="$1" -- ip link set "$in" up
+    ifsetup "$1" "$in" "$ut"
 
     nsenter --net="$1" -- ip addr add "$4" broadcast + dev "$2"
     nsenter --net="$1" -- ip route add default via "$5"
 
-    for iface in "$in" "$ut"; do
-	nsenter --net="$1" -- ethtool --offload "$iface" tx off >/dev/null
-	nsenter --net="$1" -- ethtool --offload "$iface" rx off >/dev/null
-    done
-
-    nsenter --net="$1" -- sysctl -w net.ipv6.conf.all.disable_ipv6=1
     if [ -n "$id" ]; then
 	echo "$1 moving $ut to netns PID $id"
 	nsenter --net="$1" -- ip link set "$ut" netns "$id"
@@ -119,18 +116,14 @@ create_vpair()
 
 	echo "   creating interfaces $a and $b ..."
 	nsenter --net="$ns" -- ip link add "$a" type veth peer "$b"
-	for iface in "$a" "$b"; do
-	    nsenter --net="$ns" -- ethtool --offload "$iface" tx off >/dev/null
-	    nsenter --net="$ns" -- ethtool --offload "$iface" rx off >/dev/null
-	done
+	ifsetup "$ns" "$a" "$a"
+
 	echo "   moving $a to netns PID $p"
 	nsenter --net="$ns" -- ip link set "$a" netns "$p"
     else
 	# Not a pair, an after-the-fact set-address on an interface
 	b=$pair
     fi
-
-    nsenter --net="$ns" -- sysctl -w net.ipv6.conf.all.disable_ipv6=1
 
     echo "   Bringing up $b with addr $addr"
     nsenter --net="$ns" -- ip link set "$b" up
@@ -315,26 +308,55 @@ sleep 1
 
 
 print "Creating PIM config ..."
-cat <<EOF > "/tmp/$NM/conf"
+cat <<EOF > "/tmp/$NM/conf1"
 # Bigger value means  "higher" priority
 bsr-candidate priority 5 interval 5
 
 # Smaller value means "higher" priority
 rp-candidate priority 20 interval 5
 
-# Switch to shortest-path tree after first packet, but only after 100 sec.
-spt-threshold packets 0 interval 100
+# Switch to shortest-path tree after first packet
+spt-threshold packets 0 interval 0
 EOF
-cat "/tmp/$NM/conf"
+cat <<EOF > "/tmp/$NM/conf2"
+# Bigger value means  "higher" priority
+bsr-candidate priority 6 interval 5
+
+# Smaller value means "higher" priority
+rp-candidate priority 19 interval 5
+
+# Switch to shortest-path tree after first packet
+spt-threshold packets 0 interval 0
+EOF
+cat <<EOF > "/tmp/$NM/conf3"
+# Bigger value means  "higher" priority
+bsr-candidate priority 7 interval 5
+
+# Smaller value means "higher" priority
+rp-candidate priority 18 interval 5
+
+# Switch to shortest-path tree after first packet
+spt-threshold packets 0 interval 0
+EOF
+cat <<EOF > "/tmp/$NM/conf4"
+# Bigger value means  "higher" priority
+bsr-candidate priority 8 interval 5
+
+# Smaller value means "higher" priority
+rp-candidate priority 17 interval 5
+
+# Switch to shortest-path tree after first packet
+spt-threshold packets 0 interval 0
+EOF
 
 print "Starting pimd ..."
-nsenter --net="$R1" -- ../src/pimd -i "one" -f "/tmp/$NM/conf" -n -p "/tmp/$NM/r1.pid" -l debug -d all -u "/tmp/$NM/r1.sock" &
+nsenter --net="$R1" -- ../src/pimd -i "one" -f "/tmp/$NM/conf1" -n -p "/tmp/$NM/r1.pid" $DEBUG -u "/tmp/$NM/r1.sock" &
 echo $! >> "/tmp/$NM/PIDs"
-nsenter --net="$R2" -- ../src/pimd -i "two" -f "/tmp/$NM/conf" -n -p "/tmp/$NM/r2.pid" -l debug -d all -u "/tmp/$NM/r2.sock" &
+nsenter --net="$R2" -- ../src/pimd -i "two" -f "/tmp/$NM/conf2" -n -p "/tmp/$NM/r2.pid" $DEBUG -u "/tmp/$NM/r2.sock" &
 echo $! >> "/tmp/$NM/PIDs"
-nsenter --net="$R3" -- ../src/pimd -i "tre" -f "/tmp/$NM/conf" -n -p "/tmp/$NM/r3.pid" -l debug -d all -u "/tmp/$NM/r3.sock" &
+nsenter --net="$R3" -- ../src/pimd -i "tre" -f "/tmp/$NM/conf3" -n -p "/tmp/$NM/r3.pid" $DEBUG -u "/tmp/$NM/r3.sock" &
 echo $! >> "/tmp/$NM/PIDs"
-nsenter --net="$R4" -- ../src/pimd -i "fyr" -f "/tmp/$NM/conf" -n -p "/tmp/$NM/r4.pid" -l debug -d all -u "/tmp/$NM/r4.sock" &
+nsenter --net="$R4" -- ../src/pimd -i "fyr" -f "/tmp/$NM/conf4" -n -p "/tmp/$NM/r4.pid" $DEBUG -u "/tmp/$NM/r4.sock" &
 echo $! >> "/tmp/$NM/PIDs"
 sleep 1
 
@@ -384,27 +406,32 @@ dprint "R1 <-> R4"
 tenacious 30 nsenter --net="$R2" -- ping -qc 1 -W 1 10.0.3.2 >/dev/null
 dprint "OK"
 
-dprint "PIM Status $R1"
-nsenter --net="$R1" -- ../src/pimctl -u "/tmp/$NM/r1.sock" show compat detail
-dprint "PIM Status $R2"
-nsenter --net="$R2" -- ../src/pimctl -u "/tmp/$NM/r2.sock" show compat detail
-dprint "PIM Status $R3"
-nsenter --net="$R3" -- ../src/pimctl -u "/tmp/$NM/r3.sock" show compat detail
-dprint "PIM Status $R4"
-nsenter --net="$R4" -- ../src/pimctl -u "/tmp/$NM/r3.sock" show compat detail
-echo
-echo
-print "Sleeping 10 sec to allow pimd instances to peer ..."
-sleep 10
-dprint "PIM Status $R1"
-nsenter --net="$R1" -- ../src/pimctl -u "/tmp/$NM/r1.sock" show compat detail
-dprint "PIM Status $R2"
-nsenter --net="$R2" -- ../src/pimctl -u "/tmp/$NM/r2.sock" show compat detail
-dprint "PIM Status $R3"
-nsenter --net="$R3" -- ../src/pimctl -u "/tmp/$NM/r3.sock" show compat detail
-dprint "PIM Status $R4"
-nsenter --net="$R4" -- ../src/pimctl -u "/tmp/$NM/r3.sock" show compat detail
-dprint "OK"
+if [ -n "$DEBUG" ]; then
+    dprint "PIM Status $R1"
+    nsenter --net="$R1" -- ../src/pimctl -u "/tmp/$NM/r1.sock" show compat detail
+    dprint "PIM Status $R2"
+    nsenter --net="$R2" -- ../src/pimctl -u "/tmp/$NM/r2.sock" show compat detail
+    dprint "PIM Status $R3"
+    nsenter --net="$R3" -- ../src/pimctl -u "/tmp/$NM/r3.sock" show compat detail
+    dprint "PIM Status $R4"
+    nsenter --net="$R4" -- ../src/pimctl -u "/tmp/$NM/r3.sock" show compat detail
+    echo
+    echo
+    print "Sleeping 10 sec to allow pimd instances to peer ..."
+    sleep 10
+    dprint "PIM Status $R1"
+    nsenter --net="$R1" -- ../src/pimctl -u "/tmp/$NM/r1.sock" show compat detail
+    dprint "PIM Status $R2"
+    nsenter --net="$R2" -- ../src/pimctl -u "/tmp/$NM/r2.sock" show compat detail
+    dprint "PIM Status $R3"
+    nsenter --net="$R3" -- ../src/pimctl -u "/tmp/$NM/r3.sock" show compat detail
+    dprint "PIM Status $R4"
+    nsenter --net="$R4" -- ../src/pimctl -u "/tmp/$NM/r3.sock" show compat detail
+    dprint "OK"
+else
+    print "Sleeping 10 sec to allow pimd instances to peer ..."
+    sleep 10
+fi
 
 # dprint "OSPF State & Routing Table $R1:"
 # nsenter --net="$R1" -- echo "show ospf state" | birdc -s "/tmp/$NM/r1-bird.sock"
@@ -443,9 +470,9 @@ dprint "OK"
 print "Starting emitter ..."
 nsenter --net="$ED2" -- ./mping -qr -d -i eth0 -t 5 -W 30 225.1.2.3 &
 echo $! >> "/tmp/$NM/PIDs"
-sleep 1
+sleep 5
 
-if ! nsenter --net="$ED1"  -- ./mping -s -d -i eth0 -t 5 -c 10 -w 15 225.1.2.3; then
+if ! nsenter --net="$ED1"  -- ./mping -s -d -i eth0 -t 5 -c 30 -w 60 225.1.2.3; then
     dprint "PIM Status $R1"
     nsenter --net="$R1" -- ../src/pimctl -u "/tmp/$NM/r1.sock" show compat detail
     dprint "PIM Status $R2"
@@ -454,7 +481,7 @@ if ! nsenter --net="$ED1"  -- ./mping -s -d -i eth0 -t 5 -c 10 -w 15 225.1.2.3; 
     nsenter --net="$R3" -- ../src/pimctl -u "/tmp/$NM/r3.sock" show compat detail
     dprint "PIM Status $R4"
     nsenter --net="$R4" -- ../src/pimctl -u "/tmp/$NM/r4.sock" show compat detail
-    echo "Failed routing, expected at least 10 multicast ping replies"
+    echo "Failed routing, expected at least 30 multicast ping replies"
     FAIL
 fi
 

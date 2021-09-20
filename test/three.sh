@@ -54,15 +54,10 @@ created()
 
     echo "Creating device interfaces $in and $ut ..."
     nsenter --net="$1" -- ip link add "$in" type veth peer "$ut"
-    nsenter --net="$1" -- ip link set "$in" up
+    ifsetup "$1" "$in" "$ut"
 
     nsenter --net="$1" -- ip addr add "$4" broadcast + dev "$2"
     nsenter --net="$1" -- ip route add default via "$5"
-
-    for iface in "$in" "$ut"; do
-	nsenter --net="$1" -- ethtool --offload "$iface" tx off >/dev/null
-	nsenter --net="$1" -- ethtool --offload "$iface" rx off >/dev/null
-    done
 
     if [ -n "$id" ]; then
 	echo "$1 moving $ut to netns PID $id"
@@ -83,17 +78,15 @@ creater()
 	echo "1) Found a=$a and p=$p ..."
 	echo "Creating router interfaces $a and $b ..."
 	nsenter --net="$1" -- ip link add "$a" type veth peer "$b"
-	for iface in "$a" "$b"; do
-	    nsenter --net="$1" -- ethtool --offload "$iface" tx off >/dev/null
-	    nsenter --net="$1" -- ethtool --offload "$iface" rx off >/dev/null
-	done
+	ifsetup "$1" "$a" "$a"
+
 	echo "$1 moving $a to netns PID $p"
 	nsenter --net="$1" -- ip link set "$a" netns "$p"
     else
 	b=$2
     fi
 
-    echo "Bringing up $a with addr $4"
+    echo "Bringing up $b with addr $4"
     nsenter --net="$1" -- ip link set "$b" up
     nsenter --net="$1" -- ip addr add "$4" broadcast + dev "$b"
 
@@ -106,10 +99,8 @@ creater()
 	echo "2) Found a=$a and p=$p ..."
 	echo "Creating router interfaces $a and $b ..."
 	nsenter --net="$1" -- ip link add "$a" type veth peer "$b"
-	for iface in "$a" "$b"; do
-	    nsenter --net="$1" -- ethtool --offload "$iface" tx off >/dev/null
-	    nsenter --net="$1" -- ethtool --offload "$iface" rx off >/dev/null
-	done
+	ifsetup "$1" "$a" "$a"
+
 	echo "$1 moving $b to netns PID $p"
 	nsenter --net="$1" -- ip link set "$b" netns "$p"
     else
@@ -197,6 +188,8 @@ sleep 1
 print "Starting collectors ..."
 nsenter --net="$NS1"  -- tshark -lni eth0 -w "/tmp/$NM/left.pcap" 2>/dev/null &
 echo $! >> "/tmp/$NM/PIDs"
+nsenter --net="$NS3"  -- tshark -lni eth4 -w "/tmp/$NM/eth4.pcap" 2>/dev/null &
+echo $! >> "/tmp/$NM/PIDs"
 nsenter --net="$NS5" -- tshark -lni eth0 -w "/tmp/$NM/right.pcap" 2>/dev/null &
 echo $! >> "/tmp/$NM/PIDs"
 sleep 1
@@ -218,13 +211,17 @@ EOF
 cat "/tmp/$NM/conf"
 
 print "Starting pimd ..."
-nsenter --net="$NS2" -- ../src/pimd -i NS2 -f "/tmp/$NM/conf" -n -p "/tmp/$NM/r1.pid" -l debug -u "/tmp/$NM/r1.sock" &
+nsenter --net="$NS2" -- ../src/pimd -i NS2 -f "/tmp/$NM/conf" -n -p "/tmp/$NM/r1.pid" -d all -l debug -u "/tmp/$NM/r1.sock" &
 echo $! >> "/tmp/$NM/PIDs"
-nsenter --net="$NS3" -- ../src/pimd -i NS3 -f "/tmp/$NM/conf" -n -p "/tmp/$NM/r2.pid" -l debug -u "/tmp/$NM/r2.sock" &
+nsenter --net="$NS3" -- ../src/pimd -i NS3 -f "/tmp/$NM/conf" -n -p "/tmp/$NM/r2.pid" -d all -l debug -u "/tmp/$NM/r2.sock" &
 echo $! >> "/tmp/$NM/PIDs"
-nsenter --net="$NS4" -- ../src/pimd -i NS4 -f "/tmp/$NM/conf" -n -p "/tmp/$NM/r3.pid" -l debug -u "/tmp/$NM/r3.sock" &
+nsenter --net="$NS4" -- ../src/pimd -i NS4 -f "/tmp/$NM/conf" -n -p "/tmp/$NM/r3.pid" -d all -l debug -u "/tmp/$NM/r3.sock" &
 echo $! >> "/tmp/$NM/PIDs"
 sleep 5
+
+# Must start after the pimd's, doesn't exist before that ...
+nsenter --net="$NS3"  -- tshark -lni pimreg -w "/tmp/$NM/pimreg.pcap" 2>/dev/null &
+echo $! >> "/tmp/$NM/PIDs"
 
 # Wait for routers to peer
 print "Waiting for OSPF routers to peer (30 sec) ..."
@@ -239,7 +236,7 @@ nsenter --net="$NS4" -- ../src/pimctl -u "/tmp/$NM/r3.sock" show compat detail
 echo
 echo
 print "Sleeping 10 sec to allow pimd instances to peer ..."
-sleep 30
+sleep 10
 dprint "PIM Status $NS2"
 nsenter --net="$NS2" -- ../src/pimctl -u "/tmp/$NM/r1.sock" show compat detail
 dprint "PIM Status $NS3"
@@ -269,12 +266,13 @@ dprint "OK"
 print "Starting emitter ..."
 nsenter --net="$NS5" -- ./mping -qr -d -i eth0 -t 5 -W 60 225.1.2.3 &
 echo $! >> "/tmp/$NM/PIDs"
-sleep 1
+sleep 5
 
 dprint "IGMP Status $NS4"
+show_mroute "$NS4"
 nsenter --net="$NS4" -- ../src/pimctl -u "/tmp/$NM/r3.sock" show igmp
 
-if ! nsenter --net="$NS1"  -- ./mping -s -d -i eth0 -t 5 -c 60 -w 30 225.1.2.3; then
+if ! nsenter --net="$NS1"  -- ./mping -s -d -i eth0 -t 5 -c 30 -w 60 225.1.2.3; then
     dprint "PIM Status $NS2"
     nsenter --net="$NS2" -- ../src/pimctl -u "/tmp/$NM/r1.sock" show compat detail
     dprint "PIM Status $NS3"
@@ -284,9 +282,15 @@ if ! nsenter --net="$NS1"  -- ./mping -s -d -i eth0 -t 5 -c 60 -w 30 225.1.2.3; 
 
     print "Show pcaps"
     kill_pids
+    dprint "Left pcap"
     tshark -n -r "/tmp/$NM/left.pcap"
+    dprint "Eth4 pcap"
+    tshark -n -r "/tmp/$NM/eth4.pcap"
+    dprint "pimreg pcap"
+    tshark -n -r "/tmp/$NM/pimreg.pcap"
+    dprint "Right pcap"
     tshark -n -r "/tmp/$NM/right.pcap"
-    echo "Failed routing, expected at least 10 multicast ping replies"
+    echo "Failed routing, expected at least 30 multicast ping replies"
     FAIL
 fi
 
