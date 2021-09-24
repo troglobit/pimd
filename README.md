@@ -243,17 +243,25 @@ when running in the foreground (`-n`).
 
 ## Troubleshooting Checklist
 
-1. Check the TTL of incoming multicast  
-   Remember, the TTL of the multicast stream must be >1 to be routed.
+1. Check the TTL of incoming multicast.  Remember, the TTL of the
+   multicast stream must be >1 to be routed.  Or rather, `>` than then
+   `ttl-threshold` of the inbound `phyint`
 
-2. Check the Linux `rp_filter` setting  
-   Many Linux systems have the 'strict' setting enabled, which can
-   cause problems in some setups.
+2. If you see `Permission denied` in your logs, you are most likely
+   having firewall, or SELinux, problems
 
-3. Check the underlying unicast routing table  
-   PIM is protocol *independent* so you must have a unicast route
-   in both directions for `pimd` to work.  Use `ping` to verify
-   connectivitiy between multicast sender and receiver.
+3. For PIM-SM, make sure you have a Rendezvous-Point (RP) in your
+   network.  Check `rp-candidate` (CRP) and `bsr-candidate` (CBSR)
+   settings in your `pimd.conf`, or `rp-address` if you prefer the
+   static RP approach
+
+4. Check the Linux `rp_filter` setting.  Many Linux systems have the
+   "strict" setting enabled, "loose" can work but may cause problems in
+   some setups.  We recommend disabling it entirely
+
+5. PIM is protocol *independent* so you must have unicast routeing in
+   place already for `pimd` to work.  Use `ping` to verify connectivity
+   between multicast sender and receiver
 
 
 Monitoring
