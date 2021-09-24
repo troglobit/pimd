@@ -350,10 +350,6 @@ if ! nsenter --net="$ED1"  -- ./mping -s -d -i eth0 -t 5 -c 10 -w 15 225.1.2.3; 
     nsenter --net="$R1" -- ../src/pimctl -u "/tmp/$NM/r1.sock" show compat detail
     dprint "PIM Status $R2"
     nsenter --net="$R2" -- ../src/pimctl -u "/tmp/$NM/r2.sock" show compat detail
-    dprint "PIM Status $R3"
-    nsenter --net="$R3" -- ../src/pimctl -u "/tmp/$NM/r3.sock" show compat detail
-    dprint "PIM Status $R4"
-    nsenter --net="$R4" -- ../src/pimctl -u "/tmp/$NM/r4.sock" show compat detail
     echo "Failed routing, expected at least 10 multicast ping replies"
     FAIL
 fi
