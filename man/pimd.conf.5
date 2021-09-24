@@ -199,16 +199,16 @@ will default to the highest active IP address.
 How important this router is compared to others.  A larger numeric value
 denotes higher priority, c.f.
 .Cm rp-candidate
-where it's the reverese.  If the priority is omitted,
-.Nm pimd
-and Cisco IOS default to 0.
+where it's the reverese.
 .El
 .It Cm rp-candidate Oo Ar address | Ar ifname Oc Oo Cm priority Ar <0-255> Oc Oo Cm interval Ar <10-16384> Oc Oo Cm group-prefix Ar group Ns / Ns Ar len | Cm masklen Ar len Oc
 The
 .Cm rp-candidate
 (CRP) setting is enabled in the default configuration file.  It can be
-disabled by commenting it out, but make sure there is at least one
-rendezvous-point (RP) on the network, if you use PIM-SM.
+disabled by commenting out the line, but make sure there is at least one
+Rendez-vous Point (RP) on the network, if you use PIM-SM.  See
+.Cm rp-address
+(below) for how to configure a static RP.
 .Pp
 .Bl -tag -offset indent -width 1n
 .It Cm address | ifname
