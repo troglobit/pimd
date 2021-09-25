@@ -110,6 +110,7 @@ rpentry_t  rpentry_save;
 static void   process_cache_miss  (struct igmpmsg *igmpctl);
 static void   process_wrong_iif   (struct igmpmsg *igmpctl);
 static void   process_whole_pkt   (char *buf);
+static void   check_spt_threshold (mrtentry_t *mrt);
 
 /*
  * Init some timers
@@ -948,9 +949,12 @@ static void process_cache_miss(struct igmpmsg *igmpctl)
 	mrt = find_route(source, group, MRTF_SG | MRTF_WC | MRTF_PMBR, DONT_CREATE);
 	if (!mrt)
 	    return;
-        if (IN_PIM_SSM_RANGE(group))
-            switch_shortest_path(source, group);
-     }
+
+	if (IN_PIM_SSM_RANGE(group))
+	    switch_shortest_path(source, group);
+	else
+	    check_spt_threshold(mrt);
+    }
 
     /* TODO: if there are too many cache miss for the same (S,G),
      * install negative cache entry in the kernel (oif==NULL) to prevent
@@ -1222,9 +1226,6 @@ static void check_spt_threshold(mrtentry_t *mrt)
 	     */
 	    continue;
 	}
-
-	// TODO: Why is this needed?
-	try_switch_to_spt(mrt, kc);
 
 	/* Check spt-threshold for forwarder and RP, should we switch to
 	 * source specific tree (SPT).  Need to check only when we have
