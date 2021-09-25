@@ -162,7 +162,8 @@ advertise the DR Priority option, or the same priority is advertised by
 more than one router, the protocol falls back to using the IP address.
 .It Cm ttl-threshold Ar <1-255>
 The TTL threshold for multicast frames to be forwarded from this
-interface.  Default: 1
+interface.  Useful for defining boundaries for local, site, and global
+multicast.  This is often referred to as TTL scoping.  Default: 1
 .It Cm distance Ar <1-255>
 Use this to override the
 .Cm default-route-distance
