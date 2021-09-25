@@ -160,7 +160,7 @@ static int usage(int code)
 	   "\n"
 	   "Options:\n"
 	   "  -f, --config=FILE        Configuration file, default use ident: %s\n"
-	   "      --no-fallback        Skip RP/BSR fallback if started w/o config file\n"
+	   "      --no-fallback        Skip RP/BSR fallback when started w/o config file\n"
 	   "  -n, --foreground         Run in foreground do not detach from calling terminal\n"
 	   "  -d, --debug=SYS          Enable debug for subystem(s) separate more with comma\n"
 	   "  -l, --loglevel=LVL       Log level: none, err, notice (default), info, debug\n"
