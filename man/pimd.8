@@ -226,6 +226,47 @@ seconds before probing for interfaces.  Useful if
 .Nm
 starts before interfaces are created and have an IP address.
 .El
+.Sh TROUBLESHOOTING
+.Bl -enum
+.It
+Check the TTL of incoming multicast.  Remember, the TTL of the multicast
+stream must be >1 to be routed.  Or rather, greater than the configured
+.Cm ttl-threshold
+of the inbound
+.Cm phyint ,
+see
+.Xr pimd.conf 5
+for more information.
+.It
+If you see `Permission denied` in your logs, you are most likely having
+firewall, or SELinux, problems
+.It
+For PIM-SM, make sure you have a Rendezvous-Point (RP) in your
+network.  Check the
+.Cm rp-candidate
+(CRP) and
+.Cm bsr-candidate
+(CBSR) settings in your
+.Xr pimd.conf 5 ,
+or
+.Cm rp-address
+if you prefer the static RP approach
+.It
+Check the Linux
+.Cm rp_filter
+sysctl setting.  Many Linux systems have the "strict" setting enabled,
+"loose" can work but may cause problems in some setups.  We recommend
+disabling the setting entirely
+.It
+PIM is protocol
+.Em independent ,
+meaning you must have unicast routing in place already for the multicast
+routing decisions made by
+.Nm
+to work.  Use
+.Xr ping 1
+to verify connectivity between multicast sender and receiver
+.El
 .Sh SIGNALS
 .Nm
 responds to the following signals.  However, consider using
