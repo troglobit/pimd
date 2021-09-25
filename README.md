@@ -1,5 +1,5 @@
-PIM-SM/SSM Multicast Routing for Linux
-======================================
+PIM-SM/SSM Multicast Routing for UNIX
+=====================================
 [![License Badge][]][License] [![GitHub Status][]][GitHub] [![Coverity Status][]][Coverity Scan]
 
 Table of Contents
@@ -30,9 +30,9 @@ download releases, access the GIT sources, report bugs, and send patches
 or pull requests.  Official release tarballs at the [homepage][] and at
 the GitHub project's release directory.
 
-pimd is primarily developed on Linux and should work as-is out of the
-box on all major distributions.  Other UNIX variants (OpenBSD, NetBSD,
-FreeBSD, and Illumos) may also work, but are not officially supported.
+pimd is developed on Linux and should work as-is out of the box on all
+major distributions.  Other UNIX variants; NetBSD, FreeBSD, and Illumos,
+may also work, but do not receive the same amount of testing.
 
 pimd ships with a useful `pimctl` tool, compatible with all PIM daemons
 from the same family: pimd, pimd-dense, pim6sd. It can be a very helpful
@@ -205,9 +205,7 @@ usual, it is recommended that you start it manually first, to make sure
 everything works as expected, before adding it to your system's startup
 scripts, with any startup flags it might need.
 
-```
     pimd [-hnrsv] [-f file] [-d subsys1[,...,subsysN]] [-l level]
-```
 
 * `-n`: Run in foreground, with logs to stdout (for systemd and finit)
 * `-s`: Use syslog, default unless `-n`
@@ -221,9 +219,7 @@ scripts, with any startup flags it might need.
 
 **Example:**
 
-```
     pimd -f /cfg/pimd.conf
-```
 
 When running multiple instances of pimd, make sure to use the `-I ident`
 argument, otherwise the PID and IPC socket files will be overwritten and
@@ -237,9 +233,8 @@ Remember to set the correct log level when enabling debug messages,
 usually you need `-l debug`, and `-s` to force messages to syslog
 when running in the foreground (`-n`).
 
-```
     pimd -d igmp_proto,pim_jp,kernel,pim_register -l debug -n -s
-```
+
 
 ## Troubleshooting Checklist
 
