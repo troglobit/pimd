@@ -253,7 +253,7 @@ int k_req_incoming(uint32_t source, struct rpfctl *rpf)
 	    return FALSE;
 	}
 
-	if ( rlen < 0) {
+	if (rlen < 0) {
 	    switch (errno) {
 		case EINTR:
 		    /* FALLTHROUGH */
@@ -275,7 +275,7 @@ int k_req_incoming(uint32_t source, struct rpfctl *rpf)
 		    continue;	/* Signalled, retry syscall. */
 
 		IF_DEBUG(DEBUG_RPF | DEBUG_KERN)
-		    logit(LOG_DEBUG, errno, "Read from routing socket failed for %s",
+		    logit(LOG_DEBUG, errno, "Failed getting route for %s",
 			  inet_fmt(source, s1, sizeof(s1)));
 
 		return FALSE;

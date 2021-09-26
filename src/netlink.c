@@ -173,8 +173,9 @@ int k_req_incoming(uint32_t source, struct rpfctl *rpf)
 	if (!IN_LINK_LOCAL_RANGE(rpf->source.s_addr)) {
 	    if (n->nlmsg_type != NLMSG_ERROR)
 		logit(LOG_WARNING, 0, "Wrong netlink answer type: %d", n->nlmsg_type);
-	    else
-		logit(LOG_WARNING, errno, "Failed getting route for %s", inet_fmt(rpf->source.s_addr, s1, sizeof(s1)));
+	    else IF_DEBUG(DEBUG_RPF | DEBUG_KERN)
+		logit(LOG_DEBUG, errno, "Failed getting route for %s",
+		      inet_fmt(rpf->source.s_addr, s1, sizeof(s1)));
 	}
 
 	return FALSE;
