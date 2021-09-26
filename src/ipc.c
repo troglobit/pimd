@@ -462,7 +462,7 @@ static int show_crp(FILE *fp)
 		char buf[10];
 
 		if (entry->adv_holdtime == PIM_HELLO_HOLDTIME_FOREVER)
-			snprintf(buf, sizeof(buf), "%8s", "Static");
+			snprintf(buf, sizeof(buf), "%8s", "Forever");
 		else
 			snprintf(buf, sizeof(buf), "%8d", entry->adv_holdtime);
 
