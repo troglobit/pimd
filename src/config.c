@@ -1474,23 +1474,6 @@ static int parse_igmp_querier_timeout(char *s)
     return TRUE;
 }
 
-static void fallback_config(void)
-{
-    char buf[LINE_BUFSIZ], *s = buf;
-
-    if (no_fallback) {
-	logit(LOG_NOTICE, 0, "Skipping built-in defaults, no RP/BSR candidate.");
-	return;
-    }
-    logit(LOG_NOTICE, 0, "Using built-in defaults, including RP/BSR candidate.");
-
-    snprintf(buf, sizeof(buf), "priority 5 interval 60");
-    parse_bsr_candidate(s);
-
-    snprintf(buf, sizeof(buf), "priority 20 interval 30");
-    parse_rp_candidate(s);
-}
-
 void config_vifs_from_file(void)
 {
     FILE *fp;
@@ -1527,8 +1510,8 @@ void config_vifs_from_file(void)
 
     fp = fopen(config_file, "r");
     if (!fp) {
-	logit(LOG_WARNING, errno, "Cannot open configuration file %s", config_file);
-	fallback_config();
+	if (errno != ENOENT)
+	    logit(LOG_WARNING, errno, "Failed opening %s", config_file);
 	goto nofile;
     }
 

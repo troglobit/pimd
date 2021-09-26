@@ -47,7 +47,6 @@
 
 char versionstring[100];
 int do_vifs       = 1;
-int no_fallback   = 0;
 int retry_forever = 0;
 struct rp_hold *g_rp_hold = NULL;
 int mrt_table_id = 0;
@@ -160,7 +159,6 @@ static int usage(int code)
 	   "\n"
 	   "Options:\n"
 	   "  -f, --config=FILE        Configuration file, default use ident: %s\n"
-	   "      --no-fallback        Skip RP/BSR fallback when started w/o config file\n"
 	   "  -n, --foreground         Run in foreground do not detach from calling terminal\n"
 	   "  -d, --debug=SYS          Enable debug for subystem(s) separate more with comma\n"
 	   "  -l, --loglevel=LVL       Log level: none, err, notice (default), info, debug\n"
@@ -242,7 +240,6 @@ int main(int argc, char *argv[])
     struct option long_options[] = {
 	{ "config",        1, 0, 'f' },
 	{ "debug",         1, 0, 'd' },
-	{ "no-fallback",   0, 0, 500 },
 	{ "disable-vifs",  0, 0, 501 },
 	{ "foreground",    0, 0, 'n' },
 	{ "help",          0, 0, 'h' },
@@ -275,10 +272,6 @@ int main(int argc, char *argv[])
 
 	    case 'f':
 		config_file = strdup(optarg);
-		break;
-
-	    case 500:
-		no_fallback = 1;
 		break;
 
 	    case 'h':

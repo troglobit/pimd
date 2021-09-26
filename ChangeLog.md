@@ -33,6 +33,10 @@ pimd on all routers in the same domain.  See issue #93 for details.
   - Forward PIM Join messages immediately
 - Issue #89: Allow use of loopback interface as long as MULTICAST
   flag is set, by Vincent Bernat
+- Revert changes made for issue #66 and #73, no more implicit behavior
+  of `bsr-candidate` and `rp-candidate`.  The case of no .conf file
+  or commented out settings for the same, are now similar.  The default
+  is now _disabled_
 
 ### Fixes
 - Remove GNU:isms like `%m` and `__progname` to be able to build on
