@@ -448,8 +448,8 @@ fi
 # nsenter --net="$R1" -- ip route
 
 # dprint "OSPF State & Routing Table $R2:"
-# nsenter --net="$R4" -- echo "show ospf state" | birdc -s "/tmp/$NM/r2-bird.sock"
-# nsenter --net="$R4" -- echo "show ospf int"   | birdc -s "/tmp/$NM/r2-bird.sock"
+# nsenter --net="$R2" -- echo "show ospf state" | birdc -s "/tmp/$NM/r2-bird.sock"
+# nsenter --net="$R2" -- echo "show ospf int"   | birdc -s "/tmp/$NM/r2-bird.sock"
 # nsenter --net="$R2" -- echo "show ospf neigh" | birdc -s "/tmp/$NM/r2-bird.sock"
 # nsenter --net="$R2" -- ip route
 
