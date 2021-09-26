@@ -1227,6 +1227,11 @@ static void check_spt_threshold(mrtentry_t *mrt)
 	    continue;
 	}
 
+	IF_DEBUG(DEBUG_MRT)
+	    logit(LOG_DEBUG, 0, "Checking SPT threshold for (%s,%s) pkt cnt now %d vs %d",
+		  inet_fmt(kc->source, s1, sizeof(s1)), inet_fmt(kc->group, s2, sizeof(s2)),
+		  kc->sg_count.pktcnt, prev_pktcnt);
+
 	/* Check spt-threshold for forwarder and RP, should we switch to
 	 * source specific tree (SPT).  Need to check only when we have
 	 * (S,G)RPbit in the forwarder or the RP itself. */
