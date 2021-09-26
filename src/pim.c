@@ -286,23 +286,35 @@ void send_pim(char *buf, uint32_t src, uint32_t dst, int type, size_t len)
 #endif
 
     while (sendto(pim_socket, buf, sendlen, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
-	if (errno == EINTR)
-	    continue;		/* Received signal, retry syscall. */
-	if (errno == ENETDOWN || errno == ENODEV)
-	    check_vif_state();
-	else if (errno == EPERM || errno == EHOSTUNREACH)
-	    logit(LOG_WARNING, 0, "Not allowed to send PIM message from %s to %s, possibly firewall"
+	switch (errno) {
+	    case EINTR:
+		continue; /* Received signal, retry syscall. */
+
+	    case ENETDOWN:
+	    case ENETUNREACH:
+	    case ENODEV:
+		check_vif_state();
+		break;
+
+	    case EPERM:
+	    case EHOSTUNREACH:
+		logit(LOG_WARNING, 0, "Not allowed to send PIM message from %s to %s, possibly firewall"
 #ifdef __linux__
-		  ", or SELinux policy violation,"
+		      ", or SELinux policy violation,"
 #endif
-		  " related problem."
-		  ,
-		  inet_fmt(src, source, sizeof(source)), inet_fmt(dst, dest, sizeof(dest)));
-	else
-	    logit(LOG_WARNING, errno, "sendto from %s to %s",
-		  inet_fmt(src, source, sizeof(source)), inet_fmt(dst, dest, sizeof(dest)));
+		      " related problem.",
+		      inet_fmt(src, source, sizeof(source)), inet_fmt(dst, dest, sizeof(dest)));
+		break;
+
+	    default:
+		logit(LOG_WARNING, errno, "sendto from %s to %s",
+		      inet_fmt(src, source, sizeof(source)), inet_fmt(dst, dest, sizeof(dest)));
+		break;
+	}
+
 	if (setloop)
 	    k_set_loop(pim_socket, FALSE);
+
 	return;
     }
 
@@ -428,6 +440,8 @@ static int send_frame(char *buf, size_t len, size_t frag, size_t mtu, struct soc
 		continue; /* Received signal, retry syscall. */
 
 	    case ENETDOWN:
+	    case ENETUNREACH:
+	    case ENODEV:
 		check_vif_state();
 		return -1;
 
@@ -513,20 +527,24 @@ static int send_frame(char *buf, size_t len, size_t frag, size_t mtu, struct soc
     while (sendto(pim_socket, ip, xferlen, 0, dst, salen) < 0) {
 	switch (errno) {
 	    case EINTR:
-		continue;		/* Received signal, retry syscall. */
+		continue; /* Received signal, retry syscall. */
 
 	    case ENETDOWN:
+	    case ENETUNREACH:
+	    case ENODEV:
 		check_vif_state();
-		return -1;
+		break;
 
 	    case EMSGSIZE:
 		if (mtu > IP_MSS)
 		    return send_frame((char *)ip, xferlen, frag, IP_MSS, dst, salen);
-		/* fall through */
+		break;
 
 	    default:
-		return -1;
+		break;
 	}
+
+	return -1;
     }
 
     /* send reminder */
