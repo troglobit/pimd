@@ -360,8 +360,9 @@ init_vif_list:
 	if (mask != 0xffffffff) {
 	    if ((!inet_valid_subnet(subnet, mask)) || (addr == subnet) || addr == (subnet | ~mask)) {
 		if (!(inet_valid_host(addr) && ((mask == htonl(0xfffffffe)) || is_set(IFF_POINTOPOINT, flags)))) {
-		    logit(LOG_WARNING, 0, "Ignoring %s, has invalid address %s and/or netmask %s",
-			  ifa->ifa_name, inet_fmt(addr, s1, sizeof(s1)), inet_fmt(mask, s2, sizeof(s2)));
+		    if (!is_set(IFF_LOOPBACK, flags))
+			logit(LOG_WARNING, 0, "Ignoring %s, has invalid address %s and/or netmask %s",
+			      ifa->ifa_name, inet_fmt(addr, s1, sizeof(s1)), inet_fmt(mask, s2, sizeof(s2)));
 		    continue;
 		}
 	    }
