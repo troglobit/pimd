@@ -393,7 +393,7 @@ int main(int argc, char *argv[])
      * Set up logging
      */
     log_init(do_syslog);
-    logit(LOG_NOTICE, 0, "%s starting ...", versionstring);
+    logit(LOG_NOTICE, 0, "%s starting.", versionstring);
 
     do_randomize();
 
@@ -800,7 +800,7 @@ static void restart(int signo)
     /*
      * start processing again
      */
-    logit(LOG_NOTICE, 0, "%s restarting ...", versionstring);
+    logit(LOG_NOTICE, 0, "%s restarting.", versionstring);
 
     init_igmp();
     init_pim();
