@@ -1198,8 +1198,6 @@ static void try_switch_to_spt(mrtentry_t *mrt, kernel_cache_t *kc)
  */
 static void check_spt_threshold(mrtentry_t *mrt)
 {
-    int status;
-    uint32_t prev_bytecnt, prev_pktcnt;
     kernel_cache_t *kc, *kc_next;
 
     /* XXX: TODO: When we add group-list support to spt-threshold we need
@@ -1208,13 +1206,16 @@ static void check_spt_threshold(mrtentry_t *mrt)
 	return;
 
     for (kc = mrt->kernel_cache; kc; kc = kc_next) {
+	uint32_t prev_bytecnt, prev_pktcnt;
+	int rc;
+
 	kc_next = kc->next;
 
 	prev_bytecnt = kc->sg_count.bytecnt;
 	prev_pktcnt  = kc->sg_count.pktcnt;
 
-	status = k_get_sg_cnt(udp_socket, kc->source, kc->group, &kc->sg_count);
-	if (status || prev_bytecnt == kc->sg_count.bytecnt) {
+	rc = k_get_sg_cnt(udp_socket, kc->source, kc->group, &kc->sg_count);
+	if (rc || prev_bytecnt == kc->sg_count.bytecnt) {
 	    /*
 	     * Either (for whatever reason) there is no such routing
 	     * entry, or that particular (S,G) was idle.
