@@ -91,7 +91,6 @@ uint8_t ucast_flag;
 
 uint16_t pim_spt_threshold_timer; /* Used for periodic check of spt-threshold
 				   * for the RP or the lasthop router. */
-uint8_t rate_flag;
 
 /*
  * TODO: XXX: the timers below are not used. Instead, the data rate timer is used.
@@ -1202,7 +1201,7 @@ static void check_spt_threshold(mrtentry_t *mrt)
 
     /* XXX: TODO: When we add group-list support to spt-threshold we need
      * to move this infinity check to inside the for-loop ... obviously. */
-    if (!rate_flag || spt_threshold.mode == SPT_INF)
+    if (spt_threshold.mode == SPT_INF)
 	return;
 
     for (kc = mrt->kernel_cache; kc; kc = kc_next) {
@@ -1324,10 +1323,10 @@ void age_routes(void)
     int rp_action, grp_action, src_action = PIM_ACTION_NOTHING, src_action_rp = PIM_ACTION_NOTHING;
     int dont_calc_action;
     rpentry_t *rp;
-    int update_rp_iif;
     int update_src_iif;
     uint8_t new_pruned_oifs[MAXVIFS];
     int assert_timer_expired = 0;
+    uint8_t rate_flag;
 
     /*
      * Timing out of the global `unicast_routing_timer`
@@ -1351,6 +1350,8 @@ void age_routes(void)
 
     /* Scan the (*,*,RP) entries */
     for (cand_rp = cand_rp_list; cand_rp; cand_rp = cand_rp->next) {
+	int update_rp_iif;
+
 	rp = cand_rp->rpentry;
 
 	/* Need to save only `incoming` and `upstream` to discover
@@ -1405,7 +1406,8 @@ void age_routes(void)
 	    }
 
 	    /* Check the activity for this entry */
-	    check_spt_threshold(mrt_rp);
+	    if (rate_flag == TRUE)
+		check_spt_threshold(mrt_rp);
 
 	    /* Join/Prune timer */
 	    IF_TIMEOUT(mrt_rp->jp_timer) {
@@ -1491,7 +1493,8 @@ void age_routes(void)
 		    }
 
 		    /* Check the sources activity */
-		    check_spt_threshold(mrt_grp);
+		    if (rate_flag == TRUE)
+			check_spt_threshold(mrt_grp);
 
 		    dont_calc_action = FALSE;
 		    if (rp_action != PIM_ACTION_NOTHING) {
@@ -1611,7 +1614,8 @@ void age_routes(void)
 					  mrt_srcs->leaves,
 					  mrt_srcs->asserted_oifs, MFC_UPDATE_FORCE);
 
-		    check_spt_threshold(mrt_srcs);
+		    if (rate_flag == TRUE)
+			check_spt_threshold(mrt_srcs);
 
 		    mrt_wide = mrt_srcs->group->grp_route;
 		    if (!mrt_wide)
