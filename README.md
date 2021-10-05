@@ -328,7 +328,7 @@ installed on your system.
     git clone https://github.com/troglobit/pimd.git
     cd pimd/
     ./autogen.sh
-    ./configure && make
+    ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var && make
 
 GIT sources are a moving target and are not recommended for production
 systems, unless you know what you are doing!
