@@ -108,7 +108,8 @@ setting to configure static Rendezvous Points.  The first argument can
 be an IPv4 address or a multicast group address.  The default group and
 prefix length is 224.0.0.0/16.  Static RP's always have priority 1.
 
-    rp-candidate [address | ifname] [interval <10-16383>] [priority <0-255>]
+    rp-candidate [address | ifname] [interval <10-16383>] [priority <0-255>] \
+                 [group-prefix <group>[</LENGTH> | masklen <LENGTH>]]
 
 The Rendezvous Point candidate, or CRP, setting is the same as the Cisco
 `ip pim rp-candidate` setting.  Use it to control which interface that
