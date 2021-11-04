@@ -18,21 +18,21 @@ AC_CANONICAL_HOST
 
 case $host_os in
     dragonfly*)
-	CPPFLAGS="-I../include/dragonfly"
+	CPPFLAGS="$CPPFLAGS -I../include/dragonfly"
 	;;
     netbsd*)
         CPPFLAGS="$CPPFLAGS -D_OPENBSD_SOURCE"
         ;;
     solaris2.5)
-	CPPFLAGS="-DSYSV -DSunOS=55 -I../include/sunos-gcc"
+	CPPFLAGS="$CPPFLAGS -DSYSV -DSunOS=55 -I../include/sunos-gcc"
 	LIBS="-lsocket -lnsl"
 	;;
     solaris2.6)
-	CPPFLAGS="-DSYSV -DSunOS=56 -I../include/sunos-gcc"
+	CPPFLAGS="$CPPFLAGS -DSYSV -DSunOS=56 -I../include/sunos-gcc"
 	LIBS="-lsocket -lnsl"
 	;;
     solaris2.7|solaris2.8|solaris2.9|solaris2.10|solaris2.11|solaris2.12)
-	CPPFLAGS="-DSYSV -DSunOS=57"
+	CPPFLAGS="$CPPFLAGS -DSYSV -DSunOS=57"
 	LIBS="-lsocket -lnsl"
 	;;
     linux*)
@@ -40,7 +40,7 @@ case $host_os in
 	# -D_BSD_SOURCE Use functions derived from 4.3 BSD Unix rather than POSIX.1
 	#               In GLIBC >= v2.20 this is replaced with -D_DEFAULT_SOURCE,
 	#               but to build on older GLIBC systems we now need both ...
-	CPPFLAGS="-D_BSD_SOURCE -D_DEFAULT_SOURCE -D_GNU_SOURCE"
+	CPPFLAGS="$CPPFLAGS -D_BSD_SOURCE -D_DEFAULT_SOURCE -D_GNU_SOURCE"
 	;;
     *)
         ;;
