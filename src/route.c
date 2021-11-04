@@ -284,8 +284,8 @@ int set_incoming(srcentry_t *src, int type)
 	     * We are safe! */
 	    src->upstream = nbr;
 	    IF_DEBUG(DEBUG_RPF)
-		logit(LOG_DEBUG, 0, "For src %s, iif is %d, next hop router is %s",
-		      inet_fmt(src_addr, s1, sizeof(s1)), src->incoming,
+		logit(LOG_DEBUG, 0, "For src %s, iif is %s, next hop router is %s",
+		      inet_fmt(src_addr, s1, sizeof(s1)), vif->uv_name,
 		      inet_fmt(nbr_addr, s2, sizeof(s2)));
 
 	    return TRUE;
@@ -295,8 +295,8 @@ int set_incoming(srcentry_t *src, int type)
     }
 
     /* TODO: control the number of messages! */
-    logit(LOG_INFO, 0, "For src %s, iif is %d, next hop router is %s: NOT A PIM ROUTER",
-	  inet_fmt(src_addr, s1, sizeof(s1)), src->incoming,
+    logit(LOG_INFO, 0, "For src %s, iif is %s, next hop router is %s: NOT A PIM ROUTER",
+	  inet_fmt(src_addr, s1, sizeof(s1)), vif->uv_name,
 	  inet_fmt(nbr_addr, s2, sizeof(s2)));
     src->upstream = NULL;
 
@@ -357,7 +357,8 @@ void add_leaf(vifi_t vifi, uint32_t source, uint32_t group)
 	return;
 
     IF_DEBUG(DEBUG_MRT)
-	logit(LOG_DEBUG, 0, "Adding vif %d for group %s", vifi, inet_fmt(group, s1, sizeof(s1)));
+	logit(LOG_DEBUG, 0, "Adding oif %s for group %s", uvifs[vifi].uv_name,
+	      inet_fmt(group, s1, sizeof(s1)));
 
     if (PIMD_VIFM_ISSET(vifi, mrt->leaves))
 	return;     /* Already a leaf */
@@ -918,8 +919,8 @@ static void process_cache_miss(struct igmpmsg *igmpctl)
     iif    = igmpctl->im_vif;
 
     IF_DEBUG(DEBUG_MRT)
-	logit(LOG_DEBUG, 0, "Cache miss, src %s, dst %s, iif %d",
-	      inet_fmt(source, s1, sizeof(s1)), inet_fmt(group, s2, sizeof(s2)), iif);
+	logit(LOG_DEBUG, 0, "Cache miss, src %s, dst %s, iif %s",
+	      inet_fmt(source, s1, sizeof(s1)), inet_fmt(group, s2, sizeof(s2)), uvifs[iif].uv_name);
 
     /* TODO: XXX: check whether the kernel generates cache miss for the LAN scoped addresses */
     if (ntohl(group) <= INADDR_MAX_LOCAL_GROUP)
@@ -1060,8 +1061,8 @@ static void process_wrong_iif(struct igmpmsg *igmpctl)
     iif    = igmpctl->im_vif;
 
     IF_DEBUG(DEBUG_MRT)
-	logit(LOG_DEBUG, 0, "Wrong iif: src %s, dst %s, iif %d",
-	      inet_fmt(source, s1, sizeof(s1)), inet_fmt(group, s2, sizeof(s2)), iif);
+	logit(LOG_DEBUG, 0, "Wrong iif: src %s, dst %s, iif %s",
+	      inet_fmt(source, s1, sizeof(s1)), inet_fmt(group, s2, sizeof(s2)), uvifs[iif].uv_name);
 
     /* Don't create routing entries for the LAN scoped addresses */
     if (ntohl(group) <= INADDR_MAX_LOCAL_GROUP)
