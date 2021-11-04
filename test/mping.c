@@ -19,6 +19,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE		/* For TIMESPEC_TO_TIMEVAL() in GLIBC */
+#endif
 #include <err.h>
 #include <errno.h>
 #include <ifaddrs.h>
@@ -29,6 +32,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
+#include <time.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <net/if.h>
@@ -36,6 +40,13 @@
 #include <sys/time.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+
+#ifndef VERSION
+#define VERSION          "1.6"
+#endif
+
+#define dbg(fmt,args...) do { if (debug) printf(fmt "\n", ##args); } while (0)
+#define sig(s,c)    do { struct sigaction a = {.sa_handler=c};sigaction(s,&a,0); } while(0)
 
 #define MC_GROUP_DEFAULT "225.1.2.3"
 #define MC_PORT_DEFAULT  4321
@@ -65,21 +76,10 @@ struct mping {
 	pid_t           pid;
 
 	struct timeval  tv;
-	struct timeval  delay;
 } mping;
-
-struct resp {
-	struct mping    pkt;
-	struct timeval  send_time;
-} *responses[RESPONSES_MAX];
-
-int empty_response = 0;
 
 /*#define BANDWIDTH 10000.0 */          /* bw in bytes/sec for mping */
 #define BANDWIDTH 100.0                 /* bw in bytes/sec for mping */
-
-unsigned int last_pkt_count = 0;        /* packets heard in last full second */
-unsigned int curr_pkt_count = 0;        /* packets heard so far this second */
 
 /* pointer to mping packet buffer */
 struct mping *rcvd_pkt;
@@ -93,6 +93,9 @@ struct ip_mreqn     imr;
 struct in_addr      myaddr;
 
 struct timeval      start;              /* start time for sender */
+
+/* Cleared by signal handler */
+volatile sig_atomic_t running = 1;
 
 /* counters and statistics variables */
 int packets_sent = 0;
@@ -121,11 +124,11 @@ void init_socket(int ifindex)
 
 	/* create a UDP socket */
 	if ((sd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
-		err(1, "receive socket() failed");
+		err(1, "failed creating UDP socket");
 
 	/* set reuse port to on to allow multiple binds per host */
 	if ((setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on))) < 0)
-		err(1, "setsockopt() failed");
+		err(1, "Failed enabling SO_REUSEADDR");
 
 	if (setsockopt(sd, IPPROTO_IP, IP_MULTICAST_TTL, &arg_ttl, sizeof(arg_ttl)) < 0)
 		err(1, "Failed setting IP_MULTICAST_TTL");
@@ -148,7 +151,7 @@ void init_socket(int ifindex)
 
 	/* send an ADD MEMBERSHIP message via setsockopt */
 	if ((setsockopt(sd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &imr, sizeof(imr))) < 0)
-		err(1, "setsockopt() failed");
+		err(1, "failed joining group %s on ifindex %d", arg_mcaddr, ifindex);
 
         if (setsockopt(sd, IPPROTO_IP, IP_MULTICAST_IF, &imr, sizeof(imr)))
                 err(1, "Failed setting IP_MULTICAST_IF %d", ifindex);
@@ -210,9 +213,8 @@ static char *ifany(char *iface, size_t len)
 			continue;
 
 		ifindex = if_nametoindex(ifa->ifa_name);
-                if (debug)
-                        printf("Found iface %s, ifindex %d\n", ifa->ifa_name, ifindex);
-		strncpy(iface, ifa->ifa_name, len);
+                dbg("Found iface %s, ifindex %d", ifa->ifa_name, ifindex);
+		strlencpy(iface, ifa->ifa_name, len);
 		iface[len] = 0;
 		break;
 	}
@@ -240,7 +242,7 @@ static char *altdefault(char *iface, size_t len)
 		token = strtok(buf, " \t\n");
 		while (token) {
 			if (if_nametoindex(token)) {
-				strncpy(iface, token, len);
+				strlencpy(iface, token, len);
 				pclose(fp);
 
 				return iface;
@@ -293,13 +295,12 @@ char *ifdefault(char *iface, size_t len)
 			if (metric >= best)
 				continue;
 
-			strncpy(iface, ifname, len);
+			strlencpy(iface, ifname, len);
 			iface[len] = 0;
 			best = metric;
 			found = 1;
 
-                        if (debug)
-                                printf("Found default intefaces %s\n", iface);
+                        dbg("Found default inteface %s", iface);
 		}
 	}
 
@@ -314,48 +315,62 @@ fallback:
 /* Find IP address of default outbound LAN interface */
 int ifinfo(char *iface, inet_addr_t *addr, int family)
 {
-	struct ifaddrs *ifaddr, *ifa;
-	char ifname[17] = { 0 };
 	char buf[INET_ADDRSTR_LEN] = { 0 };
+	struct ifaddrs *ifaddr, *ifa;
+	char ifname[16] = { 0 };
+	int found = 0;
 	int rc = -1;
 
 	if (!iface || !iface[0])
 		iface = ifdefault(ifname, sizeof(ifname));
-	if (!iface)
-		return -2;
+	if (!iface || !iface[0])
+		errx(1, "no suitable default interface available");
 
 	rc = getifaddrs(&ifaddr);
 	if (rc == -1)
-		return -3;
+		err(1, "failed querying available interfaces");
 
 	rc = -1; /* Return -1 if iface with family is not found */
 	for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
-		if (!ifa->ifa_addr)
+		if (strcmp(iface, ifa->ifa_name))
 			continue;
 
-		if (!(ifa->ifa_flags & IFF_MULTICAST))
+		found = 1;
+		if (!(ifa->ifa_flags & IFF_UP)) {
+			dbg("%s is not UP, skipping ...", iface);
 			continue;
+		}
+
+		if (!ifa->ifa_addr) {
+			dbg("%s has no address, skipping ...", iface);
+			continue;
+		}
 
 		if (family == AF_UNSPEC) {
 			if (ifa->ifa_addr->sa_family != AF_INET &&
 			    ifa->ifa_addr->sa_family != AF_INET6)
+				dbg("%s no IPv4 or IPv6 address, skipping ...", iface);
 				continue;
-		} else if (ifa->ifa_addr->sa_family != family)
+		} else if (ifa->ifa_addr->sa_family != family) {
+			dbg("%s not matching address family, skipping ...", iface);
 			continue;
+		}
 
-		if (iface && strcmp(iface, ifa->ifa_name))
-			continue;
+		if (!(ifa->ifa_flags & IFF_MULTICAST)) {
+			warnx("%s is not multicast capable, check interface flags.", iface);
+			break;
+		}
 
-                if (debug)
-                        printf("Found %s addr %s\n", ifa->ifa_name,
-                               inet_address((inet_addr_t *)ifa->ifa_addr, buf, sizeof(buf)));
+		dbg("Found %s addr %s", ifa->ifa_name, inet_address((inet_addr_t *)ifa->ifa_addr, buf, sizeof(buf)));
 		*addr = *(inet_addr_t *)ifa->ifa_addr;
 		rc = if_nametoindex(ifa->ifa_name);
-                if (debug)
-                        printf("iface %s, ifindex %d, addr %s\n", ifa->ifa_name, rc, buf);
+                dbg("iface %s, ifindex %d, addr %s", ifa->ifa_name, rc, buf);
 		break;
 	}
 	freeifaddrs(ifaddr);
+
+	if (!found)
+		warnx("no such interface %s.", iface);
 
 	return rc;
 }
@@ -377,10 +392,8 @@ double timeval_to_ms(const struct timeval *val)
 	return val->tv_sec * 1000.0 + val->tv_usec / 1000.0;
 }
 
-static void clean_exit(int signo)
+static int cleanup(void)
 {
-        (void)signo;
-
 	if ((setsockopt(sd, IPPROTO_IP, IP_DROP_MEMBERSHIP, &imr, sizeof(imr))) < 0)
 		err(1, "setsockopt() failed");
 
@@ -395,8 +408,15 @@ static void clean_exit(int signo)
 		       rtt_min, (rtt_total / packets_rcvd), rtt_max);
 
         if (arg_count > 0 && arg_count > packets_rcvd)
-                exit(1);
-	exit(0);
+                return 1;
+
+	return 0;
+}
+
+static void clean_exit(int signo)
+{
+	(void)signo;
+	running = 0;
 }
 
 void send_packet(struct mping *packet)
@@ -412,9 +432,10 @@ void send_packet(struct mping *packet)
 void send_mping(int signo)
 {
 	static int seqno = 0;
-	struct timeval now;
+	struct timespec now;
 
         (void)signo;
+	clock_gettime(CLOCK_MONOTONIC, &now);
 
         /*
          * Tracks number of sent mpings.  If deadline mode is enabled we
@@ -422,47 +443,45 @@ void send_mping(int signo)
          * deadline timeout.
          */
         if (arg_deadline) {
-		if (arg_count > 0 && packets_rcvd >= arg_count)
-                        clean_exit(0);
+		struct timeval tv;
 
-                gettimeofday(&now, NULL);
-                subtract_timeval(&now, &start);
-                if (now.tv_sec >= arg_deadline)
-                        clean_exit(0);
+		TIMESPEC_TO_TIMEVAL(&tv, &now);
+                subtract_timeval(&tv, &start);
+
+		if ((arg_count > 0 && packets_rcvd >= arg_count) ||
+		    (tv.tv_sec >= arg_deadline)) {
+			running = 0;
+			return;
+		}
 	} else if (arg_count > 0 && seqno >= arg_count) {
-		/* set another alarm call to exit in 5 second */
-		signal(SIGALRM, clean_exit);
+		sig(SIGALRM, clean_exit);
 		alarm(arg_timeout);
 		return;
 	}
 
-	gettimeofday(&now, NULL);
+	TIMESPEC_TO_TIMEVAL(&mping.tv, &now);
         strlencpy(mping.version, VERSION, sizeof(mping.version));
-	mping.type             = SENDER;
-	mping.ttl              = arg_ttl;
-	mping.src_host.s_addr  = myaddr.s_addr;
-	mping.dest_host.s_addr = inet_addr(arg_mcaddr);
-	mping.seq_no           = htonl(seqno);
-	mping.pid              = pid;
-	mping.tv.tv_sec        = htonl(now.tv_sec);
-	mping.tv.tv_usec       = htonl(now.tv_usec);
-        mping.delay.tv_sec     = 0;
-        mping.delay.tv_usec    = 0;
+	mping.type       = SENDER;
+	mping.ttl        = arg_ttl;
+	mping.src_host   = myaddr;
+	mping.dest_host  = mcaddr.sin_addr;
+	mping.seq_no     = htonl(seqno);
+	mping.pid        = pid;
+	mping.tv.tv_sec  = htonl(mping.tv.tv_sec);
+	mping.tv.tv_usec = htonl(mping.tv.tv_usec);
 
 	send_packet(&mping);
 	seqno++;
 
 	/* set another alarm call to send in 1 second */
-	signal(SIGALRM, send_mping);
+	sig(SIGALRM, send_mping);
 	alarm(1);
 }
 
 int process_mping(char *packet, int len, unsigned char type)
 {
 	if (len < (int)sizeof(struct mping)) {
-		if (debug)
-			printf("Discarding packet: too small (%zu bytes)\n", strlen(packet));
-
+		dbg("Discarding packet: too small (%zu bytes)", strlen(packet));
 		return -1;
 	}
 
@@ -470,16 +489,11 @@ int process_mping(char *packet, int len, unsigned char type)
 	rcvd_pkt->seq_no        = ntohl(rcvd_pkt->seq_no);
 	rcvd_pkt->tv.tv_sec     = ntohl(rcvd_pkt->tv.tv_sec);
 	rcvd_pkt->tv.tv_usec    = ntohl(rcvd_pkt->tv.tv_usec);
-	rcvd_pkt->delay.tv_sec  = ntohl(rcvd_pkt->delay.tv_sec);
-	rcvd_pkt->delay.tv_usec = ntohl(rcvd_pkt->delay.tv_usec);
 
 	if (strcmp(rcvd_pkt->version, VERSION)) {
-		if (debug)
-			printf("Discarding packet: version mismatch (%s)\n", rcvd_pkt->version);
+		dbg("Discarding packet: version mismatch (%s)", rcvd_pkt->version);
 		return -1;
 	}
-
-	curr_pkt_count++;
 
 	if (rcvd_pkt->type != type) {
 		if (debug) {
@@ -503,8 +517,7 @@ int process_mping(char *packet, int len, unsigned char type)
 
 	if (rcvd_pkt->type == RECEIVER) {
 		if (rcvd_pkt->pid != pid) {
-			if (debug)
-				printf("Discarding packet: pid mismatch (%u/%u)\n", pid, rcvd_pkt->pid);
+			dbg("Discarding packet: pid mismatch (%u/%u)", pid, rcvd_pkt->pid);
 			return -1;
 		}
 	}
@@ -514,9 +527,11 @@ int process_mping(char *packet, int len, unsigned char type)
 	return 0;
 }
 
-void sender_listen_loop()
+void sender_listen_loop(void)
 {
-	while (1) {
+	send_mping(0);
+
+	while (running) {
                 char recv_packet[MAX_BUF_LEN + 1] = { 0 };
                 int len;
 
@@ -527,96 +542,39 @@ void sender_listen_loop()
 		}
 
 		if (process_mping(recv_packet, len, RECEIVER) == 0) {
-                        struct timeval now;
-                        double actual_rtt;	/* rtt - send interval delay */
+			struct timespec now;
+                        struct timeval tv;
                         double rtt;		/* round trip time */
 
-                        gettimeofday(&now, NULL);
+                        clock_gettime(CLOCK_MONOTONIC, &now);
+			TIMESPEC_TO_TIMEVAL(&tv, &now);
 
 			/* calculate round trip time in milliseconds */
-			subtract_timeval(&now, &rcvd_pkt->tv);
-			rtt = timeval_to_ms(&now);
-
-			/* remove the backoff delay to determine actual rtt */
-			subtract_timeval(&now, &rcvd_pkt->delay);
-			actual_rtt = timeval_to_ms(&now);
+			subtract_timeval(&tv, &rcvd_pkt->tv);
+			rtt = timeval_to_ms(&tv);
 
 			/* keep rtt total, min and max */
-			rtt_total += actual_rtt;
-			if (actual_rtt > rtt_max)
-				rtt_max = actual_rtt;
-			if (actual_rtt < rtt_min)
-				rtt_min = actual_rtt;
+			rtt_total += rtt;
+			if (rtt > rtt_max)
+				rtt_max = rtt;
+			if (rtt < rtt_min)
+				rtt_min = rtt;
 
 			/* output received packet information */
                         if (!quiet) {
-                                printf("%d bytes from %s: seqno=%u ttl=%d ",
+                                printf("%d bytes from %s: seqno=%u ttl=%d time=%.1f ms\n",
                                        len, inet_ntoa(rcvd_pkt->src_host),
-                                       rcvd_pkt->seq_no, rcvd_pkt->ttl);
-                                printf("etime=%.1f ms atime=%.3f ms\n", rtt, actual_rtt);
+                                       rcvd_pkt->seq_no, rcvd_pkt->ttl, rtt);
                         }
 		}
 	}
 }
 
-void check_send(int i)
-{
-	struct timeval now;
-
-	gettimeofday(&now, NULL);
-	if ((responses[i]->send_time.tv_sec < now.tv_sec) ||
-	    ((responses[i]->send_time.tv_sec == now.tv_sec) &&
-	     (responses[i]->send_time.tv_usec <= now.tv_usec))) {
-                size_t len = sizeof(responses[i]->pkt);
-
-                if (!quiet)
-                        printf("Reply to mping from %s bytes=%zu seqno=%u ttl=%d\n",
-                               inet_ntoa(responses[i]->pkt.dest_host), len,
-                               ntohl(responses[i]->pkt.seq_no), responses[i]->pkt.ttl);
-
-		subtract_timeval(&now, &responses[i]->pkt.delay);
-		responses[i]->pkt.delay.tv_sec = htonl(now.tv_sec);
-		responses[i]->pkt.delay.tv_usec = htonl(now.tv_usec);
-
-		send_packet(&responses[i]->pkt);
-		free(responses[i]);
-		responses[i] = NULL;
-	}
-}
-
-void received_packet_count(int signo)
-{
-        (void)signo;
-
-	/* update the packet count for the last full second */
-	last_pkt_count = curr_pkt_count;
-	curr_pkt_count = 0;
-
-	/* check if the packets in the send buffer are ready to send */
-	for (int i = empty_response; i < RESPONSES_MAX; i++) {
-		if (responses[i] != NULL)
-			check_send(i);
-	}
-
-	if (empty_response != 0) {
-		for (int i = 0; i < empty_response; i++) {
-			if (responses[i] != NULL)
-				check_send(i);
-		}
-	}
-
-        if (arg_count > 0 && packets_sent >= arg_count)
-                exit(0);
-
-	signal(SIGALRM, received_packet_count);
-	alarm(1);
-}
-
-void receiver_listen_loop()
+void receiver_listen_loop(void)
 {
 	printf("Listening on %s:%d\n", arg_mcaddr, arg_mcport);
 
-	while (1) {
+	while (running) {
                 char recv_packet[MAX_BUF_LEN + 1];
                 int len;
 
@@ -628,45 +586,23 @@ void receiver_listen_loop()
 		}
 
 		if (process_mping(recv_packet, len, SENDER) == 0) {
-                        int i;
-
                         if (!quiet)
                                 printf("Received mping from %s bytes=%d seqno=%u ttl=%d\n",
                                        inet_ntoa(rcvd_pkt->src_host), len,
                                        rcvd_pkt->seq_no, rcvd_pkt->ttl);
 
-			i = empty_response;
-			if (responses[i] != NULL) {
-				if (debug)
-					printf("Buffer full, packet dropped\n");
-				continue;
-			}
-
-			responses[i] = (struct resp *)malloc(sizeof(struct resp));
-                        if (responses[i] == NULL)
-                                err(1, "Failed allocating response %d", i);
-
-			strlencpy(responses[i]->pkt.version, VERSION, sizeof(responses[i]->pkt.version));
-			responses[i]->pkt.type             = RECEIVER;
-			responses[i]->pkt.ttl              = rcvd_pkt->ttl;
-			responses[i]->pkt.src_host.s_addr  = myaddr.s_addr;
-			responses[i]->pkt.dest_host.s_addr = rcvd_pkt->src_host.s_addr;
-			responses[i]->pkt.seq_no           = htonl(rcvd_pkt->seq_no);
-			responses[i]->pkt.pid              = rcvd_pkt->pid;
-			responses[i]->pkt.tv.tv_sec        = htonl(rcvd_pkt->tv.tv_sec);
-			responses[i]->pkt.tv.tv_usec       = htonl(rcvd_pkt->tv.tv_usec);
-
-			gettimeofday(&responses[i]->send_time, NULL);
-
-			responses[i]->pkt.delay = responses[i]->send_time;
+			rcvd_pkt->type       = RECEIVER;
+			rcvd_pkt->src_host   = myaddr;
+			rcvd_pkt->dest_host  = rcvd_pkt->src_host;
+			rcvd_pkt->seq_no     = htonl(rcvd_pkt->seq_no);
+			rcvd_pkt->tv.tv_sec  = htonl(rcvd_pkt->tv.tv_sec);
+			rcvd_pkt->tv.tv_usec = htonl(rcvd_pkt->tv.tv_usec);
 
                         /* send reply immediately */
-                        received_packet_count(0);
+			send_packet(rcvd_pkt);
 
-			/* increment response buffer pointer */
-			empty_response++;
-			if (empty_response >= RESPONSES_MAX)
-				empty_response = 0;
+			if (arg_count > 0 && packets_sent >= arg_count)
+				exit(0);
 		}
 	}
 }
@@ -704,6 +640,7 @@ int main(int argc, char **argv)
         inet_addr_t addr;
 	char ifname[16];
         int mode = 'r';
+	int ifindex;
 	int c;
 
 	while ((c = getopt(argc, argv, "c:dh?i:p:qrst:vW:w:")) != -1) {
@@ -748,12 +685,12 @@ int main(int argc, char **argv)
                                "Project homepage:   https://github.com/troglobit/mping/\n", VERSION);
 			return 0;
 
-                case 'W':
-                        arg_timeout = atoi(optarg);
-                        break;
-
                 case 'w':
                         arg_deadline = atoi(optarg);
+                        break;
+
+                case 'W':
+                        arg_timeout = atoi(optarg);
                         break;
 
 		case '?':
@@ -767,32 +704,31 @@ int main(int argc, char **argv)
                 strlencpy(arg_mcaddr, argv[optind], sizeof(arg_mcaddr));
 
 	pid = getpid();
-	init_socket(ifinfo(iface, &addr, AF_INET));
+	ifindex = ifinfo(iface, &addr, AF_INET);
+	if (ifindex <= 0)
+		exit(1);
+
+	init_socket(ifindex);
         if (addr.ss_family == AF_INET) {
                 struct sockaddr_in *sin = (struct sockaddr_in *)&addr;
                 myaddr = sin->sin_addr;
         }
 
 	if (mode == 's') {
-		gettimeofday(&start, NULL);
+		struct timespec now;
+
+		clock_gettime(CLOCK_MONOTONIC, &now);
+		TIMESPEC_TO_TIMEVAL(&start, &now);
 		printf("MPING %s:%d (ttl %d)\n", arg_mcaddr, arg_mcport, arg_ttl);
 
-		signal(SIGINT, clean_exit);
-		signal(SIGALRM, send_mping);
-		send_mping(SIGALRM);
+		sig(SIGINT, clean_exit);
+		sig(SIGALRM, send_mping);
 
 		sender_listen_loop();
-	} else {
-		for (int i = 0; i < RESPONSES_MAX; i++)
-			responses[i] = NULL;
-
-		signal(SIGALRM, received_packet_count);
-		alarm(1);
-
+	} else
 		receiver_listen_loop();
-	}
 
-	return 0;
+	return cleanup();
 }
 
 /**
