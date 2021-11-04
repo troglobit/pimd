@@ -1161,7 +1161,7 @@ v2.1.0-alpha4 - 1997-10-31
 - Minor changes, so pimd now compiles for SunOS 4.1.3 (cc, gcc)
 
 ### Fixes
-- `pim_proto.csend_periodic_pim_join_prune()`: bug fix thanks to SunOS
+- `pim_proto.c:send_periodic_pim_join_prune()`: bug fix thanks to SunOS
   cc warning(!), only affects the `(*,*,RP)` stuff.
 - `pimd.conf`: two errors, related to the rate limit fixed
 
