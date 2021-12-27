@@ -213,6 +213,7 @@ struct uvif {
     int             uv_local_pref;  /* default local preference for assert  */
     int             uv_local_metric;/* default local metric for assert      */
     struct pim_nbr_entry *uv_pim_neighbors; /* list of PIM neighbor routers */
+    struct pim_nbr_entry *uv_pim_neighbor_dr; /* Neighbor with DR role, if any (referenced from uv_pim_neighbors) */
     int             uv_ifindex;     /* because RTNETLINK returns only index */
 };
 
