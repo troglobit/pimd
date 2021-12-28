@@ -2288,7 +2288,6 @@ int send_periodic_pim_join_prune(vifi_t vifi, pim_nbr_entry_t *pim_nbr, uint16_t
 {
     grpentry_t      *grp;
     mrtentry_t      *mrt;
-    rpentry_t       *rp;
     uint32_t         addr;
     struct uvif     *v;
     pim_nbr_entry_t *nbr;
@@ -2398,7 +2397,7 @@ int send_periodic_pim_join_prune(vifi_t vifi, pim_nbr_entry_t *pim_nbr, uint16_t
 
     /* Check the (*,*,RP) entries */
     for (cand_rp = cand_rp_list; cand_rp; cand_rp = cand_rp->next) {
-	rp = cand_rp->rpentry;
+	rpentry_t *rp = cand_rp->rpentry;
 
 	/* If join/prune to a particular neighbor only was specified */
 	if (pim_nbr && rp->upstream != pim_nbr)
@@ -2433,7 +2432,6 @@ int add_jp_entry(pim_nbr_entry_t *pim_nbr, uint16_t holdtime, uint32_t group,
     build_jp_message_t *bjpm;
     uint8_t *data;
     uint8_t flags = 0;
-    uint32_t jp_message_size;
     int rp_flag;
     int new_grp = FALSE;
 
@@ -2466,7 +2464,7 @@ int add_jp_entry(pim_nbr_entry_t *pim_nbr, uint16_t holdtime, uint32_t group,
     }
 
     if (bjpm) {
-	jp_message_size = bjpm->jp_message_size;
+	uint32_t jp_message_size = bjpm->jp_message_size;
 
 	/* sizeof(pim_jp_encod_grp_t) is used to precalculate the size. */
 	if (bjpm->join_list_size + bjpm->prune_list_size) {

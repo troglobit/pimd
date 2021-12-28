@@ -87,8 +87,6 @@ spt_threshold_t spt_threshold = {
 uint16_t unicast_routing_interval = UCAST_ROUTING_CHECK_INTERVAL;
 uint16_t unicast_routing_timer;   /* Used to check periodically for any
 				   * change in the unicast routing. */
-uint8_t ucast_flag;
-
 uint16_t pim_spt_threshold_timer; /* Used for periodic check of spt-threshold
 				   * for the RP or the lasthop router. */
 
@@ -906,7 +904,6 @@ static void process_cache_miss(struct igmpmsg *igmpctl)
 {
     uint32_t source, mfc_source;
     uint32_t group;
-    uint32_t rp_addr;
     vifi_t iif;
     mrtentry_t *mrt;
     mrtentry_t *mrp;
@@ -962,6 +959,8 @@ static void process_cache_miss(struct igmpmsg *igmpctl)
 
     if (mrt->incoming == iif) {
 	if (!PIMD_VIFM_ISEMPTY(mrt->oifs)) {
+	    uint32_t rp_addr;
+
 	    if (mrt->flags & MRTF_SG) {
 		/* TODO: check that the RPbit is not set? */
 		/* TODO: XXX: TIMER implem. dependency! */
@@ -1321,13 +1320,14 @@ void age_routes(void)
     vifi_t  vifi;
     pim_nbr_entry_t *nbr;
     int change_flag;
-    int rp_action, grp_action, src_action = PIM_ACTION_NOTHING, src_action_rp = PIM_ACTION_NOTHING;
+    int grp_action, src_action = PIM_ACTION_NOTHING, src_action_rp = PIM_ACTION_NOTHING;
     int dont_calc_action;
     rpentry_t *rp;
     int update_src_iif;
     uint8_t new_pruned_oifs[MAXVIFS];
     int assert_timer_expired = 0;
-    uint8_t rate_flag;
+    uint8_t ucast_flag = FALSE;
+    uint8_t rate_flag = FALSE;
 
     /*
      * Timing out of the global `unicast_routing_timer`
@@ -1337,21 +1337,16 @@ void age_routes(void)
 	ucast_flag = TRUE;
 	SET_TIMER(unicast_routing_timer, unicast_routing_interval);
     }
-    ELSE {
-	ucast_flag = FALSE;
-    }
 
     IF_TIMEOUT(pim_spt_threshold_timer) {
 	rate_flag = TRUE;
 	SET_TIMER(pim_spt_threshold_timer, spt_threshold.interval);
     }
-    ELSE {
-	rate_flag = FALSE;
-    }
 
     /* Scan the (*,*,RP) entries */
     for (cand_rp = cand_rp_list; cand_rp; cand_rp = cand_rp->next) {
 	int update_rp_iif;
+	int rp_action;
 
 	rp = cand_rp->rpentry;
 
