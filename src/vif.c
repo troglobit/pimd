@@ -182,6 +182,7 @@ void zero_vif(struct uvif *v, int t)
     RESET_TIMER(v->uv_gq_timer);
     RESET_TIMER(v->uv_jp_timer);
     v->uv_pim_neighbors	= (struct pim_nbr_entry *)NULL;
+    v->uv_pim_neighbor_dr = (struct pim_nbr_entry *)NULL;
     v->uv_local_pref	= default_route_distance;
     v->uv_local_metric	= default_route_metric;
     v->uv_ifindex	= -1;
@@ -311,6 +312,7 @@ static void start_vif(vifi_t vifi)
 	/* TODO: CHECK THE TIMERS!!!!! Set or reset? */
 	RESET_TIMER(v->uv_gq_timer);
 	v->uv_pim_neighbors = (pim_nbr_entry_t *)NULL;
+	v->uv_pim_neighbor_dr = (pim_nbr_entry_t *)NULL;
     }
 
     /* Tell kernel to add, i.e. start this vif */
@@ -428,6 +430,7 @@ static void stop_vif(vifi_t vifi)
 	    delete_pim_nbr(n);
 	}
 	v->uv_pim_neighbors = NULL;
+	v->uv_pim_neighbor_dr = NULL;
     }
 
     /* TODO: currently not used */

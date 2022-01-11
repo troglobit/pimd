@@ -273,6 +273,10 @@ void delete_pim_nbr(pim_nbr_entry_t *nbr_delete)
     if (nbr_delete->next)
 	nbr_delete->next->prev = nbr_delete->prev;
 
+    /* Remove the DR neighbor reference */
+    if (v->uv_pim_neighbor_dr == nbr_delete )
+	v->uv_pim_neighbor_dr = NULL;
+
     return_jp_working_buff(nbr_delete);
 
     /* That neighbor could've been the DR */
@@ -407,6 +411,7 @@ static int restart_dr_election(struct uvif *v)
 {
     int was_dr = 0, use_dr_prio = 1;
     uint32_t best_dr_prio = 0;
+    pim_nbr_entry_t *best_nbr = NULL;
     pim_nbr_entry_t *nbr;
 
     if (v->uv_flags & VIFF_DR)
@@ -419,6 +424,7 @@ static int restart_dr_election(struct uvif *v)
 
 	v->uv_flags &= ~VIFF_PIM_NBR;
 	v->uv_flags |= (VIFF_NONBRS | VIFF_DR);
+	v->uv_pim_neighbor_dr = NULL;
 
 	return FALSE;
     }
@@ -431,8 +437,12 @@ static int restart_dr_election(struct uvif *v)
 	    break;
 	}
 
+	/* Save highest prio / highest IP as best neighbor */
 	if (nbr->dr_prio > best_dr_prio)
+	{
+	    best_nbr = nbr;
 	    best_dr_prio = nbr->dr_prio;
+	}
     }
 
     /*
@@ -445,29 +455,34 @@ static int restart_dr_election(struct uvif *v)
 
 	if (best_dr_prio < v->uv_dr_prio) {
 	    v->uv_flags |= VIFF_DR;
+	    v->uv_pim_neighbor_dr = NULL;
 	    return FALSE;
 	}
 
 	if (best_dr_prio == v->uv_dr_prio)
 	    goto tiebreak;
     } else {
+	best_nbr = v->uv_pim_neighbors;
       tiebreak:
 	IF_DEBUG(DEBUG_PIM_HELLO)
 	    logit(LOG_INFO, 0, "Using fallback DR election on %s.", v->uv_name);
 
-	if (ntohl(v->uv_lcl_addr) > ntohl(v->uv_pim_neighbors->address)) {
+	if (ntohl(v->uv_lcl_addr) > ntohl(best_nbr->address)) {
 	    /* The first address is the new potential remote
 	     * DR address, but the local address is the winner. */
 	    v->uv_flags |= VIFF_DR;
+	    v->uv_pim_neighbor_dr = NULL;
 	    return FALSE;
 	}
     }
+
+    v->uv_flags &= ~VIFF_DR;
+    v->uv_pim_neighbor_dr = best_nbr;
 
     if (was_dr) {
 	IF_DEBUG(DEBUG_PIM_HELLO)
 	    logit(LOG_INFO, 0, "We lost DR role on %s in election.", v->uv_name);
 
-	v->uv_flags &= ~VIFF_DR;
 	return TRUE;		/* Lost election, clean up. */
     }
 
