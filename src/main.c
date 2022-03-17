@@ -409,7 +409,6 @@ int main(int argc, char *argv[])
     init_pim();
     init_routesock();
     init_pim_mrt();
-    init_route();
 
     /* Start up the log rate-limiter */
     resetlogging(NULL);
@@ -422,6 +421,7 @@ int main(int argc, char *argv[])
     /* TODO: check the kernel DVMRP/MROUTED/PIM support version */
 
     init_vifs();
+    init_route();
     init_rp_and_bsr();   /* Must be after init_vifs() */
     add_static_rp();	 /* Must be after init_vifs() */
 #ifdef RSRR
