@@ -273,6 +273,10 @@ void delete_pim_nbr(pim_nbr_entry_t *nbr_delete)
     if (nbr_delete->next)
 	nbr_delete->next->prev = nbr_delete->prev;
 
+    /* Remove the DR neighbor reference */
+    if (v->uv_pim_neighbor_dr == nbr_delete )
+	v->uv_pim_neighbor_dr = NULL;
+
     return_jp_working_buff(nbr_delete);
 
     /* That neighbor could've been the DR */
@@ -407,6 +411,7 @@ static int restart_dr_election(struct uvif *v)
 {
     int was_dr = 0, use_dr_prio = 1;
     uint32_t best_dr_prio = 0;
+    pim_nbr_entry_t *best_nbr = NULL;
     pim_nbr_entry_t *nbr;
 
     if (v->uv_flags & VIFF_DR)
@@ -419,6 +424,7 @@ static int restart_dr_election(struct uvif *v)
 
 	v->uv_flags &= ~VIFF_PIM_NBR;
 	v->uv_flags |= (VIFF_NONBRS | VIFF_DR);
+	v->uv_pim_neighbor_dr = NULL;
 
 	return FALSE;
     }
@@ -431,8 +437,12 @@ static int restart_dr_election(struct uvif *v)
 	    break;
 	}
 
+	/* Save highest prio / highest IP as best neighbor */
 	if (nbr->dr_prio > best_dr_prio)
+	{
+	    best_nbr = nbr;
 	    best_dr_prio = nbr->dr_prio;
+	}
     }
 
     /*
@@ -445,29 +455,34 @@ static int restart_dr_election(struct uvif *v)
 
 	if (best_dr_prio < v->uv_dr_prio) {
 	    v->uv_flags |= VIFF_DR;
+	    v->uv_pim_neighbor_dr = NULL;
 	    return FALSE;
 	}
 
 	if (best_dr_prio == v->uv_dr_prio)
 	    goto tiebreak;
     } else {
+	best_nbr = v->uv_pim_neighbors;
       tiebreak:
 	IF_DEBUG(DEBUG_PIM_HELLO)
 	    logit(LOG_INFO, 0, "Using fallback DR election on %s.", v->uv_name);
 
-	if (ntohl(v->uv_lcl_addr) > ntohl(v->uv_pim_neighbors->address)) {
+	if (ntohl(v->uv_lcl_addr) > ntohl(best_nbr->address)) {
 	    /* The first address is the new potential remote
 	     * DR address, but the local address is the winner. */
 	    v->uv_flags |= VIFF_DR;
+	    v->uv_pim_neighbor_dr = NULL;
 	    return FALSE;
 	}
     }
+
+    v->uv_flags &= ~VIFF_DR;
+    v->uv_pim_neighbor_dr = best_nbr;
 
     if (was_dr) {
 	IF_DEBUG(DEBUG_PIM_HELLO)
 	    logit(LOG_INFO, 0, "We lost DR role on %s in election.", v->uv_name);
 
-	v->uv_flags &= ~VIFF_DR;
 	return TRUE;		/* Lost election, clean up. */
     }
 
@@ -691,24 +706,16 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
 	return FALSE;
     }
 
-    mrtentry = find_route(inner_src, inner_grp, MRTF_SG | MRTF_WC | MRTF_PMBR, DONT_CREATE);
+    mrtentry = find_route(inner_src, inner_grp, MRTF_WC, DONT_CREATE);
     if (!mrtentry) {
-	/* No routing entry. Send REGISTER_STOP and return. */
 	IF_DEBUG(DEBUG_PIM_REGISTER)
-	    logit(LOG_DEBUG, 0, "No routing entry for source %s and/or group %s" ,
-		  inet_fmt(inner_src, s1, sizeof(s1)), inet_fmt(inner_grp, s2, sizeof(s2)));
+	    logit(LOG_DEBUG, 0, "Not interested in group %s yet", inet_fmt(inner_grp, s2, sizeof(s2)));
 
 	/* TODO: XXX: shouldn't it be inner_src=INADDR_ANY? Not in the spec. */
 	send_pim_register_stop(reg_dst, reg_src, inner_grp, inner_src);
 
-#if 0 /* Disabled due to regression, see https://github.com/troglobit/pimd/issues/128 */
-	/* Create mrtentry for forthcoming join requests. Once one occurs
-	 * we know who is sending to this group and can send join to
-	 * that immediately. Saves 0 - 60 seconds not to wait next
-	 * PIM Register.
-	 */
         mrtentry = find_route(inner_src, inner_grp, MRTF_SG, CREATE);
-        if (!mrtentry)
+        if (!mrtentry || !(mrtentry->flags & MRTF_NEW))
            return TRUE;
 
         SET_TIMER(mrtentry->timer, PIM_DATA_TIMEOUT);
@@ -719,10 +726,11 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
                           mrtentry->pruned_oifs,
                           mrtentry->leaves,
                           mrtentry->asserted_oifs, 0);
-#endif
 
 	return TRUE;
     }
+
+    mrtentry = find_route(inner_src, inner_grp, MRTF_SG | MRTF_WC | MRTF_PMBR, DONT_CREATE);
 
     /* Check if I am the RP for that group */
     if ((local_address(reg_dst) == NO_VIF) || !check_mrtentry_rp(mrtentry, reg_dst)) {

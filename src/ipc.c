@@ -325,8 +325,9 @@ static int show_neighbor(FILE *fp, struct uvif *uv, pim_nbr_entry_t *n)
 		 timetostr(uptime, tmp, sizeof(tmp)),
 		 timetostr(n->timer, NULL, 0));
 
+	tmp[0] = '\0';
 	if ((uv->uv_flags & VIFF_DR) == 0) {
-		if (uv->uv_pim_neighbors == n)
+		if (uv->uv_pim_neighbor_dr == n)
 			snprintf(tmp, sizeof(tmp), "DR");
 	}
 
@@ -374,9 +375,9 @@ static void show_interface(FILE *fp, struct uvif *uv)
 		addr = uv->uv_lcl_addr;
 		snprintf(tmp, sizeof(tmp), "%d", uv->uv_dr_prio);
 		pri  = tmp;
-	} else if (uv->uv_pim_neighbors) {
-		addr = uv->uv_pim_neighbors->address;
-		pri  = get_dr_prio(uv->uv_pim_neighbors);
+	} else if (uv->uv_pim_neighbor_dr) {
+		addr = uv->uv_pim_neighbor_dr->address;
+		pri  = get_dr_prio(uv->uv_pim_neighbor_dr);
 	}
 
 	for (n = uv->uv_pim_neighbors; n; n = n->next)

@@ -1263,7 +1263,7 @@ static int parse_spt_threshold(char *s)
 	    if (sscanf(w, "%10u", &packets) != 1) {
 		WARN("Invalid spt-threshold packets %s; defaulting to %u",
 		     w, SPT_THRESHOLD_DEFAULT_PACKETS);
-		packets = SPT_THRESHOLD_DEFAULT_INTERVAL;
+		packets = SPT_THRESHOLD_DEFAULT_PACKETS;
 	    }
 
 	    continue;
