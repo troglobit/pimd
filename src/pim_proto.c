@@ -101,16 +101,8 @@ int receive_pim_hello(uint32_t src, uint32_t dst __attribute__((unused)), char *
 	return FALSE;
 
     IF_DEBUG(DEBUG_PIM_HELLO)
-	logit(LOG_DEBUG, 0, "PIM HELLO holdtime from %s is %u",
-	      inet_fmt(src, s1, sizeof(s1)), opts.holdtime);
-
-    IF_DEBUG(DEBUG_PIM_HELLO)
-	logit(LOG_DEBUG, 0, "PIM DR PRIORITY from %s is %u",
-	      inet_fmt(src, s1, sizeof(s1)), opts.dr_prio);
-
-    IF_DEBUG(DEBUG_PIM_HELLO)
-	logit(LOG_DEBUG, 0, "PIM GenID from %s is %u",
-	      inet_fmt(src, s1, sizeof(s1)), opts.genid);
+	logit(LOG_DEBUG, 0, "PIM HELLO from %s: holdtime %u, DR priority %u, GenID 0x%04x",
+	      inet_fmt(src, s1, sizeof(s1)), opts.holdtime, opts.dr_prio, opts.genid);
 
     for (prev_nbr = NULL, nbr = v->uv_pim_neighbors; nbr; prev_nbr = nbr, nbr = nbr->next) {
 	/* The PIM neighbors are sorted in decreasing order of the
