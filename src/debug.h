@@ -122,6 +122,7 @@ extern int      log_str2lvl             (char *level);
 extern const char *log_lvl2str          (int val);
 extern int      log_list                (char *buf, size_t len);
 
-extern void	logit			(int severity, int syserr, const char *fmt, ...);
+extern void	logit			(int severity, int syserr, const char *fmt, ...)
+						__attribute__ ((format (printf, 3, 4)));
 
 #endif /* PIMD_DEBUG_H_ */
