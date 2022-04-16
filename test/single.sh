@@ -85,7 +85,7 @@ sleep 1
 
 print "Starting pimd ..."
 ../src/pimd -i solo -f "/tmp/$NM/conf" -n -p "/tmp/$NM/pid" -l debug -d all -u "/tmp/$NM/sock" &
-sleep 10
+sleep 12
 
 ../src/pimctl -u "/tmp/$NM/sock" show compat detail
 
