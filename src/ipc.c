@@ -674,8 +674,16 @@ static int show_status(FILE *fp)
 	fprintf(fp, "IGMP query interval  : %d sec\n", igmp_query_interval);
 	fprintf(fp, "IGMP querier timeout : %d sec\n", igmp_querier_timeout);
 	fprintf(fp, "SPT Threshold        : %s\n", spt_threshold.mode == SPT_INF ? "Disabled" : "Enabled");
-	if (spt_threshold.mode != SPT_INF)
+	if (spt_threshold.mode != SPT_INF) {
+		if (spt_threshold.mode == SPT_RATE) {
+			fprintf(fp, "SPT Mode             : rate\n");
+			fprintf(fp, "SPT Bytes (kbps)     : %d\n", spt_threshold.bytes / 1000);
+		} else {
+			fprintf(fp, "SPT Mode             : packets\n");
+			fprintf(fp, "SPT Packets          : %d\n", spt_threshold.packets);
+		}
 		fprintf(fp, "SPT Interval         : %d sec\n", spt_threshold.interval);
+	}
 
 	return 0;
 }
