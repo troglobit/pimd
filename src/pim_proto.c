@@ -2038,9 +2038,7 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 				  mrt->asserted_oifs, 0);
 		if (mrt->flags & MRTF_NEW) {
 		    mrt->flags &= ~MRTF_NEW;
-		    if (mrt->upstream)
-			send_pim_join(mrt->upstream, mrt, MRTF_RP | MRTF_WC,
-				      PIM_JOIN_PRUNE_HOLDTIME);
+		    send_pim_join(mrt->upstream, mrt, MRTF_RP | MRTF_WC, PIM_JOIN_PRUNE_HOLDTIME);
 		}
 		/* Need to update the (S,G) entries, because of the previous
 		 * cleaning of the pruned_oifs. The reason is that if the
@@ -2049,8 +2047,7 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 		 */
 		for (mrt_srcs = mrt->group->mrtlink; mrt_srcs; mrt_srcs = mrt_srcs->grpnext) {
 		    if (new_join) {
-			if (mrt_srcs->upstream)
-			    send_pim_join(mrt_srcs->upstream, mrt_srcs, MRTF_SG, PIM_JOIN_PRUNE_HOLDTIME);
+			send_pim_join(mrt_srcs->upstream, mrt_srcs, MRTF_SG, PIM_JOIN_PRUNE_HOLDTIME);
 			PIMD_VIFM_SET(vifi, mrt_srcs->joined_oifs);
 			PIMD_VIFM_CLR(vifi, mrt_srcs->pruned_oifs);
 			PIMD_VIFM_CLR(vifi, mrt_srcs->asserted_oifs);
@@ -2102,8 +2099,8 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 		 * Join message toward S. 
 		 */
 		if (mrt->flags & MRTF_NEW) {
-		    send_pim_join(mrt->upstream, mrt, MRTF_SG, PIM_JOIN_PRUNE_HOLDTIME);
 		    mrt->flags &= ~MRTF_NEW;
+		    send_pim_join(mrt->upstream, mrt, MRTF_SG, PIM_JOIN_PRUNE_HOLDTIME);
 		}
 
 		/* Note that we must create (S,G) without the RPbit set.
@@ -2260,7 +2257,7 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
  */
 void send_pim_join(pim_nbr_entry_t *pim_nbr, mrtentry_t *mrt, uint16_t flags, uint16_t holdtime)
 {
-    if (pim_nbr == NULL)
+    if (!pim_nbr)
         return;
 
     if (flags & MRTF_SG)
