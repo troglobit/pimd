@@ -807,6 +807,7 @@ static void restart(int signo)
     init_routesock(); /* Both for Linux netlink and BSD routing socket */
     init_pim_mrt();
     init_vifs();
+    init_rp_and_bsr();   /* Must be after init_vifs() */
     add_static_rp();	 /* Must be after init_vifs() */
     ipc_init(sock_file);
 	
