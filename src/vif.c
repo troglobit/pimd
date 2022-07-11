@@ -105,12 +105,13 @@ void init_vifs(void)
 
     if (!do_vifs) {
 	/* Disable all VIFs by default (no phyint), except PIMREG_VIF */
-	for (vifi = 1, v = uvifs; vifi < numvifs; ++vifi, ++v)
+	for (vifi = 1, v = &uvifs[1]; vifi < numvifs; ++vifi, ++v)
           v->uv_flags |= VIFF_DISABLED;
     }
 
-    init_reg_vif();
     config_vifs_from_file();
+
+    init_reg_vif();
 
     /*
      * Quit if there are fewer than two enabled vifs.
@@ -119,7 +120,7 @@ void init_vifs(void)
     phys_vif        = -1;
 
     /* The PIM register tunnel interface should always be vifi 0 */
-    for (vifi = 1, v = uvifs; vifi < numvifs; ++vifi, ++v) {
+    for (vifi = 1, v = &uvifs[1]; vifi < numvifs; ++vifi, ++v) {
 	/*
 	 * Initialize the outgoing timeout for each vif.  Currently use
 	 * a fixed time.  Later, we may add a configurable array to feed
