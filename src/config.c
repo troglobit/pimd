@@ -373,7 +373,7 @@ init_vif_list:
 	 * one already installed in the uvifs array.  Skip reserved vifi
 	 * for PIMREG_VIF.
 	 */
-	for (vifi = 1, v = uvifs; vifi < numvifs; ++vifi, ++v) {
+	for (vifi = 1, v = &uvifs[1]; vifi < numvifs; ++vifi, ++v) {
 	    if (strcmp(v->uv_name, ifa->ifa_name) == 0) {
 		logit(LOG_DEBUG, 0, "Ignoring %s (%s on subnet %s) (alias for vif#%u?)",
 		      v->uv_name, inet_fmt(addr, s1, sizeof(s1)), netname(subnet, mask), vifi);
@@ -586,10 +586,6 @@ static int parse_phyint(char *s)
     }
 
     for (vifi = 0, v = uvifs; vifi < numvifs; ++vifi, ++v) {
-	if (vifi == numvifs) {
-	    WARN("phyint %s is not a valid interface", inet_fmt(local, s1, sizeof(s1)));
-	    return FALSE;
-	}
 
 	if (local != v->uv_lcl_addr)
 	    continue;
@@ -796,6 +792,10 @@ static int parse_phyint(char *s)
 	} /* while(... != "") */
 
 	break;
+    }
+    if (vifi == numvifs) {
+	WARN("phyint %s is not a valid interface", inet_fmt(local, s1, sizeof(s1)));
+	return FALSE;
     }
 
     return TRUE;
