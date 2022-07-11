@@ -86,17 +86,23 @@ void init_pim(void)
 
     allpimrouters_group = htonl(INADDR_ALL_PIM_ROUTERS);
 
-    pim_recv_buf = calloc(1, RECV_BUF_SIZE);
-    pim_send_buf = calloc(1, SEND_BUF_SIZE);
+    if (!pim_recv_buf)
+	pim_recv_buf = malloc(RECV_BUF_SIZE);
+
+    if (!pim_send_buf)
+	pim_send_buf = malloc(SEND_BUF_SIZE);
+
     if (!pim_recv_buf || !pim_send_buf) {
 	logit(LOG_ERR, 0, "Ran out of memory in init_pim()");
 	close(pim_socket);
 	return;
     }
 
+    memset(pim_recv_buf, 0, RECV_BUF_SIZE);
+    memset(pim_send_buf, 0, SEND_BUF_SIZE);
+
     /* One time setup in the buffers */
     ip		 = (struct ip *)pim_send_buf;
-    memset(ip, 0, sizeof(*ip));
     ip->ip_v     = IPVERSION;
     ip->ip_hl    = (sizeof(struct ip) >> 2);
     ip->ip_tos   = 0;    /* TODO: setup?? */
@@ -107,6 +113,21 @@ void init_pim(void)
 
     if (register_input_handler(pim_socket, pim_read) < 0)
 	logit(LOG_ERR, 0,  "Failed registering pim_read() as an input handler");
+
+    /* Clean-up the join-prune message pool before re-initializing it */
+    while ( build_jp_message_pool != NULL )
+    {
+	free(build_jp_message_pool->jp_message);
+	free(build_jp_message_pool->join_list);
+	free(build_jp_message_pool->prune_list);
+	free(build_jp_message_pool->rp_list_join);
+	free(build_jp_message_pool->rp_list_prune);
+
+	build_jp_message_t *bjpm = build_jp_message_pool;
+	build_jp_message_pool = build_jp_message_pool->next;
+
+	free(bjpm);
+    }
 
     /* Initialize the building Join/Prune messages working area */
     build_jp_message_pool = (build_jp_message_t *)NULL;

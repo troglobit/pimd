@@ -1487,10 +1487,15 @@ void config_vifs_from_file(void)
     lineno = 0;
 
     /* TODO: HARDCODING!!! */
-    cand_rp_adv_message.buffer = calloc(1, 4 + sizeof(pim_encod_uni_addr_t) +
-					255 * sizeof(pim_encod_grp_addr_t));
+    if (!cand_rp_adv_message.buffer)
+	cand_rp_adv_message.buffer = malloc(4 + sizeof(pim_encod_uni_addr_t) +
+					    255 * sizeof(pim_encod_grp_addr_t));
+
     if (!cand_rp_adv_message.buffer)
 	logit(LOG_ERR, errno, "Ran out of memory in config_vifs_from_file()");
+
+    memset(cand_rp_adv_message.buffer, 0, 4 + sizeof(pim_encod_uni_addr_t) +
+					  255 * sizeof(pim_encod_grp_addr_t));
 
     cand_rp_adv_message.prefix_cnt_ptr  = cand_rp_adv_message.buffer;
     /* By default, if no group-prefix configured, then prefix_cnt == 0
