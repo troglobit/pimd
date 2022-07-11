@@ -59,7 +59,17 @@ static void	   move_kernel_cache (mrtentry_t *, uint16_t);
 
 void init_pim_mrt(void)
 {
-    /* TODO: delete any existing routing table */
+    /* Free the routing table before re-initializing it */
+    if (srclist != NULL)
+	free(srclist);
+
+    if (grplist != NULL)
+    {
+	while ( grplist->next != NULL )
+	    delete_grpentry(grplist->next);
+
+	free(grplist);
+    }
 
     /* Initialize the source list */
     /* The first entry has address 'INADDR_ANY' and is not used */
