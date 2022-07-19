@@ -293,10 +293,10 @@ static int ipc_wrap(int sd, int (*cb)(char *, size_t), char *buf, size_t len)
 
 static char *get_dr_prio(pim_nbr_entry_t *n)
 {
-	static char prio[5];
+	static char prio[11];
 
 	if (n->dr_prio_present)
-		snprintf(prio, sizeof(prio), "%4d", n->dr_prio);
+		snprintf(prio, sizeof(prio), "%10u", n->dr_prio);
 	else
 		snprintf(prio, sizeof(prio), "   N");
 
@@ -348,7 +348,7 @@ static int show_neighbors(FILE *fp)
 
 	fprintf(fp, "PIM Neighbor Table_\n");
 	if (numvifs)
-		fprintf(fp, "Interface         Address          Prio  Mode  Uptime/Expires               =\n");
+		fprintf(fp, "Interface         Address            Priority  Mode  Uptime/Expires               =\n");
 
 	for (vifi = 0; vifi < numvifs; vifi++) {
 		uv = &uvifs[vifi];
@@ -366,14 +366,15 @@ static void show_interface(FILE *fp, struct uvif *uv)
 	uint32_t addr = 0;
 	size_t num  = 0;
 	char *pri = "N/A";
-	char tmp[5];
+	char tmp[11];
+
+	snprintf(tmp, sizeof(tmp), "%10u", uv->uv_dr_prio);
 
 	if (uv->uv_flags & VIFF_REGISTER)
 		return;
 
 	if (uv->uv_flags & VIFF_DR) {
 		addr = uv->uv_lcl_addr;
-		snprintf(tmp, sizeof(tmp), "%d", uv->uv_dr_prio);
 		pri  = tmp;
 	} else if (uv->uv_pim_neighbor_dr) {
 		addr = uv->uv_pim_neighbor_dr->address;
@@ -383,12 +384,12 @@ static void show_interface(FILE *fp, struct uvif *uv)
 	for (n = uv->uv_pim_neighbors; n; n = n->next)
 		num++;
 
-	fprintf(fp, "%-16s  %-8s  %-15s  %3zu  %5d  %4s  %-15s\n",
+	fprintf(fp, "%-16s  %-8s  %-15s  %4s  %5d  %3zu  %-15s  %4s\n",
 		uv->uv_name,
 		ifstate(uv),
 		inet_fmt(uv->uv_lcl_addr, s1, sizeof(s1)),
-		num, pim_timer_hello_interval,
-		pri, inet_fmt(addr, s2, sizeof(s2)));
+		tmp, pim_timer_hello_interval, num,
+		inet_fmt(addr, s2, sizeof(s2)), pri);
 }
 
 /* PIM Interface Table */
@@ -398,7 +399,7 @@ static int show_interfaces(FILE *fp)
 
 	fprintf(fp, "PIM Interface Table_\n");
 	if (numvifs)
-		fprintf(fp, "Interface         State     Address          Nbr  Hello  Prio  DR Address =\n");
+		fprintf(fp, "Interface         State     Address            Priority  Hello  Nbr  DR Address      DR Priority =\n");
 
 	for (vifi = 0; vifi < numvifs; vifi++)
 		show_interface(fp, &uvifs[vifi]);
