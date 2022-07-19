@@ -222,13 +222,13 @@ void trimdomain(char *cp)
 
 static uint32_t forgemask(uint32_t a)
 {
-    uint32_t m;
+    uint32_t m = 0;
 
     if (IN_CLASSA(a))
         m = IN_CLASSA_NET;
     else if (IN_CLASSB(a))
         m = IN_CLASSB_NET;
-    else
+    else if (IN_CLASSC(a))
         m = IN_CLASSC_NET;
 
     return (m);
@@ -277,15 +277,8 @@ char *netname(uint32_t addr, uint32_t mask)
 
     i = ntohl(addr);
     omask = mask = ntohl(mask);
-    if ((i & 0xffffff) == 0)
-        snprintf(line, sizeof(line), "%u", C(i >> 24));
-    else if ((i & 0xffff) == 0)
-        snprintf(line, sizeof(line), "%u.%u", C(i >> 24) , C(i >> 16));
-    else if ((i & 0xff) == 0)
-        snprintf(line, sizeof(line), "%u.%u.%u", C(i >> 24), C(i >> 16), C(i >> 8));
-    else
-        snprintf(line, sizeof(line), "%u.%u.%u.%u", C(i >> 24),
-                C(i >> 16), C(i >> 8), C(i));
+    snprintf(line, sizeof(line), "%u.%u.%u.%u", C(i >> 24),
+             C(i >> 16), C(i >> 8), C(i));
     domask(line + strlen(line), sizeof(line) - strlen(line), i, omask);
 
     return line;
