@@ -735,7 +735,7 @@ static void dump_route(FILE *fp, mrtentry_t *r)
     for (vifi = 0; vifi < numvifs; vifi++)
 	fprintf(fp, "  %d", vifi);
     fprintf(fp, "\n         %5d  %4d  %4d  %6d      ",
-	    r->timer, r->jp_timer, r->rs_timer, r->assert_timer);
+	    r->entry_timer, r->jp_timer, r->rs_timer, r->assert_timer);
     for (vifi = 0; vifi < numvifs; vifi++)
 	fprintf(fp, " %2d", r->vif_timers[vifi]);
     fprintf(fp, "\n");

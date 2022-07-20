@@ -407,7 +407,7 @@ void add_leaf(vifi_t vifi, uint32_t source, uint32_t group)
 	/* In the case of SG entry we can create MFC directy without waiting for cache miss. */
 	if (flags & MRTF_SG) {
 	    add_kernel_cache(srcs, srcs->source->address, srcs->group->group, MFC_MOVE_FORCE);
-	    k_chg_mfc(igmp_socket, srcs->source->address, srcs->group->group, 
+	    k_chg_mfc(igmp_socket, srcs->source->address, srcs->group->group,
 		      srcs->incoming, srcs->oifs, srcs->source->address);
 	}
     }
@@ -964,8 +964,8 @@ static void process_cache_miss(struct igmpmsg *igmpctl)
 	    if (mrt->flags & MRTF_SG) {
 		/* TODO: check that the RPbit is not set? */
 		/* TODO: XXX: TIMER implem. dependency! */
-		if (mrt->timer < PIM_DATA_TIMEOUT)
-		    SET_TIMER(mrt->timer, PIM_DATA_TIMEOUT);
+		if (mrt->entry_timer < PIM_DATA_TIMEOUT)
+		    SET_TIMER(mrt->entry_timer, PIM_DATA_TIMEOUT);
 
 		if (!(mrt->flags & MRTF_SPT)) {
 		    mrp = mrt->group->grp_route;
@@ -1148,7 +1148,7 @@ mrtentry_t *switch_shortest_path(uint32_t source, uint32_t group)
 			      mrt->asserted_oifs, 0);
 	}
 
-	SET_TIMER(mrt->timer, PIM_DATA_TIMEOUT);
+	SET_TIMER(mrt->entry_timer, PIM_DATA_TIMEOUT);
 	FIRE_TIMER(mrt->jp_timer);
     }
 
@@ -1440,7 +1440,7 @@ void age_routes(void)
 	    IF_TIMEOUT(mrt_rp->rs_timer) {}
 
 	    /* routing entry */
-	    if ((TIMEOUT(mrt_rp->timer)) && (PIMD_VIFM_ISEMPTY(mrt_rp->leaves)))
+	    if ((TIMEOUT(mrt_rp->entry_timer)) && (PIMD_VIFM_ISEMPTY(mrt_rp->leaves)))
 		delete_mrtentry(mrt_rp);
 	} /* if (mrt_rp) */
 
@@ -1531,7 +1531,7 @@ void age_routes(void)
 		    IF_TIMEOUT(mrt_grp->rs_timer) {}
 
 		    /* routing entry */
-		    if ((TIMEOUT(mrt_grp->timer)) && (PIMD_VIFM_ISEMPTY(mrt_grp->leaves)))
+		    if ((TIMEOUT(mrt_grp->entry_timer)) && (PIMD_VIFM_ISEMPTY(mrt_grp->leaves)))
 			delete_mrtentry(mrt_grp);
 		} /* if (mrt_grp) */
 
@@ -1710,7 +1710,7 @@ void age_routes(void)
 		    }
 
 		    /* routing entry */
-		    if (TIMEOUT(mrt_srcs->timer)) {
+		    if (TIMEOUT(mrt_srcs->entry_timer)) {
 			if (PIMD_VIFM_ISEMPTY(mrt_srcs->leaves)) {
 			    delete_mrtentry(mrt_srcs);
 			    continue;

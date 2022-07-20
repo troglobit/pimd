@@ -207,7 +207,7 @@ typedef struct mrtentry {
     uint16_t		*vif_timers;	/* vifs timer list		    */
     uint16_t		*vif_deletion_delay; /* vifs deletion delay list    */
     uint16_t		 flags;		/* The MRTF_* flags		    */
-    uint16_t		 timer;		/* entry timer			    */
+    uint16_t		 entry_timer;	/* entry timer			    */
     uint16_t		 jp_timer;	/* The Join/Prune timer		    */
     uint16_t		 rs_timer;	/* Register-Suppression Timer	    */
     u_int		 assert_timer;
