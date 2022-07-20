@@ -252,6 +252,12 @@ static void accept_igmp(int ifi, ssize_t recvlen)
 
 	case IGMP_V1_MEMBERSHIP_REPORT:
 	case IGMP_V2_MEMBERSHIP_REPORT:
+	    if (IN_PIM_SSM_RANGE(group)) {
+		logit(LOG_NOTICE, DEBUG_IGMP, 0,
+		    "Ignoring IGMPv2 Membership report received for SSM group %s. IGMPv3 required",
+		    inet_fmt(group, s1, sizeof(s1)));
+		return;
+	    }
 	    accept_group_report(ifi, src, dst, group, igmp->igmp_type);
 	    return;
 
