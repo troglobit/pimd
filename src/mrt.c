@@ -858,7 +858,7 @@ static mrtentry_t *alloc_mrtentry(srcentry_t *src, grpentry_t *grp)
 	RESET_TIMER(*timer);
 
     mrt->flags = MRTF_NEW;
-    RESET_TIMER(mrt->timer);
+    RESET_TIMER(mrt->entry_timer);
     RESET_TIMER(mrt->jp_timer);
     RESET_TIMER(mrt->rs_timer);
     RESET_TIMER(mrt->assert_timer);

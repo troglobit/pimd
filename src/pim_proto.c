@@ -710,7 +710,7 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
         if (!mrtentry || !(mrtentry->flags & MRTF_NEW))
            return TRUE;
 
-        SET_TIMER(mrtentry->timer, PIM_DATA_TIMEOUT);
+        SET_TIMER(mrtentry->entry_timer, PIM_DATA_TIMEOUT);
         mrtentry->flags &= ~MRTF_NEW;
         change_interfaces(mrtentry,
                           mrtentry->incoming,
@@ -739,7 +739,7 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
     if (mrtentry->flags & MRTF_SG) {
 	/* (S,G) found */
 	/* TODO: check the timer again */
-	SET_TIMER(mrtentry->timer, PIM_DATA_TIMEOUT); /* restart timer */
+	SET_TIMER(mrtentry->entry_timer, PIM_DATA_TIMEOUT); /* restart timer */
 	if (!(mrtentry->flags & MRTF_SPT)) { /* The SPT bit is not set */
 	    if (!is_null) {
 		calc_oifs(mrtentry, oifs);
@@ -802,7 +802,7 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
 		mrtentry2->pmbr_addr = reg_src;
 		/* Clear the SPT flag */
 		mrtentry2->flags &= ~(MRTF_SPT | MRTF_NEW);
-		SET_TIMER(mrtentry2->timer, PIM_DATA_TIMEOUT);
+		SET_TIMER(mrtentry2->entry_timer, PIM_DATA_TIMEOUT);
 		/* TODO: explicitly call the Join/Prune send function? */
 		FIRE_TIMER(mrtentry2->jp_timer); /* Send the Join immediately */
 		/* TODO: explicitly call this function?
@@ -871,7 +871,7 @@ int receive_pim_register(uint32_t reg_src, uint32_t reg_dst, char *msg, size_t l
 		/* TODO: something else? Have the feeling sth is missing */
 		mrtentry2->flags &= ~MRTF_NEW;
 		/* TODO: XXX: copy the timer from the (*,*,RP) entry? */
-		COPY_TIMER(mrtentry->timer, mrtentry2->timer);
+		COPY_TIMER(mrtentry->entry_timer, mrtentry2->entry_timer);
 	    }
 
 	    /* Install cache entry in the kernel */
@@ -964,7 +964,7 @@ int send_pim_register(char *packet)
 	}
     }
     /* Restart the (S,G) Entry-timer */
-    SET_TIMER(mrtentry->timer, PIM_DATA_TIMEOUT);
+    SET_TIMER(mrtentry->entry_timer, PIM_DATA_TIMEOUT);
 
     IF_TIMER_NOT_SET(mrtentry->rs_timer) {
 	/* The Register-Suppression Timer is not running.
@@ -1385,7 +1385,7 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
     data_start = data;
     while (num_groups_tmp--) {
         size_t srclen;
-	
+
         /* group addr + #join + #src */
         if (len < PIM_ENCODE_GRP_ADDR_LEN + sizeof(uint32_t)) {
 	    IF_DEBUG(DEBUG_PIM_JOIN_PRUNE)
@@ -1881,7 +1881,7 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 		/* ~(S,G)RPbit prune sent toward the RP */
 		mrt = find_route(source, group, MRTF_SG, DONT_CREATE);
 		if (mrt) {
-		    SET_TIMER(mrt->timer, holdtime);
+		    SET_TIMER(mrt->entry_timer, holdtime);
 		    if (v->uv_flags & VIFF_POINT_TO_POINT) {
 			FIRE_TIMER(mrt->vif_timers[vifi]);
 		    } else {
@@ -1915,7 +1915,7 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 		    /* TODO: XXX: The spec doens't say what value to use for
 		     * the entry time. Use the J/P holdtime.
 		     */
-		    SET_TIMER(mrt->timer, holdtime);
+		    SET_TIMER(mrt->entry_timer, holdtime);
 		    /* TODO: XXX: The spec says to delete the oif. However,
 		     * its timer only should be lowered, so the prune can be
 		     * overwritten on multiaccess LAN. Spec BUG.
@@ -2020,8 +2020,8 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 		    SET_TIMER(mrt->vif_timers[vifi], holdtime);
 		    mrt->vif_deletion_delay[vifi] = holdtime/3;
 		}
-		if (mrt->timer < holdtime)
-		    SET_TIMER(mrt->timer, holdtime);
+		if (mrt->entry_timer < holdtime)
+		    SET_TIMER(mrt->entry_timer, holdtime);
 		change_interfaces(mrt,
 				  mrt->incoming,
 				  mrt->joined_oifs,
@@ -2085,10 +2085,10 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 		    SET_TIMER(mrt->vif_timers[vifi], holdtime);
 		    mrt->vif_deletion_delay[vifi] = holdtime/3;
 		}
-		if (mrt->timer < holdtime)
-		    SET_TIMER(mrt->timer, holdtime);
+		if (mrt->entry_timer < holdtime)
+		    SET_TIMER(mrt->entry_timer, holdtime);
 		/* If this is a new entry, send immediately the
-		 * Join message toward S. 
+		 * Join message toward S.
 		 */
 		if (mrt->flags & MRTF_NEW) {
 		    mrt->flags &= ~MRTF_NEW;
@@ -2110,7 +2110,7 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 		 */
 		if (new_join) {
 		    add_kernel_cache(mrt, mrt->source->address, mrt->group->group, MFC_MOVE_FORCE);
-		    k_chg_mfc(igmp_socket, mrt->source->address, mrt->group->group, 
+		    k_chg_mfc(igmp_socket, mrt->source->address, mrt->group->group,
 			      mrt->incoming, mrt->oifs, mrt->source->address);
 		}
 		continue;
@@ -2161,8 +2161,8 @@ int receive_pim_join_prune(uint32_t src, uint32_t dst __attribute__((unused)), c
 		SET_TIMER(mrt->vif_timers[vifi], holdtime);
 		mrt->vif_deletion_delay[vifi] = holdtime/3;
 	    }
-	    if (mrt->timer < holdtime)
-		SET_TIMER(mrt->timer, holdtime);
+	    if (mrt->entry_timer < holdtime)
+		SET_TIMER(mrt->entry_timer, holdtime);
 	    mrt->flags &= ~MRTF_NEW;
 	    change_interfaces(mrt,
 			      mrt->incoming,
@@ -2934,7 +2934,7 @@ int receive_pim_assert(uint32_t src, uint32_t dst, char *msg, size_t len)
 	    /* TODO: XXX: The spec doesn't say what entry timer value
 	     * to use when the routing entry is created because of asserts.
 	     */
-	    SET_TIMER(mrt2->timer, PIM_DATA_TIMEOUT);
+	    SET_TIMER(mrt2->entry_timer, PIM_DATA_TIMEOUT);
 	    if (mrt2->flags & MRTF_RP) {
 		/* Either (*,G) or (S,G)RPbit entry.
 		 * Get what we need from the RP info.
