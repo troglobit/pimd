@@ -920,7 +920,7 @@ int send_pim_register(char *packet)
     if (IN_PIM_SSM_RANGE(group))
 	return FALSE; /* Group is in PIM-SSM range, don't send register. */
 
-    if ((vifi = find_vif_direct_local(source)) == NO_VIF)
+    if ((vifi = find_vif_direct_local(source, TRUE)) == NO_VIF)
 	return FALSE;
 
     if (!(uvifs[vifi].uv_flags & VIFF_DR))
@@ -1001,7 +1001,7 @@ int send_pim_null_register(mrtentry_t *mrtentry)
     uint32_t reg_src, reg_dst;
 
     /* No directly connected source; no local address */
-    if ((vifi = find_vif_direct_local(mrtentry->source->address))== NO_VIF)
+    if ((vifi = find_vif_direct_local(mrtentry->source->address, TRUE))== NO_VIF)
 	return FALSE;
 
     pim_register = (pim_register_t *)(pim_send_buf + sizeof(struct ip) +
@@ -2345,7 +2345,7 @@ int send_periodic_pim_join_prune(vifi_t vifi, pim_nbr_entry_t *pim_nbr, uint16_t
 	    if (mrt->flags & MRTF_RP) {
 		/* RPbit set */
 		addr = mrt->source->address;
-		if (PIMD_VIFM_ISEMPTY(mrt->joined_oifs) || find_vif_direct_local(addr) != NO_VIF) {
+		if (PIMD_VIFM_ISEMPTY(mrt->joined_oifs) || find_vif_direct_local(addr, TRUE) != NO_VIF) {
 		    /* TODO: XXX: TIMER implem. dependency! */
 		    if (grp->grp_route &&
 			grp->grp_route->incoming == vifi &&

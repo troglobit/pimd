@@ -927,7 +927,7 @@ static void process_cache_miss(struct igmpmsg *igmpctl)
     /* If I am the DR for this source, create (S,G) and add the register_vif
      * to the oifs. */
 
-    if ((uvifs[iif].uv_flags & VIFF_DR) && (find_vif_direct_local(source) == iif)) {
+    if ((uvifs[iif].uv_flags & VIFF_DR) && (find_vif_direct_local(source, TRUE) == iif)) {
 	mrt = find_route(source, group, MRTF_SG, CREATE);
 	if (!mrt)
 	    return;
