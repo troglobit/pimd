@@ -49,12 +49,12 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stddef.h>
-#include <unistd.h> 
+#include <unistd.h>
 #include <ctype.h>
 #include <errno.h>
 #include <syslog.h>
-#include <signal.h> 
-#include <string.h> 
+#include <signal.h>
+#include <string.h>
 #include <arpa/inet.h>
 #include <net/if.h>
 #include <netinet/in_systm.h>
@@ -451,7 +451,7 @@ extern int		errno;
 #define NOT_TIMEOUT(timer)		\
 	((timer) -= (MIN(timer, TIMER_INTERVAL)))
 
-#define ELSE else           /* To make emacs cc-mode happy */      
+#define ELSE else           /* To make emacs cc-mode happy */
 
 #define MASK_TO_VAL(x, i) {		   \
 	uint32_t _x = ntohl(x);		   \
@@ -660,7 +660,7 @@ extern void	check_vif_state		(void);
 extern vifi_t	local_address		(uint32_t src);
 extern vifi_t	find_vif		(int ifi);
 extern vifi_t	find_vif_direct		(uint32_t src);
-extern vifi_t	find_vif_direct_local	(uint32_t src);
+extern vifi_t	find_vif_direct_local	(uint32_t src, uint8_t check_kernel_table);
 extern uint32_t	max_local_address	(void);
 extern void	age_vifs		(void);
 

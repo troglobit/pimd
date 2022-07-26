@@ -670,7 +670,7 @@ vifi_t local_address(uint32_t src)
  * (Register and tunnels excluded).
  * Return the vif number or NO_VIF if not found.
  */
-vifi_t find_vif_direct_local(uint32_t src)
+vifi_t find_vif_direct_local(uint32_t src, uint8_t check_kernel_table)
 {
     vifi_t vifi;
     struct uvif *v;
@@ -700,10 +700,12 @@ vifi_t find_vif_direct_local(uint32_t src)
 	    return vifi;
     }
 
-    /* Check if the routing table has a direct route (no gateway). */
-    if (k_req_incoming(src, &rpf)) {
-	if (rpf.source.s_addr == rpf.rpfneighbor.s_addr) {
-	    return rpf.iif;
+    if (check_kernel_table) {
+	/* Check if the routing table has a direct route (no gateway). */
+	if (k_req_incoming(src, &rpf)) {
+	    if (rpf.source.s_addr == rpf.rpfneighbor.s_addr) {
+		return rpf.iif;
+	    }
 	}
     }
 
