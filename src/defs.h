@@ -660,7 +660,7 @@ extern void	check_vif_state		(void);
 extern vifi_t	local_address		(uint32_t src);
 extern vifi_t	find_vif		(int ifi);
 extern vifi_t	find_vif_direct		(uint32_t src);
-extern vifi_t	find_vif_direct_local	(uint32_t src, uint8_t check_kernel_table);
+extern vifi_t	find_vif_direct_local	(uint32_t src, int rib);
 extern uint32_t	max_local_address	(void);
 extern void	age_vifs		(void);
 

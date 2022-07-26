@@ -665,12 +665,17 @@ vifi_t local_address(uint32_t src)
 }
 
 /*
- * If the source is directly connected, or is local address,
- * find the vif number for the corresponding physical interface
- * (Register and tunnels excluded).
- * Return the vif number or NO_VIF if not found.
+ * If the source 'src' is directly connected, or is local address, find
+ * the VIF number for the corresponding physical interface (Register and
+ * tunnels excluded).
+ *
+ * If it's not a local address, or available on a subnet from a local
+ * interface, we optionally check the kernel routing table (RIB) to
+ * find a matching VIF.
+ *
+ * Return the VIF number or NO_VIF if not found.
  */
-vifi_t find_vif_direct_local(uint32_t src, uint8_t check_kernel_table)
+vifi_t find_vif_direct_local(uint32_t src, int rib)
 {
     vifi_t vifi;
     struct uvif *v;
@@ -700,7 +705,7 @@ vifi_t find_vif_direct_local(uint32_t src, uint8_t check_kernel_table)
 	    return vifi;
     }
 
-    if (check_kernel_table) {
+    if (rib) {
 	/* Check if the routing table has a direct route (no gateway). */
 	if (k_req_incoming(src, &rpf)) {
 	    if (rpf.source.s_addr == rpf.rpfneighbor.s_addr) {
